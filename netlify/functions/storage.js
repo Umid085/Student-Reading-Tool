@@ -3,12 +3,25 @@ const { getStore } = require("@netlify/blobs");
 exports.handler = async function (event) {
   const headers = { "Content-Type": "application/json" };
 
-  try {
-    const store = getStore("rq-data");
+  // health-check: GET /storage with no key returns a status ping
+  if (event.httpMethod === "GET" && !(event.queryStringParameters || {}).key) {
+    return { statusCode: 200, headers, body: JSON.stringify({ status: "ok", env: !!process.env.NETLIFY }) };
+  }
 
+  let store;
+  try {
+    // explicit context so it works across all @netlify/blobs versions
+    const opts = process.env.NETLIFY_SITE_ID
+      ? { name: "rq-data", siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_BLOBS_TOKEN }
+      : "rq-data";
+    store = getStore(opts);
+  } catch (e) {
+    return { statusCode: 503, headers, body: JSON.stringify({ error: "store_init: " + e.message }) };
+  }
+
+  try {
     if (event.httpMethod === "GET") {
       const key = (event.queryStringParameters || {}).key;
-      if (!key) return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing key" }) };
       const value = await store.get(key);
       return { statusCode: 200, headers, body: JSON.stringify({ value: value || null }) };
     }

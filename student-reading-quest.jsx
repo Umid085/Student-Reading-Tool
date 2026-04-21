@@ -355,6 +355,18 @@ export default function App(){
     });
   },[]);
 
+  // always pull fresh users when entering friends page or typing a search
+  useEffect(function(){
+    if(stage==="friends"&&currentUser){
+      loadUsers().then(function(u){setAllUsers(u);});
+    }
+  },[stage]);
+  useEffect(function(){
+    if(stage==="friends"&&currentUser&&searchQuery.trim().length>=2){
+      loadUsers().then(function(u){setAllUsers(u);});
+    }
+  },[searchQuery]);
+
   var lv=getLv(level);
   var q=questions[current];
 
