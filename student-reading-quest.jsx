@@ -582,6 +582,10 @@ export default function App(){
       .rq-lb-row{cursor:pointer;transition:background 0.15s,transform 0.15s}
       .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(3px)}
       .rq-wrap{width:100%;padding:16px 16px 64px}
+      .rq-home-hdr{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding-top:8px;margin-bottom:14px}
+      .rq-home-nav{display:flex;gap:6px;flex-shrink:0}
+      .rq-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+      @media(max-width:400px){.rq-home-nav button{padding:7px 10px!important;font-size:12px!important}}
       @media(min-width:480px){.rq-wrap{max-width:480px;margin:0 auto;padding:18px 20px 64px}}
       @media(min-width:640px){.rq-wrap{max-width:660px;padding:22px 28px 72px}.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
       @media(min-width:1024px){.rq-wrap{max-width:860px;padding:30px 52px 90px}}
@@ -616,17 +620,17 @@ export default function App(){
         {/* ── HOME ──────────────────────────────────────────── */}
         {stage==="home"&&(
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+            <div className="rq-home-hdr">
               <div>
                 <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#34d399"}}>Hey, {currentUser?currentUser.name:""}!</h2>
-                <div style={{display:"flex",gap:10,marginTop:3}}>
+                <div className="rq-pills">
                   <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {myStreak} day streak</span>
                   <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>Friends: {myData.friends.length}</span>
                   {myData.likes>0&&<span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes}</span>}
                   {pendingChallenges.length>0&&<span style={pill("rgba(239,68,68,0.2)","#f87171")}>!{pendingChallenges.length} challenge</span>}
                 </div>
               </div>
-              <div style={{display:"flex",gap:6}}>
+              <div className="rq-home-nav">
                 <button onClick={function(){setStage("friends");}} style={GHOST}>Friends</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
