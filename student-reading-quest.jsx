@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-var API        = "https://api.anthropic.com/v1/messages";
+var API        = "/.netlify/functions/generate";
 var USERS_KEY  = "rq-users-v6";
 var BOARDS_KEY = "rq-boards-v6";
 var SOCIAL_KEY = "rq-social-v6";
@@ -57,12 +57,12 @@ function scoreQuestion(q,ans){
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
 
 // ── storage ──────────────────────────────────────────────────
-async function loadUsers(){try{var r=await window.storage.get(USERS_KEY);if(r&&r.value){var p=JSON.parse(r.value);console.log("loadUsers OK:",p.length);return p;}return[];}catch(e){return[];}}
-async function saveUsers(u){try{await window.storage.set(USERS_KEY,JSON.stringify(u));console.log("saveUsers OK:",u.length);}catch(e){console.log("saveUsers ERR",e);}}
-async function loadBoards(){try{var r=await window.storage.get(BOARDS_KEY,true);if(r&&r.value)return JSON.parse(r.value);return{};}catch(e){return{};}}
-async function saveBoards(b){try{await window.storage.set(BOARDS_KEY,JSON.stringify(b),true);}catch(e){}}
-async function loadSocial(){try{var r=await window.storage.get(SOCIAL_KEY,true);if(r&&r.value)return JSON.parse(r.value);return{};}catch(e){return{};}}
-async function saveSocial(s){try{await window.storage.set(SOCIAL_KEY,JSON.stringify(s),true);}catch(e){console.log("saveSocial ERR",e);}}
+function loadUsers(){try{var v=localStorage.getItem(USERS_KEY);return v?JSON.parse(v):[];}catch(e){return[];}}
+function saveUsers(u){try{localStorage.setItem(USERS_KEY,JSON.stringify(u));}catch(e){}}
+function loadBoards(){try{var v=localStorage.getItem(BOARDS_KEY);return v?JSON.parse(v):{};}catch(e){return{};}}
+function saveBoards(b){try{localStorage.setItem(BOARDS_KEY,JSON.stringify(b));}catch(e){}}
+function loadSocial(){try{var v=localStorage.getItem(SOCIAL_KEY);return v?JSON.parse(v):{};}catch(e){return{};}}
+function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
@@ -202,13 +202,13 @@ function MatchingQ(props){
           var ok=conf&&matched&&matches[i]===q.correctPairs[i];
           var bad=conf&&matched&&matches[i]!==q.correctPairs[i];
           return(<button key={i} onClick={function(){clickLeft(i);}} style={{background:activeLeft===i?"rgba(99,102,241,0.3)":matched?"rgba(255,255,255,0.07)":"rgba(255,255,255,0.04)",border:"1px solid "+(activeLeft===i?"#818cf8":ok?"#34d399":bad?"#ef4444":"rgba(255,255,255,0.1)"),borderRadius:8,padding:"9px 10px",color:ok?"#34d399":bad?"#ef4444":activeLeft===i?"#c7d2fe":"#e5e7eb",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
-            {l}{matched&&<span style={{float:"right",opacity:0.5,fontSize:9}}>{shuffled[matches[i]]}</span>}
+            {l}{matched&&<span style={{float:"right",opacity:0.5,fontSize:9}}>{q.rights[matches[i]]}</span>}
           </button>);
         })}
       </div>
       <div style={{flex:1,display:"flex",flexDirection:"column",gap:5}}>
         {shuffled.map(function(r,ri){
-          var used=matches&&Object.values(matches).indexOf(ri)!==-1;
+          var origIdx=q.rights?q.rights.indexOf(r):ri;var used=matches&&Object.values(matches).indexOf(origIdx)!==-1;
           return(<button key={ri} onClick={function(){clickRight(ri);}} style={{background:used?"rgba(255,255,255,0.07)":"rgba(255,255,255,0.04)",border:"1px solid "+(activeLeft!==null&&!conf?"rgba(99,102,241,0.4)":"rgba(255,255,255,0.1)"),borderRadius:8,padding:"9px 10px",color:used?"#6b7280":"#e5e7eb",fontSize:12,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left"}}>
             {r}
           </button>);
@@ -429,7 +429,7 @@ export default function App(){
       for(var ti=0;ti<selectedTypes.length;ti++){typeList+=(ti+1)+". "+typeDescs[selectedTypes[ti]]+"\n";exList+="    "+typeExamples[selectedTypes[ti]]+(ti<selectedTypes.length-1?",":"")+"\\n";}
       var passInstr={A1:"80-100 words, basic vocabulary, daily life",A2:"110-130 words, everyday vocabulary, travel/hobbies",B1:"140-160 words, moderate vocabulary, tech/environment",B2:"170-190 words, varied vocabulary, nuanced argument",C1:"200-220 words, sophisticated vocabulary, philosophy/politics",C2:"230-260 words, advanced academic vocabulary, abstract topic"};
       var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\nPick a RANDOM varied topic.\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
-      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:pt}]})});
+      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:pt}]})});
       var data=await res.json();
       var raw="";if(data.content){for(var i=0;i<data.content.length;i++){if(data.content[i].text)raw+=data.content[i].text;}}
       var json=JSON.parse(raw.replace(/```json/g,"").replace(/```/g,"").trim());
@@ -473,13 +473,15 @@ export default function App(){
 
   async function doFinish(){
     var timeSecs=startTimeRef.current?Math.round((Date.now()-startTimeRef.current)/1000):(lv?lv.timeLimit:180);
-    var totalEarned=0,totalMax=0;
+    var totalEarned=0,totalMax=0,ansArr=[];
     for(var i=0;i<questions.length;i++){
       var qs=questions[i],ans=null;
       if(qs.type==="matching")ans=matchState;
       else if(qs.type==="heading")ans=headingState;
       else ans=userAnswers[i]!==undefined?userAnswers[i]:null;
-      totalEarned+=scoreQuestion(qs,ans);totalMax+=maxPoints(qs);
+      var pts=scoreQuestion(qs,ans),mx=maxPoints(qs);
+      ansArr.push(pts>=Math.ceil(mx/2));
+      totalEarned+=pts;totalMax+=mx;
     }
     var pct=totalMax>0?Math.round((totalEarned/totalMax)*100):0;
     var stars=pct>=90?5:pct>=75?4:pct>=60?3:pct>=40?2:1;
@@ -499,7 +501,7 @@ export default function App(){
     await saveBoards(nb);setBoards(nb);
 
     var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank});
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr});
     setStage("result");
   }
 
@@ -576,10 +578,11 @@ export default function App(){
               <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(239,68,68,0.3)"}}>
                 <p style={{fontSize:11,color:"#f87171",fontWeight:700,marginBottom:8}}>GAME CHALLENGES</p>
                 {pendingChallenges.map(function(c,idx){
+                  var realIdx=myData.challenges.indexOf(c);
                   return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                     <span style={{fontSize:12,color:"#f3f4f6",flex:1}}><strong>{c.from}</strong> challenged you to <strong>{c.level}</strong></span>
-                    <button onClick={function(){respondChallenge(idx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
-                    <button onClick={function(){respondChallenge(idx,"declined",null);}} style={{...mkBtn("#374151"),padding:"5px 10px",fontSize:11}}>Decline</button>
+                    <button onClick={function(){respondChallenge(realIdx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
+                    <button onClick={function(){respondChallenge(realIdx,"declined",null);}} style={{...mkBtn("#374151"),padding:"5px 10px",fontSize:11}}>Decline</button>
                   </div>);
                 })}
               </div>
@@ -671,7 +674,7 @@ export default function App(){
               {q.type==="mcq"&&<McqQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {q.type==="gap_word"&&<GapWordQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {q.type==="gap_sentence"&&<GapSentQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="matching"&&<MatchingQ q={q} matches={matchState} conf={confirmed} shuffled={shuffledRights} onMatch={function(li,ri){setMatchState(function(m){var n={};for(var k in m)n[k]=m[k];n[li]=ri;return n;});}}/>}
+              {q.type==="matching"&&<MatchingQ q={q} matches={matchState} conf={confirmed} shuffled={shuffledRights} onMatch={function(li,ri){var origIdx=q.rights?q.rights.indexOf(shuffledRights[ri]):ri;setMatchState(function(m){var n={};for(var k in m)n[k]=m[k];n[li]=origIdx;return n;});}}/>}
               {q.type==="heading"&&<HeadingQ q={q} userMap={headingState} conf={confirmed} onMatch={function(pi,hi){setHeadingState(function(m){var n={};for(var k in m)n[k]=m[k];n[pi]=hi;return n;});}}/>}
               {q.type==="qa"&&<QAQ q={q} val={userAnswers[current]||""} conf={confirmed} onChange={function(v){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=v;return n;});}}/>}
               {confirmed&&q.explanation&&q.type!=="qa"&&(<div style={{marginTop:10,padding:"9px 11px",borderRadius:10,background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#d1fae5"}}>{q.explanation}</div>)}
