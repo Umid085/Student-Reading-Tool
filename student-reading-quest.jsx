@@ -141,7 +141,7 @@ function McqQ(props){
       else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
       return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:10,padding:"10px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
         <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,background:(isSel||(conf&&isOk))?col:"rgba(255,255,255,0.1)",color:(isSel||(conf&&isOk))?"#0d0d1a":"#6b7280",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900}}>
-          {conf&&isOk?"V":conf&&isSel&&!isOk?"X":["A","B","C","D"][i]}
+          {conf&&isOk?"✓":conf&&isSel&&!isOk?"✕":["A","B","C","D"][i]}
         </span>{opt}
       </button>);
     })}
@@ -216,7 +216,7 @@ function MatchingQ(props){
       </div>
     </div>
     {conf&&(<div style={{marginTop:8,fontSize:11,color:"#d1fae5"}}>
-      {q.lefts.map(function(l,i){var ok=matches&&matches[i]===q.correctPairs[i];return<div key={i}>{ok?"V":"X"} {l} = {q.rights[q.correctPairs[i]]}</div>;})}
+      {q.lefts.map(function(l,i){var ok=matches&&matches[i]===q.correctPairs[i];return<div key={i}>{ok?"✓":"✕"} {l} = {q.rights[q.correctPairs[i]]}</div>;})}
     </div>)}
   </div>);
 }
@@ -530,8 +530,23 @@ export default function App(){
   var pendingChallenges=(myData.challenges||[]).filter(function(c){return c.status==="pending";});
 
   return(
-    <div style={{minHeight:"100vh",background:BG,fontFamily:"'Trebuchet MS',sans-serif",color:"#f3f4f6"}}>
-      <div style={{maxWidth:660,margin:"0 auto",padding:"18px 14px 40px"}}>
+    <>
+    <style>{`
+      @keyframes rqFloat{0%,100%{transform:translateY(0px) rotate(0deg)}33%{transform:translateY(-24px) rotate(2deg)}66%{transform:translateY(-10px) rotate(-1.5deg)}}
+      .rq-orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;animation:rqFloat var(--dur,12s) ease-in-out infinite;z-index:0}
+      .rq-card-3d{transition:transform 0.22s ease,box-shadow 0.22s ease}
+      .rq-card-3d:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 16px 48px rgba(0,0,0,0.55)}
+      .rq-lb-row{cursor:pointer;transition:background 0.15s,transform 0.15s}
+      .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(3px)}
+      @media(min-width:640px){.rq-wrap{max-width:720px!important;padding:22px 30px 60px!important}}
+      @media(min-width:1024px){.rq-wrap{max-width:900px!important;padding:28px 56px 80px!important;font-size:15px}}
+      @media(min-width:640px){.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
+    `}</style>
+    <div style={{minHeight:"100vh",background:BG,fontFamily:"'Trebuchet MS',sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
+      <div className="rq-orb" style={{width:520,height:520,background:"rgba(99,102,241,0.11)",top:"-18%",left:"-13%","--dur":"13s"}}/>
+      <div className="rq-orb" style={{width:380,height:380,background:"rgba(52,211,153,0.08)",top:"38%",right:"-10%","--dur":"17s",animationDelay:"4s"}}/>
+      <div className="rq-orb" style={{width:300,height:300,background:"rgba(236,72,153,0.07)",bottom:"4%",left:"8%","--dur":"21s",animationDelay:"9s"}}/>
+      <div className="rq-wrap" style={{maxWidth:660,margin:"0 auto",padding:"18px 14px 40px",position:"relative",zIndex:1}}>
 
         {/* ── AUTH ──────────────────────────────────────────── */}
         {stage==="auth"&&(
@@ -605,10 +620,10 @@ export default function App(){
 
             {/* level selector */}
             <p style={{fontWeight:700,color:"#d1fae5",fontSize:11,letterSpacing:0.8,marginBottom:8}}>CHOOSE LEVEL</p>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+            <div className="rq-lvgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
               {LEVELS.map(function(l){
                 var active=level===l.key;
-                return(<button key={l.key} onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 14px "+l.glow:"none"}}>
+                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 14px "+l.glow:"none"}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
                     <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
                     <span style={{background:active?l.color:"rgba(255,255,255,0.06)",color:active?"#0d0d1a":"#6b7280",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
@@ -702,7 +717,7 @@ export default function App(){
             </div>
             <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
               <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>BREAKDOWN</p>
-              {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13}}>{ok?"V":"X"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
+              {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
             </div>
             <div style={{display:"flex",gap:7}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
@@ -731,7 +746,7 @@ export default function App(){
                 </div>
                 {bd.map(function(e,i){
                   var isMe=currentUser&&e.name===currentUser.name;
-                  return(<div key={i} style={{display:"flex",alignItems:"center",padding:"8px "+(isMe?"5px":"0"),borderBottom:i<bd.length-1?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(52,211,153,0.06)":"transparent",borderRadius:7,marginBottom:2}}>
+                  return(<div key={i} className="rq-lb-row" onClick={function(){if(currentUser&&e.name===currentUser.name){setStage("profile");}else{setViewingUser(e.name);setStage("friendProfile");}}} style={{display:"flex",alignItems:"center",padding:"8px "+(isMe?"5px":"0"),borderBottom:i<bd.length-1?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(52,211,153,0.06)":"transparent",borderRadius:7,marginBottom:2}}>
                     <span style={{width:28,fontSize:i<3?13:11,color:i<3?"#fbbf24":"#6b7280",fontWeight:700}}>{i===0?"1st":i===1?"2nd":i===2?"3rd":(i+1)}</span>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:13,fontWeight:700,color:isMe?lvd.color:"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</div>
@@ -990,5 +1005,6 @@ export default function App(){
 
       </div>
     </div>
+    </>
   );
 }
