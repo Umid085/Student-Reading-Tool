@@ -1,35 +1,34 @@
-const { getStore } = require("@netlify/blobs");
-
 exports.handler = async function (event) {
   const headers = { "Content-Type": "application/json" };
+  const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
 
-  // health-check: GET /storage with no key returns a status ping
-  if (event.httpMethod === "GET" && !(event.queryStringParameters || {}).key) {
-    return { statusCode: 200, headers, body: JSON.stringify({ status: "ok", env: !!process.env.NETLIFY }) };
+  // health-check
+  if (!((event.queryStringParameters || {}).key) && event.httpMethod === "GET") {
+    return { statusCode: 200, headers, body: JSON.stringify({ status: "ok", db: !!DB }) };
   }
 
-  let store;
-  try {
-    // explicit context so it works across all @netlify/blobs versions
-    const opts = process.env.NETLIFY_SITE_ID
-      ? { name: "rq-data", siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_BLOBS_TOKEN }
-      : "rq-data";
-    store = getStore(opts);
-  } catch (e) {
-    return { statusCode: 503, headers, body: JSON.stringify({ error: "store_init: " + e.message }) };
+  if (!DB) {
+    return { statusCode: 503, headers, body: JSON.stringify({ error: "FIREBASE_DB_URL not set" }) };
   }
 
   try {
     if (event.httpMethod === "GET") {
       const key = (event.queryStringParameters || {}).key;
-      const value = await store.get(key);
-      return { statusCode: 200, headers, body: JSON.stringify({ value: value || null }) };
+      const r = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`);
+      const data = await r.json();
+      // Firebase returns parsed JSON; re-stringify so apiGet can JSON.parse it uniformly
+      return { statusCode: 200, headers, body: JSON.stringify({ value: data !== null && data !== undefined ? JSON.stringify(data) : null }) };
     }
 
     if (event.httpMethod === "POST") {
       const { key, value } = JSON.parse(event.body || "{}");
       if (!key) return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing key" }) };
-      await store.set(key, value);
+      // value is already a JSON string from apiSet; send it as the body so Firebase stores the parsed structure
+      await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: value,
+      });
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
     }
 
