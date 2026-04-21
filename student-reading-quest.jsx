@@ -57,8 +57,28 @@ function scoreQuestion(q,ans){
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
 
 // ── storage ──────────────────────────────────────────────────
-async function apiGet(key){try{var r=await fetch("/.netlify/functions/storage?key="+encodeURIComponent(key));if(!r.ok)return null;var d=await r.json();return d.value?JSON.parse(d.value):null;}catch(e){return null;}}
-async function apiSet(key,val){try{await fetch("/.netlify/functions/storage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key,value:JSON.stringify(val)})});}catch(e){}}
+async function apiGet(key){
+  try{
+    var r=await fetch("/.netlify/functions/storage?key="+encodeURIComponent(key));
+    if(!r.ok)throw new Error("not ok");
+    var d=await r.json();
+    if(d.value){
+      try{localStorage.setItem(key,d.value);}catch(e){}  // keep local cache in sync
+      return JSON.parse(d.value);
+    }
+    return null;
+  }catch(e){
+    try{var v=localStorage.getItem(key);return v?JSON.parse(v):null;}catch(e2){return null;}
+  }
+}
+async function apiSet(key,val){
+  var str=JSON.stringify(val);
+  try{localStorage.setItem(key,str);}catch(e){}  // always write locally first
+  try{
+    var r=await fetch("/.netlify/functions/storage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key,value:str})});
+    if(!r.ok)throw new Error("not ok");
+  }catch(e){}  // local already saved, silent fail on remote
+}
 async function loadUsers(){var v=await apiGet(USERS_KEY);return v||[];}
 async function saveUsers(u){await apiSet(USERS_KEY,u);}
 async function loadBoards(){var v=await apiGet(BOARDS_KEY);return v||{};}
