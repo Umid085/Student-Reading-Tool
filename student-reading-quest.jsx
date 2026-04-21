@@ -542,7 +542,8 @@ export default function App(){
     <>
     <style>{`
       @keyframes rqFloat{0%,100%{transform:translateY(0px)}50%{transform:translateY(-22px)}}
-      *{box-sizing:border-box}
+      *{box-sizing:border-box;margin:0;padding:0}
+      html,body{margin:0;padding:0;overflow-x:hidden}
       .rq-orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;animation:rqFloat var(--dur,12s) ease-in-out infinite;z-index:0}
       .rq-card-3d{transition:transform 0.22s ease,box-shadow 0.22s ease}
       .rq-card-3d:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 16px 48px rgba(0,0,0,0.55)}
