@@ -57,12 +57,14 @@ function scoreQuestion(q,ans){
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
 
 // ── storage ──────────────────────────────────────────────────
-function loadUsers(){try{var v=localStorage.getItem(USERS_KEY);return v?JSON.parse(v):[];}catch(e){return[];}}
-function saveUsers(u){try{localStorage.setItem(USERS_KEY,JSON.stringify(u));}catch(e){}}
-function loadBoards(){try{var v=localStorage.getItem(BOARDS_KEY);return v?JSON.parse(v):{};}catch(e){return{};}}
-function saveBoards(b){try{localStorage.setItem(BOARDS_KEY,JSON.stringify(b));}catch(e){}}
-function loadSocial(){try{var v=localStorage.getItem(SOCIAL_KEY);return v?JSON.parse(v):{};}catch(e){return{};}}
-function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}}
+async function apiGet(key){try{var r=await fetch("/.netlify/functions/storage?key="+encodeURIComponent(key));if(!r.ok)return null;var d=await r.json();return d.value?JSON.parse(d.value):null;}catch(e){return null;}}
+async function apiSet(key,val){try{await fetch("/.netlify/functions/storage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key,value:JSON.stringify(val)})});}catch(e){}}
+async function loadUsers(){var v=await apiGet(USERS_KEY);return v||[];}
+async function saveUsers(u){await apiSet(USERS_KEY,u);}
+async function loadBoards(){var v=await apiGet(BOARDS_KEY);return v||{};}
+async function saveBoards(b){await apiSet(BOARDS_KEY,b);}
+async function loadSocial(){var v=await apiGet(SOCIAL_KEY);return v||{};}
+async function saveSocial(s){await apiSet(SOCIAL_KEY,s);}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
@@ -325,8 +327,11 @@ export default function App(){
   var [socialMsg,setSocialMsg]=useState("");
 
   useEffect(function(){
+    var saved=localStorage.getItem("rq-session");
     Promise.all([loadUsers(),loadBoards(),loadSocial()]).then(function(v){
-      setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setAppReady(true);
+      setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);
+      if(saved){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===saved){found=v[0][i];break;}}if(found){setCurrentUser(found);setStage("home");}}
+      setAppReady(true);
     });
   },[]);
 
@@ -338,20 +343,24 @@ export default function App(){
     setAuthErr("");
     if(!nameInput.trim()||!passInput.trim()){setAuthErr("Name and password required.");return;}
     if(passInput.length<4){setAuthErr("Password must be at least 4 characters.");return;}
-    for(var i=0;i<allUsers.length;i++){if(allUsers[i].name.toLowerCase()===nameInput.trim().toLowerCase()){setAuthErr("Username taken.");return;}}
+    var fresh=await loadUsers();setAllUsers(fresh);
+    for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){setAuthErr("Username taken.");return;}}
     var user={name:nameInput.trim(),hash:enc(passInput),games:[],joined:new Date().toLocaleDateString()};
-    var nu=allUsers.concat([user]);
+    var nu=fresh.concat([user]);
     await saveUsers(nu);
+    localStorage.setItem("rq-session",user.name);
     setAllUsers(nu);setCurrentUser(user);setStage("home");
   }
 
-  function doLogin(){
+  async function doLogin(){
     setAuthErr("");
     if(!nameInput.trim()||!passInput.trim()){setAuthErr("Please enter name and password.");return;}
+    var fresh=await loadUsers();setAllUsers(fresh);
     var found=null;
-    for(var i=0;i<allUsers.length;i++){if(allUsers[i].name.toLowerCase()===nameInput.trim().toLowerCase()){found=allUsers[i];break;}}
+    for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){found=fresh[i];break;}}
     if(!found){setAuthErr("User not found. Please register first.");return;}
     if(found.hash!==enc(passInput)){setAuthErr("Wrong password.");return;}
+    localStorage.setItem("rq-session",found.name);
     setCurrentUser(found);setStage("home");
   }
 
@@ -516,10 +525,10 @@ export default function App(){
   // ── style helpers ─────────────────────────────────────────
   var BG="linear-gradient(160deg,#0d0d1a 0%,#111827 55%,#0d1f12 100%)";
   var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20};
-  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:10,padding:"7px 12px",fontFamily:"inherit",fontSize:12,cursor:"pointer",fontWeight:600};
-  var INP={width:"100%",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,color:"#f3f4f6",fontSize:14,padding:"11px 13px",outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
-  function mkBtn(bg,fg){return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"11px 20px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"};}
-  function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"3px 10px",fontSize:11,fontWeight:700};}
+  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600};
+  var INP={width:"100%",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
+  function mkBtn(bg,fg){return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit"};}
+  function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
 
   if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",color:"#34d399",fontFamily:"sans-serif"}}>Loading...</div>;
 
@@ -532,38 +541,41 @@ export default function App(){
   return(
     <>
     <style>{`
-      @keyframes rqFloat{0%,100%{transform:translateY(0px) rotate(0deg)}33%{transform:translateY(-24px) rotate(2deg)}66%{transform:translateY(-10px) rotate(-1.5deg)}}
+      @keyframes rqFloat{0%,100%{transform:translateY(0px)}50%{transform:translateY(-22px)}}
+      *{box-sizing:border-box}
       .rq-orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;animation:rqFloat var(--dur,12s) ease-in-out infinite;z-index:0}
       .rq-card-3d{transition:transform 0.22s ease,box-shadow 0.22s ease}
       .rq-card-3d:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 16px 48px rgba(0,0,0,0.55)}
       .rq-lb-row{cursor:pointer;transition:background 0.15s,transform 0.15s}
       .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(3px)}
-      @media(min-width:640px){.rq-wrap{max-width:720px!important;padding:22px 30px 60px!important}}
-      @media(min-width:1024px){.rq-wrap{max-width:900px!important;padding:28px 56px 80px!important;font-size:15px}}
-      @media(min-width:640px){.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
+      .rq-wrap{width:100%;padding:16px 16px 64px}
+      @media(min-width:480px){.rq-wrap{max-width:480px;margin:0 auto;padding:18px 20px 64px}}
+      @media(min-width:640px){.rq-wrap{max-width:660px;padding:22px 28px 72px}.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
+      @media(min-width:1024px){.rq-wrap{max-width:860px;padding:30px 52px 90px}}
+      @media(min-width:1440px){.rq-wrap{max-width:1040px;padding:36px 80px 100px}}
     `}</style>
     <div style={{minHeight:"100vh",background:BG,fontFamily:"'Trebuchet MS',sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
       <div className="rq-orb" style={{width:520,height:520,background:"rgba(99,102,241,0.11)",top:"-18%",left:"-13%","--dur":"13s"}}/>
       <div className="rq-orb" style={{width:380,height:380,background:"rgba(52,211,153,0.08)",top:"38%",right:"-10%","--dur":"17s",animationDelay:"4s"}}/>
       <div className="rq-orb" style={{width:300,height:300,background:"rgba(236,72,153,0.07)",bottom:"4%",left:"8%","--dur":"21s",animationDelay:"9s"}}/>
-      <div className="rq-wrap" style={{maxWidth:660,margin:"0 auto",padding:"18px 14px 40px",position:"relative",zIndex:1}}>
+      <div className="rq-wrap" style={{position:"relative",zIndex:1}}>
 
         {/* ── AUTH ──────────────────────────────────────────── */}
         {stage==="auth"&&(
           <div style={{paddingTop:46,textAlign:"center"}}>
-            <div style={{fontSize:46,marginBottom:6}}>📖</div>
-            <h1 style={{fontSize:26,fontWeight:900,color:"#34d399",margin:"0 0 4px"}}>Reading Quest</h1>
-            <p style={{color:"#6b7280",marginBottom:24,fontSize:13}}>6 question types. Friends. Compete.</p>
+            <div style={{fontSize:52,marginBottom:8}}>📖</div>
+            <h1 style={{fontSize:32,fontWeight:900,color:"#34d399",margin:"0 0 6px"}}>Reading Quest</h1>
+            <p style={{color:"#6b7280",marginBottom:26,fontSize:15}}>6 question types · Friends · Compete</p>
             <div style={CARD}>
-              <div style={{display:"flex",gap:4,marginBottom:16,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:4}}>
-                {["login","register"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} style={{flex:1,padding:"8px 0",border:"none",borderRadius:8,fontFamily:"inherit",fontWeight:700,fontSize:13,cursor:"pointer",background:authMode===m?"#34d399":"transparent",color:authMode===m?"#0d0d1a":"#6b7280"}}>{m==="login"?"Log In":"Register"}</button>;})}
+              <div style={{display:"flex",gap:4,marginBottom:18,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:4}}>
+                {["register","login"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} style={{flex:1,padding:"10px 0",border:"none",borderRadius:8,fontFamily:"inherit",fontWeight:700,fontSize:15,cursor:"pointer",background:authMode===m?"#34d399":"transparent",color:authMode===m?"#0d0d1a":"#6b7280"}}>{m==="login"?"Log In":"Register"}</button>;})}
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:9}}>
-                <input style={INP} placeholder="Username" value={nameInput} onChange={function(e){setNameInput(e.target.value);}}/>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <input style={INP} placeholder="Username" value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
                 <input style={INP} type="password" placeholder="Password (min 4 chars)" value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
               </div>
-              {authErr&&<p style={{color:"#f87171",fontSize:13,marginTop:8}}>{authErr}</p>}
-              <button onClick={authMode==="login"?doLogin:doRegister} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:12,fontSize:15}}>{authMode==="login"?"Log In":"Create Account"}</button>
+              {authErr&&<p style={{color:"#f87171",fontSize:14,marginTop:10}}>{authErr}</p>}
+              <button onClick={authMode==="login"?doLogin:doRegister} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?"Log In":"Create Account"}</button>
             </div>
           </div>
         )}
@@ -656,7 +668,7 @@ export default function App(){
             </div>
             <div style={{...CARD,marginBottom:12}}>
               <p style={{fontSize:11,fontWeight:700,color:lv?lv.color:"#34d399",letterSpacing:0.8,marginBottom:8,textTransform:"uppercase"}}>Read carefully - timer starts on Begin</p>
-              <p style={{lineHeight:1.9,fontSize:14,color:"#e5e7eb",margin:0}}>{passage}</p>
+              <p style={{lineHeight:2,fontSize:17,color:"#e5e7eb",margin:0}}>{passage}</p>
             </div>
             <div style={{...CARD,marginBottom:12,padding:12,fontSize:12,color:"#9ca3af",display:"flex",justifyContent:"space-between"}}>
               <span>{selectedTypes.length} question type(s)</span>
@@ -680,12 +692,12 @@ export default function App(){
             <div style={{...CARD,padding:"11px 14px",marginBottom:9}}><Timer limit={lv?lv.timeLimit:180} running={timerRunning} onExpire={handleExpire}/></div>
             <div style={{marginBottom:9}}>
               <button onClick={function(){setShowPassage(function(p){return!p;});}} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?"Hide passage":"Show passage"}</button>
-              {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"10px 12px"}}><p style={{lineHeight:1.85,fontSize:12,color:"#d1d5db",margin:0}}>{passage}</p></div>)}
+              {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px"}}><p style={{lineHeight:1.9,fontSize:15,color:"#d1d5db",margin:0}}>{passage}</p></div>)}
             </div>
             <div style={CARD}>
-              {(q.q)&&<p style={{fontSize:14,fontWeight:700,lineHeight:1.5,marginBottom:12,color:"#f9fafb"}}>{q.q}</p>}
-              {(q.instruction)&&<p style={{fontSize:13,fontWeight:700,marginBottom:10,color:"#f9fafb"}}>{q.instruction}</p>}
-              {q.type==="gap_word"&&!q.q&&<p style={{fontSize:13,fontWeight:700,marginBottom:8,color:"#f9fafb"}}>Fill in the blank:</p>}
+              {(q.q)&&<p style={{fontSize:17,fontWeight:700,lineHeight:1.6,marginBottom:14,color:"#f9fafb"}}>{q.q}</p>}
+              {(q.instruction)&&<p style={{fontSize:16,fontWeight:700,marginBottom:12,color:"#f9fafb"}}>{q.instruction}</p>}
+              {q.type==="gap_word"&&!q.q&&<p style={{fontSize:16,fontWeight:700,marginBottom:10,color:"#f9fafb"}}>Fill in the blank:</p>}
               {q.type==="mcq"&&<McqQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {q.type==="gap_word"&&<GapWordQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {q.type==="gap_sentence"&&<GapSentQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
@@ -782,10 +794,11 @@ export default function App(){
             {/* SEARCH */}
             {friendStage==="search"&&(
               <div>
-                <div style={{position:"relative",marginBottom:12}}>
+                <div style={{position:"relative",marginBottom:8}}>
                   <input style={{...INP,paddingLeft:36}} placeholder="Search by username (min 2 chars)..." value={searchQuery} onChange={function(e){setSearchQuery(e.target.value);}}/>
                   <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,opacity:0.5}}>🔍</span>
                 </div>
+                <button onClick={function(){loadUsers().then(function(u){setAllUsers(u);setSocialMsg("User list refreshed!");});}} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>Refresh User List</button>
                 {getSearchResults().map(function(u){
                   var isFriend=myData.friends.indexOf(u.name)!==-1;
                   var requested=(getSocial(social,u.name).requests||[]).indexOf(currentUser.name)!==-1;
@@ -998,7 +1011,7 @@ export default function App(){
             {games.length===0&&<div style={{...CARD,textAlign:"center",padding:30}}><p style={{color:"#6b7280"}}>No games yet - start playing!</p></div>}
             <div style={{display:"flex",gap:7}}>
               <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
-              <button onClick={function(){setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
+              <button onClick={function(){localStorage.removeItem("rq-session");setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
             </div>
           </div>);
         })()}
