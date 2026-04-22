@@ -57,6 +57,21 @@ function scoreQuestion(q,ans){
 }
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
 
+var LEVEL_THRESHOLDS=[0,1000,2500,4500,7000,10500,15000,21000,28000,36000,45000,55000,66000,78000,91000,105000,120000,136000,153000,171000,190000];
+function getUserLevel(totalXp){
+  for(var i=LEVEL_THRESHOLDS.length-1;i>=0;i--){
+    if(totalXp>=LEVEL_THRESHOLDS[i])return i+1;
+  }
+  return 1;
+}
+function getLevelProgress(totalXp){
+  var level=getUserLevel(totalXp);
+  var current=LEVEL_THRESHOLDS[level-1]||0;
+  var next=LEVEL_THRESHOLDS[level]||LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length-1];
+  var progress=((totalXp-current)/(next-current))*100;
+  return{level:level,current:current,next:next,xpNeeded:next-totalXp,progress:Math.min(100,Math.max(0,progress))};
+}
+
 // ── storage ──────────────────────────────────────────────────
 async function apiGet(key){
   try{
@@ -902,11 +917,13 @@ export default function App(){
                   var isFriend=myData.friends.indexOf(u.name)!==-1;
                   var requested=(getSocial(social,u.name).requests||[]).indexOf(currentUser.name)!==-1;
                   var uData=getSocial(social,u.name);
+                  var uTotalXp=u.games?u.games.reduce(function(s,g){return s+g.xp;},0):0;
+                  var uLevel=getUserLevel(uTotalXp);
                   return(<div key={u.name} style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
                     <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#fff",flexShrink:0}}>{u.name[0].toUpperCase()}</div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{u.name}</div>
-                      <div style={{fontSize:11,color:"#6b7280"}}>Level: {getBestLevel(u.games)} | Games: {u.games?u.games.length:0} | Likes: {uData.likes||0}</div>
+                      <div style={{fontSize:11,color:"#6b7280"}}>Lvl {uLevel} | Games: {u.games?u.games.length:0} | {uTotalXp} XP | Likes: {uData.likes||0}</div>
                     </div>
                     <div style={{display:"flex",gap:5}}>
                       <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>View</button>
@@ -943,6 +960,8 @@ export default function App(){
                   var fu=null;for(var i=0;i<allUsers.length;i++){if(allUsers[i].name===fname){fu=allUsers[i];break;}}
                   var fStreak=fu?calcStreak(fu.games):0;
                   var fData=getSocial(social,fname);
+                  var fTotalXp=fu?fu.games.reduce(function(s,g){return s+g.xp;},0):0;
+                  var fLevel=getUserLevel(fTotalXp);
                   return(<div key={fname} style={{...CARD,marginBottom:8,padding:14}}>
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                       <div style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#fff",flexShrink:0}}>{fname[0].toUpperCase()}</div>
@@ -950,7 +969,7 @@ export default function App(){
                         <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{fname}</div>
                         <div style={{display:"flex",gap:7,marginTop:2}}>
                           <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥{fStreak}d</span>
-                          <span style={pill("rgba(99,102,241,0.15)","#a78bfa")}>Lv:{getBestLevel(fu?fu.games:[])}</span>
+                          <span style={pill("rgba(99,102,241,0.15)","#6366f1")}>Lvl {fLevel}</span>
                           <span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes:{fData.likes||0}</span>
                         </div>
                       </div>
@@ -993,6 +1012,7 @@ export default function App(){
           var fBest=getBestLevel(fu.games);
           var totalXp=fu.games.reduce(function(s,g){return s+g.xp;},0);
           var avgPct=fu.games.length?Math.round(fu.games.reduce(function(s,g){return s+(g.pct);},0)/fu.games.length):0;
+          var fLvlInfo=getLevelProgress(totalXp);
           // comparison with current user
           var myTotalXp=currentUser.games.reduce(function(s,g){return s+g.xp;},0);
           var myAvgPct=currentUser.games.length?Math.round(currentUser.games.reduce(function(s,g){return s+g.pct;},0)/currentUser.games.length):0;
@@ -1007,13 +1027,25 @@ export default function App(){
             <div style={{...CARD,marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
               <div style={{width:50,height:50,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",flexShrink:0}}>{viewingUser[0].toUpperCase()}</div>
               <div style={{flex:1}}>
-                <div style={{fontSize:18,fontWeight:900,color:"#f9fafb"}}>{viewingUser}</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                  <div style={{fontSize:18,fontWeight:900,color:"#f9fafb"}}>{viewingUser}</div>
+                  <div style={{background:"linear-gradient(135deg,#fbbf24,#f59e0b)",padding:"2px 8px",borderRadius:999,fontSize:12,fontWeight:900,color:"#0d0d1a"}}>⭐ Lvl {fLvlInfo.level}</div>
+                </div>
                 <div style={{fontSize:11,color:"#6b7280"}}>Joined {fu.joined}</div>
                 <div style={{display:"flex",gap:7,marginTop:4}}>
                   <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {fStreak} day streak</span>
                   <span style={pill("rgba(99,102,241,0.15)","#a78bfa")}>Best: {fBest}</span>
                   <span style={{...pill("rgba(236,72,153,0.15)","#ec4899"),fontWeight:fData.likes>0?700:400}}>❤️ {fData.likes||0} {fData.likes===1?"Like":"Likes"}</span>
                 </div>
+              </div>
+            </div>
+            <div style={{...CARD,marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <span style={{fontSize:11,fontWeight:700,color:"#9ca3af"}}>LEVEL {fLvlInfo.level} PROGRESS</span>
+                <span style={{fontSize:10,color:"#6b7280"}}>{fLvlInfo.xpNeeded} XP to next</span>
+              </div>
+              <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:999,overflow:"hidden"}}>
+                <div style={{height:"100%",width:fLvlInfo.progress+"%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",transition:"width 0.3s ease"}}/>
               </div>
             </div>
 
@@ -1083,6 +1115,7 @@ export default function App(){
           var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
           var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
           var avgTime=games.length?Math.round(games.reduce(function(s,g){return s+g.timeSecs;},0)/games.length):0;
+          var lvlInfo=getLevelProgress(totalXp);
           return(<div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
               <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>My Profile</h2>
@@ -1091,7 +1124,10 @@ export default function App(){
             <div style={{...CARD,marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
               <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",flexShrink:0}}>{currentUser.name[0].toUpperCase()}</div>
               <div style={{flex:1}}>
-                <div style={{fontSize:18,fontWeight:900,color:"#f9fafb"}}>{currentUser.name}</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                  <div style={{fontSize:18,fontWeight:900,color:"#f9fafb"}}>{currentUser.name}</div>
+                  <div style={{background:"linear-gradient(135deg,#fbbf24,#f59e0b)",padding:"2px 8px",borderRadius:999,fontSize:12,fontWeight:900,color:"#0d0d1a"}}>⭐ Lvl {lvlInfo.level}</div>
+                </div>
                 <div style={{fontSize:11,color:"#6b7280"}}>Joined {currentUser.joined}</div>
                 <div style={{display:"flex",gap:7,flexWrap:"wrap",marginTop:4}}>
                   <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {myStreak} day streak</span>
@@ -1099,6 +1135,15 @@ export default function App(){
                   <span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes||0}</span>
                   <span style={pill("rgba(99,102,241,0.15)","#818cf8")}>Best: {myBestLevel}</span>
                 </div>
+              </div>
+            </div>
+            <div style={{...CARD,marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <span style={{fontSize:11,fontWeight:700,color:"#9ca3af"}}>LEVEL {lvlInfo.level} PROGRESS</span>
+                <span style={{fontSize:10,color:"#6b7280"}}>{lvlInfo.xpNeeded} XP to next</span>
+              </div>
+              <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:999,overflow:"hidden"}}>
+                <div style={{height:"100%",width:lvlInfo.progress+"%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",transition:"width 0.3s ease"}}/>
               </div>
             </div>
             <div style={{display:"flex",gap:7,marginBottom:10}}>
