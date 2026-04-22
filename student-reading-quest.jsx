@@ -956,18 +956,18 @@ export default function App(){
                 <div style={{display:"flex",gap:7,marginTop:4}}>
                   <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {fStreak} day streak</span>
                   <span style={pill("rgba(99,102,241,0.15)","#a78bfa")}>Best: {fBest}</span>
-                  <span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {fData.likes||0}</span>
+                  <span style={{...pill("rgba(236,72,153,0.15)","#ec4899"),fontWeight:fData.likes>0?700:400}}>❤️ {fData.likes||0} {fData.likes===1?"Like":"Likes"}</span>
                 </div>
               </div>
             </div>
 
             {/* actions */}
-            <div style={{display:"flex",gap:7,marginBottom:12}}>
-              {!isFriend&&!requested&&<button onClick={function(){sendRequest(viewingUser);}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Add Friend</button>}
-              {requested&&<button disabled style={{...mkBtn("#374151"),flex:1,fontSize:12}}>Request Sent</button>}
-              {isFriend&&<button onClick={function(){removeFriend(viewingUser);setStage("friends");}} style={{...mkBtn("#374151"),flex:1,fontSize:12}}>Remove Friend</button>}
-              <button onClick={function(){likeProfile(viewingUser);}} disabled={alreadyLiked||viewingUser===currentUser.name} style={{...mkBtn(alreadyLiked?"#374151":"#ec4899"),flex:1,fontSize:12}}>{alreadyLiked?"Liked!":"Like Profile"}</button>
-              {isFriend&&<button onClick={function(){setChallengeTarget(viewingUser);setStage("friends");setFriendStage("list");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>Challenge</button>}
+            <div style={{display:"flex",gap:7,marginBottom:12,flexWrap:"wrap"}}>
+              {!isFriend&&!requested&&<button onClick={function(){sendRequest(viewingUser);}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12,minWidth:100}}>Add Friend</button>}
+              {requested&&<button disabled style={{...mkBtn("#374151"),flex:1,fontSize:12,minWidth:100}}>Request Sent</button>}
+              {isFriend&&<button onClick={function(){removeFriend(viewingUser);setStage("friends");}} style={{...mkBtn("#374151"),flex:1,fontSize:12,minWidth:100}}>Remove Friend</button>}
+              <button onClick={function(){likeProfile(viewingUser);}} disabled={alreadyLiked||viewingUser===currentUser.name} style={{...mkBtn(alreadyLiked?"#374151":"#ec4899"),flex:1,fontSize:12,minWidth:90,transition:"all 0.2s ease",transform:alreadyLiked?"scale(0.98)":"scale(1)"}}>{alreadyLiked?"❤️ Liked":"❤️ Like"}</button>
+              {isFriend&&<button onClick={function(){setChallengeTarget(viewingUser);setStage("friends");setFriendStage("list");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12,minWidth:100}}>Challenge</button>}
             </div>
 
             {/* stats */}
