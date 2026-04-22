@@ -983,10 +983,12 @@ export default function App(){
                 <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,marginBottom:10}}>HEAD TO HEAD</p>
                 {[{label:"Total XP",my:myTotalXp,their:totalXp},{label:"Avg Score",my:myAvgPct,their:avgPct},{label:"Games Played",my:currentUser.games.length,their:fu.games.length}].map(function(row){
                   var myWin=row.my>row.their;
+                  var myPct=row.my+row.their>0?(row.my/(row.my+row.their)*100):50;
                   return(<div key={row.label} style={{marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#9ca3af",marginBottom:3}}><span style={{color:myWin?"#34d399":"#f3f4f6",fontWeight:myWin?700:400}}>{currentUser.name}: {row.my}</span><span style={{fontSize:10,color:"#4b5563"}}>{row.label}</span><span style={{color:!myWin?"#f472b6":"#f3f4f6",fontWeight:!myWin?700:400}}>{viewingUser}: {row.their}</span></div>
-                    <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:6,overflow:"hidden",position:"relative"}}>
-                      <div style={{position:"absolute",left:0,height:"100%",width:(row.my+row.their>0?(row.my/(row.my+row.their)*100):50)+"%",background:"#34d399",borderRadius:999}}/>
+                    <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:6,overflow:"hidden",display:"flex"}}>
+                      <div style={{height:"100%",width:myPct+"%",background:"#34d399",borderRadius:myPct>50?"999 0 0 999":"999"}}/>
+                      <div style={{height:"100%",width:(100-myPct)+"%",background:"#f472b6",borderRadius:myPct<50?"999 0 0 999":"999"}}/>
                     </div>
                   </div>);
                 })}
