@@ -153,6 +153,62 @@ function doRespondChallenge(social,username,idx,status){
   return n;
 }
 
+// ── chart component ──────────────────────────────────────────
+function GameChart(props){
+  var games=props.games||[];
+  if(!games.length)return<div style={{textAlign:"center",padding:20,color:"#6b7280"}}>No games to chart yet</div>;
+
+  var w=320,h=200,pad=40;
+  var maxXp=Math.max.apply(null,games.map(function(g){return g.xp;}));
+  var scale=function(val,max,size){return(val/max)*(size-pad*2)+pad;};
+
+  var points=games.map(function(g,i){
+    var x=pad+(i/(games.length-1||1))*(w-pad*2);
+    var y=h-scale(g.xp,maxXp,h);
+    return{x:x,y:y,xp:g.xp,date:g.date};
+  });
+
+  var pathData="M "+points.map(function(p){return p.x+","+p.y;}).join(" L ");
+  var minDate=games[0].date,maxDate=games[games.length-1].date;
+
+  return(
+    <div style={{background:"rgba(255,255,255,0.03)",borderRadius:14,padding:12,overflow:"auto"}}>
+      <svg width="100%" height="250" viewBox={"0 0 "+w+" "+h} style={{minHeight:250}}>
+        {/* grid lines */}
+        {[0,1,2,3,4].map(function(i){
+          var y=pad+(i/4)*(h-pad*2);
+          return<line key={"grid-"+i} x1={pad} y1={y} x2={w-20} y2={y} stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>;
+        })}
+
+        {/* axes */}
+        <line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="rgba(255,255,255,0.2)" strokeWidth="2"/>
+        <line x1={pad} y1={h-pad} x2={w-20} y2={h-pad} stroke="rgba(255,255,255,0.2)" strokeWidth="2"/>
+
+        {/* chart line */}
+        <path d={pathData} stroke="#818cf8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+
+        {/* data points */}
+        {points.map(function(p,i){
+          return(
+            <g key={"point-"+i}>
+              <circle cx={p.x} cy={p.y} r="4" fill="#818cf8" opacity="0.6"/>
+              <circle cx={p.x} cy={p.y} r="5.5" fill="none" stroke="#818cf8" strokeWidth="1.5" opacity="0.3"/>
+              <text x={p.x} y={p.y-12} textAnchor="middle" fontSize="11" fill="#a78bfa" fontWeight="700">{p.xp}</text>
+            </g>
+          );
+        })}
+
+        {/* Y axis label */}
+        <text x="12" y="20" fontSize="11" fill="#9ca3af" fontWeight="600">XP</text>
+
+        {/* X axis labels */}
+        <text x={pad} y={h-20} fontSize="10" fill="#6b7280" textAnchor="middle">{minDate}</text>
+        <text x={w-25} y={h-20} fontSize="10" fill="#6b7280" textAnchor="end">{maxDate}</text>
+      </svg>
+    </div>
+  );
+}
+
 // ── question components ───────────────────────────────────────
 function McqQ(props){
   var q=props.q,sel=props.sel,conf=props.conf,onSel=props.onSel;
@@ -995,6 +1051,14 @@ export default function App(){
               </div>
             )}
 
+            {/* game history chart */}
+            {fu.games.length>0&&(
+              <div style={{marginBottom:12}}>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>XP HISTORY</p>
+                <GameChart games={fu.games}/>
+              </div>
+            )}
+
             {/* recent games */}
             {fu.games.length>0&&(
               <div style={{...CARD,marginBottom:12}}>
@@ -1042,6 +1106,12 @@ export default function App(){
                 return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:14,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;
               })}
             </div>
+            {games.length>0&&(
+              <div style={{marginBottom:10}}>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>XP HISTORY</p>
+                <GameChart games={games}/>
+              </div>
+            )}
             {games.length>0&&(<div style={{...CARD,marginBottom:10}}>
               <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>RECENT GAMES</p>
               {games.slice().reverse().slice(0,8).map(function(g,i){
