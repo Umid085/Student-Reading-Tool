@@ -67,9 +67,10 @@ function getUserLevel(totalXp){
 function getLevelProgress(totalXp){
   var level=getUserLevel(totalXp);
   var current=LEVEL_THRESHOLDS[level-1]||0;
-  var next=LEVEL_THRESHOLDS[level]||LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length-1];
-  var progress=((totalXp-current)/(next-current))*100;
-  return{level:level,current:current,next:next,xpNeeded:next-totalXp,progress:Math.min(100,Math.max(0,progress))};
+  var isMaxLevel=level>=LEVEL_THRESHOLDS.length;
+  var next=isMaxLevel?current:LEVEL_THRESHOLDS[level];
+  var progress=isMaxLevel?100:((totalXp-current)/(next-current))*100;
+  return{level:level,current:current,next:next,xpNeeded:isMaxLevel?0:next-totalXp,progress:Math.min(100,Math.max(0,progress))};
 }
 
 // ── storage ──────────────────────────────────────────────────
