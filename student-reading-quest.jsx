@@ -4,6 +4,7 @@ var API        = "/.netlify/functions/generate";
 var USERS_KEY  = "rq-users-v6";
 var BOARDS_KEY = "rq-boards-v6";
 var SOCIAL_KEY = "rq-social-v6";
+var CREDS_KEY  = "rq-credentials";
 
 var LEVELS = [
   {key:"A1",color:"#22c55e",glow:"rgba(34,197,94,0.25)",  mult:1,  timeLimit:150,timeBonus:200,desc:"Elementary"},
@@ -306,7 +307,7 @@ export default function App(){
   // auth
   var [nameInput,setNameInput]=useState("");
   var [passInput,setPassInput]=useState("");
-  var [authMode,setAuthMode]=useState("login");
+  var [authMode,setAuthMode]=useState("register");
   var [authErr,setAuthErr]=useState("");
   var [currentUser,setCurrentUser]=useState(null);
   var [allUsers,setAllUsers]=useState([]);
@@ -348,9 +349,12 @@ export default function App(){
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
+    var savedCreds=null;
+    try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
     Promise.all([loadUsers(),loadBoards(),loadSocial()]).then(function(v){
       setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);
       if(saved){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===saved){found=v[0][i];break;}}if(found){setCurrentUser(found);setStage("home");}}
+      else if(savedCreds&&savedCreds.name&&savedCreds.hash){var found2=null;for(var j=0;j<v[0].length;j++){if(v[0][j].name===savedCreds.name&&v[0][j].hash===savedCreds.hash){found2=v[0][j];break;}}if(found2){setCurrentUser(found2);setStage("home");}}
       setAppReady(true);
     });
   },[]);
@@ -381,6 +385,7 @@ export default function App(){
     var nu=fresh.concat([user]);
     await saveUsers(nu);
     localStorage.setItem("rq-session",user.name);
+    localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,hash:user.hash}));
     setAllUsers(nu);setCurrentUser(user);setStage("home");
   }
 
@@ -393,6 +398,7 @@ export default function App(){
     if(!found){setAuthErr("User not found. Please register first.");return;}
     if(found.hash!==enc(passInput)){setAuthErr("Wrong password.");return;}
     localStorage.setItem("rq-session",found.name);
+    localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:found.hash}));
     setCurrentUser(found);setStage("home");
   }
 
@@ -1048,7 +1054,7 @@ export default function App(){
             {games.length===0&&<div style={{...CARD,textAlign:"center",padding:30}}><p style={{color:"#6b7280"}}>No games yet - start playing!</p></div>}
             <div style={{display:"flex",gap:7}}>
               <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
-              <button onClick={function(){localStorage.removeItem("rq-session");setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
+              <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
             </div>
           </div>);
         })()}
