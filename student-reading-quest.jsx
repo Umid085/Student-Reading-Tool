@@ -15,8 +15,8 @@ var LEVELS = [
   {key:"C2",color:"#ec4899",glow:"rgba(236,72,153,0.25)", mult:4,  timeLimit:210,timeBonus:400,desc:"Mastery"}
 ];
 
-var Q_LABELS = {mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer"};
-var Q_XP = {mcq:1,gap_word:1,gap_sentence:1,matching:3,heading:3,qa:2};
+var Q_LABELS = {mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"};
+var Q_XP = {mcq:1,gap_word:1,gap_sentence:1,matching:3,heading:3,qa:2,tfnm:1,ynng:1};
 
 // ── pure helpers ─────────────────────────────────────────────
 function getLv(k){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].key===k)return LEVELS[i];}return LEVELS[0];}
@@ -49,7 +49,7 @@ function getBestLevel(games){
 }
 
 function scoreQuestion(q,ans){
-  if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence")return ans===q.answer?Q_XP[q.type]:0;
+  if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence"||q.type==="tfnm"||q.type==="ynng")return ans===q.answer?Q_XP[q.type]:0;
   if(q.type==="matching"){var s=0;for(var i=0;i<q.correctPairs.length;i++){if(ans&&ans[i]===q.correctPairs[i])s++;}return s;}
   if(q.type==="heading"){var h=0;for(var j=0;j<q.correctMap.length;j++){if(ans&&ans[j]===q.correctMap[j])h++;}return h;}
   if(q.type==="qa"){if(!ans||ans.trim().length<3)return 0;var lo=ans.toLowerCase(),hits=0;for(var k=0;k<q.keywords.length;k++){if(lo.includes(q.keywords[k].toLowerCase()))hits++;}return hits>=Math.ceil(q.keywords.length/2)?Q_XP.qa:0;}
@@ -352,6 +352,42 @@ function QAQ(props){
   </div>);
 }
 
+function TfnmQ(props){
+  var q=props.q,sel=props.sel,conf=props.conf,onSel=props.onSel;
+  var opts=["True","False","Not Mentioned"];
+  return(<div style={{display:"flex",flexDirection:"column",gap:8}}>
+    {opts.map(function(opt,i){
+      var isOk=i===q.answer,isSel=i===sel;
+      var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
+      if(conf){if(isOk){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
+      else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
+      return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:10,padding:"10px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,background:(isSel||(conf&&isOk))?col:"rgba(255,255,255,0.1)",color:(isSel||(conf&&isOk))?"#0d0d1a":"#6b7280",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900}}>
+          {conf&&isOk?"✓":conf&&isSel&&!isOk?"✕":"●"}
+        </span>{opt}
+      </button>);
+    })}
+  </div>);
+}
+
+function YnngQ(props){
+  var q=props.q,sel=props.sel,conf=props.conf,onSel=props.onSel;
+  var opts=["Yes","No","Not Given"];
+  return(<div style={{display:"flex",flexDirection:"column",gap:8}}>
+    {opts.map(function(opt,i){
+      var isOk=i===q.answer,isSel=i===sel;
+      var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
+      if(conf){if(isOk){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
+      else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
+      return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:10,padding:"10px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,background:(isSel||(conf&&isOk))?col:"rgba(255,255,255,0.1)",color:(isSel||(conf&&isOk))?"#0d0d1a":"#6b7280",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900}}>
+          {conf&&isOk?"✓":conf&&isSel&&!isOk?"✕":"●"}
+        </span>{opt}
+      </button>);
+    })}
+  </div>);
+}
+
 // ── Timer ────────────────────────────────────────────────────
 function Timer(props){
   var [secs,setSecs]=useState(props.limit);
@@ -542,8 +578,8 @@ export default function App(){
     var iv=setInterval(function(){mi=(mi+1)%msgs.length;setLoadMsg(msgs[mi]);},1600);
     try{
       var lvObj=getLv(level);
-      var typeDescs={mcq:"mcq - 4-option multiple choice",gap_word:"gap_word - sentence with blank, pick word",gap_sentence:"gap_sentence - paragraph with blank, pick sentence",matching:"matching - match 3 lefts to 3 rights (correctPairs:[0,1,2])",heading:"heading - match 2 headings to 2 paragraphs (correctMap:[0,1])",qa:"qa - open answer with keywords"};
-      var typeExamples={mcq:'{"type":"mcq","q":"?","options":["A","B","C","D"],"answer":0,"explanation":"Why."}',gap_word:'{"type":"gap_word","sentence":"The ___ rose.","options":["w1","w2","w3","w4"],"answer":1,"explanation":"Why."}',gap_sentence:'{"type":"gap_sentence","paragraph":"Start. ___ End.","options":["S1.","S2.","S3.","S4."],"answer":2,"explanation":"Why."}',matching:'{"type":"matching","instruction":"Match.","lefts":["T1","T2","T3"],"rights":["D1","D2","D3"],"correctPairs":[0,1,2],"explanation":"Why."}',heading:'{"type":"heading","instruction":"Match headings.","paragraphs":["P1...","P2..."],"headings":["H A","H B","H C"],"correctMap":[0,1],"explanation":"Why."}',qa:'{"type":"qa","q":"Explain X.","keywords":["k1","k2","k3"],"explanation":"Should mention..."}'};
+      var typeDescs={mcq:"mcq - 4-option multiple choice",gap_word:"gap_word - sentence with blank, pick word",gap_sentence:"gap_sentence - paragraph with blank, pick sentence",matching:"matching - match 3 lefts to 3 rights (correctPairs:[0,1,2])",heading:"heading - match 2 headings to 2 paragraphs (correctMap:[0,1])",qa:"qa - open answer with keywords",tfnm:"tfnm - True/False/Not Mentioned statement (answer: 0=True, 1=False, 2=Not Mentioned)",ynng:"ynng - Yes/No/Not Given question (answer: 0=Yes, 1=No, 2=Not Given)"};
+      var typeExamples={mcq:'{"type":"mcq","q":"?","options":["A","B","C","D"],"answer":0,"explanation":"Why."}',gap_word:'{"type":"gap_word","sentence":"The ___ rose.","options":["w1","w2","w3","w4"],"answer":1,"explanation":"Why."}',gap_sentence:'{"type":"gap_sentence","paragraph":"Start. ___ End.","options":["S1.","S2.","S3.","S4."],"answer":2,"explanation":"Why."}',matching:'{"type":"matching","instruction":"Match.","lefts":["T1","T2","T3"],"rights":["D1","D2","D3"],"correctPairs":[0,1,2],"explanation":"Why."}',heading:'{"type":"heading","instruction":"Match headings.","paragraphs":["P1...","P2..."],"headings":["H A","H B","H C"],"correctMap":[0,1],"explanation":"Why."}',qa:'{"type":"qa","q":"Explain X.","keywords":["k1","k2","k3"],"explanation":"Should mention..."}',tfnm:'{"type":"tfnm","q":"Statement from passage.","answer":0,"explanation":"Why true/false/not mentioned."}',ynng:'{"type":"ynng","q":"Question about passage?","answer":1,"explanation":"Why yes/no/not given."}'};
       var typeList="",exList="";
       for(var ti=0;ti<selectedTypes.length;ti++){typeList+=(ti+1)+". "+typeDescs[selectedTypes[ti]]+"\n";exList+="    "+typeExamples[selectedTypes[ti]]+(ti<selectedTypes.length-1?",":"")+"\\n";}
       var passInstr={A1:"80-100 words, basic vocabulary, daily life",A2:"110-130 words, everyday vocabulary, travel/hobbies",B1:"140-160 words, moderate vocabulary, tech/environment",B2:"170-190 words, varied vocabulary, nuanced argument",C1:"200-220 words, sophisticated vocabulary, philosophy/politics",C2:"230-260 words, advanced academic vocabulary, abstract topic"};
@@ -569,7 +605,7 @@ export default function App(){
 
   function canConfirm(){
     if(!q||timeExpired)return false;
-    if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence")return userAnswers[current]!==undefined;
+    if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence"||q.type==="tfnm"||q.type==="ynng")return userAnswers[current]!==undefined;
     if(q.type==="matching")return Object.keys(matchState).length===q.lefts.length;
     if(q.type==="heading")return Object.keys(headingState).length===q.paragraphs.length;
     if(q.type==="qa")return userAnswers[current]&&userAnswers[current].trim().length>=3;
@@ -819,6 +855,8 @@ export default function App(){
               {q.type==="matching"&&<MatchingQ q={q} matches={matchState} conf={confirmed} shuffled={shuffledRights} onMatch={function(li,ri){var origIdx=q.rights?q.rights.indexOf(shuffledRights[ri]):ri;setMatchState(function(m){var n={};for(var k in m)n[k]=m[k];n[li]=origIdx;return n;});}}/>}
               {q.type==="heading"&&<HeadingQ q={q} userMap={headingState} conf={confirmed} onMatch={function(pi,hi){setHeadingState(function(m){var n={};for(var k in m)n[k]=m[k];n[pi]=hi;return n;});}}/>}
               {q.type==="qa"&&<QAQ q={q} val={userAnswers[current]||""} conf={confirmed} onChange={function(v){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=v;return n;});}}/>}
+              {q.type==="tfnm"&&<TfnmQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
+              {q.type==="ynng"&&<YnngQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {confirmed&&q.explanation&&q.type!=="qa"&&(<div style={{marginTop:10,padding:"9px 11px",borderRadius:10,background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#d1fae5"}}>{q.explanation}</div>)}
               <div style={{marginTop:12,display:"flex",justifyContent:"flex-end"}}>
                 {!confirmed?<button onClick={doConfirm} disabled={!canConfirm()} style={mkBtn(canConfirm()?"#6366f1":"#374151")}>Check Answer</button>
