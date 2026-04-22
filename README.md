@@ -9,9 +9,13 @@ An AI-powered language reading and quiz app for students learning English. Users
 - **AI-generated content** — Each session calls Claude (`claude-sonnet-4-6`) to produce a unique reading passage and quiz tailored to the chosen level.
 - **6 question types** — Multiple Choice, Gap Fill (word & sentence), Matching, Match Headings, Open Answer.
 - **XP & scoring system** — Per-question scoring with level multipliers (A1 = 1×, C2 = 4×), time bonuses, and streak bonuses (+50 XP after 3 correct in a row).
-- **Leaderboards** — Per-level rankings stored in Firebase and cached locally.
-- **Social layer** — Friend requests, likes, and head-to-head challenges between users.
-- **Persistent accounts** — Username + password (base64) auth with auto-login via `localStorage`.
+- **User leveling system** — 21 levels based on total XP progression (0–190k+ XP) with real-time progress tracking.
+- **Leaderboards** — Per-level rankings (A1–C2) stored in Firebase and cached locally. Each user appears once with their best score.
+- **Game history chart** — SVG line chart showing XP progression over time on personal and friend profiles.
+- **Social layer** — Friend requests, likes (with heart emoji ❤️), and head-to-head challenges between users.
+- **Head-to-head comparison** — Visual comparison bars showing stats differences between current user and friends (green vs pink).
+- **Auto-login** — Automatic login with saved credentials (username + password hash) via `localStorage`.
+- **Persistent accounts** — Username + password (base64) auth with session management.
 - **Dark theme, mobile-first** — Inline styles, responsive at 640 px breakpoint.
 
 ---
@@ -153,8 +157,15 @@ All writes go to `localStorage` first (instant), then fire-and-forget to Firebas
 | Key | Contents |
 |---|---|
 | `rq-users-v6` | Array of `{ name, hash, games, joined }` |
-| `rq-boards-v6` | Leaderboard entries per level (A1–C2) |
+| `rq-boards-v6` | Leaderboard entries per level (A1–C2) — deduplicated per user |
 | `rq-social-v6` | Per-user `{ friends, requests, likes, challenges }` |
+
+**Local-only keys:**
+
+| Key | Contents |
+|---|---|
+| `rq-session` | Current logged-in user's username |
+| `rq-credentials` | Auto-login credentials `{ name, hash }` |
 
 ---
 
@@ -172,3 +183,49 @@ All writes go to `localStorage` first (instant), then fire-and-forget to Firebas
 Final XP = `base_points × multiplier × 100 + time_bonus + streak_bonus`
 
 Streak bonus: +50 XP after every 3 consecutive correct answers.
+
+---
+
+## User Progression System
+
+Users advance through 21 levels based on accumulated XP:
+
+| Level | XP Required | Level | XP Required |
+|---|---|---|---|
+| 1 | 0 | 12 | 55,000 |
+| 2 | 1,000 | 13 | 66,000 |
+| 3 | 2,500 | 14 | 78,000 |
+| 4 | 4,500 | 15 | 91,000 |
+| 5 | 7,000 | 16 | 105,000 |
+| 6 | 10,500 | 17 | 120,000 |
+| 7 | 15,000 | 18 | 136,000 |
+| 8 | 21,000 | 19 | 153,000 |
+| 9 | 28,000 | 20 | 171,000 |
+| 10 | 36,000 | 21 | 190,000+ |
+| 11 | 45,000 | | (Max) |
+
+**Level Features:**
+- Level badge displayed on all profiles (⭐ Lvl X)
+- Real-time progress bar showing XP towards next level
+- Levels visible in search results, friends list, and leaderboards
+- Progress resets when viewing other users' profiles
+
+---
+
+## Recent Updates (v3.0)
+
+### New Features
+- ✅ **User Leveling System** — 21 levels with progressive XP requirements
+- ✅ **Game History Chart** — SVG line chart showing XP progression over time
+- ✅ **Enhanced Like Feature** — Heart emoji (❤️) with improved visuals
+- ✅ **Head-to-Head Comparison** — Color-coded bars (green = you, pink = friend)
+- ✅ **Auto-Login** — Saved credentials for seamless return
+- ✅ **Level Display** — Visible across profiles, search, and friends list
+
+### Bug Fixes
+- ✅ **Leaderboard Duplication** — Users now appear once per level
+- ✅ **Leaderboard Clickability** — Click handlers with cursor feedback
+- ✅ **Division by Zero** — Fixed in level progress calculation for max level users
+
+### Testing
+See `DASHBOARD_TEST_REPORT.md` for comprehensive QA coverage.
