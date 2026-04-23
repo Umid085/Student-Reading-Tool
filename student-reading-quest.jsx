@@ -480,7 +480,7 @@ export default function App(){
   },[searchQuery]);
 
   var lv=getLv(level);
-  var q=questions[current];
+  var q=questions&&questions.length>current?questions[current]:null;
 
   // ── auth ──────────────────────────────────────────────────
   async function doRegister(){
@@ -562,6 +562,7 @@ export default function App(){
   // ── search ─────────────────────────────────────────────────
   function getSearchResults(){
     if(!searchQuery||searchQuery.trim().length<2)return[];
+    if(!allUsers||!Array.isArray(allUsers))return[];
     var q2=searchQuery.trim().toLowerCase();
     return allUsers.filter(function(u){return u.name!==currentUser.name&&u.name.toLowerCase().indexOf(q2)!==-1;});
   }
