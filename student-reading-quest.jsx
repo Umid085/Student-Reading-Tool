@@ -681,6 +681,9 @@ export default function App(){
 
   // ── current user's social data ─────────────────────────────
   var myData=currentUser?getSocial(social,currentUser.name):{friends:[],requests:[],likes:0,challenges:[]};
+  myData=myData||{friends:[],requests:[],likes:0,challenges:[]};
+  myData.friends=myData.friends||[];
+  myData.requests=myData.requests||[];
   var myStreak=currentUser?calcStreak(currentUser.games):0;
   var myBestLevel=currentUser?getBestLevel(currentUser.games):"none";
   var pendingChallenges=(myData.challenges||[]).filter(function(c){return c.status==="pending";});
@@ -1045,17 +1048,20 @@ export default function App(){
           var fu=null;for(var i=0;i<allUsers.length;i++){if(allUsers[i].name===viewingUser){fu=allUsers[i];break;}}
           if(!fu)return<div style={{textAlign:"center",padding:40}}><p style={{color:"#6b7280"}}>User not found.</p><button onClick={function(){setStage("friends");}} style={GHOST}>Back</button></div>;
           var fData=getSocial(social,viewingUser);
+          fData=fData||{friends:[],requests:[],likes:0,challenges:[]};
           var isFriend=myData.friends.indexOf(viewingUser)!==-1;
           var requested=(fData.requests||[]).indexOf(currentUser.name)!==-1;
           var alreadyLiked=hasLiked(social,currentUser.name,viewingUser);
-          var fStreak=calcStreak(fu.games);
-          var fBest=getBestLevel(fu.games);
-          var totalXp=fu.games.reduce(function(s,g){return s+g.xp;},0);
-          var avgPct=fu.games.length?Math.round(fu.games.reduce(function(s,g){return s+(g.pct);},0)/fu.games.length):0;
+          var fuGames=fu&&fu.games?fu.games:[];
+          var fStreak=calcStreak(fuGames);
+          var fBest=getBestLevel(fuGames);
+          var totalXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
+          var avgPct=fuGames.length?Math.round(fuGames.reduce(function(s,g){return s+(g.pct);},0)/fuGames.length):0;
           var fLvlInfo=getLevelProgress(totalXp);
           // comparison with current user
-          var myTotalXp=currentUser.games.reduce(function(s,g){return s+g.xp;},0);
-          var myAvgPct=currentUser.games.length?Math.round(currentUser.games.reduce(function(s,g){return s+g.pct;},0)/currentUser.games.length):0;
+          var curGames=currentUser&&currentUser.games?currentUser.games:[];
+          var myTotalXp=curGames.reduce(function(s,g){return s+g.xp;},0);
+          var myAvgPct=curGames.length?Math.round(curGames.reduce(function(s,g){return s+g.pct;},0)/curGames.length):0;
           return(<div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
               <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>{viewingUser}'s Profile</h2>
@@ -1100,16 +1106,16 @@ export default function App(){
 
             {/* stats */}
             <div style={{display:"flex",gap:7,marginBottom:12}}>
-              {[{v:fu.games.length,l:"Games",c:"#34d399"},{v:totalXp,l:"Total XP",c:"#fbbf24"},{v:avgPct+"%",l:"Avg Score",c:pctColor(avgPct)},{v:fData.friends?fData.friends.length:0,l:"Friends",c:"#a78bfa"}].map(function(s){
+              {[{v:fu&&fu.games?fu.games.length:0,l:"Games",c:"#34d399"},{v:totalXp,l:"Total XP",c:"#fbbf24"},{v:avgPct+"%",l:"Avg Score",c:pctColor(avgPct)},{v:fData.friends?fData.friends.length:0,l:"Friends",c:"#a78bfa"}].map(function(s){
                 return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:15,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;
               })}
             </div>
 
             {/* comparison */}
-            {currentUser.games.length>0&&fu.games.length>0&&(
+            {currentUser&&currentUser.games&&currentUser.games.length>0&&fu&&fu.games&&fu.games.length>0&&(
               <div style={{...CARD,marginBottom:12,padding:14}}>
                 <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,marginBottom:10}}>HEAD TO HEAD</p>
-                {[{label:"Total XP",my:myTotalXp,their:totalXp},{label:"Avg Score",my:myAvgPct,their:avgPct},{label:"Games Played",my:currentUser.games.length,their:fu.games.length}].map(function(row){
+                {[{label:"Total XP",my:myTotalXp,their:totalXp},{label:"Avg Score",my:myAvgPct,their:avgPct},{label:"Games Played",my:curGames.length,their:fuGames.length}].map(function(row){
                   var myWin=row.my>row.their;
                   var myPct=row.my+row.their>0?(row.my/(row.my+row.their)*100):50;
                   return(<div key={row.label} style={{marginBottom:8}}>
@@ -1151,7 +1157,7 @@ export default function App(){
 
         {/* ── MY PROFILE ────────────────────────────────────── */}
         {stage==="profile"&&currentUser&&(function(){
-          var games=currentUser.games||[];
+          var games=(currentUser&&currentUser.games)?currentUser.games:[];
           var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
           var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
           var avgTime=games.length?Math.round(games.reduce(function(s,g){return s+g.timeSecs;},0)/games.length):0;
