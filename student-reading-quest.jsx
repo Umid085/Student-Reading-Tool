@@ -1001,9 +1001,11 @@ export default function App(){
                 {myData.friends.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No friends yet. Search to add some!</p></div>}
                 {myData.friends.map(function(fname){
                   var fu=null;for(var i=0;i<allUsers.length;i++){if(allUsers[i].name===fname){fu=allUsers[i];break;}}
-                  var fStreak=fu?calcStreak(fu.games):0;
+                  var fuGames=fu&&fu.games?fu.games:[];
+                  var fStreak=calcStreak(fuGames);
                   var fData=getSocial(social,fname);
-                  var fTotalXp=fu?fu.games.reduce(function(s,g){return s+g.xp;},0):0;
+                  fData=fData||{friends:[],requests:[],likes:0,challenges:[]};
+                  var fTotalXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
                   var fLevel=getUserLevel(fTotalXp);
                   return(<div key={fname} style={{...CARD,marginBottom:8,padding:14}}>
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
