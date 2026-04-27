@@ -60,6 +60,156 @@ function scoreQuestion(q,ans){
 }
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
 
+var STORY_LIBRARY=[
+  // ── A1 ──
+  {id:"a1_1",level:"A1",title:"My Family",topic:"Family",
+   passage:"My name is Tom. I am eight years old. I have a mother, a father, and one sister. My sister is five years old. Her name is Lucy. We live in a small house. Our house has three rooms. We have a dog. The dog's name is Max. Max is big and brown. I love my family very much.",
+   questions:[
+     {type:"mcq",q:"How old is Tom?",options:["Five","Six","Eight","Ten"],answer:2,explanation:"Tom says 'I am eight years old.'"},
+     {type:"mcq",q:"What is the dog's name?",options:["Lucy","Max","Tom","Rex"],answer:1,explanation:"Tom says 'The dog's name is Max.'"},
+     {type:"gap_word",sentence:"Tom's sister is ___ years old.",options:["three","five","eight","ten"],answer:1,explanation:"Lucy is five years old."},
+   ]},
+  {id:"a1_2",level:"A1",title:"At the Market",topic:"Shopping",
+   passage:"Every Saturday, my mother goes to the market. She buys fruit and vegetables. She buys apples, bananas, and oranges. She also buys carrots and tomatoes. The market is near our house. It is a ten-minute walk. The fruit is fresh and cheap. My mother loves the market.",
+   questions:[
+     {type:"mcq",q:"When does the mother go to the market?",options:["Sunday","Monday","Saturday","Friday"],answer:2,explanation:"She goes every Saturday."},
+     {type:"mcq",q:"How far is the market?",options:["Five minutes","Ten minutes","Twenty minutes","One hour"],answer:1,explanation:"It is a ten-minute walk."},
+     {type:"gap_word",sentence:"The fruit at the market is fresh and ___.",options:["expensive","old","cheap","far"],answer:2,explanation:"The passage says 'fresh and cheap'."},
+   ]},
+  {id:"a1_3",level:"A1",title:"My School",topic:"School",
+   passage:"I go to school every day from Monday to Friday. My school is small. There are twenty students in my class. My teacher's name is Mrs. Green. She is very kind. We study reading, writing, and maths. My favourite subject is maths. School starts at eight o'clock and ends at three o'clock.",
+   questions:[
+     {type:"mcq",q:"What is the teacher's name?",options:["Mrs. Blue","Mrs. Green","Mrs. Brown","Mrs. White"],answer:1,explanation:"The passage says 'My teacher's name is Mrs. Green.'"},
+     {type:"mcq",q:"What is the student's favourite subject?",options:["Reading","Writing","Science","Maths"],answer:3,explanation:"The passage says 'My favourite subject is maths.'"},
+     {type:"gap_word",sentence:"There are ___ students in the class.",options:["ten","fifteen","twenty","thirty"],answer:2,explanation:"'There are twenty students in my class.'"},
+   ]},
+  // ── A2 ──
+  {id:"a2_1",level:"A2",title:"The Lost Key",topic:"Daily Life",
+   passage:"Yesterday morning, Sarah could not find her house key. She looked everywhere. She checked her bag, her coat pockets, and the kitchen table. Then she remembered — she left it at her friend Anna's house the day before. Sarah called Anna. Anna found the key under the sofa. Sarah was very relieved.",
+   questions:[
+     {type:"mcq",q:"Where did Sarah leave her key?",options:["In her bag","On the kitchen table","At Anna's house","In her coat pocket"],answer:2,explanation:"She left it at her friend Anna's house."},
+     {type:"mcq",q:"Where did Anna find the key?",options:["In her bag","Under the sofa","On the table","By the door"],answer:1,explanation:"Anna found the key under the sofa."},
+     {type:"gap_word",sentence:"Sarah felt very ___ when the key was found.",options:["angry","sad","relieved","tired"],answer:2,explanation:"'Sarah was very relieved.'"},
+   ]},
+  {id:"a2_2",level:"A2",title:"Learning to Cook",topic:"Food",
+   passage:"Last summer, Pedro decided to learn how to cook. He watched videos online and bought a simple cookbook. First, he learned to make pasta. It was difficult at first, but he practised every day. After two weeks, his pasta was delicious. His family were very proud of him. Now Pedro cooks dinner every Friday.",
+   questions:[
+     {type:"mcq",q:"How did Pedro learn to cook?",options:["At school","From his family","Online videos and a cookbook","At a restaurant"],answer:2,explanation:"He watched videos online and bought a cookbook."},
+     {type:"mcq",q:"How long did it take before his pasta was delicious?",options:["One week","Two weeks","One month","Three days"],answer:1,explanation:"'After two weeks, his pasta was delicious.'"},
+     {type:"gap_word",sentence:"Pedro cooks dinner every ___.",options:["Monday","Wednesday","Sunday","Friday"],answer:3,explanation:"'Now Pedro cooks dinner every Friday.'"},
+   ]},
+  {id:"a2_3",level:"A2",title:"The New Neighbour",topic:"Community",
+   passage:"A new family moved into the house next door last month. They have two children — a boy called Marco and a girl called Lily. Marco is the same age as me, so we go to the same school. Lily is younger; she goes to primary school. Their parents are both doctors. The whole family is very friendly. We often invite them for dinner.",
+   questions:[
+     {type:"mcq",q:"What do the parents do for work?",options:["Teachers","Doctors","Engineers","Chefs"],answer:1,explanation:"'Their parents are both doctors.'"},
+     {type:"mcq",q:"Who goes to the same school as the narrator?",options:["Lily","Marco","Both children","Neither"],answer:1,explanation:"'Marco is the same age as me, so we go to the same school.'"},
+     {type:"gap_word",sentence:"The family moved in ___ month.",options:["this","next","last","every"],answer:2,explanation:"'A new family moved into the house next door last month.'"},
+   ]},
+  // ── B1 ──
+  {id:"b1_1",level:"B1",title:"The Power of Habit",topic:"Psychology",
+   passage:"Scientists say that about 40% of our daily actions are habits, not decisions. A habit is formed when a behaviour is repeated so often that it becomes automatic. The brain creates a loop: a cue triggers the habit, the routine follows, and then there is a reward. Breaking a bad habit is hard because the brain loop remains even when the behaviour stops. The most effective strategy is not to try to stop the habit but to replace it with a different routine triggered by the same cue.",
+   questions:[
+     {type:"mcq",q:"What percentage of daily actions are habits according to scientists?",options:["20%","30%","40%","60%"],answer:2,explanation:"The passage states 'about 40% of our daily actions are habits.'"},
+     {type:"mcq",q:"What is the most effective strategy for breaking a bad habit?",options:["Stopping it immediately","Avoiding the cue","Replacing it with a different routine","Rewarding yourself"],answer:2,explanation:"'The most effective strategy is to replace it with a different routine.'"},
+     {type:"gap_word",sentence:"A habit is formed when a behaviour is repeated and becomes ___.",options:["difficult","intentional","automatic","boring"],answer:2,explanation:"'it becomes automatic'"},
+   ]},
+  {id:"b1_2",level:"B1",title:"Urban Farming",topic:"Environment",
+   passage:"As cities grow larger, some people are finding creative ways to grow food in urban areas. Rooftop gardens, vertical farms, and community allotments are becoming more common. Urban farming offers several benefits: it reduces the distance food travels, provides fresh produce to local communities, and helps people reconnect with nature. However, it also faces challenges such as limited space, high costs, and lack of sunlight in dense cities.",
+   questions:[
+     {type:"mcq",q:"Which is NOT listed as a challenge of urban farming?",options:["Limited space","High costs","Lack of sunlight","Water shortage"],answer:3,explanation:"Water shortage is not mentioned; the challenges listed are space, costs, and sunlight."},
+     {type:"mcq",q:"What does urban farming reduce?",options:["Community connections","Food distance","City size","Costs"],answer:1,explanation:"'it reduces the distance food travels'"},
+     {type:"gap_word",sentence:"Urban farming helps people reconnect with ___.",options:["technology","each other","nature","the city"],answer:2,explanation:"'helps people reconnect with nature'"},
+   ]},
+  {id:"b1_3",level:"B1",title:"Sleep and Memory",topic:"Science",
+   passage:"Most people know that sleep is important for health, but fewer understand exactly why. During sleep, the brain is remarkably active. It processes and organises information gathered during the day, moving short-term memories into long-term storage. Research shows that students who sleep well after studying retain significantly more information than those who stay up late. Even a short nap of 20 minutes can improve focus and recall. Experts recommend 7 to 9 hours of sleep per night for adults.",
+   questions:[
+     {type:"mcq",q:"What does the brain do with short-term memories during sleep?",options:["Deletes them","Moves them to long-term storage","Creates new ones","Ignores them"],answer:1,explanation:"'moving short-term memories into long-term storage'"},
+     {type:"mcq",q:"How long should a useful nap be according to the passage?",options:["5 minutes","10 minutes","20 minutes","45 minutes"],answer:2,explanation:"'a short nap of 20 minutes can improve focus'"},
+     {type:"gap_word",sentence:"Experts recommend ___ to 9 hours of sleep for adults.",options:["5","6","7","8"],answer:2,explanation:"'7 to 9 hours of sleep per night for adults'"},
+   ]},
+  // ── B2 ──
+  {id:"b2_1",level:"B2",title:"The Attention Economy",topic:"Technology",
+   passage:"Social media platforms are designed to capture and hold your attention for as long as possible. Every notification, like, and scroll is engineered to trigger dopamine release, keeping users engaged. This business model — selling advertisers access to user attention — is called the attention economy. Critics argue that this design creates addictive behaviour patterns and fragments our ability to concentrate. Some researchers link heavy social media use to rising rates of anxiety and depression, particularly among teenagers. However, others maintain that correlation does not imply causation, and that the evidence remains inconclusive.",
+   questions:[
+     {type:"mcq",q:"What is the 'attention economy' as described in the passage?",options:["A system for managing time","Selling advertisers access to user attention","A type of social media platform","A psychological theory"],answer:1,explanation:"'selling advertisers access to user attention is called the attention economy'"},
+     {type:"mcq",q:"What do critics say social media design creates?",options:["Community bonds","Addictive behaviour patterns","Better concentration","Healthier teenagers"],answer:1,explanation:"'this design creates addictive behaviour patterns and fragments our ability to concentrate'"},
+     {type:"qa",q:"Why do some researchers disagree with the link between social media and mental health problems?",keywords:["correlation","causation","inconclusive","evidence"],explanation:"They argue that correlation does not imply causation, and the evidence is inconclusive."},
+   ]},
+  {id:"b2_2",level:"B2",title:"Rewilding",topic:"Environment",
+   passage:"Rewilding is a conservation approach that aims to restore ecosystems to their natural state by reintroducing species that have disappeared. Unlike traditional conservation, which focuses on protecting what remains, rewilding seeks to rebuild natural processes. The reintroduction of wolves to Yellowstone National Park in the USA is often cited as a success story. The wolves reduced deer populations, which allowed vegetation to recover, which in turn stabilised riverbanks and changed waterflow. This cascade of effects is known as a 'trophic cascade.' Critics, however, warn that reintroducing predators near human settlements can create conflict.",
+   questions:[
+     {type:"mcq",q:"How does rewilding differ from traditional conservation?",options:["It focuses only on plants","It rebuilds natural processes rather than protecting remains","It relies on technology","It is cheaper"],answer:1,explanation:"'rewilding seeks to rebuild natural processes' vs protecting what remains."},
+     {type:"mcq",q:"What is a 'trophic cascade'?",options:["A type of waterfall","A series of ecological effects triggered by one change","A reintroduction programme","A hunting technique"],answer:1,explanation:"The cascade of effects from wolf reintroduction is called a trophic cascade."},
+     {type:"gap_word",sentence:"The reintroduction of wolves ___ deer populations.",options:["increased","stabilised","reduced","eliminated"],answer:2,explanation:"'The wolves reduced deer populations'"},
+   ]},
+  {id:"b2_3",level:"B2",title:"The Placebo Effect",topic:"Medicine",
+   passage:"The placebo effect is one of medicine's most fascinating and least understood phenomena. When patients receive an inert treatment — a sugar pill or saline injection — and believe it to be real medication, many show genuine physiological improvements. Studies have recorded reduced pain, lower blood pressure, and even shrinking tumours in placebo recipients. The mechanism is not fully understood, but researchers believe it involves the release of endorphins and changes in neural activity. Ethical debates surround its use: if placebos work, should doctors prescribe them even if doing so involves deception?",
+   questions:[
+     {type:"mcq",q:"What is an 'inert treatment'?",options:["A strong painkiller","A natural remedy","A treatment with no active ingredient","A surgical procedure"],answer:2,explanation:"Inert means having no active ingredient — like a sugar pill."},
+     {type:"mcq",q:"Which is NOT listed as a placebo effect observed in studies?",options:["Reduced pain","Lower blood pressure","Improved vision","Shrinking tumours"],answer:2,explanation:"Improved vision is not mentioned in the passage."},
+     {type:"qa",q:"What ethical question does the passage raise about placebos?",keywords:["deception","doctors","prescribe","ethical"],explanation:"Should doctors prescribe placebos even if doing so involves deceiving patients?"},
+   ]},
+  // ── C1 ──
+  {id:"c1_1",level:"C1",title:"The Language Instinct",topic:"Linguistics",
+   passage:"The linguist Noam Chomsky proposed that humans are born with an innate capacity for language — a 'language acquisition device' hardwired into the brain. This theory sought to explain why children acquire language so rapidly and uniformly across cultures, despite minimal explicit instruction. Critics, however, point to the statistical learning hypothesis, which suggests that children learn language by detecting patterns in the input they receive. Recent neuroimaging studies have identified dedicated language circuits in the brain, lending partial support to Chomsky's view, though the debate between nativist and empiricist accounts of language acquisition remains unresolved.",
+   questions:[
+     {type:"mcq",q:"What is Chomsky's 'language acquisition device'?",options:["A teaching tool","An innate brain capacity for language","A statistical model","A type of grammar"],answer:1,explanation:"Chomsky proposed an innate brain capacity for language called the language acquisition device."},
+     {type:"mcq",q:"What does the statistical learning hypothesis suggest?",options:["Language is innate","Children learn by detecting patterns in input","Brain circuits determine language","Grammar is universal"],answer:1,explanation:"'children learn language by detecting patterns in the input they receive'"},
+     {type:"qa",q:"What evidence partially supports Chomsky's view?",keywords:["neuroimaging","circuits","brain","dedicated"],explanation:"Neuroimaging studies identified dedicated language circuits in the brain."},
+   ]},
+  {id:"c1_2",level:"C1",title:"The Anthropocene",topic:"Climate",
+   passage:"Geologists have proposed naming our current epoch the Anthropocene — the age of human influence — to reflect the unprecedented scale of humanity's impact on the Earth's systems. Evidence for this designation includes the global dispersal of microplastics, radionuclides from nuclear testing, and the homogenisation of species assemblages. The proposal is scientifically contested: some argue the changes are insufficient to define a new epoch, while others suggest the Holocene — the epoch beginning after the last ice age — remains the appropriate designation. The debate underscores a deeper question about whether geological time should accommodate human timescales.",
+   questions:[
+     {type:"mcq",q:"What does 'Anthropocene' refer to?",options:["A prehistoric era","The age of human influence on Earth","A geological period before humans","A climate model"],answer:1,explanation:"'the age of human influence' — reflecting humanity's impact on Earth's systems."},
+     {type:"mcq",q:"Which piece of evidence is NOT mentioned?",options:["Microplastics","Radionuclides","Rising sea temperatures","Homogenisation of species"],answer:2,explanation:"Rising sea temperatures are not listed among the evidence cited."},
+     {type:"qa",q:"What deeper question does the Anthropocene debate raise?",keywords:["geological","time","human","timescales","accommodate"],explanation:"Whether geological time should accommodate human timescales."},
+   ]},
+  {id:"c1_3",level:"C1",title:"Confirmation Bias",topic:"Psychology",
+   passage:"Confirmation bias is the tendency to search for, interpret, and recall information in a way that confirms one's pre-existing beliefs. It operates unconsciously and affects even highly educated individuals. In political discourse, it reinforces polarisation: people curate information environments that reflect their worldview, making genuine dialogue across ideological lines increasingly difficult. In science, it manifests as selective reporting of results that support a hypothesis while ignoring contradictory evidence — a practice known as p-hacking. Mitigating confirmation bias requires deliberate effort: seeking disconfirming evidence, engaging with opposing viewpoints, and employing structured analytical techniques.",
+   questions:[
+     {type:"mcq",q:"What is 'p-hacking' as described in the passage?",options:["Hacking computers to get data","Selecting results that support a hypothesis while ignoring contradictions","A statistical test","A type of confirmation bias in politics"],answer:1,explanation:"'selective reporting of results that support a hypothesis while ignoring contradictory evidence'"},
+     {type:"mcq",q:"Which strategy is NOT suggested for mitigating confirmation bias?",options:["Seeking disconfirming evidence","Engaging opposing viewpoints","Avoiding all news","Structured analytical techniques"],answer:2,explanation:"Avoiding all news is not mentioned; the strategies are seeking disconfirming evidence, engaging viewpoints, and structured techniques."},
+     {type:"qa",q:"How does confirmation bias affect political discourse?",keywords:["polarisation","curate","worldview","dialogue","ideological"],explanation:"It reinforces polarisation by making people curate information environments matching their worldview, hindering genuine dialogue."},
+   ]},
+  // ── C2 ──
+  {id:"c2_1",level:"C2",title:"The Ship of Theseus",topic:"Philosophy",
+   passage:"The Ship of Theseus is an ancient paradox that probes the nature of identity and persistence through change. If every plank of a ship is gradually replaced, at what point — if any — does it cease to be the same ship? Thomas Hobbes extended the puzzle: if the original planks are collected and reassembled, which vessel is the 'true' Ship of Theseus? Contemporary philosophers have mapped this paradox onto questions of personal identity — whether the self persists through total cellular replacement, amnesia, or radical personality change. Derek Parfit argued that identity is not what matters; psychological continuity and connectedness are what ground our practical concerns about the future.",
+   questions:[
+     {type:"mcq",q:"What was Hobbes's contribution to the Ship of Theseus paradox?",options:["He solved it","He asked which ship is the 'true' one if original parts are reassembled","He applied it to biology","He dismissed it as meaningless"],answer:1,explanation:"Hobbes asked: if the original planks are reassembled, which is the true ship?"},
+     {type:"mcq",q:"What does Parfit argue matters instead of identity?",options:["Physical continuity","Legal status","Psychological continuity and connectedness","Memory alone"],answer:2,explanation:"'psychological continuity and connectedness are what ground our practical concerns'"},
+     {type:"qa",q:"How have contemporary philosophers applied the Ship of Theseus paradox?",keywords:["personal identity","self","cellular","amnesia","personality","persists"],explanation:"They apply it to questions of personal identity — whether the self persists through cellular replacement, amnesia, or radical personality change."},
+   ]},
+  {id:"c2_2",level:"C2",title:"The Extended Mind",topic:"Cognitive Science",
+   passage:"The philosopher Andy Clark and cognitive scientist David Chalmers proposed the 'extended mind' thesis in 1998, arguing that the mind is not confined to the skull. When external objects — notebooks, smartphones, or other people — become so reliably integrated into our cognitive processes that we would be cognitively impaired without them, those objects should be considered part of the mind. Critics object that this conflates the vehicle of thought with thought itself, and that genuine mental states must be intrinsic to the organism. The debate has practical implications for how we conceptualise cognitive enhancement, disability, and the ethics of memory modification.",
+   questions:[
+     {type:"mcq",q:"What is the 'extended mind' thesis?",options:["The mind expands with intelligence","The mind includes reliably integrated external objects","The brain has extended regions","Thinking occurs only in language"],answer:1,explanation:"External objects reliably integrated into cognition should be considered part of the mind."},
+     {type:"mcq",q:"What is the main criticism of the extended mind thesis?",options:["It is too narrow","It conflates the vehicle of thought with thought itself","It ignores technology","It is empirically untestable"],answer:1,explanation:"Critics say it conflates the vehicle of thought with thought itself."},
+     {type:"qa",q:"What practical issues does the extended mind debate raise?",keywords:["cognitive enhancement","disability","memory","modification","ethics"],explanation:"It raises issues for conceptualising cognitive enhancement, disability, and the ethics of memory modification."},
+   ]},
+  {id:"c2_3",level:"C2",title:"Epistemic Injustice",topic:"Philosophy",
+   passage:"Miranda Fricker coined the term 'epistemic injustice' to describe wrongs done to individuals specifically in their capacity as knowers. She identifies two primary forms. The first, testimonial injustice, occurs when a speaker receives less credibility than they deserve due to prejudice — a Black witness being disbelieved in court, for instance. The second, hermeneutical injustice, arises when a gap in collective interpretive resources disadvantages a group — as when, before the concept of sexual harassment was named, victims had no framework to articulate their experiences. Both forms of injustice are self-concealing and compound existing social inequalities.",
+   questions:[
+     {type:"mcq",q:"What is 'testimonial injustice'?",options:["Lying under oath","Giving false testimony","Receiving less credibility due to prejudice","Refusing to testify"],answer:2,explanation:"'a speaker receives less credibility than they deserve due to prejudice'"},
+     {type:"mcq",q:"What makes hermeneutical injustice distinct from testimonial injustice?",options:["It involves legal proceedings","It arises from a gap in collective interpretive resources","It affects only minority groups","It requires deliberate intent"],answer:1,explanation:"Hermeneutical injustice arises when a gap in collective interpretive resources disadvantages a group."},
+     {type:"qa",q:"Why are both forms of epistemic injustice described as 'self-concealing'?",keywords:["self-concealing","compound","inequalities","framework","articulate","named"],explanation:"They are self-concealing because victims often lack the framework to name or articulate what is happening to them, making the injustice invisible and compounding existing inequalities."},
+   ]},
+];
+
+function getUnlockedStories(games){
+  var played={};
+  games.forEach(function(g){played[g.level]=(played[g.level]||0)+1;});
+  var levelOrder=["A1","A2","B1","B2","C1","C2"];
+  var unlocked={};
+  STORY_LIBRARY.forEach(function(s,i){
+    var sameLevelStories=STORY_LIBRARY.filter(function(x){return x.level===s.level;});
+    var idx=sameLevelStories.indexOf(s);
+    var prevLevelIdx=levelOrder.indexOf(s.level)-1;
+    var prevLevelPlayed=prevLevelIdx<0?true:(played[levelOrder[prevLevelIdx]]||0)>=1;
+    unlocked[s.id]=prevLevelPlayed&&(idx===0||(played[s.level]||0)>=idx);
+  });
+  return unlocked;
+}
+
 var BADGES=[
   {id:"first_steps",   name:"First Steps",      icon:"👣", desc:"Complete your first quiz"},
   {id:"story_starter", name:"Story Starter",     icon:"📖", desc:"Complete 5 quizzes"},
@@ -763,6 +913,17 @@ export default function App(){
     clearInterval(iv);
   }
 
+  function startStoryFromLibrary(story){
+    setLevel(story.level);
+    setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);
+    var mq=null;for(var i=0;i<story.questions.length;i++){if(story.questions[i].type==="matching"){mq=story.questions[i];break;}}
+    setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
+    setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+    setIsDailyGame(false);
+    setStage("reading");
+  }
+
   function startQuiz(){
     if(window.speechSynthesis){window.speechSynthesis.cancel();setIsSpeaking(false);}
     setFocusMode(false);setSelectedWord(null);setWordDef(null);
@@ -1009,6 +1170,7 @@ export default function App(){
                 <button onClick={function(){setStage("analytics");}} style={GHOST}>Stats</button>
                 <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>Vocab</button>
                 <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
+                <button onClick={function(){setStage("library");}} style={GHOST}>Library</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
               </div>
@@ -1993,6 +2155,50 @@ export default function App(){
 
               {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No data yet — complete your first quiz!</p></div>}
               <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>Start Reading</button>
+            </div>
+          );
+        })()}
+
+        {/* ── STORY LIBRARY ─────────────────────────────────── */}
+        {stage==="library"&&currentUser&&(function(){
+          var unlockedMap=getUnlockedStories(currentUser.games||[]);
+          var levelOrder=["A1","A2","B1","B2","C1","C2"];
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#34d399"}}>Story Library</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+              <p style={{color:"#6b7280",fontSize:12,marginBottom:16,lineHeight:1.5}}>Pre-written stories — no wait, instant play. Unlock more by completing quizzes.</p>
+              {levelOrder.map(function(lk){
+                var lObj=getLv(lk);
+                var stories=STORY_LIBRARY.filter(function(s){return s.level===lk;});
+                return(
+                  <div key={lk} style={{marginBottom:20}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <span style={{fontSize:13,fontWeight:900,color:lObj.color}}>{lk}</span>
+                      <span style={{fontSize:11,color:"#4b5563"}}>{lObj.desc}</span>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {stories.map(function(story){
+                        var isUnlocked=!!unlockedMap[story.id];
+                        return(
+                          <div key={story.id} style={{...CARD,padding:14,display:"flex",alignItems:"center",gap:12,opacity:isUnlocked?1:0.45,border:"1px solid "+(isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
+                            <div style={{fontSize:28,flexShrink:0}}>{isUnlocked?({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"}[lk]||"📖"):"🔒"}</div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:14,fontWeight:700,color:isUnlocked?"#f3f4f6":"#6b7280",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
+                              <div style={{fontSize:11,color:"#6b7280"}}>{story.topic} · {story.questions.length} questions</div>
+                              {!isUnlocked&&<div style={{fontSize:10,color:"#4b5563",marginTop:2}}>Complete more {lk} quizzes to unlock</div>}
+                            </div>
+                            {isUnlocked&&<div style={{fontSize:11,fontWeight:700,color:lObj.color,flexShrink:0}}>Play →</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              <button onClick={function(){setStage("home");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:4}}>Back to Home</button>
             </div>
           );
         })()}
