@@ -8,6 +8,9 @@ var CREDS_KEY    = "rq-credentials";
 var VOCAB_KEY    = "rq-vocab-v1";
 var DAILY_KEY    = "rq-daily-v1";
 var DAILY_LB_KEY = "rq-daily-lb-v1";
+var FAVS_KEY     = "rq-favs-v1";
+var WEEKLY_KEY   = "rq-weekly-v1";
+var DISCUSS_KEY  = "rq-discuss-v1";
 
 var LEVELS = [
   {key:"A1",color:"#22c55e",glow:"rgba(34,197,94,0.25)",  mult:1,  timeLimit:150,timeBonus:200,desc:"Elementary"},
@@ -20,6 +23,37 @@ var LEVELS = [
 
 var Q_LABELS = {mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"};
 var Q_XP = {mcq:1,gap_word:1,gap_sentence:1,matching:3,heading:3,qa:2,tfnm:1,ynng:1};
+
+var COMMON_WORDS=new Set(("a about above across add after again age ago agree air all allow almost alone along already also although always am among an and another any are area around as ask at away back bad be became because been before behind being below best better between big black body both break bring but buy by call came can care carry cause change cheap check child clear close come common complete could course cut dark day deep did different do does done down draw drive during each early eat end enough even ever every example face fact far feel few fill find first follow for found four from gave get give go good got great grow had hand hard has have he help her here high him his home hot how however hundred if important in increase into is it its just keep kind know large last later learn left less let life light like little live long look made make man many may me mean meet might money more most move much must my myself need never new next night no not now number of off often old on once only open or other our out own part people per place plan play point possible power put read real right room run said same say school see she show since small so some something soon stay stop such system take tell than that the their them then there these they think this those three through time to today together too took toward try turn under up us use very walk want was way we went were what when where which while who why will with work world would write year yes yet you young your able accept according account achieve act action actually address almost already also among area back based become begin behind best better black blue body build call car carry center chance change check clear close color come consider continue control country course create cut deal decide design develop different door down draw drive early earth east effect either element end enough enter establish even example experience eye face fact fall family far feel figure find fire five floor follow found four free full function game give given good group grow hand happen hard head high history hold home hour house however human hundred idea increase indeed information interest kind know language law lead learn leave left let level light line list look mean message mind mode money month most move much must national near night notice number object off offer old once open order organization other outside page paper past pay period person pick place plan point poor position press process product program public put question range rate reach read ready record require result right role round run school second seem seen series set side simple since sit six situation small social some sort sound state still stop study subject sure surface system table talk ten term thing thought time today together town try turn type unit until use usually various view visit voice walk want watch way week well whether white wide within without word world write yet").split(" "));
+
+function countSyllables(word){
+  word=word.toLowerCase().replace(/[^a-z]/g,"");
+  if(!word)return 1;
+  var count=(word.match(/[aeiouy]+/g)||[]).length;
+  if(word.endsWith("e")&&count>1)count--;
+  return Math.max(1,count);
+}
+function getWpmLabel(wpm){
+  if(wpm<80)return"Beginner";if(wpm<150)return"Elementary";if(wpm<250)return"Intermediate";if(wpm<400)return"Advanced";return"Expert";
+}
+function analyzePassage(text){
+  var words=text.split(/\s+/).filter(Boolean);
+  var wordCount=words.length;
+  var sentences=text.split(/[.!?]+/).filter(function(s){return s.trim().length>2;});
+  var sentCount=Math.max(1,sentences.length);
+  var totalSyl=words.reduce(function(s,w){return s+countSyllables(w);},0);
+  var fk=0.39*(wordCount/sentCount)+11.8*(totalSyl/Math.max(1,wordCount))-15.59;
+  fk=Math.max(1,Math.min(16,fk));
+  var stars=fk<4?1:fk<6?2:fk<8?3:fk<11?4:5;
+  var newWords=words.filter(function(w){return!COMMON_WORDS.has(w.toLowerCase().replace(/[^a-z]/g,""));}).length;
+  return{wordCount,sentCount,stars,newWords,estReadMins:Math.max(1,Math.round(wordCount/200))};
+}
+function getWeekId(){
+  var d=new Date();
+  var dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/(864e5));
+  return d.getFullYear()+"-W"+Math.ceil(dayOfYear/7);
+}
+function getWpmFromSecs(wordCount,secs){return secs>0?Math.round(wordCount/(secs/60)):0;}
 
 // ── pure helpers ─────────────────────────────────────────────
 function getLv(k){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].key===k)return LEVELS[i];}return LEVELS[0];}
@@ -210,6 +244,24 @@ function getUnlockedStories(games){
   return unlocked;
 }
 
+function getRecommendations(games,n){
+  if(!games)games=[];
+  var lvOrder=["A1","A2","B1","B2","C1","C2"];
+  var recentLevels=games.slice(-5).map(function(g){return g.level;});
+  var dominantLevel=recentLevels.length?recentLevels[recentLevels.length-1]:"A1";
+  var lvIdx=lvOrder.indexOf(dominantLevel);
+  var playedIds=new Set(games.filter(function(g){return g.storyId;}).map(function(g){return g.storyId;}));
+  var recentTopics=games.slice(-3).map(function(g){return g.topic;});
+  var unlockedMap=getUnlockedStories(games);
+  var scored=STORY_LIBRARY.filter(function(s){return unlockedMap[s.id]&&!playedIds.has(s.id);}).map(function(s){
+    var sIdx=lvOrder.indexOf(s.level);
+    var lvScore=3-Math.abs(sIdx-lvIdx);
+    var topicScore=recentTopics.indexOf(s.topic)!==-1?-1:1;
+    return{story:s,score:lvScore+topicScore};
+  }).sort(function(a,b){return b.score-a.score;});
+  return scored.slice(0,n||3).map(function(x){return x.story;});
+}
+
 var BADGES=[
   {id:"first_steps",   name:"First Steps",      icon:"👣", desc:"Complete your first quiz"},
   {id:"story_starter", name:"Story Starter",     icon:"📖", desc:"Complete 5 quizzes"},
@@ -330,6 +382,12 @@ async function loadDaily(){var v=await apiGet(DAILY_KEY);return v||null;}
 async function saveDaily(d){await apiSet(DAILY_KEY,d);}
 async function loadDailyLb(){var v=await apiGet(DAILY_LB_KEY);return v||{};}
 async function saveDailyLb(d){await apiSet(DAILY_LB_KEY,d);}
+async function loadFavs(){var v=await apiGet(FAVS_KEY);return v||{};}
+async function saveFavs(v){await apiSet(FAVS_KEY,v);}
+async function loadWeeklyLb(){var v=await apiGet(WEEKLY_KEY);return v||{};}
+async function saveWeeklyLb(v){await apiSet(WEEKLY_KEY,v);}
+async function loadDiscuss(){var v=await apiGet(DISCUSS_KEY);return v||{};}
+async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
@@ -708,6 +766,28 @@ export default function App(){
   var [selectedWord,setSelectedWord]=useState(null);
   var [wordDef,setWordDef]=useState(null);
   var [wordDefLoading,setWordDefLoading]=useState(false);
+  var [speechRate,setSpeechRate]=useState(1);
+  var [activeSentence,setActiveSentence]=useState(null);
+  var [heatmapOn,setHeatmapOn]=useState(false);
+  // favorites
+  var [favs,setFavs]=useState([]);
+  var [allFavs,setAllFavs]=useState({});
+  var [currentStoryId,setCurrentStoryId]=useState(null);
+  // vocab game
+  var [vocabGameMode,setVocabGameMode]=useState(null);
+  var [vocabGameIdx,setVocabGameIdx]=useState(0);
+  var [vocabGameScore,setVocabGameScore]=useState(0);
+  var [vocabGameAnswered,setVocabGameAnswered]=useState(null);
+  // translation
+  var [translateLang,setTranslateLang]=useState(function(){try{return localStorage.getItem("rq-translate-lang")||"uz";}catch(e){return"uz";}});
+  var [translation,setTranslation]=useState(null);
+  var [translating,setTranslating]=useState(false);
+  // weekly board
+  var [weeklyLb,setWeeklyLb]=useState([]);
+  // discuss
+  var [discussStoryId,setDiscussStoryId]=useState(null);
+  var [allDiscuss,setAllDiscuss]=useState({});
+  var [discussInput,setDiscussInput]=useState("");
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -746,6 +826,9 @@ export default function App(){
     var todayQuests=getDayQuests(today);setDailyQuests(todayQuests);
     var qDoneRaw=null;try{qDoneRaw=JSON.parse(localStorage.getItem("rq-quests-"+currentUser.name+"-"+today));}catch(e){}
     setQuestsDone(qDoneRaw||{});
+    loadFavs().then(function(f){setAllFavs(f||{});setFavs((f&&f[currentUser.name])||[]);});
+    loadWeeklyLb().then(function(w){var wk=getWeekId();setWeeklyLb((w&&w[wk])||[]);});
+    loadDiscuss().then(function(d){setAllDiscuss(d||{});});
   },[currentUser]);
 
   // always pull fresh users when entering friends page or typing a search
@@ -855,12 +938,46 @@ export default function App(){
 
   function speakPassage(){
     if(!window.speechSynthesis)return;
-    if(isSpeaking){window.speechSynthesis.cancel();setIsSpeaking(false);return;}
+    if(isSpeaking){window.speechSynthesis.cancel();setIsSpeaking(false);setActiveSentence(null);return;}
     var utt=new SpeechSynthesisUtterance(passage);
+    utt.rate=speechRate;
+    utt.onend=function(){setIsSpeaking(false);setActiveSentence(null);};
+    utt.onerror=function(){setIsSpeaking(false);setActiveSentence(null);};
+    window.speechSynthesis.speak(utt);
+    setIsSpeaking(true);
+  }
+
+  function speakSentence(text){
+    if(!window.speechSynthesis)return;
+    window.speechSynthesis.cancel();
+    setActiveSentence(text);setTranslation(null);
+    var utt=new SpeechSynthesisUtterance(text);
+    utt.rate=speechRate;
     utt.onend=function(){setIsSpeaking(false);};
     utt.onerror=function(){setIsSpeaking(false);};
     window.speechSynthesis.speak(utt);
     setIsSpeaking(true);
+  }
+
+  async function translateSentence(text){
+    if(!text)return;
+    setTranslating(true);setTranslation(null);
+    try{
+      var lang=translateLang||"uz";
+      var url="https://api.mymemory.translated.net/get?q="+encodeURIComponent(text)+"&langpair=en|"+lang;
+      var r=await fetch(url);
+      var d=await r.json();
+      setTranslation(d.responseData&&d.responseData.translatedText?d.responseData.translatedText:"Translation unavailable.");
+    }catch(e){setTranslation("Translation unavailable.");}
+    setTranslating(false);
+  }
+
+  async function toggleFav(storyId,storyTitle,storyLevel){
+    if(!currentUser||!storyId)return;
+    var existed=favs.some(function(f){return f.id===storyId;});
+    var nFavs=existed?favs.filter(function(f){return f.id!==storyId;}):favs.concat([{id:storyId,title:storyTitle,level:storyLevel,date:new Date().toLocaleDateString()}]);
+    var nAll={};for(var k in allFavs)nAll[k]=allFavs[k];nAll[currentUser.name]=nFavs;
+    setFavs(nFavs);setAllFavs(nAll);saveFavs(nAll);
   }
 
   async function lookupWord(word){
@@ -908,6 +1025,7 @@ export default function App(){
       setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
       setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+      setCurrentStoryId(null);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
       setStage("reading");
     }catch(e){console.log("generate err",e);setError("Generation failed - please try again.");setStage("home");}
     clearInterval(iv);
@@ -920,7 +1038,8 @@ export default function App(){
     setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
-    setIsDailyGame(false);
+    setIsDailyGame(false);setCurrentStoryId(story.id);
+    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
     setStage("reading");
   }
 
@@ -997,7 +1116,8 @@ export default function App(){
         newQuestItems.push(qt);finalXp+=qt.xp;
       }
     });
-    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false};
+    var wpm=getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs);
+    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
     var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
     var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
     await saveUsers(newUsers);setAllUsers(newUsers);setCurrentUser(updatedUser);
@@ -1025,6 +1145,15 @@ export default function App(){
       setIsDailyGame(false);
     }
 
+    var wk=getWeekId();
+    var wlb=await loadWeeklyLb();var wToday=(wlb&&wlb[wk])||[];
+    var wExisting=wToday.find(function(e){return e.name===currentUser.name;});
+    var wEntry=wExisting?{name:wExisting.name,xp:wExisting.xp+finalXp,games:(wExisting.games||0)+1}:{name:currentUser.name,xp:finalXp,games:1};
+    var wFiltered=wToday.filter(function(e){return e.name!==currentUser.name;});
+    var wMerged=wFiltered.concat([wEntry]);wMerged.sort(function(a,b){return b.xp-a.xp;});
+    var nwlb={};for(var wk2 in wlb)nwlb[wk2]=wlb[wk2];nwlb[wk]=wMerged.slice(0,30);
+    saveWeeklyLb(nwlb);setWeeklyLb(wMerged.slice(0,30));
+
     var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
     if(newQuestItems.length>0){
       var nqd={};for(var qk in questsDone)nqd[qk]=questsDone[qk];
@@ -1033,7 +1162,7 @@ export default function App(){
       setQuestsDone(nqd);
     }
     var questBonus=newQuestItems.reduce(function(s,q){return s+q.xp;},0);
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus});
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null});
     setStage("result");
   }
 
@@ -1044,6 +1173,7 @@ export default function App(){
     setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");
     setIsDailyGame(false);setSavedWords(new Set());
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
+    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);
     setStage("home");
   }
 
@@ -1171,6 +1301,7 @@ export default function App(){
                 <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>Vocab</button>
                 <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
                 <button onClick={function(){setStage("library");}} style={GHOST}>Library</button>
+                <button onClick={function(){setStage("weekly");}} style={GHOST}>Weekly</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
               </div>
@@ -1203,6 +1334,32 @@ export default function App(){
                       <p style={{fontSize:12,color:"#9ca3af",margin:0}}>{done?"Completed! "+dailyDone.xp+" XP · "+dailyDone.pct+"%":dailyChallenge&&dailyChallenge.date===today?dailyChallenge.topic+" (B1)":"B1 · All question types"}</p>
                     </div>
                     <button onClick={done?function(){setStage("dailyleaderboard");}:startDailyChallenge} disabled={dailyLoading} style={{...mkBtn(done?"#fbbf24":"#06b6d4","#0d0d1a"),padding:"9px 16px",fontSize:13,flexShrink:0}}>{dailyLoading?"Loading...":done?"Leaderboard":"Play"}</button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* recommendations card */}
+            {currentUser&&(function(){
+              var recs=getRecommendations(currentUser.games||[],3);
+              if(!recs.length)return null;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14}}>
+                  <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.6,margin:"0 0 10px"}}>RECOMMENDED FOR YOU</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {recs.map(function(s){
+                      var lo=getLv(s.level);
+                      return(
+                        <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"8px 10px",borderRadius:10,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}} onClick={function(){startStoryFromLibrary(s);}}>
+                          <span style={{fontSize:20}}>{({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"})[s.level]||"📖"}</span>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:600,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.title}</div>
+                            <div style={{fontSize:11,color:"#6b7280"}}>{s.topic}</div>
+                          </div>
+                          <span style={{fontSize:11,fontWeight:700,color:lo.color,flexShrink:0}}>{s.level}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -1288,24 +1445,52 @@ export default function App(){
           var wordCount=passage.split(/\s+/).length;
           var estSecs=Math.max(30,Math.round(wordCount/3));
           var readPct=Math.min(100,Math.round((readingTimerSecs/estSecs)*100));
+          var liveWpm=readingTimerSecs>5?getWpmFromSecs(wordCount,readingTimerSecs):0;
+          var difficulty=analyzePassage(passage);
+
+          // Split passage into sentences for sentence TTS
+          var sentences=passage.match(/[^.!?]+[.!?]+/g)||[passage];
+
           function WordTokens(){
             return passage.split(/(\s+)/).map(function(token,i){
               if(/^\s+$/.test(token))return<span key={i}>{token}</span>;
               var word=token.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
               if(!word)return<span key={i}>{token}</span>;
               var saved=savedWords.has(word),isSelected=selectedWord===word;
-              return<span key={i} onClick={function(){lookupWord(word);}} style={{cursor:"pointer",borderRadius:3,background:isSelected?"rgba(251,191,36,0.25)":saved?"rgba(6,182,212,0.2)":"transparent",color:isSelected?"#fbbf24":saved?"#06b6d4":"inherit",padding:"0 2px",transition:"background 0.12s",textDecoration:isSelected?"underline":"none",textDecorationColor:"#fbbf24"}}>{token}</span>;
+              var isHard=heatmapOn&&word.length>2&&!COMMON_WORDS.has(word.replace(/[^a-z]/g,""));
+              var bg=isSelected?"rgba(251,191,36,0.3)":saved?"rgba(6,182,212,0.2)":isHard?"rgba(245,158,11,0.22)":"transparent";
+              var col=isSelected?"#fbbf24":saved?"#06b6d4":isHard?"#fbbf24":"inherit";
+              return<span key={i} onClick={function(){lookupWord(word);}} title={isHard?"Uncommon word":undefined} style={{cursor:"pointer",borderRadius:3,background:bg,color:col,padding:"0 2px",transition:"background 0.12s",textDecoration:isSelected?"underline":isHard?"underline dotted":"none",textDecorationColor:isSelected?"#fbbf24":"rgba(245,158,11,0.5)"}}>{token}</span>;
+            });
+          }
+
+          function SentencePassage(){
+            return sentences.map(function(sent,si){
+              var isActive=activeSentence===sent.trim();
+              return<span key={si} onClick={function(){speakSentence(sent.trim());}} style={{cursor:"pointer",borderRadius:4,padding:"1px 2px",background:isActive?"rgba(99,102,241,0.2)":"transparent",borderBottom:isActive?"2px solid #818cf8":"none",transition:"background 0.15s"}}>{sent}</span>;
             });
           }
 
           if(focusMode)return(
             <div>
               <button onClick={function(){setFocusMode(false);}} style={{position:"fixed",top:14,right:14,background:"rgba(13,13,26,0.85)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",zIndex:100,backdropFilter:"blur(8px)"}}>✕ Exit Focus</button>
-              <div style={{paddingTop:10,paddingBottom:80}}>
+              <div style={{paddingTop:10,paddingBottom:100}}>
                 <h2 style={{margin:"0 0 18px",fontSize:20,fontWeight:900,color:"#f9fafb"}}>{topic}</h2>
                 <p style={{lineHeight:2.1,fontSize:18,color:"#e5e7eb",margin:0,letterSpacing:0.2}}><WordTokens/></p>
+                {activeSentence&&(
+                  <div style={{...CARD,marginTop:12,padding:12,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.3)"}}>
+                    <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                      <span style={{fontSize:12,color:"#9ca3af",flex:1}}>{activeSentence}</span>
+                      <button onClick={function(){translateSentence(activeSentence);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid #818cf8",color:"#a78bfa",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{translating?"...":"Translate"}</button>
+                      <select value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:6,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}>
+                        <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
+                      </select>
+                    </div>
+                    {translation&&<p style={{fontSize:13,color:"#c7d2fe",margin:"8px 0 0",fontStyle:"italic"}}>{translation}</p>}
+                  </div>
+                )}
                 {selectedWord&&(
-                  <div style={{...CARD,marginTop:16,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.3)"}}>
+                  <div style={{...CARD,marginTop:12,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.3)"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                       <span style={{fontSize:17,fontWeight:900,color:"#fbbf24"}}>{selectedWord}</span>
                       <div style={{display:"flex",gap:6}}>
@@ -1319,11 +1504,13 @@ export default function App(){
                   </div>
                 )}
               </div>
-              <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(13,13,26,0.95)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"12px 20px",display:"flex",gap:10,alignItems:"center",zIndex:99,backdropFilter:"blur(10px)"}}>
-                <span style={{fontSize:13,color:"#6b7280",minWidth:50}}>⏱ {formatTime(readingTimerSecs)}</span>
-                <button onClick={speakPassage} style={{background:isSpeaking?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),color:isSpeaking?"#818cf8":"#9ca3af",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking?"⏹ Stop":"🔊 Listen"}</button>
-                {savedWords.size>0&&<span style={{fontSize:12,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size}</span>}
-                <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"10px 20px",fontSize:14}}>Begin Quiz →</button>
+              <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(13,13,26,0.95)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"10px 16px",display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",zIndex:99,backdropFilter:"blur(10px)"}}>
+                <span style={{fontSize:12,color:"#6b7280"}}>⏱ {formatTime(readingTimerSecs)}{liveWpm>0&&" · "+liveWpm+" WPM"}</span>
+                <button onClick={speakPassage} style={{background:isSpeaking?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),color:isSpeaking?"#818cf8":"#9ca3af",borderRadius:8,padding:"6px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking?"⏹":"🔊"}</button>
+                <div style={{display:"flex",gap:3}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.08)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"4px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
+                </div>
+                {savedWords.size>0&&<span style={{fontSize:11,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size}</span>}
+                <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"9px 18px",fontSize:13}}>Begin Quiz →</button>
               </div>
             </div>
           );
@@ -1331,33 +1518,58 @@ export default function App(){
           return(
             <div>
               {/* header */}
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingTop:6}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,paddingTop:6}}>
                 <span style={{...pill(lv?lv.color:"#34d399","#0d0d1a"),fontSize:12,fontWeight:900}}>{level} · {selectedTypes.length} questions</span>
-                <button onClick={function(){setFocusMode(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>📖 Focus Mode</button>
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={function(){toggleFav(currentStoryId,topic,level);}} style={{background:favs.some(function(f){return f.id===currentStoryId;})?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"rgba(255,255,255,0.12)"),color:favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"#9ca3af",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:currentStoryId?"pointer":"default",fontFamily:"inherit"}}>{favs.some(function(f){return f.id===currentStoryId;})?"❤️":"🤍"}</button>
+                  <button onClick={function(){setFocusMode(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>📖 Focus</button>
+                </div>
               </div>
 
-              {/* title */}
-              <h2 style={{margin:"0 0 12px",fontSize:21,fontWeight:900,color:"#f9fafb",lineHeight:1.3}}>{topic}</h2>
-
-              {/* progress bar */}
-              <div style={{marginBottom:14}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#6b7280",marginBottom:5}}>
-                  <span>Progress</span>
-                  <span>{wordCount} words · ~{Math.max(1,Math.ceil(wordCount/180))} min read</span>
+              {/* difficulty analyzer card */}
+              <div style={{...CARD,padding:"10px 14px",marginBottom:10,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
+                <div>
+                  <span style={{fontSize:10,color:"#6b7280",fontWeight:700,letterSpacing:0.5}}>DIFFICULTY </span>
+                  <span style={{fontSize:13,color:"#fbbf24"}}>{"⭐".repeat(difficulty.stars)+"☆".repeat(5-difficulty.stars)}</span>
                 </div>
+                <div style={{fontSize:11,color:"#6b7280"}}>📖 {difficulty.wordCount} words · ~{difficulty.estReadMins} min</div>
+                <div style={{fontSize:11,color:"#a78bfa"}}>🆕 ~{difficulty.newWords} new words</div>
+                {liveWpm>0&&<div style={{fontSize:11,color:"#34d399",marginLeft:"auto"}}>⚡ {liveWpm} WPM · {getWpmLabel(liveWpm)}</div>}
+              </div>
+
+              {/* title + progress */}
+              <h2 style={{margin:"0 0 10px",fontSize:21,fontWeight:900,color:"#f9fafb",lineHeight:1.3}}>{topic}</h2>
+              <div style={{marginBottom:12}}>
                 <div style={{background:"rgba(255,255,255,0.07)",borderRadius:999,height:6,overflow:"hidden"}}>
                   <div style={{height:"100%",width:readPct+"%",background:lv?lv.color:"#34d399",borderRadius:999,transition:"width 1s linear"}}/>
                 </div>
               </div>
 
-              {/* passage */}
+              {/* passage — sentence TTS mode or word mode */}
               <div style={{...CARD,marginBottom:12}}>
-                <p style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb",margin:0}}><WordTokens/></p>
-                <p style={{fontSize:11,color:"#4b5563",margin:"10px 0 0",textAlign:"center"}}>Tap any word to look it up</p>
+                <p style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb",margin:0}}>
+                  {activeSentence!==null?<SentencePassage/>:<WordTokens/>}
+                </p>
+                <p style={{fontSize:11,color:"#4b5563",margin:"10px 0 0",textAlign:"center"}}>{activeSentence!==null?"Tap a sentence to listen":"Tap any word to look it up"}</p>
               </div>
 
+              {/* active sentence panel (translation) */}
+              {activeSentence&&(
+                <div style={{...CARD,marginBottom:12,padding:12,background:"rgba(99,102,241,0.07)",borderColor:"rgba(99,102,241,0.3)"}}>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:6}}>
+                    <span style={{fontSize:12,color:"#c7d2fe",flex:1,lineHeight:1.5}}>{activeSentence}</span>
+                    <button onClick={function(){translateSentence(activeSentence);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid #818cf8",color:"#a78bfa",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{translating?"...":"🌐 Translate"}</button>
+                    <select value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:6,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}>
+                      <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
+                    </select>
+                    <button onClick={function(){setActiveSentence(null);setTranslation(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:16,cursor:"pointer",lineHeight:1}}>×</button>
+                  </div>
+                  {translation&&<p style={{fontSize:13,color:"#c7d2fe",margin:0,fontStyle:"italic"}}>{translation}</p>}
+                </div>
+              )}
+
               {/* vocab popup */}
-              {selectedWord&&(
+              {selectedWord&&!activeSentence&&(
                 <div style={{...CARD,marginBottom:12,background:"rgba(251,191,36,0.07)",borderColor:"rgba(251,191,36,0.3)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                     <div>
@@ -1381,11 +1593,13 @@ export default function App(){
               )}
 
               {/* bottom action bar */}
-              <div style={{...CARD,padding:"11px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-                <span style={{fontSize:13,color:"#9ca3af",minWidth:56}}>⏱ {formatTime(readingTimerSecs)}</span>
-                <button onClick={speakPassage} style={{background:isSpeaking?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.05)",border:"1px solid "+(isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),color:isSpeaking?"#818cf8":"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking?"⏹ Stop":"🔊 Listen"}</button>
-                {savedWords.size>0&&<span style={{fontSize:12,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size} saved</span>}
-                <div style={{marginLeft:"auto",fontSize:11,color:"#4b5563"}}>Bonus: up to {lv?lv.timeBonus:200} XP</div>
+              <div style={{...CARD,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:12,color:"#9ca3af"}}>⏱ {formatTime(readingTimerSecs)}</span>
+                <button onClick={speakPassage} style={{background:isSpeaking&&!activeSentence?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:isSpeaking&&!activeSentence?"#818cf8":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking&&!activeSentence?"⏹ Stop":"🔊 Listen"}</button>
+                <button onClick={function(){setActiveSentence(activeSentence!==null?null:"");setTranslation(null);}} style={{background:activeSentence!==null?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(activeSentence!==null?"#818cf8":"rgba(255,255,255,0.1)"),color:activeSentence!==null?"#a78bfa":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🌐 {activeSentence!==null?"Exit Translate":"Translate"}</button>
+                <button onClick={function(){setHeatmapOn(function(h){return!h;});}} style={{background:heatmapOn?"rgba(245,158,11,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(heatmapOn?"#f59e0b":"rgba(255,255,255,0.1)"),color:heatmapOn?"#fbbf24":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>💡 Hard words</button>
+                <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.06)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"3px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
+                </div>
               </div>
 
               <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>Begin Quiz →</button>
@@ -1439,8 +1653,8 @@ export default function App(){
             <div style={{...CARD,marginBottom:10}}>
               <div style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
               <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
-              <div style={{display:"flex",gap:7}}>
-                {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"}].map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:14,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
+              <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
               </div>
               {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>Speed bonus: +{result.timeBonus} XP!</div>}
             </div>
@@ -1506,8 +1720,9 @@ export default function App(){
                 })}
               </div>
             )}
-            <div style={{display:"flex",gap:7}}>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
+              {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
               <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
               <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
@@ -1533,7 +1748,10 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#06b6d4"}}>Vocabulary</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                <div style={{display:"flex",gap:6}}>
+                  {vocab.length>=2&&<button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);setStage("vocabgame");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"7px 14px",fontSize:12}}>🎮 Practice</button>}
+                  <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                </div>
               </div>
               <div style={{display:"flex",gap:5,marginBottom:12}}>
                 {[["all","All ("+words.length+")"],["review","Review ("+reviewWords.length+")"]].map(function(t){
@@ -2169,7 +2387,28 @@ export default function App(){
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#34d399"}}>Story Library</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
               </div>
-              <p style={{color:"#6b7280",fontSize:12,marginBottom:16,lineHeight:1.5}}>Pre-written stories — no wait, instant play. Unlock more by completing quizzes.</p>
+              <p style={{color:"#6b7280",fontSize:12,marginBottom:12,lineHeight:1.5}}>Pre-written stories — instant play. Unlock more by completing quizzes.</p>
+              {favs.length>0&&(
+                <div style={{marginBottom:16}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#f472b6",letterSpacing:0.5,margin:"0 0 8px"}}>❤️ MY FAVORITES</p>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {favs.map(function(f){
+                      var story=STORY_LIBRARY.find(function(s){return s.id===f.id;});
+                      if(!story)return null;
+                      var lo=getLv(story.level);
+                      return(
+                        <div key={f.id} style={{...CARD,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",flex:"1 1 auto",minWidth:140,border:"1px solid rgba(236,72,153,0.3)",background:"rgba(236,72,153,0.05)"}} onClick={function(){startStoryFromLibrary(story);}}>
+                          <span style={{fontSize:20}}>{({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"})[story.level]||"📖"}</span>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:600,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
+                            <div style={{fontSize:11,color:lo.color}}>{story.level} · {story.topic}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {levelOrder.map(function(lk){
                 var lObj=getLv(lk);
                 var stories=STORY_LIBRARY.filter(function(s){return s.level===lk;});
@@ -2230,6 +2469,234 @@ export default function App(){
                 })}
               </div>
               <button onClick={doRestart} style={{...mkBtn("#fbbf24","#0d0d1a"),width:"100%",marginTop:14}}>Keep Playing to Unlock More</button>
+            </div>
+          );
+        })()}
+
+        {/* ── VOCAB GAME ────────────────────────────────────── */}
+        {stage==="vocabgame"&&currentUser&&(function(){
+          var gameWords=vocab.filter(function(w){return w.status!=="known";});
+          if(!gameWords.length)gameWords=vocab.slice();
+          if(!gameWords.length)return(<div style={{textAlign:"center",paddingTop:60}}><p style={{color:"#6b7280"}}>Save some words to your notebook first!</p><button onClick={function(){setStage("vocab");}} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:16}}>Go to Vocab</button></div>);
+
+          if(!vocabGameMode)return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>Vocab Practice</h2>
+                <button onClick={function(){setStage("vocab");}} style={GHOST}>Back</button>
+              </div>
+              <p style={{color:"#6b7280",fontSize:13,marginBottom:16}}>{gameWords.length} words to practice</p>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {[{m:"flashcard",icon:"🃏",name:"Flashcards",desc:"Flip to reveal the meaning"},{m:"mcq",icon:"🎯",name:"Word Quiz",desc:"Pick the correct definition"},{m:"blank",icon:"✏️",name:"Fill the Blank",desc:"Complete the sentence"}].map(function(item){
+                  return(
+                    <button key={item.m} onClick={function(){setVocabGameMode(item.m);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);}} style={{...CARD,border:"1px solid rgba(167,139,250,0.25)",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:14,padding:16}}>
+                      <span style={{fontSize:30}}>{item.icon}</span>
+                      <div><div style={{fontSize:15,fontWeight:700,color:"#f3f4f6",marginBottom:2}}>{item.name}</div><div style={{fontSize:12,color:"#6b7280"}}>{item.desc}</div></div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+
+          var shuffled=gameWords.slice().sort(function(){return Math.random()-0.5;});
+          var curW=shuffled[vocabGameIdx%shuffled.length];
+          var isDone=vocabGameIdx>=shuffled.length;
+          if(isDone)return(
+            <div style={{textAlign:"center",paddingTop:40}}>
+              <div style={{fontSize:50,marginBottom:10}}>🎉</div>
+              <h2 style={{fontSize:22,fontWeight:900,color:"#a78bfa",marginBottom:6}}>Practice Complete!</h2>
+              <p style={{color:"#9ca3af",marginBottom:20}}>Score: {vocabGameScore} / {shuffled.length}</p>
+              <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                <button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);}} style={mkBtn("#a78bfa","#0d0d1a")}>Play Again</button>
+                <button onClick={function(){setStage("vocab");}} style={mkBtn("#374151")}>Back to Vocab</button>
+              </div>
+            </div>
+          );
+
+          if(vocabGameMode==="flashcard")return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>Flashcards</h2>
+                <span style={{fontSize:12,color:"#6b7280"}}>{vocabGameIdx+1}/{shuffled.length}</span>
+              </div>
+              <div onClick={function(){setVocabFlipped(function(f){return!f;});}} style={{...CARD,minHeight:180,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:14,background:vocabFlipped?"rgba(167,139,250,0.1)":"rgba(255,255,255,0.04)",borderColor:vocabFlipped?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.1)",transition:"all 0.3s"}}>
+                <div style={{textAlign:"center"}}>
+                  {!vocabFlipped?<><div style={{fontSize:26,fontWeight:900,color:"#f3f4f6",marginBottom:8}}>{curW.word}</div><div style={{fontSize:12,color:"#6b7280"}}>Tap to reveal</div></>
+                  :<><div style={{fontSize:22,fontWeight:700,color:"#a78bfa",marginBottom:4}}>{curW.word}</div><div style={{fontSize:13,color:"#d1d5db",lineHeight:1.6,maxWidth:280}}>{curW.def||"No definition saved."}</div><div style={{fontSize:11,color:"#6b7280",marginTop:8}}>{curW.level} · {curW.topic}</div></>}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={function(){setVocabFlipped(false);setVocabGameIdx(function(i){return i+1;});}} style={{...mkBtn("#374151"),flex:1}}>Next →</button>
+              </div>
+            </div>
+          );
+
+          if(vocabGameMode==="mcq"){
+            var distractors=gameWords.filter(function(w){return w.word!==curW.word;}).sort(function(){return Math.random()-0.5;}).slice(0,3);
+            var options=[curW].concat(distractors).sort(function(){return Math.random()-0.5;});
+            var correctIdx=options.indexOf(curW);
+            return(
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                  <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>Word Quiz</h2>
+                  <span style={{fontSize:12,color:"#6b7280"}}>{vocabGameIdx+1}/{shuffled.length} · {vocabGameScore} pts</span>
+                </div>
+                <div style={{...CARD,marginBottom:14,textAlign:"center",padding:20}}>
+                  <p style={{fontSize:11,color:"#6b7280",marginBottom:6}}>Which word matches this definition?</p>
+                  <p style={{fontSize:15,color:"#e5e7eb",lineHeight:1.7,margin:0}}>{curW.def||"A word saved from your reading."}</p>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
+                  {options.map(function(opt,oi){
+                    var isCorrect=oi===correctIdx;
+                    var isSelected=vocabGameAnswered===oi;
+                    var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
+                    if(vocabGameAnswered!==null){if(isCorrect){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSelected){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
+                    else if(isSelected){bg="rgba(167,139,250,0.2)";bd="1px solid #a78bfa";col="#a78bfa";}
+                    return<button key={oi} disabled={vocabGameAnswered!==null} onClick={function(){setVocabGameAnswered(oi);if(isCorrect)setVocabGameScore(function(s){return s+1;});}} style={{background:bg,border:bd,borderRadius:10,padding:"11px 14px",color:col,fontSize:14,fontWeight:600,cursor:vocabGameAnswered!==null?"default":"pointer",fontFamily:"inherit",textAlign:"left"}}>{opt.word}</button>;
+                  })}
+                </div>
+                {vocabGameAnswered!==null&&<button onClick={function(){setVocabGameAnswered(null);setVocabGameIdx(function(i){return i+1;});}} style={{...mkBtn("#a78bfa","#0d0d1a"),width:"100%"}}>Next →</button>}
+              </div>
+            );
+          }
+
+          if(vocabGameMode==="blank"){
+            var sentence=(curW.example||"The word ___ is used in many contexts.").replace(new RegExp("\\b"+curW.word+"\\b","i"),"___");
+            var bDistractors=gameWords.filter(function(w){return w.word!==curW.word;}).sort(function(){return Math.random()-0.5;}).slice(0,3);
+            var bOptions=[curW].concat(bDistractors).sort(function(){return Math.random()-0.5;});
+            var bCorrect=bOptions.indexOf(curW);
+            return(
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                  <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>Fill the Blank</h2>
+                  <span style={{fontSize:12,color:"#6b7280"}}>{vocabGameIdx+1}/{shuffled.length} · {vocabGameScore} pts</span>
+                </div>
+                <div style={{...CARD,marginBottom:14,padding:16}}>
+                  <p style={{fontSize:16,color:"#e5e7eb",lineHeight:1.9,margin:0}}>{sentence.split("___")[0]}<span style={{display:"inline-block",minWidth:80,borderBottom:"2px solid #818cf8",textAlign:"center",color:"#818cf8",fontWeight:700}}>{vocabGameAnswered!==null?bOptions[vocabGameAnswered].word:"_____"}</span>{sentence.split("___")[1]||""}</p>
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+                  {bOptions.map(function(opt,oi){
+                    var isCorrect=oi===bCorrect;
+                    var isSelected=vocabGameAnswered===oi;
+                    var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
+                    if(vocabGameAnswered!==null){if(isCorrect){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSelected){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
+                    return<button key={oi} disabled={vocabGameAnswered!==null} onClick={function(){setVocabGameAnswered(oi);if(isCorrect)setVocabGameScore(function(s){return s+1;});}} style={{background:bg,border:bd,borderRadius:8,padding:"8px 14px",color:col,fontSize:13,fontWeight:600,cursor:vocabGameAnswered!==null?"default":"pointer",fontFamily:"inherit"}}>{opt.word}</button>;
+                  })}
+                </div>
+                {vocabGameAnswered!==null&&<button onClick={function(){setVocabGameAnswered(null);setVocabGameIdx(function(i){return i+1;});}} style={{...mkBtn("#a78bfa","#0d0d1a"),width:"100%"}}>Next →</button>}
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+        {/* ── WEEKLY BOARD ──────────────────────────────────── */}
+        {stage==="weekly"&&currentUser&&(function(){
+          var wk=getWeekId();
+          var myEntry=weeklyLb.find(function(e){return e.name===currentUser.name;});
+          var myPos=weeklyLb.findIndex(function(e){return e.name===currentUser.name;});
+          var weekGames=(currentUser.games||[]).filter(function(g){
+            var d=new Date(g.date);var dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/(864e5));
+            var gameWk=d.getFullYear()+"-W"+Math.ceil(dayOfYear/7);
+            return gameWk===wk;
+          });
+          var weekXp=weekGames.reduce(function(s,g){return s+g.xp;},0);
+          var goalMet=weekGames.length>=3;
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#818cf8"}}>Weekly Board</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(129,140,248,0.3)",background:"rgba(129,140,248,0.05)"}}>
+                <p style={{fontSize:11,color:"#818cf8",fontWeight:700,letterSpacing:0.5,margin:"0 0 8px"}}>THIS WEEK</p>
+                <div style={{display:"flex",gap:10}}>
+                  <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#818cf8"}}>{weekXp}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>XP earned</div>
+                  </div>
+                  <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#34d399"}}>{weekGames.length}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>stories read</div>
+                  </div>
+                  <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>#{myPos>=0?myPos+1:"–"}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>rank</div>
+                  </div>
+                </div>
+                <div style={{marginTop:10,padding:"8px 10px",borderRadius:8,background:goalMet?"rgba(52,211,153,0.1)":"rgba(255,255,255,0.04)",border:"1px solid "+(goalMet?"rgba(52,211,153,0.4)":"rgba(255,255,255,0.1)")}}>
+                  <span style={{fontSize:12,color:goalMet?"#34d399":"#9ca3af",fontWeight:600}}>{goalMet?"✓ Weekly goal complete! 3+ stories read":"Weekly goal: read 3 stories · "+weekGames.length+"/3 done"}</span>
+                </div>
+              </div>
+              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.5,marginBottom:8}}>LEADERBOARD</p>
+              {weeklyLb.length===0&&<p style={{color:"#6b7280",fontSize:13,textAlign:"center",padding:20}}>No data yet — play some stories!</p>}
+              {weeklyLb.slice(0,20).map(function(e,i){
+                var isMe=e.name===currentUser.name;
+                var medals=["🥇","🥈","🥉"];
+                return(
+                  <div key={i} className="rq-lb-row" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,marginBottom:5,background:isMe?"rgba(129,140,248,0.1)":"rgba(255,255,255,0.03)",border:isMe?"1px solid rgba(129,140,248,0.3)":"1px solid transparent"}}>
+                    <span style={{width:24,fontSize:i<3?16:12,textAlign:"center",color:"#fbbf24",fontWeight:700}}>{i<3?medals[i]:i+1}</span>
+                    <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#818cf8":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"#818cf8"}}>{e.xp} XP</span>
+                    <span style={{fontSize:11,color:"#6b7280"}}>{e.games} {e.games===1?"story":"stories"}</span>
+                  </div>
+                );
+              })}
+              <button onClick={doRestart} style={{...mkBtn("#818cf8","#0d0d1a"),width:"100%",marginTop:10}}>Read a Story</button>
+            </div>
+          );
+        })()}
+
+        {/* ── STORY DISCUSSION ──────────────────────────────── */}
+        {stage==="discuss"&&currentUser&&(function(){
+          var story=STORY_LIBRARY.find(function(s){return s.id===discussStoryId;});
+          var posts=(allDiscuss&&allDiscuss[discussStoryId])||[];
+          var today=new Date().toLocaleDateString();
+          var alreadyPosted=posts.some(function(p){return p.user===currentUser.name&&p.date===today;});
+          function submitPost(){
+            if(!discussInput.trim()||discussInput.trim().length<3||alreadyPosted)return;
+            var newPost={user:currentUser.name,text:discussInput.trim().slice(0,200),date:today};
+            var newPosts=[newPost].concat(posts).slice(0,50);
+            var nAll={};for(var k in allDiscuss)nAll[k]=allDiscuss[k];nAll[discussStoryId]=newPosts;
+            setAllDiscuss(nAll);saveDiscuss(nAll);setDiscussInput("");
+          }
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#ec4899"}}>Discussion</h2>
+                <button onClick={function(){setStage("result");}} style={GHOST}>Back</button>
+              </div>
+              {story&&<div style={{...CARD,marginBottom:12,padding:12,background:"rgba(236,72,153,0.06)",borderColor:"rgba(236,72,153,0.25)"}}>
+                <p style={{fontSize:11,color:"#f472b6",fontWeight:700,margin:"0 0 4px"}}>📖 {story.title} · {story.level}</p>
+                <p style={{fontSize:13,color:"#9ca3af",margin:0,lineHeight:1.5}}>{story.prompt||"What did you find most interesting about this passage?"}</p>
+              </div>}
+              {!alreadyPosted?(
+                <div style={{...CARD,marginBottom:12,padding:14}}>
+                  <textarea value={discussInput} onChange={function(e){setDiscussInput(e.target.value.slice(0,200));}} placeholder="Share your thoughts..." style={{width:"100%",minHeight:70,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:13,padding:"9px 11px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
+                    <span style={{fontSize:11,color:"#6b7280"}}>{discussInput.length}/200</span>
+                    <button onClick={submitPost} disabled={discussInput.trim().length<3} style={{...mkBtn(discussInput.trim().length>=3?"#ec4899":"#374151","#0d0d1a"),padding:"8px 18px",fontSize:13}}>Post</button>
+                  </div>
+                </div>
+              ):(
+                <div style={{...CARD,marginBottom:12,padding:12,background:"rgba(52,211,153,0.05)",borderColor:"rgba(52,211,153,0.3)"}}>
+                  <p style={{fontSize:12,color:"#34d399",margin:0}}>✓ You've posted today. Come back tomorrow to share more!</p>
+                </div>
+              )}
+              {posts.length===0&&<p style={{color:"#6b7280",fontSize:13,textAlign:"center",padding:20}}>Be the first to share your thoughts!</p>}
+              {posts.map(function(p,i){
+                var isMe=p.user===currentUser.name;
+                return(
+                  <div key={i} style={{...CARD,marginBottom:8,padding:12,background:isMe?"rgba(236,72,153,0.06)":"rgba(255,255,255,0.03)",borderColor:isMe?"rgba(236,72,153,0.25)":"rgba(255,255,255,0.08)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                      <span style={{fontSize:12,fontWeight:700,color:isMe?"#f472b6":"#9ca3af"}}>{p.user}{isMe?" (you)":""}</span>
+                      <span style={{fontSize:10,color:"#4b5563"}}>{p.date}</span>
+                    </div>
+                    <p style={{fontSize:13,color:"#e5e7eb",margin:0,lineHeight:1.6}}>{p.text}</p>
+                  </div>
+                );
+              })}
             </div>
           );
         })()}
