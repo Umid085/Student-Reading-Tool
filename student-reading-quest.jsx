@@ -60,6 +60,47 @@ function scoreQuestion(q,ans){
 }
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
 
+var BADGES=[
+  {id:"first_steps",   name:"First Steps",      icon:"👣", desc:"Complete your first quiz"},
+  {id:"story_starter", name:"Story Starter",     icon:"📖", desc:"Complete 5 quizzes"},
+  {id:"reader",        name:"Reader",            icon:"📚", desc:"Complete 10 quizzes"},
+  {id:"explorer",      name:"Explorer",          icon:"🗺️", desc:"Complete 25 quizzes"},
+  {id:"bookworm",      name:"Bookworm",          icon:"🐛", desc:"Complete 50 quizzes"},
+  {id:"quiz_master",   name:"Quiz Master",       icon:"🏆", desc:"Score 100% on a quiz"},
+  {id:"speed_reader",  name:"Speed Reader",      icon:"⚡", desc:"Finish under half the time limit"},
+  {id:"vocab_builder", name:"Vocab Builder",     icon:"✏️", desc:"Save 10 words to your notebook"},
+  {id:"word_collector",name:"Word Collector",    icon:"📝", desc:"Save 50 words"},
+  {id:"on_fire",       name:"On Fire",           icon:"🔥", desc:"Maintain a 3-day reading streak"},
+  {id:"week_warrior",  name:"Week Warrior",      icon:"🌟", desc:"Maintain a 7-day reading streak"},
+  {id:"daily_champ",   name:"Daily Champ",       icon:"📅", desc:"Complete a daily challenge"},
+  {id:"high_scorer",   name:"High Scorer",       icon:"🎯", desc:"Earn 500+ XP in a single quiz"},
+  {id:"all_types",     name:"Complete Player",   icon:"🎮", desc:"Use all 6 question types in one session"},
+  {id:"level_5",       name:"Level Up",          icon:"⭐", desc:"Reach player level 5"},
+];
+
+function checkBadges(user,vocab,streak){
+  var games=user&&user.games?user.games:[];
+  var vocabCount=vocab?vocab.length:0;
+  var e={};
+  if(games.length>=1)e.first_steps=true;
+  if(games.length>=5)e.story_starter=true;
+  if(games.length>=10)e.reader=true;
+  if(games.length>=25)e.explorer=true;
+  if(games.length>=50)e.bookworm=true;
+  if(games.some(function(g){return g.pct===100;}))e.quiz_master=true;
+  if(games.some(function(g){return g.timeSecs<getLv(g.level).timeLimit/2;}))e.speed_reader=true;
+  if(vocabCount>=10)e.vocab_builder=true;
+  if(vocabCount>=50)e.word_collector=true;
+  if(streak>=3)e.on_fire=true;
+  if(streak>=7)e.week_warrior=true;
+  if(games.some(function(g){return g.isDaily;}))e.daily_champ=true;
+  if(games.some(function(g){return g.xp>=500;}))e.high_scorer=true;
+  if(games.some(function(g){return g.typeStats&&Object.keys(g.typeStats).length>=6;}))e.all_types=true;
+  var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
+  if(getUserLevel(totalXp)>=5)e.level_5=true;
+  return e;
+}
+
 var LEVEL_THRESHOLDS=[0,1000,2500,4500,7000,10500,15000,21000,28000,36000,45000,55000,66000,78000,91000,105000,120000,136000,153000,171000,190000];
 function getUserLevel(totalXp){
   for(var i=LEVEL_THRESHOLDS.length-1;i>=0;i--){
@@ -751,10 +792,14 @@ export default function App(){
     var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
     var today=new Date().toLocaleDateString();
 
-    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats};
+    var badgesBefore=checkBadges(currentUser,vocab,calcStreak(currentUser.games));
+    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false};
     var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
     var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
     await saveUsers(newUsers);setAllUsers(newUsers);setCurrentUser(updatedUser);
+    var newStreakVal=calcStreak(updatedUser.games);
+    var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
+    var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
 
     var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
     var nb={};for(var k in boards){nb[k]=boards[k];}
@@ -777,7 +822,7 @@ export default function App(){
     }
 
     var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily});
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds});
     setStage("result");
   }
 
@@ -1155,6 +1200,21 @@ export default function App(){
               </div>
               {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>Speed bonus: +{result.timeBonus} XP!</div>}
             </div>
+            {result.newBadges&&result.newBadges.length>0&&(
+              <div style={{...CARD,marginBottom:10,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.4)"}}>
+                <p style={{fontWeight:700,fontSize:12,color:"#fbbf24",marginBottom:10,textAlign:"left"}}>🏅 NEW BADGE{result.newBadges.length>1?"S":""} UNLOCKED!</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {result.newBadges.map(function(id){
+                    var b=BADGES.find(function(x){return x.id===id;});
+                    if(!b)return null;
+                    return(<div key={id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.25)",borderRadius:10,padding:"8px 12px",flex:"1 1 auto"}}>
+                      <span style={{fontSize:22}}>{b.icon}</span>
+                      <div style={{textAlign:"left"}}><div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{b.name}</div><div style={{fontSize:11,color:"#9ca3af"}}>{b.desc}</div></div>
+                    </div>);
+                  })}
+                </div>
+              </div>
+            )}
             <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
               <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>BREAKDOWN</p>
               {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
@@ -1698,11 +1758,55 @@ export default function App(){
               })}
             </div>)}
             {games.length===0&&<div style={{...CARD,textAlign:"center",padding:30}}><p style={{color:"#6b7280"}}>No games yet - start playing!</p></div>}
+            {(function(){
+              var myBadges=checkBadges(currentUser,vocab,myStreak);
+              var earnedCount=BADGES.filter(function(b){return myBadges[b.id];}).length;
+              return(<div style={{...CARD,marginBottom:10,cursor:"pointer"}} onClick={function(){setStage("badges");}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>🏅 My Badges</span>
+                  <span style={{fontSize:12,color:"#6b7280"}}>{earnedCount} / {BADGES.length} earned →</span>
+                </div>
+                <div style={{display:"flex",gap:4,marginTop:8,flexWrap:"wrap"}}>
+                  {BADGES.map(function(b){return<span key={b.id} style={{fontSize:18,opacity:myBadges[b.id]?1:0.2,filter:myBadges[b.id]?"none":"grayscale(1)"}}>{b.icon}</span>;})}
+                </div>
+              </div>);
+            })()}
             <div style={{display:"flex",gap:7}}>
               <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
               <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
             </div>
           </div>);
+        })()}
+
+        {/* ── BADGES ────────────────────────────────────────── */}
+        {stage==="badges"&&currentUser&&(function(){
+          var myBadges=checkBadges(currentUser,vocab,myStreak);
+          var earnedCount=BADGES.filter(function(b){return myBadges[b.id];}).length;
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:6}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Badges</h2>
+                <button onClick={function(){setStage("profile");}} style={GHOST}>Back</button>
+              </div>
+              <p style={{color:"#6b7280",fontSize:13,marginBottom:14}}>{earnedCount} of {BADGES.length} earned</p>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                {BADGES.map(function(b){
+                  var earned=!!myBadges[b.id];
+                  return(
+                    <div key={b.id} style={{...CARD,padding:14,display:"flex",gap:10,alignItems:"flex-start",opacity:earned?1:0.45,border:"1px solid "+(earned?"rgba(251,191,36,0.35)":"rgba(255,255,255,0.08)"),background:earned?"rgba(251,191,36,0.06)":"rgba(255,255,255,0.03)"}}>
+                      <span style={{fontSize:26,flexShrink:0,filter:earned?"none":"grayscale(1)"}}>{b.icon}</span>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:earned?"#fbbf24":"#6b7280",marginBottom:2}}>{b.name}</div>
+                        <div style={{fontSize:11,color:"#4b5563",lineHeight:1.4}}>{b.desc}</div>
+                        {earned&&<div style={{fontSize:10,color:"#22c55e",marginTop:4,fontWeight:700}}>✓ Unlocked</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button onClick={doRestart} style={{...mkBtn("#fbbf24","#0d0d1a"),width:"100%",marginTop:14}}>Keep Playing to Unlock More</button>
+            </div>
+          );
         })()}
 
       </div>
