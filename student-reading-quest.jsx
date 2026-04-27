@@ -1006,6 +1006,7 @@ export default function App(){
               </div>
               <div className="rq-home-nav">
                 <button onClick={function(){setStage("friends");}} style={GHOST}>Friends</button>
+                <button onClick={function(){setStage("analytics");}} style={GHOST}>Stats</button>
                 <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>Vocab</button>
                 <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
@@ -1869,6 +1870,131 @@ export default function App(){
               <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
             </div>
           </div>);
+        })()}
+
+        {/* ── ANALYTICS ─────────────────────────────────────── */}
+        {stage==="analytics"&&currentUser&&(function(){
+          var games=currentUser.games||[];
+          var today=new Date().toLocaleDateString();
+          var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
+          var totalTimeSecs=games.reduce(function(s,g){return s+g.timeSecs;},0);
+          var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
+          var lvlInfo=getLevelProgress(totalXp);
+
+          // weekly activity (last 7 days)
+          var week=[];
+          for(var d=6;d>=0;d--){
+            var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toLocaleDateString();
+            var dayGames=games.filter(function(g){return g.date===ds;});
+            week.push({label:dt.toLocaleDateString("en",{weekday:"short"}),date:ds,count:dayGames.length,xp:dayGames.reduce(function(s,g){return s+g.xp;},0),isToday:ds===today});
+          }
+          var maxDayXp=Math.max(1,Math.max.apply(null,week.map(function(w){return w.xp;})));
+
+          // per-level breakdown
+          var byLevel={};
+          games.forEach(function(g){if(!byLevel[g.level])byLevel[g.level]={count:0,xpTotal:0,pctTotal:0};byLevel[g.level].count++;byLevel[g.level].xpTotal+=g.xp;byLevel[g.level].pctTotal+=g.pct;});
+
+          // type accuracy aggregate
+          var typeAgg={};
+          games.forEach(function(g){if(!g.typeStats)return;Object.keys(g.typeStats).forEach(function(t){if(!typeAgg[t])typeAgg[t]={earned:0,max:0};typeAgg[t].earned+=g.typeStats[t].earned;typeAgg[t].max+=g.typeStats[t].max;});});
+
+          var earnedBadges=checkBadges(currentUser,vocab,myStreak);
+          var badgeCount=BADGES.filter(function(b){return earnedBadges[b.id];}).length;
+
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#06b6d4"}}>My Analytics</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+
+              {/* top stats */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                {[
+                  {v:games.length,     l:"Sessions",      c:"#34d399"},
+                  {v:totalXp,          l:"Total XP",      c:"#fbbf24"},
+                  {v:avgPct+"%",       l:"Avg Score",     c:pctColor(avgPct)},
+                  {v:vocab.length,     l:"Words Saved",   c:"#06b6d4"},
+                  {v:Math.floor(totalTimeSecs/60)+"m", l:"Time Reading", c:"#a78bfa"},
+                  {v:badgeCount+"/"+BADGES.length, l:"Badges",   c:"#f472b6"},
+                ].map(function(s){
+                  return<div key={s.l} style={{textAlign:"center",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:"14px 8px"}}>
+                    <div style={{fontSize:18,fontWeight:900,color:s.c}}>{s.v}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:3}}>{s.l}</div>
+                  </div>;
+                })}
+              </div>
+
+              {/* level progress */}
+              <div style={{...CARD,marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <span style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>⭐ Player Level {lvlInfo.level}</span>
+                  <span style={{fontSize:11,color:"#6b7280"}}>{lvlInfo.xpNeeded>0?lvlInfo.xpNeeded+" XP to next":"Max level!"}</span>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.05)",borderRadius:999,height:8,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:lvlInfo.progress+"%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:999,transition:"width 0.4s ease"}}/>
+                </div>
+              </div>
+
+              {/* weekly activity bar chart */}
+              <div style={{...CARD,marginBottom:12}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>WEEKLY ACTIVITY</p>
+                <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
+                  {week.map(function(w){
+                    var h=w.xp>0?Math.max(8,Math.round((w.xp/maxDayXp)*68)):4;
+                    return(<div key={w.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                      <div style={{width:"100%",height:h,background:w.isToday?"#06b6d4":w.xp>0?"#6366f1":"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0",transition:"height 0.3s ease"}}/>
+                      <span style={{fontSize:9,color:w.isToday?"#06b6d4":"#6b7280",fontWeight:w.isToday?700:400}}>{w.label}</span>
+                      {w.count>0&&<span style={{fontSize:9,color:"#4b5563"}}>{w.count}</span>}
+                    </div>);
+                  })}
+                </div>
+              </div>
+
+              {/* per-level breakdown */}
+              {Object.keys(byLevel).length>0&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>BY CEFR LEVEL</p>
+                  {["A1","A2","B1","B2","C1","C2"].filter(function(l){return byLevel[l];}).map(function(l){
+                    var lv=getLv(l),ld=byLevel[l];
+                    var ap=Math.round(ld.pctTotal/ld.count);
+                    return(<div key={l} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                      <span style={{fontSize:11,fontWeight:900,color:lv.color,width:24}}>{l}</span>
+                      <div style={{flex:1}}>
+                        <div style={{background:"rgba(255,255,255,0.05)",borderRadius:999,height:6,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:ap+"%",background:lv.color,borderRadius:999}}/>
+                        </div>
+                      </div>
+                      <span style={{fontSize:11,color:pctColor(ap),fontWeight:700,width:32,textAlign:"right"}}>{ap}%</span>
+                      <span style={{fontSize:10,color:"#6b7280",width:40,textAlign:"right"}}>{ld.count} {ld.count===1?"game":"games"}</span>
+                    </div>);
+                  })}
+                </div>
+              )}
+
+              {/* question type accuracy */}
+              {Object.keys(typeAgg).length>0&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>ACCURACY BY TYPE</p>
+                  {Object.keys(typeAgg).map(function(t){
+                    var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
+                    return(<div key={t} style={{marginBottom:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                        <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
+                        <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                      </div>
+                      <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999}}/>
+                      </div>
+                    </div>);
+                  })}
+                </div>
+              )}
+
+              {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No data yet — complete your first quiz!</p></div>}
+              <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>Start Reading</button>
+            </div>
+          );
         })()}
 
         {/* ── BADGES ────────────────────────────────────────── */}
