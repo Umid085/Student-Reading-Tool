@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Discussion – {{ story.title }}{% endblock %}
+{% block content %}
+<h1>💬 {{ story.title }}</h1>
+{% if story.prompt %}<div class="discussion-prompt">{{ story.prompt }}</div>{% endif %}
+
+{% if not already_posted %}
+<form method="post" action="{% url 'social:post_discussion' story.pk %}" class="post-form">
+  {% csrf_token %}
+  <textarea name="content" rows="3" placeholder="Share your thoughts…" maxlength="500" class="form-control"></textarea>
+  <button type="submit" class="btn btn-primary" style="margin-top:0.75rem">Post</button>
+</form>
+{% else %}
+<p class="already-posted">You've posted today. Come back tomorrow!</p>
+{% endif %}
+
+<div class="posts-list">
+  {% for post in posts %}
+  <div class="post-card">
+    <div class="post-header">
+      <span>{{ post.user.avatar }} {{ post.user.username }}</span>
+      <span class="post-date">{{ post.created_at|date:"M d, H:i" }}</span>
+    </div>
+    <div class="post-content">{{ post.text }}</div>
+  </div>
+  {% empty %}
+  <p class="empty-state">No posts yet. Be the first!</p>
+  {% endfor %}
+</div>
+{% endblock %}

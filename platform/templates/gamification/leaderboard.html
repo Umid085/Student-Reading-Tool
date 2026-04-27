@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Leaderboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🏆 Leaderboard</h1>
+  <div class="level-filter">
+    <a href="{% url 'gamification:leaderboard' %}" class="btn-filter {% if not active_level %}active{% endif %}">Overall</a>
+    {% for level in levels %}
+    <a href="?level={{ level }}" class="btn-filter {% if active_level == level %}active{% endif %}">{{ level }}</a>
+    {% endfor %}
+  </div>
+</div>
+<div class="leaderboard-list">
+  {% for entry in top_users %}
+  <div class="lb-row {% if entry == user %}highlight{% endif %}">
+    <span class="lb-rank">{{ forloop.counter }}</span>
+    <span class="lb-avatar">{{ entry.avatar }}</span>
+    <span class="lb-name"><a href="{% url 'accounts:profile_user' entry.username %}">{{ entry.username }}</a></span>
+    <span class="lb-level">{{ entry.cefr_level }}</span>
+    <span class="lb-xp">⚡ {{ entry.xp|default:entry.level_xp }} XP</span>
+    <span class="lb-streak">🔥 {{ entry.streak }}</span>
+  </div>
+  {% empty %}
+  <p class="empty-state">No entries yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

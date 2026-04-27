@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Library – Reading Quest{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📚 Story Library</h1>
+  <div class="level-filter">
+    <a href="{% url 'reading:library' %}" class="btn-filter {% if not active_level %}active{% endif %}">All</a>
+    {% for level in stories_by_level.keys %}
+    <a href="?level={{ level }}" class="btn-filter {% if active_level == level %}active{% endif %}">{{ level }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% for level, items in stories_by_level.items %}
+{% if not active_level or active_level == level %}
+<div class="level-section">
+  <h2 class="level-heading badge-level-{{ level }}">{{ level }}</h2>
+  <div class="story-grid">
+    {% for item in items %}
+    <div class="story-card {% if not item.unlocked %}locked{% endif %}">
+      <div class="story-level badge-level-{{ item.story.cefr_level }}">{{ item.story.cefr_level }}</div>
+      {% if item.story.pk in fav_ids %}<span class="fav-star">⭐</span>{% endif %}
+      <h3>{{ item.story.title }}</h3>
+      <p class="story-topic">{{ item.story.topic }}</p>
+      <p class="story-meta">{{ item.story.word_count }} words · {% for i in "12345" %}{% if forloop.counter <= item.story.difficulty %}★{% else %}☆{% endif %}{% endfor %}</p>
+      {% if item.unlocked %}
+      <div class="story-actions">
+        <a href="{% url 'reading:story' item.story.pk %}" class="btn btn-primary">Read</a>
+        <form method="post" action="{% url 'reading:toggle_favorite' item.story.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm">{% if item.story.pk in fav_ids %}★{% else %}☆{% endif %}</button>
+        </form>
+        <a href="{% url 'social:discussion' item.story.pk %}" class="btn btn-sm">💬</a>
+      </div>
+      {% else %}
+      <p class="locked-msg">🔒 Complete more stories to unlock</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Analytics – {{ classroom.name }}{% endblock %}
+{% block content %}
+<h1>📊 {{ classroom.name }} – Analytics</h1>
+<table class="analytics-table">
+  <thead>
+    <tr>
+      <th>Student</th><th>Level</th><th>Stories Read</th><th>Avg Score</th><th>Total XP</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in analytics %}
+    <tr>
+      <td><a href="{% url 'accounts:profile_user' row.student.username %}">{{ row.student.avatar }} {{ row.student.username }}</a></td>
+      <td>{{ row.student.cefr_level }}</td>
+      <td>{{ row.games|default:0 }}</td>
+      <td>{{ row.avg_pct|floatformat:0|default:0 }}%</td>
+      <td>{{ row.total_xp|default:0 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" class="empty-state">No data yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

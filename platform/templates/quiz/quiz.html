@@ -1,0 +1,32 @@
+{% load static %}
+{% extends 'base.html' %}
+{% block title %}Quiz – {{ session.topic }}{% endblock %}
+{% block content %}
+<div class="quiz-container">
+  <div class="quiz-header">
+    <h1>📝 Quiz</h1>
+    <div class="quiz-meta">
+      <span class="badge-level-{{ session.cefr_level }}">{{ session.cefr_level }}</span>
+      <span>{{ session.topic }}</span>
+      <div class="quiz-timer" id="quizTimer">{{ time_limit }}s</div>
+    </div>
+  </div>
+
+  <form method="post" id="quizForm">
+    {% csrf_token %}
+    <div id="questionsContainer"></div>
+    <input type="hidden" name="answers" id="answersInput" value="{}">
+    <input type="hidden" name="quiz_secs" id="quizSecs" value="0">
+    <button type="button" id="submitBtn" class="btn btn-primary btn-full btn-lg" style="display:none" onclick="submitQuiz()">
+      Submit Answers →
+    </button>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  var QUESTIONS = {{ questions_json|safe }};
+  var TIME_LIMIT = {{ time_limit }};
+</script>
+<script src="{% static 'js/quiz.js' %}"></script>
+{% endblock %}

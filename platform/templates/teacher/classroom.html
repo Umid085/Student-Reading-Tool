@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}{{ classroom.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ classroom.name }}</h1>
+  <p>Join code: <code class="join-code">{{ classroom.join_code }}</code></p>
+</div>
+
+<div class="classroom-grid">
+  <div>
+    <h2>Students ({{ memberships|length }})</h2>
+    {% for m in memberships %}
+    <div class="student-row">
+      <span>{{ m.student.avatar }} {{ m.student.username }}</span>
+      <span>{{ m.student.cefr_level }}</span>
+      <span>Level {{ m.student.level }}</span>
+    </div>
+    {% empty %}<p class="empty-state">No students yet.</p>{% endfor %}
+  </div>
+
+  <div>
+    <h2>Assignments</h2>
+    <form method="post" action="{% url 'teacher:assign_story' classroom.pk %}">
+      {% csrf_token %}
+      <select name="story_id" class="form-control">
+        {% for story in stories %}
+        <option value="{{ story.pk }}">{{ story.cefr_level }} – {{ story.title }}</option>
+        {% endfor %}
+      </select>
+      <input type="date" name="due_date" class="form-control">
+      <button type="submit" class="btn btn-primary">Assign</button>
+    </form>
+    {% for a in assignments %}
+    <div class="assignment-row">
+      <span class="badge-level-{{ a.story.cefr_level }}">{{ a.story.cefr_level }}</span>
+      <span>{{ a.story.title }}</span>
+      {% if a.due_date %}<span>Due: {{ a.due_date }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

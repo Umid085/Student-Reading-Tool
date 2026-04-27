@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Favorites{% endblock %}
+{% block content %}
+<h1>⭐ Your Favorites</h1>
+<div class="story-grid">
+  {% for fav in favs %}
+  <div class="story-card">
+    <span class="badge-level-{{ fav.story.cefr_level }}">{{ fav.story.cefr_level }}</span>
+    <h3>{{ fav.story.title }}</h3>
+    <p>{{ fav.story.topic }} · {{ fav.story.word_count }} words</p>
+    <a href="{% url 'reading:story' fav.story.pk %}" class="btn btn-primary">Read Again</a>
+    <form method="post" action="{% url 'reading:toggle_favorite' fav.story.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm">Remove ★</button>
+    </form>
+  </div>
+  {% empty %}
+  <p class="empty-state">No favorites yet. Star stories from the library!</p>
+  {% endfor %}
+</div>
+{% endblock %}

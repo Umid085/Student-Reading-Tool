@@ -1,0 +1,27 @@
+{% load static %}
+{% extends 'base.html' %}
+{% block title %}Vocab Game{% endblock %}
+{% block content %}
+<div class="game-container" id="vocabGame">
+  <div class="game-header">
+    <h1>🎮 Vocabulary Practice</h1>
+    <div class="game-mode-picker">
+      <button class="btn btn-secondary" onclick="setMode('flashcard')">Flashcard</button>
+      <button class="btn btn-secondary" onclick="setMode('mcq')">Multiple Choice</button>
+      <button class="btn btn-secondary" onclick="setMode('fill')">Fill the Blank</button>
+    </div>
+  </div>
+  <div id="gameArea" class="game-area">
+    <p class="empty-state">Choose a mode to start practicing!</p>
+  </div>
+  <div class="game-score" id="gameScore" style="display:none">
+    Score: <span id="scoreDisplay">0</span> / <span id="totalDisplay">0</span>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  var GAME_WORDS = {{ game_words_json|safe }};
+</script>
+<script src="{% static 'js/vocab.js' %}"></script>
+{% endblock %}

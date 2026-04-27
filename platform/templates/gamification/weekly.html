@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Weekly Leaderboard{% endblock %}
+{% block content %}
+<h1>📅 Weekly Leaderboard</h1>
+<p class="week-label">Week: {{ week_str }}</p>
+{% if my_stats %}
+<div class="my-weekly-stats">
+  <span>Your XP this week: <strong>{{ my_stats.xp }}</strong></span>
+  <span>Stories: <strong>{{ my_stats.games }}</strong></span>
+</div>
+{% endif %}
+<div class="leaderboard-list">
+  {% for entry in weekly_entries %}
+  <div class="lb-row {% if entry.user == user %}highlight{% endif %}">
+    <span class="lb-rank">{{ forloop.counter }}</span>
+    <span>{{ entry.user.avatar }}</span>
+    <span><a href="{% url 'accounts:profile_user' entry.user.username %}">{{ entry.user.username }}</a></span>
+    <span>⚡ {{ entry.xp }} XP</span>
+    <span>📖 {{ entry.games }} stories</span>
+  </div>
+  {% empty %}
+  <p class="empty-state">No activity this week yet. Be the first!</p>
+  {% endfor %}
+</div>
+{% endblock %}

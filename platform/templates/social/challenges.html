@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Challenges{% endblock %}
+{% block content %}
+<h1>⚔️ Challenges</h1>
+
+<h2>Received</h2>
+{% for c in received %}
+<div class="challenge-card">
+  <span>From: {{ c.from_user.username }}</span>
+  <span>Level: {{ c.cefr_level }}</span>
+  <span class="status-{{ c.status }}">{{ c.status }}</span>
+</div>
+{% empty %}<p class="empty-state">No challenges received.</p>{% endfor %}
+
+<h2>Sent</h2>
+{% for c in sent %}
+<div class="challenge-card">
+  <span>To: {{ c.to_user.username }}</span>
+  <span>Level: {{ c.cefr_level }}</span>
+  <span class="status-{{ c.status }}">{{ c.status }}</span>
+</div>
+{% empty %}<p class="empty-state">No challenges sent.</p>{% endfor %}
+{% endblock %}

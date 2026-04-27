@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Reading Quest{% endblock %}</title>
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+<nav class="navbar">
+  <a class="nav-brand" href="{% url 'reading:home' %}">📚 Reading Quest</a>
+  <div class="nav-links">
+    <a href="{% url 'reading:library' %}">Library</a>
+    <a href="{% url 'reading:generate' %}">Generate</a>
+    <a href="{% url 'vocabulary:notebook' %}">Vocab</a>
+    <a href="{% url 'gamification:leaderboard' %}">Leaderboard</a>
+    <a href="{% url 'social:friends' %}">Friends</a>
+    {% if user.is_teacher %}<a href="{% url 'teacher:dashboard' %}">Teacher</a>{% endif %}
+  </div>
+  <div class="nav-user">
+    <span class="nav-xp">⚡ {{ gam_xp }} XP</span>
+    <span class="nav-streak">🔥 {{ gam_streak }}</span>
+    <a href="{% url 'accounts:profile' %}">{{ user.avatar }} {{ user.username }}</a>
+    <a href="{% url 'accounts:logout' %}" class="btn-sm">Logout</a>
+  </div>
+</nav>
+<div class="xp-bar-container">
+  <div class="xp-bar" style="width: {{ gam_xp_pct }}%"></div>
+</div>
+{% endif %}
+
+<main class="main-content">
+{% if messages %}
+<div class="messages">
+  {% for msg in messages %}
+  <div class="message message-{{ msg.tags }}">{{ msg }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% block content %}{% endblock %}
+</main>
+
+{% if user.is_authenticated and gam_quests %}
+<div class="quest-sidebar" id="questSidebar">
+  <button class="quest-toggle" onclick="document.getElementById('questSidebar').classList.toggle('open')">📋</button>
+  <div class="quest-panel">
+    <h3>Daily Quests</h3>
+    {% for item in gam_quests %}
+    <div class="quest-item {% if item.done %}done{% endif %}">
+      {% if item.done %}✅{% else %}⬜{% endif %} {{ item.quest.title }}
+      <span class="quest-xp">+{{ item.quest.xp_reward }} XP</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
