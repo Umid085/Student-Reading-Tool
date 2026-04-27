@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Friends{% endblock %}
+{% block content %}
+<h1>👥 Friends</h1>
+
+<form method="get" class="search-form">
+  <input type="text" name="q" value="{{ query }}" placeholder="Search users…" class="form-control">
+  <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+{% if search_results %}
+<div class="search-results" style="margin-bottom:1.5rem">
+  {% for u in search_results %}
+  <div class="user-row">
+    <span>{{ u.avatar }} {{ u.username }} ({{ u.cefr_level }})</span>
+    <form method="post" action="{% url 'social:send_request' u.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm">Add Friend</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if incoming %}
+<h2>Incoming Requests</h2>
+{% for f in incoming %}
+<div class="friend-request">
+  <span>{{ f.from_user.avatar }} {{ f.from_user.username }}</span>
+  <form method="post" action="{% url 'social:respond_request' f.pk 'accept' %}" style="display:inline">
+    {% csrf_token %}<button class="btn btn-sm btn-primary">Accept</button>
+  </form>
+  <form method="post" action="{% url 'social:respond_request' f.pk 'decline' %}" style="display:inline">
+    {% csrf_token %}<button class="btn btn-sm">Decline</button>
+  </form>
+</div>
+{% endfor %}
+{% endif %}
+
+<h2>Your Friends ({{ friends|length }})</h2>
+<div class="friends-grid">
+  {% for friend in friends %}
+  <div class="friend-card">
+    <div class="friend-avatar">{{ friend.avatar }}</div>
+    <div>{{ friend.username }}</div>
+    <div>{{ friend.cefr_level }} · Level {{ friend.level }}</div>
+    <a href="{% url 'accounts:profile_user' friend.username %}" class="btn btn-sm">Profile</a>
+  </div>
+  {% empty %}
+  <p class="empty-state">No friends yet. Search for users above!</p>
+  {% endfor %}
+</div>
+{% endblock %}

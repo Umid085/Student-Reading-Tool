@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Teacher Dashboard{% endblock %}
+{% block content %}
+<h1>🎓 Teacher Dashboard</h1>
+
+<form method="post" action="{% url 'teacher:create_classroom' %}" class="create-form">
+  {% csrf_token %}
+  <input type="text" name="name" placeholder="New classroom name" class="form-control" required>
+  <button type="submit" class="btn btn-primary">+ Create Classroom</button>
+</form>
+
+<div class="classrooms-grid">
+  {% for classroom in classrooms %}
+  <div class="classroom-card">
+    <h3>{{ classroom.name }}</h3>
+    <p>{{ classroom.student_count }} students</p>
+    <p>Join code: <code>{{ classroom.join_code }}</code></p>
+    <a href="{% url 'teacher:classroom' classroom.pk %}" class="btn btn-primary">Manage</a>
+    <a href="{% url 'teacher:analytics' classroom.pk %}" class="btn btn-secondary">Analytics</a>
+  </div>
+  {% empty %}
+  <p class="empty-state">No classrooms yet. Create your first above!</p>
+  {% endfor %}
+</div>
+{% endblock %}

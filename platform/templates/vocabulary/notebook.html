@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Vocab Notebook{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📝 Vocabulary Notebook</h1>
+  <a href="{% url 'vocabulary:game' %}" class="btn btn-primary">Practice Game →</a>
+</div>
+
+<div class="filter-bar">
+  <a href="{% url 'vocabulary:notebook' %}" class="btn-filter {% if not status_filter %}active{% endif %}">All</a>
+  {% for value, label in statuses %}
+  <a href="?status={{ value }}" class="btn-filter {% if status_filter == value %}active{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<form method="post" action="{% url 'vocabulary:add_word' %}" class="add-word-form">
+  {% csrf_token %}
+  <input type="text" name="word" placeholder="Word" required class="form-control">
+  <input type="text" name="definition" placeholder="Definition" class="form-control">
+  <textarea name="example" placeholder="Example sentence" rows="1" class="form-control"></textarea>
+  <button type="submit" class="btn btn-primary">+ Add Word</button>
+</form>
+
+<div class="vocab-list">
+  {% for word in words %}
+  <div class="vocab-card status-{{ word.status }}">
+    <div class="vocab-word">{{ word.word }}</div>
+    <div class="vocab-definition">{{ word.definition }}</div>
+    {% if word.example %}<div class="vocab-example">{{ word.example }}</div>{% endif %}
+    <div class="vocab-actions">
+      <span class="vocab-status">{{ word.get_status_display }}</span>
+      <form method="post" action="{% url 'vocabulary:update_word' word.pk %}" style="display:inline">
+        {% csrf_token %}
+        <select name="status" onchange="this.form.submit()">
+          {% for value, label in statuses %}
+          <option value="{{ value }}" {% if word.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <form method="post" action="{% url 'vocabulary:delete_word' word.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">✕</button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <p class="empty-state">No words yet. Add your first word above!</p>
+  {% endfor %}
+</div>
+{% endblock %}

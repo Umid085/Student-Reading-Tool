@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}{{ profile_user.username }} – Profile{% endblock %}
+{% block content %}
+<div class="profile-header">
+  <div class="profile-avatar">{{ profile_user.avatar }}</div>
+  <div class="profile-info">
+    <h1>{{ profile_user.username }}</h1>
+    <p class="profile-bio">{{ profile_user.bio|default:"No bio yet." }}</p>
+    <div class="profile-stats">
+      <span>⚡ {{ profile_user.xp }} XP</span>
+      <span>🏆 Level {{ profile_user.level }}</span>
+      <span>🔥 {{ profile_user.streak }} day streak</span>
+      <span>📖 {{ profile_user.cefr_level }}</span>
+    </div>
+    {% if is_own_profile %}
+    <a href="{% url 'accounts:edit_profile' %}" class="btn btn-secondary">Edit Profile</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="xp-progress-bar">
+  <div class="xp-fill" style="width: {{ level_progress.pct }}%"></div>
+</div>
+<p class="xp-label">{{ level_progress.current_min }} / {{ level_progress.next_min }} XP · {{ level_progress.xp_needed }} to next level</p>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.total_games|default:0 }}</div>
+    <div class="stat-label">Stories Read</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.total_xp|default:0 }}</div>
+    <div class="stat-label">Total XP</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.avg_pct|floatformat:0|default:0 }}%</div>
+    <div class="stat-label">Avg Score</div>
+  </div>
+</div>
+
+<h2>Badges</h2>
+<div class="badges-grid">
+  {% for ub in badges %}
+  <div class="badge-item" title="{{ ub.badge.description }}">
+    <span class="badge-icon">{{ ub.badge.icon }}</span>
+    <span class="badge-name">{{ ub.badge.name }}</span>
+  </div>
+  {% empty %}
+  <p class="empty-state">No badges yet — keep reading!</p>
+  {% endfor %}
+</div>
+
+<h2>Recent Activity</h2>
+<div class="attempts-list">
+  {% for attempt in recent_attempts %}
+  <div class="attempt-row">
+    <span class="attempt-level badge-level-{{ attempt.quiz.session.cefr_level }}">{{ attempt.quiz.session.cefr_level }}</span>
+    <span class="attempt-topic">{{ attempt.quiz.session.topic }}</span>
+    <span class="attempt-score">{{ attempt.pct }}%</span>
+    <span class="attempt-xp">+{{ attempt.xp_earned }} XP</span>
+    <span class="attempt-stars">{% for i in "12345" %}{% if forloop.counter <= attempt.stars %}⭐{% else %}☆{% endif %}{% endfor %}</span>
+    <span class="attempt-date">{{ attempt.completed_at|date:"M d" }}</span>
+  </div>
+  {% empty %}
+  <p class="empty-state">No quiz attempts yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

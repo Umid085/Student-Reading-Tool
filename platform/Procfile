@@ -1,0 +1,2 @@
+web: gunicorn reading_platform.wsgi --workers 2 --bind 0.0.0.0:$PORT --log-file -
+release: python manage.py migrate --noinput && python manage.py loaddata gamification/fixtures/badges.json gamification/fixtures/quests.json

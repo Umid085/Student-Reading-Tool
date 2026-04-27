@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Login – Reading Quest{% endblock %}
+{% block content %}
+<div class="auth-container">
+  <div class="auth-card">
+    <h1>📚 Reading Quest</h1>
+    <h2>Sign In</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+    </form>
+    <p class="auth-switch">New here? <a href="{% url 'accounts:register' %}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

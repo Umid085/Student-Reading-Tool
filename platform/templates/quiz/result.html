@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Result – Reading Quest{% endblock %}
+{% block content %}
+<div class="result-container">
+  <div class="result-stars">
+    {% for i in "12345" %}{% if forloop.counter <= attempt.stars %}⭐{% else %}☆{% endif %}{% endfor %}
+  </div>
+  <h1>{{ attempt.pct }}%</h1>
+  <p>{{ attempt.score }} / {{ attempt.max_score }} correct</p>
+
+  <div class="xp-breakdown">
+    <h2>XP Earned</h2>
+    <div class="xp-row"><span>Base XP</span><span>{{ attempt.xp_earned }}</span></div>
+    {% if attempt.time_bonus %}<div class="xp-row bonus"><span>⚡ Time Bonus</span><span>+{{ attempt.time_bonus }}</span></div>{% endif %}
+    {% if attempt.streak_bonus %}<div class="xp-row bonus"><span>🔥 Streak Bonus</span><span>+{{ attempt.streak_bonus }}</span></div>{% endif %}
+    {% if attempt.quest_bonus %}<div class="xp-row bonus"><span>📋 Quest Bonus</span><span>+{{ attempt.quest_bonus }}</span></div>{% endif %}
+    <div class="xp-total">Total: {{ attempt.xp_earned }} XP</div>
+  </div>
+
+  {% if attempt.wpm %}<p class="wpm-display">Reading Speed: {{ attempt.wpm }} WPM</p>{% endif %}
+
+  {% if new_badges %}
+  <div class="new-badges">
+    <h2>🎉 New Badges!</h2>
+    {% for badge in new_badges %}<span class="badge-earned">{{ badge }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if new_quests %}
+  <div class="new-quests">
+    <h2>✅ Quests Complete!</h2>
+    {% for quest in new_quests %}<span class="quest-done">{{ quest }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if difficulty_advice %}
+  <div class="difficulty-advice advice-{{ difficulty_advice.type }}">
+    <div class="advice-icon">{% if difficulty_advice.type == 'up' %}🚀{% else %}💡{% endif %}</div>
+    <div class="advice-body">
+      <strong>{% if difficulty_advice.type == 'up' %}Level Up Ready!{% else %}Try a Easier Level{% endif %}</strong>
+      <p>{{ difficulty_advice.message }}</p>
+      <a href="{% url 'reading:library' %}?level={{ difficulty_advice.suggested }}" class="btn btn-sm btn-primary">
+        Browse {{ difficulty_advice.suggested }} Stories →
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="result-actions">
+    <a href="{% url 'reading:home' %}" class="btn btn-primary">Home</a>
+    <a href="{% url 'reading:library' %}" class="btn btn-secondary">Library</a>
+    <a href="{% url 'gamification:leaderboard' %}" class="btn btn-secondary">Leaderboard</a>
+  </div>
+</div>
+{% endblock %}

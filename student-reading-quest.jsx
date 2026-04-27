@@ -1,10 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 
 var API        = "/.netlify/functions/generate";
-var USERS_KEY  = "rq-users-v6";
-var BOARDS_KEY = "rq-boards-v6";
-var SOCIAL_KEY = "rq-social-v6";
-var CREDS_KEY  = "rq-credentials";
+var USERS_KEY    = "rq-users-v6";
+var BOARDS_KEY   = "rq-boards-v6";
+var SOCIAL_KEY   = "rq-social-v6";
+var CREDS_KEY    = "rq-credentials";
+var VOCAB_KEY    = "rq-vocab-v1";
+var DAILY_KEY    = "rq-daily-v1";
+var DAILY_LB_KEY = "rq-daily-lb-v1";
+var FAVS_KEY     = "rq-favs-v1";
+var WEEKLY_KEY   = "rq-weekly-v1";
+var DISCUSS_KEY  = "rq-discuss-v1";
 
 var LEVELS = [
   {key:"A1",color:"#22c55e",glow:"rgba(34,197,94,0.25)",  mult:1,  timeLimit:150,timeBonus:200,desc:"Elementary"},
@@ -17,6 +23,37 @@ var LEVELS = [
 
 var Q_LABELS = {mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"};
 var Q_XP = {mcq:1,gap_word:1,gap_sentence:1,matching:3,heading:3,qa:2,tfnm:1,ynng:1};
+
+var COMMON_WORDS=new Set(("a about above across add after again age ago agree air all allow almost alone along already also although always am among an and another any are area around as ask at away back bad be became because been before behind being below best better between big black body both break bring but buy by call came can care carry cause change cheap check child clear close come common complete could course cut dark day deep did different do does done down draw drive during each early eat end enough even ever every example face fact far feel few fill find first follow for found four from gave get give go good got great grow had hand hard has have he help her here high him his home hot how however hundred if important in increase into is it its just keep kind know large last later learn left less let life light like little live long look made make man many may me mean meet might money more most move much must my myself need never new next night no not now number of off often old on once only open or other our out own part people per place plan play point possible power put read real right room run said same say school see she show since small so some something soon stay stop such system take tell than that the their them then there these they think this those three through time to today together too took toward try turn under up us use very walk want was way we went were what when where which while who why will with work world would write year yes yet you young your able accept according account achieve act action actually address almost already also among area back based become begin behind best better black blue body build call car carry center chance change check clear close color come consider continue control country course create cut deal decide design develop different door down draw drive early earth east effect either element end enough enter establish even example experience eye face fact fall family far feel figure find fire five floor follow found four free full function game give given good group grow hand happen hard head high history hold home hour house however human hundred idea increase indeed information interest kind know language law lead learn leave left let level light line list look mean message mind mode money month most move much must national near night notice number object off offer old once open order organization other outside page paper past pay period person pick place plan point poor position press process product program public put question range rate reach read ready record require result right role round run school second seem seen series set side simple since sit six situation small social some sort sound state still stop study subject sure surface system table talk ten term thing thought time today together town try turn type unit until use usually various view visit voice walk want watch way week well whether white wide within without word world write yet").split(" "));
+
+function countSyllables(word){
+  word=word.toLowerCase().replace(/[^a-z]/g,"");
+  if(!word)return 1;
+  var count=(word.match(/[aeiouy]+/g)||[]).length;
+  if(word.endsWith("e")&&count>1)count--;
+  return Math.max(1,count);
+}
+function getWpmLabel(wpm){
+  if(wpm<80)return"Beginner";if(wpm<150)return"Elementary";if(wpm<250)return"Intermediate";if(wpm<400)return"Advanced";return"Expert";
+}
+function analyzePassage(text){
+  var words=text.split(/\s+/).filter(Boolean);
+  var wordCount=words.length;
+  var sentences=text.split(/[.!?]+/).filter(function(s){return s.trim().length>2;});
+  var sentCount=Math.max(1,sentences.length);
+  var totalSyl=words.reduce(function(s,w){return s+countSyllables(w);},0);
+  var fk=0.39*(wordCount/sentCount)+11.8*(totalSyl/Math.max(1,wordCount))-15.59;
+  fk=Math.max(1,Math.min(16,fk));
+  var stars=fk<4?1:fk<6?2:fk<8?3:fk<11?4:5;
+  var newWords=words.filter(function(w){return!COMMON_WORDS.has(w.toLowerCase().replace(/[^a-z]/g,""));}).length;
+  return{wordCount,sentCount,stars,newWords,estReadMins:Math.max(1,Math.round(wordCount/200))};
+}
+function getWeekId(){
+  var d=new Date();
+  var dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/(864e5));
+  return d.getFullYear()+"-W"+Math.ceil(dayOfYear/7);
+}
+function getWpmFromSecs(wordCount,secs){return secs>0?Math.round(wordCount/(secs/60)):0;}
 
 // ── pure helpers ─────────────────────────────────────────────
 function getLv(k){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].key===k)return LEVELS[i];}return LEVELS[0];}
@@ -56,6 +93,243 @@ function scoreQuestion(q,ans){
   return 0;
 }
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
+
+var STORY_LIBRARY=[
+  // ── A1 ──
+  {id:"a1_1",level:"A1",title:"My Family",topic:"Family",
+   passage:"My name is Tom. I am eight years old. I have a mother, a father, and one sister. My sister is five years old. Her name is Lucy. We live in a small house. Our house has three rooms. We have a dog. The dog's name is Max. Max is big and brown. I love my family very much.",
+   questions:[
+     {type:"mcq",q:"How old is Tom?",options:["Five","Six","Eight","Ten"],answer:2,explanation:"Tom says 'I am eight years old.'"},
+     {type:"mcq",q:"What is the dog's name?",options:["Lucy","Max","Tom","Rex"],answer:1,explanation:"Tom says 'The dog's name is Max.'"},
+     {type:"gap_word",sentence:"Tom's sister is ___ years old.",options:["three","five","eight","ten"],answer:1,explanation:"Lucy is five years old."},
+   ]},
+  {id:"a1_2",level:"A1",title:"At the Market",topic:"Shopping",
+   passage:"Every Saturday, my mother goes to the market. She buys fruit and vegetables. She buys apples, bananas, and oranges. She also buys carrots and tomatoes. The market is near our house. It is a ten-minute walk. The fruit is fresh and cheap. My mother loves the market.",
+   questions:[
+     {type:"mcq",q:"When does the mother go to the market?",options:["Sunday","Monday","Saturday","Friday"],answer:2,explanation:"She goes every Saturday."},
+     {type:"mcq",q:"How far is the market?",options:["Five minutes","Ten minutes","Twenty minutes","One hour"],answer:1,explanation:"It is a ten-minute walk."},
+     {type:"gap_word",sentence:"The fruit at the market is fresh and ___.",options:["expensive","old","cheap","far"],answer:2,explanation:"The passage says 'fresh and cheap'."},
+   ]},
+  {id:"a1_3",level:"A1",title:"My School",topic:"School",
+   passage:"I go to school every day from Monday to Friday. My school is small. There are twenty students in my class. My teacher's name is Mrs. Green. She is very kind. We study reading, writing, and maths. My favourite subject is maths. School starts at eight o'clock and ends at three o'clock.",
+   questions:[
+     {type:"mcq",q:"What is the teacher's name?",options:["Mrs. Blue","Mrs. Green","Mrs. Brown","Mrs. White"],answer:1,explanation:"The passage says 'My teacher's name is Mrs. Green.'"},
+     {type:"mcq",q:"What is the student's favourite subject?",options:["Reading","Writing","Science","Maths"],answer:3,explanation:"The passage says 'My favourite subject is maths.'"},
+     {type:"gap_word",sentence:"There are ___ students in the class.",options:["ten","fifteen","twenty","thirty"],answer:2,explanation:"'There are twenty students in my class.'"},
+   ]},
+  // ── A2 ──
+  {id:"a2_1",level:"A2",title:"The Lost Key",topic:"Daily Life",
+   passage:"Yesterday morning, Sarah could not find her house key. She looked everywhere. She checked her bag, her coat pockets, and the kitchen table. Then she remembered — she left it at her friend Anna's house the day before. Sarah called Anna. Anna found the key under the sofa. Sarah was very relieved.",
+   questions:[
+     {type:"mcq",q:"Where did Sarah leave her key?",options:["In her bag","On the kitchen table","At Anna's house","In her coat pocket"],answer:2,explanation:"She left it at her friend Anna's house."},
+     {type:"mcq",q:"Where did Anna find the key?",options:["In her bag","Under the sofa","On the table","By the door"],answer:1,explanation:"Anna found the key under the sofa."},
+     {type:"gap_word",sentence:"Sarah felt very ___ when the key was found.",options:["angry","sad","relieved","tired"],answer:2,explanation:"'Sarah was very relieved.'"},
+   ]},
+  {id:"a2_2",level:"A2",title:"Learning to Cook",topic:"Food",
+   passage:"Last summer, Pedro decided to learn how to cook. He watched videos online and bought a simple cookbook. First, he learned to make pasta. It was difficult at first, but he practised every day. After two weeks, his pasta was delicious. His family were very proud of him. Now Pedro cooks dinner every Friday.",
+   questions:[
+     {type:"mcq",q:"How did Pedro learn to cook?",options:["At school","From his family","Online videos and a cookbook","At a restaurant"],answer:2,explanation:"He watched videos online and bought a cookbook."},
+     {type:"mcq",q:"How long did it take before his pasta was delicious?",options:["One week","Two weeks","One month","Three days"],answer:1,explanation:"'After two weeks, his pasta was delicious.'"},
+     {type:"gap_word",sentence:"Pedro cooks dinner every ___.",options:["Monday","Wednesday","Sunday","Friday"],answer:3,explanation:"'Now Pedro cooks dinner every Friday.'"},
+   ]},
+  {id:"a2_3",level:"A2",title:"The New Neighbour",topic:"Community",
+   passage:"A new family moved into the house next door last month. They have two children — a boy called Marco and a girl called Lily. Marco is the same age as me, so we go to the same school. Lily is younger; she goes to primary school. Their parents are both doctors. The whole family is very friendly. We often invite them for dinner.",
+   questions:[
+     {type:"mcq",q:"What do the parents do for work?",options:["Teachers","Doctors","Engineers","Chefs"],answer:1,explanation:"'Their parents are both doctors.'"},
+     {type:"mcq",q:"Who goes to the same school as the narrator?",options:["Lily","Marco","Both children","Neither"],answer:1,explanation:"'Marco is the same age as me, so we go to the same school.'"},
+     {type:"gap_word",sentence:"The family moved in ___ month.",options:["this","next","last","every"],answer:2,explanation:"'A new family moved into the house next door last month.'"},
+   ]},
+  // ── B1 ──
+  {id:"b1_1",level:"B1",title:"The Power of Habit",topic:"Psychology",
+   passage:"Scientists say that about 40% of our daily actions are habits, not decisions. A habit is formed when a behaviour is repeated so often that it becomes automatic. The brain creates a loop: a cue triggers the habit, the routine follows, and then there is a reward. Breaking a bad habit is hard because the brain loop remains even when the behaviour stops. The most effective strategy is not to try to stop the habit but to replace it with a different routine triggered by the same cue.",
+   questions:[
+     {type:"mcq",q:"What percentage of daily actions are habits according to scientists?",options:["20%","30%","40%","60%"],answer:2,explanation:"The passage states 'about 40% of our daily actions are habits.'"},
+     {type:"mcq",q:"What is the most effective strategy for breaking a bad habit?",options:["Stopping it immediately","Avoiding the cue","Replacing it with a different routine","Rewarding yourself"],answer:2,explanation:"'The most effective strategy is to replace it with a different routine.'"},
+     {type:"gap_word",sentence:"A habit is formed when a behaviour is repeated and becomes ___.",options:["difficult","intentional","automatic","boring"],answer:2,explanation:"'it becomes automatic'"},
+   ]},
+  {id:"b1_2",level:"B1",title:"Urban Farming",topic:"Environment",
+   passage:"As cities grow larger, some people are finding creative ways to grow food in urban areas. Rooftop gardens, vertical farms, and community allotments are becoming more common. Urban farming offers several benefits: it reduces the distance food travels, provides fresh produce to local communities, and helps people reconnect with nature. However, it also faces challenges such as limited space, high costs, and lack of sunlight in dense cities.",
+   questions:[
+     {type:"mcq",q:"Which is NOT listed as a challenge of urban farming?",options:["Limited space","High costs","Lack of sunlight","Water shortage"],answer:3,explanation:"Water shortage is not mentioned; the challenges listed are space, costs, and sunlight."},
+     {type:"mcq",q:"What does urban farming reduce?",options:["Community connections","Food distance","City size","Costs"],answer:1,explanation:"'it reduces the distance food travels'"},
+     {type:"gap_word",sentence:"Urban farming helps people reconnect with ___.",options:["technology","each other","nature","the city"],answer:2,explanation:"'helps people reconnect with nature'"},
+   ]},
+  {id:"b1_3",level:"B1",title:"Sleep and Memory",topic:"Science",
+   passage:"Most people know that sleep is important for health, but fewer understand exactly why. During sleep, the brain is remarkably active. It processes and organises information gathered during the day, moving short-term memories into long-term storage. Research shows that students who sleep well after studying retain significantly more information than those who stay up late. Even a short nap of 20 minutes can improve focus and recall. Experts recommend 7 to 9 hours of sleep per night for adults.",
+   questions:[
+     {type:"mcq",q:"What does the brain do with short-term memories during sleep?",options:["Deletes them","Moves them to long-term storage","Creates new ones","Ignores them"],answer:1,explanation:"'moving short-term memories into long-term storage'"},
+     {type:"mcq",q:"How long should a useful nap be according to the passage?",options:["5 minutes","10 minutes","20 minutes","45 minutes"],answer:2,explanation:"'a short nap of 20 minutes can improve focus'"},
+     {type:"gap_word",sentence:"Experts recommend ___ to 9 hours of sleep for adults.",options:["5","6","7","8"],answer:2,explanation:"'7 to 9 hours of sleep per night for adults'"},
+   ]},
+  // ── B2 ──
+  {id:"b2_1",level:"B2",title:"The Attention Economy",topic:"Technology",
+   passage:"Social media platforms are designed to capture and hold your attention for as long as possible. Every notification, like, and scroll is engineered to trigger dopamine release, keeping users engaged. This business model — selling advertisers access to user attention — is called the attention economy. Critics argue that this design creates addictive behaviour patterns and fragments our ability to concentrate. Some researchers link heavy social media use to rising rates of anxiety and depression, particularly among teenagers. However, others maintain that correlation does not imply causation, and that the evidence remains inconclusive.",
+   questions:[
+     {type:"mcq",q:"What is the 'attention economy' as described in the passage?",options:["A system for managing time","Selling advertisers access to user attention","A type of social media platform","A psychological theory"],answer:1,explanation:"'selling advertisers access to user attention is called the attention economy'"},
+     {type:"mcq",q:"What do critics say social media design creates?",options:["Community bonds","Addictive behaviour patterns","Better concentration","Healthier teenagers"],answer:1,explanation:"'this design creates addictive behaviour patterns and fragments our ability to concentrate'"},
+     {type:"qa",q:"Why do some researchers disagree with the link between social media and mental health problems?",keywords:["correlation","causation","inconclusive","evidence"],explanation:"They argue that correlation does not imply causation, and the evidence is inconclusive."},
+   ]},
+  {id:"b2_2",level:"B2",title:"Rewilding",topic:"Environment",
+   passage:"Rewilding is a conservation approach that aims to restore ecosystems to their natural state by reintroducing species that have disappeared. Unlike traditional conservation, which focuses on protecting what remains, rewilding seeks to rebuild natural processes. The reintroduction of wolves to Yellowstone National Park in the USA is often cited as a success story. The wolves reduced deer populations, which allowed vegetation to recover, which in turn stabilised riverbanks and changed waterflow. This cascade of effects is known as a 'trophic cascade.' Critics, however, warn that reintroducing predators near human settlements can create conflict.",
+   questions:[
+     {type:"mcq",q:"How does rewilding differ from traditional conservation?",options:["It focuses only on plants","It rebuilds natural processes rather than protecting remains","It relies on technology","It is cheaper"],answer:1,explanation:"'rewilding seeks to rebuild natural processes' vs protecting what remains."},
+     {type:"mcq",q:"What is a 'trophic cascade'?",options:["A type of waterfall","A series of ecological effects triggered by one change","A reintroduction programme","A hunting technique"],answer:1,explanation:"The cascade of effects from wolf reintroduction is called a trophic cascade."},
+     {type:"gap_word",sentence:"The reintroduction of wolves ___ deer populations.",options:["increased","stabilised","reduced","eliminated"],answer:2,explanation:"'The wolves reduced deer populations'"},
+   ]},
+  {id:"b2_3",level:"B2",title:"The Placebo Effect",topic:"Medicine",
+   passage:"The placebo effect is one of medicine's most fascinating and least understood phenomena. When patients receive an inert treatment — a sugar pill or saline injection — and believe it to be real medication, many show genuine physiological improvements. Studies have recorded reduced pain, lower blood pressure, and even shrinking tumours in placebo recipients. The mechanism is not fully understood, but researchers believe it involves the release of endorphins and changes in neural activity. Ethical debates surround its use: if placebos work, should doctors prescribe them even if doing so involves deception?",
+   questions:[
+     {type:"mcq",q:"What is an 'inert treatment'?",options:["A strong painkiller","A natural remedy","A treatment with no active ingredient","A surgical procedure"],answer:2,explanation:"Inert means having no active ingredient — like a sugar pill."},
+     {type:"mcq",q:"Which is NOT listed as a placebo effect observed in studies?",options:["Reduced pain","Lower blood pressure","Improved vision","Shrinking tumours"],answer:2,explanation:"Improved vision is not mentioned in the passage."},
+     {type:"qa",q:"What ethical question does the passage raise about placebos?",keywords:["deception","doctors","prescribe","ethical"],explanation:"Should doctors prescribe placebos even if doing so involves deceiving patients?"},
+   ]},
+  // ── C1 ──
+  {id:"c1_1",level:"C1",title:"The Language Instinct",topic:"Linguistics",
+   passage:"The linguist Noam Chomsky proposed that humans are born with an innate capacity for language — a 'language acquisition device' hardwired into the brain. This theory sought to explain why children acquire language so rapidly and uniformly across cultures, despite minimal explicit instruction. Critics, however, point to the statistical learning hypothesis, which suggests that children learn language by detecting patterns in the input they receive. Recent neuroimaging studies have identified dedicated language circuits in the brain, lending partial support to Chomsky's view, though the debate between nativist and empiricist accounts of language acquisition remains unresolved.",
+   questions:[
+     {type:"mcq",q:"What is Chomsky's 'language acquisition device'?",options:["A teaching tool","An innate brain capacity for language","A statistical model","A type of grammar"],answer:1,explanation:"Chomsky proposed an innate brain capacity for language called the language acquisition device."},
+     {type:"mcq",q:"What does the statistical learning hypothesis suggest?",options:["Language is innate","Children learn by detecting patterns in input","Brain circuits determine language","Grammar is universal"],answer:1,explanation:"'children learn language by detecting patterns in the input they receive'"},
+     {type:"qa",q:"What evidence partially supports Chomsky's view?",keywords:["neuroimaging","circuits","brain","dedicated"],explanation:"Neuroimaging studies identified dedicated language circuits in the brain."},
+   ]},
+  {id:"c1_2",level:"C1",title:"The Anthropocene",topic:"Climate",
+   passage:"Geologists have proposed naming our current epoch the Anthropocene — the age of human influence — to reflect the unprecedented scale of humanity's impact on the Earth's systems. Evidence for this designation includes the global dispersal of microplastics, radionuclides from nuclear testing, and the homogenisation of species assemblages. The proposal is scientifically contested: some argue the changes are insufficient to define a new epoch, while others suggest the Holocene — the epoch beginning after the last ice age — remains the appropriate designation. The debate underscores a deeper question about whether geological time should accommodate human timescales.",
+   questions:[
+     {type:"mcq",q:"What does 'Anthropocene' refer to?",options:["A prehistoric era","The age of human influence on Earth","A geological period before humans","A climate model"],answer:1,explanation:"'the age of human influence' — reflecting humanity's impact on Earth's systems."},
+     {type:"mcq",q:"Which piece of evidence is NOT mentioned?",options:["Microplastics","Radionuclides","Rising sea temperatures","Homogenisation of species"],answer:2,explanation:"Rising sea temperatures are not listed among the evidence cited."},
+     {type:"qa",q:"What deeper question does the Anthropocene debate raise?",keywords:["geological","time","human","timescales","accommodate"],explanation:"Whether geological time should accommodate human timescales."},
+   ]},
+  {id:"c1_3",level:"C1",title:"Confirmation Bias",topic:"Psychology",
+   passage:"Confirmation bias is the tendency to search for, interpret, and recall information in a way that confirms one's pre-existing beliefs. It operates unconsciously and affects even highly educated individuals. In political discourse, it reinforces polarisation: people curate information environments that reflect their worldview, making genuine dialogue across ideological lines increasingly difficult. In science, it manifests as selective reporting of results that support a hypothesis while ignoring contradictory evidence — a practice known as p-hacking. Mitigating confirmation bias requires deliberate effort: seeking disconfirming evidence, engaging with opposing viewpoints, and employing structured analytical techniques.",
+   questions:[
+     {type:"mcq",q:"What is 'p-hacking' as described in the passage?",options:["Hacking computers to get data","Selecting results that support a hypothesis while ignoring contradictions","A statistical test","A type of confirmation bias in politics"],answer:1,explanation:"'selective reporting of results that support a hypothesis while ignoring contradictory evidence'"},
+     {type:"mcq",q:"Which strategy is NOT suggested for mitigating confirmation bias?",options:["Seeking disconfirming evidence","Engaging opposing viewpoints","Avoiding all news","Structured analytical techniques"],answer:2,explanation:"Avoiding all news is not mentioned; the strategies are seeking disconfirming evidence, engaging viewpoints, and structured techniques."},
+     {type:"qa",q:"How does confirmation bias affect political discourse?",keywords:["polarisation","curate","worldview","dialogue","ideological"],explanation:"It reinforces polarisation by making people curate information environments matching their worldview, hindering genuine dialogue."},
+   ]},
+  // ── C2 ──
+  {id:"c2_1",level:"C2",title:"The Ship of Theseus",topic:"Philosophy",
+   passage:"The Ship of Theseus is an ancient paradox that probes the nature of identity and persistence through change. If every plank of a ship is gradually replaced, at what point — if any — does it cease to be the same ship? Thomas Hobbes extended the puzzle: if the original planks are collected and reassembled, which vessel is the 'true' Ship of Theseus? Contemporary philosophers have mapped this paradox onto questions of personal identity — whether the self persists through total cellular replacement, amnesia, or radical personality change. Derek Parfit argued that identity is not what matters; psychological continuity and connectedness are what ground our practical concerns about the future.",
+   questions:[
+     {type:"mcq",q:"What was Hobbes's contribution to the Ship of Theseus paradox?",options:["He solved it","He asked which ship is the 'true' one if original parts are reassembled","He applied it to biology","He dismissed it as meaningless"],answer:1,explanation:"Hobbes asked: if the original planks are reassembled, which is the true ship?"},
+     {type:"mcq",q:"What does Parfit argue matters instead of identity?",options:["Physical continuity","Legal status","Psychological continuity and connectedness","Memory alone"],answer:2,explanation:"'psychological continuity and connectedness are what ground our practical concerns'"},
+     {type:"qa",q:"How have contemporary philosophers applied the Ship of Theseus paradox?",keywords:["personal identity","self","cellular","amnesia","personality","persists"],explanation:"They apply it to questions of personal identity — whether the self persists through cellular replacement, amnesia, or radical personality change."},
+   ]},
+  {id:"c2_2",level:"C2",title:"The Extended Mind",topic:"Cognitive Science",
+   passage:"The philosopher Andy Clark and cognitive scientist David Chalmers proposed the 'extended mind' thesis in 1998, arguing that the mind is not confined to the skull. When external objects — notebooks, smartphones, or other people — become so reliably integrated into our cognitive processes that we would be cognitively impaired without them, those objects should be considered part of the mind. Critics object that this conflates the vehicle of thought with thought itself, and that genuine mental states must be intrinsic to the organism. The debate has practical implications for how we conceptualise cognitive enhancement, disability, and the ethics of memory modification.",
+   questions:[
+     {type:"mcq",q:"What is the 'extended mind' thesis?",options:["The mind expands with intelligence","The mind includes reliably integrated external objects","The brain has extended regions","Thinking occurs only in language"],answer:1,explanation:"External objects reliably integrated into cognition should be considered part of the mind."},
+     {type:"mcq",q:"What is the main criticism of the extended mind thesis?",options:["It is too narrow","It conflates the vehicle of thought with thought itself","It ignores technology","It is empirically untestable"],answer:1,explanation:"Critics say it conflates the vehicle of thought with thought itself."},
+     {type:"qa",q:"What practical issues does the extended mind debate raise?",keywords:["cognitive enhancement","disability","memory","modification","ethics"],explanation:"It raises issues for conceptualising cognitive enhancement, disability, and the ethics of memory modification."},
+   ]},
+  {id:"c2_3",level:"C2",title:"Epistemic Injustice",topic:"Philosophy",
+   passage:"Miranda Fricker coined the term 'epistemic injustice' to describe wrongs done to individuals specifically in their capacity as knowers. She identifies two primary forms. The first, testimonial injustice, occurs when a speaker receives less credibility than they deserve due to prejudice — a Black witness being disbelieved in court, for instance. The second, hermeneutical injustice, arises when a gap in collective interpretive resources disadvantages a group — as when, before the concept of sexual harassment was named, victims had no framework to articulate their experiences. Both forms of injustice are self-concealing and compound existing social inequalities.",
+   questions:[
+     {type:"mcq",q:"What is 'testimonial injustice'?",options:["Lying under oath","Giving false testimony","Receiving less credibility due to prejudice","Refusing to testify"],answer:2,explanation:"'a speaker receives less credibility than they deserve due to prejudice'"},
+     {type:"mcq",q:"What makes hermeneutical injustice distinct from testimonial injustice?",options:["It involves legal proceedings","It arises from a gap in collective interpretive resources","It affects only minority groups","It requires deliberate intent"],answer:1,explanation:"Hermeneutical injustice arises when a gap in collective interpretive resources disadvantages a group."},
+     {type:"qa",q:"Why are both forms of epistemic injustice described as 'self-concealing'?",keywords:["self-concealing","compound","inequalities","framework","articulate","named"],explanation:"They are self-concealing because victims often lack the framework to name or articulate what is happening to them, making the injustice invisible and compounding existing inequalities."},
+   ]},
+];
+
+function getUnlockedStories(games){
+  var played={};
+  games.forEach(function(g){played[g.level]=(played[g.level]||0)+1;});
+  var levelOrder=["A1","A2","B1","B2","C1","C2"];
+  var unlocked={};
+  STORY_LIBRARY.forEach(function(s,i){
+    var sameLevelStories=STORY_LIBRARY.filter(function(x){return x.level===s.level;});
+    var idx=sameLevelStories.indexOf(s);
+    var prevLevelIdx=levelOrder.indexOf(s.level)-1;
+    var prevLevelPlayed=prevLevelIdx<0?true:(played[levelOrder[prevLevelIdx]]||0)>=1;
+    unlocked[s.id]=prevLevelPlayed&&(idx===0||(played[s.level]||0)>=idx);
+  });
+  return unlocked;
+}
+
+function getRecommendations(games,n){
+  if(!games)games=[];
+  var lvOrder=["A1","A2","B1","B2","C1","C2"];
+  var recentLevels=games.slice(-5).map(function(g){return g.level;});
+  var dominantLevel=recentLevels.length?recentLevels[recentLevels.length-1]:"A1";
+  var lvIdx=lvOrder.indexOf(dominantLevel);
+  var playedIds=new Set(games.filter(function(g){return g.storyId;}).map(function(g){return g.storyId;}));
+  var recentTopics=games.slice(-3).map(function(g){return g.topic;});
+  var unlockedMap=getUnlockedStories(games);
+  var scored=STORY_LIBRARY.filter(function(s){return unlockedMap[s.id]&&!playedIds.has(s.id);}).map(function(s){
+    var sIdx=lvOrder.indexOf(s.level);
+    var lvScore=3-Math.abs(sIdx-lvIdx);
+    var topicScore=recentTopics.indexOf(s.topic)!==-1?-1:1;
+    return{story:s,score:lvScore+topicScore};
+  }).sort(function(a,b){return b.score-a.score;});
+  return scored.slice(0,n||3).map(function(x){return x.story;});
+}
+
+var BADGES=[
+  {id:"first_steps",   name:"First Steps",      icon:"👣", desc:"Complete your first quiz"},
+  {id:"story_starter", name:"Story Starter",     icon:"📖", desc:"Complete 5 quizzes"},
+  {id:"reader",        name:"Reader",            icon:"📚", desc:"Complete 10 quizzes"},
+  {id:"explorer",      name:"Explorer",          icon:"🗺️", desc:"Complete 25 quizzes"},
+  {id:"bookworm",      name:"Bookworm",          icon:"🐛", desc:"Complete 50 quizzes"},
+  {id:"quiz_master",   name:"Quiz Master",       icon:"🏆", desc:"Score 100% on a quiz"},
+  {id:"speed_reader",  name:"Speed Reader",      icon:"⚡", desc:"Finish under half the time limit"},
+  {id:"vocab_builder", name:"Vocab Builder",     icon:"✏️", desc:"Save 10 words to your notebook"},
+  {id:"word_collector",name:"Word Collector",    icon:"📝", desc:"Save 50 words"},
+  {id:"on_fire",       name:"On Fire",           icon:"🔥", desc:"Maintain a 3-day reading streak"},
+  {id:"week_warrior",  name:"Week Warrior",      icon:"🌟", desc:"Maintain a 7-day reading streak"},
+  {id:"daily_champ",   name:"Daily Champ",       icon:"📅", desc:"Complete a daily challenge"},
+  {id:"high_scorer",   name:"High Scorer",       icon:"🎯", desc:"Earn 500+ XP in a single quiz"},
+  {id:"all_types",     name:"Complete Player",   icon:"🎮", desc:"Use all 6 question types in one session"},
+  {id:"level_5",       name:"Level Up",          icon:"⭐", desc:"Reach player level 5"},
+];
+
+function checkBadges(user,vocab,streak){
+  var games=user&&user.games?user.games:[];
+  var vocabCount=vocab?vocab.length:0;
+  var e={};
+  if(games.length>=1)e.first_steps=true;
+  if(games.length>=5)e.story_starter=true;
+  if(games.length>=10)e.reader=true;
+  if(games.length>=25)e.explorer=true;
+  if(games.length>=50)e.bookworm=true;
+  if(games.some(function(g){return g.pct===100;}))e.quiz_master=true;
+  if(games.some(function(g){return g.timeSecs<getLv(g.level).timeLimit/2;}))e.speed_reader=true;
+  if(vocabCount>=10)e.vocab_builder=true;
+  if(vocabCount>=50)e.word_collector=true;
+  if(streak>=3)e.on_fire=true;
+  if(streak>=7)e.week_warrior=true;
+  if(games.some(function(g){return g.isDaily;}))e.daily_champ=true;
+  if(games.some(function(g){return g.xp>=500;}))e.high_scorer=true;
+  if(games.some(function(g){return g.typeStats&&Object.keys(g.typeStats).length>=6;}))e.all_types=true;
+  var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
+  if(getUserLevel(totalXp)>=5)e.level_5=true;
+  return e;
+}
+
+var QUEST_POOL=[
+  {id:"play_story",     title:"Read a Story",     desc:"Complete any quiz today",         xp:20},
+  {id:"score_80",       title:"High Score",        desc:"Score 80%+ on a quiz",            xp:15},
+  {id:"save_words",     title:"Word Saver",        desc:"Save 3+ words to your notebook",  xp:10},
+  {id:"daily_challenge",title:"Daily Player",      desc:"Complete the daily challenge",     xp:25},
+  {id:"score_perfect",  title:"Perfectionist",     desc:"Score 100% on any quiz",          xp:30},
+  {id:"play_b1plus",    title:"Challenge Seeker",  desc:"Play B1 level or higher",         xp:15},
+  {id:"fast_finish",    title:"Speed Runner",      desc:"Finish a quiz under 2 minutes",   xp:20},
+  {id:"streak_day",     title:"Streak Keeper",     desc:"Keep your reading streak alive",  xp:10},
+];
+function getDayQuests(date){
+  var seed=0;for(var i=0;i<date.length;i++)seed=seed*31+date.charCodeAt(i);
+  seed=Math.abs(seed);var n=QUEST_POOL.length,picked=[];
+  while(picked.length<3){var idx=seed%n;if(picked.indexOf(idx)===-1)picked.push(idx);seed=Math.abs(Math.floor(seed/n+seed*7+13))%99991;}
+  return picked.map(function(i){return QUEST_POOL[i];});
+}
+function checkQuest(id,todayGames,vocabCount,extras){
+  if(id==="play_story")return todayGames.length>=1;
+  if(id==="score_80")return todayGames.some(function(g){return g.pct>=80;});
+  if(id==="save_words")return vocabCount>=3;
+  if(id==="daily_challenge")return!!extras.dailyDone;
+  if(id==="score_perfect")return todayGames.some(function(g){return g.pct===100;});
+  if(id==="play_b1plus"){var hi=["B1","B2","C1","C2"];return todayGames.some(function(g){return hi.indexOf(g.level)!==-1;});}
+  if(id==="fast_finish")return todayGames.some(function(g){return g.timeSecs<120;});
+  if(id==="streak_day")return extras.streak>=1;
+  return false;
+}
 
 var LEVEL_THRESHOLDS=[0,1000,2500,4500,7000,10500,15000,21000,28000,36000,45000,55000,66000,78000,91000,105000,120000,136000,153000,171000,190000];
 function getUserLevel(totalXp){
@@ -102,6 +376,18 @@ async function loadBoards(){var v=await apiGet(BOARDS_KEY);return v||{};}
 async function saveBoards(b){await apiSet(BOARDS_KEY,b);}
 async function loadSocial(){var v=await apiGet(SOCIAL_KEY);return v||{};}
 async function saveSocial(s){await apiSet(SOCIAL_KEY,s);}
+async function loadVocab(){var v=await apiGet(VOCAB_KEY);return v||{};}
+async function saveVocab(v){await apiSet(VOCAB_KEY,v);}
+async function loadDaily(){var v=await apiGet(DAILY_KEY);return v||null;}
+async function saveDaily(d){await apiSet(DAILY_KEY,d);}
+async function loadDailyLb(){var v=await apiGet(DAILY_LB_KEY);return v||{};}
+async function saveDailyLb(d){await apiSet(DAILY_LB_KEY,d);}
+async function loadFavs(){var v=await apiGet(FAVS_KEY);return v||{};}
+async function saveFavs(v){await apiSet(FAVS_KEY,v);}
+async function loadWeeklyLb(){var v=await apiGet(WEEKLY_KEY);return v||{};}
+async function saveWeeklyLb(v){await apiSet(WEEKLY_KEY,v);}
+async function loadDiscuss(){var v=await apiGet(DISCUSS_KEY);return v||{};}
+async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
@@ -454,6 +740,54 @@ export default function App(){
   var [challengeLevel,setChallengeLevel]=useState("B1");
   var [challengeTypes,setChallengeTypes]=useState(["mcq","qa"]);
   var [socialMsg,setSocialMsg]=useState("");
+  // history
+  var [historyLevel,setHistoryLevel]=useState("");
+  // vocab notebook
+  var [vocab,setVocab]=useState([]);
+  var [allVocab,setAllVocab]=useState({});
+  var [savedWords,setSavedWords]=useState(new Set());
+  var [vocabCard,setVocabCard]=useState(0);
+  var [vocabFlipped,setVocabFlipped]=useState(false);
+  var [vocabFilter,setVocabFilter]=useState("all");
+  // daily challenge
+  var [dailyChallenge,setDailyChallenge]=useState(null);
+  var [dailyDone,setDailyDone]=useState(null);
+  var [dailyLb,setDailyLb]=useState([]);
+  var [isDailyGame,setIsDailyGame]=useState(false);
+  var [dailyLoading,setDailyLoading]=useState(false);
+  // daily quests
+  var [dailyQuests,setDailyQuests]=useState([]);
+  var [questsDone,setQuestsDone]=useState({});
+  // reading screen enhancements
+  var [focusMode,setFocusMode]=useState(false);
+  var [readingTimerSecs,setReadingTimerSecs]=useState(0);
+  var readingTimerRef=useRef(null);
+  var [isSpeaking,setIsSpeaking]=useState(false);
+  var [selectedWord,setSelectedWord]=useState(null);
+  var [wordDef,setWordDef]=useState(null);
+  var [wordDefLoading,setWordDefLoading]=useState(false);
+  var [speechRate,setSpeechRate]=useState(1);
+  var [activeSentence,setActiveSentence]=useState(null);
+  var [heatmapOn,setHeatmapOn]=useState(false);
+  // favorites
+  var [favs,setFavs]=useState([]);
+  var [allFavs,setAllFavs]=useState({});
+  var [currentStoryId,setCurrentStoryId]=useState(null);
+  // vocab game
+  var [vocabGameMode,setVocabGameMode]=useState(null);
+  var [vocabGameIdx,setVocabGameIdx]=useState(0);
+  var [vocabGameScore,setVocabGameScore]=useState(0);
+  var [vocabGameAnswered,setVocabGameAnswered]=useState(null);
+  // translation
+  var [translateLang,setTranslateLang]=useState(function(){try{return localStorage.getItem("rq-translate-lang")||"uz";}catch(e){return"uz";}});
+  var [translation,setTranslation]=useState(null);
+  var [translating,setTranslating]=useState(false);
+  // weekly board
+  var [weeklyLb,setWeeklyLb]=useState([]);
+  // discuss
+  var [discussStoryId,setDiscussStoryId]=useState(null);
+  var [allDiscuss,setAllDiscuss]=useState({});
+  var [discussInput,setDiscussInput]=useState("");
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -466,6 +800,36 @@ export default function App(){
       setAppReady(true);
     });
   },[]);
+
+  // reading screen timer + TTS cleanup
+  useEffect(function(){
+    if(stage==="reading"){
+      setReadingTimerSecs(0);setSelectedWord(null);setWordDef(null);
+      readingTimerRef.current=setInterval(function(){setReadingTimerSecs(function(s){return s+1;});},1000);
+    } else {
+      if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}
+      if(window.speechSynthesis){window.speechSynthesis.cancel();}
+      setIsSpeaking(false);
+    }
+    return function(){if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}};
+  },[stage]);
+
+  // load vocab + daily challenge when user logs in
+  useEffect(function(){
+    if(!currentUser)return;
+    var today=new Date().toLocaleDateString();
+    loadVocab().then(function(v){setAllVocab(v||{});setVocab((v&&v[currentUser.name])||[]);});
+    loadDaily().then(function(d){if(d&&d.date===today)setDailyChallenge(d);});
+    var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
+    setDailyDone(doneRaw&&doneRaw.date===today?doneRaw:null);
+    loadDailyLb().then(function(lb){setDailyLb((lb&&lb[today])||[]);});
+    var todayQuests=getDayQuests(today);setDailyQuests(todayQuests);
+    var qDoneRaw=null;try{qDoneRaw=JSON.parse(localStorage.getItem("rq-quests-"+currentUser.name+"-"+today));}catch(e){}
+    setQuestsDone(qDoneRaw||{});
+    loadFavs().then(function(f){setAllFavs(f||{});setFavs((f&&f[currentUser.name])||[]);});
+    loadWeeklyLb().then(function(w){var wk=getWeekId();setWeeklyLb((w&&w[wk])||[]);});
+    loadDiscuss().then(function(d){setAllDiscuss(d||{});});
+  },[currentUser]);
 
   // always pull fresh users when entering friends page or typing a search
   useEffect(function(){
@@ -567,6 +931,73 @@ export default function App(){
     return allUsers.filter(function(u){return u.name!==currentUser.name&&u.name.toLowerCase().indexOf(q2)!==-1;});
   }
 
+  // ── vocab ─────────────────────────────────────────────────
+  function toggleWord(word){
+    setSavedWords(function(s){var n=new Set(s);if(n.has(word))n.delete(word);else n.add(word);return n;});
+  }
+
+  function speakPassage(){
+    if(!window.speechSynthesis)return;
+    if(isSpeaking){window.speechSynthesis.cancel();setIsSpeaking(false);setActiveSentence(null);return;}
+    var utt=new SpeechSynthesisUtterance(passage);
+    utt.rate=speechRate;
+    utt.onend=function(){setIsSpeaking(false);setActiveSentence(null);};
+    utt.onerror=function(){setIsSpeaking(false);setActiveSentence(null);};
+    window.speechSynthesis.speak(utt);
+    setIsSpeaking(true);
+  }
+
+  function speakSentence(text){
+    if(!window.speechSynthesis)return;
+    window.speechSynthesis.cancel();
+    setActiveSentence(text);setTranslation(null);
+    var utt=new SpeechSynthesisUtterance(text);
+    utt.rate=speechRate;
+    utt.onend=function(){setIsSpeaking(false);};
+    utt.onerror=function(){setIsSpeaking(false);};
+    window.speechSynthesis.speak(utt);
+    setIsSpeaking(true);
+  }
+
+  async function translateSentence(text){
+    if(!text)return;
+    setTranslating(true);setTranslation(null);
+    try{
+      var lang=translateLang||"uz";
+      var url="https://api.mymemory.translated.net/get?q="+encodeURIComponent(text)+"&langpair=en|"+lang;
+      var r=await fetch(url);
+      var d=await r.json();
+      setTranslation(d.responseData&&d.responseData.translatedText?d.responseData.translatedText:"Translation unavailable.");
+    }catch(e){setTranslation("Translation unavailable.");}
+    setTranslating(false);
+  }
+
+  async function toggleFav(storyId,storyTitle,storyLevel){
+    if(!currentUser||!storyId)return;
+    var existed=favs.some(function(f){return f.id===storyId;});
+    var nFavs=existed?favs.filter(function(f){return f.id!==storyId;}):favs.concat([{id:storyId,title:storyTitle,level:storyLevel,date:new Date().toLocaleDateString()}]);
+    var nAll={};for(var k in allFavs)nAll[k]=allFavs[k];nAll[currentUser.name]=nFavs;
+    setFavs(nFavs);setAllFavs(nAll);saveFavs(nAll);
+  }
+
+  async function lookupWord(word){
+    if(selectedWord===word){setSelectedWord(null);setWordDef(null);return;}
+    setSelectedWord(word);setWordDef(null);setWordDefLoading(true);
+    try{
+      var r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(word));
+      if(!r.ok)throw new Error("not found");
+      var data=await r.json();
+      var entry=data[0];
+      var phonetic=entry.phonetic||(entry.phonetics&&entry.phonetics[0]&&entry.phonetics[0].text)||"";
+      var audio=(entry.phonetics&&entry.phonetics.find(function(p){return p.audio;})||{}).audio||"";
+      var meaning=entry.meanings&&entry.meanings[0]&&entry.meanings[0].definitions&&entry.meanings[0].definitions[0];
+      setWordDef({phonetic:phonetic,audio:audio,def:meaning?meaning.definition:"",example:meaning&&meaning.example?meaning.example:""});
+    }catch(e){
+      setWordDef({phonetic:"",audio:"",def:"No definition found for this word.",example:""});
+    }
+    setWordDefLoading(false);
+  }
+
   // ── game ──────────────────────────────────────────────────
   function shuffleArr(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
@@ -594,12 +1025,39 @@ export default function App(){
       setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
       setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+      setCurrentStoryId(null);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
       setStage("reading");
     }catch(e){console.log("generate err",e);setError("Generation failed - please try again.");setStage("home");}
     clearInterval(iv);
   }
 
-  function startQuiz(){startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");}
+  function startStoryFromLibrary(story){
+    setLevel(story.level);
+    setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);
+    var mq=null;for(var i=0;i<story.questions.length;i++){if(story.questions[i].type==="matching"){mq=story.questions[i];break;}}
+    setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
+    setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+    setIsDailyGame(false);setCurrentStoryId(story.id);
+    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+    setStage("reading");
+  }
+
+  function startQuiz(){
+    if(window.speechSynthesis){window.speechSynthesis.cancel();setIsSpeaking(false);}
+    setFocusMode(false);setSelectedWord(null);setWordDef(null);
+    if(currentUser&&savedWords.size>0){
+      var today=new Date().toLocaleDateString();
+      var newEntries=[];
+      savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;}))newEntries.push({word:w,level:level,topic:topic,date:today,status:"new"});});
+      if(newEntries.length>0){
+        var nv=vocab.concat(newEntries);
+        var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;
+        setVocab(nv);setAllVocab(nAll);saveVocab(nAll);
+      }
+    }
+    startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");
+  }
   function handleExpire(){setTimerRunning(false);setTimeExpired(true);doFinish();}
 
   function getCurrentAnswer(){if(!q)return null;if(q.type==="matching")return matchState;if(q.type==="heading")return headingState;return userAnswers[current]!==undefined?userAnswers[current]:null;}
@@ -629,7 +1087,7 @@ export default function App(){
 
   async function doFinish(){
     var timeSecs=startTimeRef.current?Math.round((Date.now()-startTimeRef.current)/1000):(lv?lv.timeLimit:180);
-    var totalEarned=0,totalMax=0,ansArr=[];
+    var totalEarned=0,totalMax=0,ansArr=[],typeStats={};
     for(var i=0;i<questions.length;i++){
       var qs=questions[i],ans=null;
       if(qs.type==="matching")ans=matchState;
@@ -638,6 +1096,8 @@ export default function App(){
       var pts=scoreQuestion(qs,ans),mx=maxPoints(qs);
       ansArr.push(pts>=Math.ceil(mx/2));
       totalEarned+=pts;totalMax+=mx;
+      if(!typeStats[qs.type])typeStats[qs.type]={earned:0,max:0};
+      typeStats[qs.type].earned+=pts;typeStats[qs.type].max+=mx;
     }
     var pct=totalMax>0?Math.round((totalEarned/totalMax)*100):0;
     var stars=pct>=90?5:pct>=75?4:pct>=60?3:pct>=40?2:1;
@@ -646,18 +1106,63 @@ export default function App(){
     var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
     var today=new Date().toLocaleDateString();
 
-    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today};
+    var badgesBefore=checkBadges(currentUser,vocab,calcStreak(currentUser.games));
+    // quest bonus: check which quests complete with this game
+    var tempTodayGames=currentUser.games.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
+    var newQuestItems=[];
+    dailyQuests.forEach(function(qt){
+      if(questsDone[qt.id])return;
+      if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreak(currentUser.games.concat([{date:today}]))})){
+        newQuestItems.push(qt);finalXp+=qt.xp;
+      }
+    });
+    var wpm=getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs);
+    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
     var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
     var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
     await saveUsers(newUsers);setAllUsers(newUsers);setCurrentUser(updatedUser);
+    var newStreakVal=calcStreak(updatedUser.games);
+    var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
+    var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
 
     var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
     var nb={};for(var k in boards){nb[k]=boards[k];}
     var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,20);
     await saveBoards(nb);setBoards(nb);
 
+    var wasDaily=isDailyGame;
+    if(isDailyGame&&currentUser){
+      var done={date:today,xp:finalXp,pct:pct,timeSecs:timeSecs};
+      localStorage.setItem("rq-daily-done-"+currentUser.name,JSON.stringify(done));
+      setDailyDone(done);
+      var dlb=await loadDailyLb();
+      var todayDlb=(dlb&&dlb[today])||[];
+      var dfiltered=todayDlb.filter(function(e){return e.name!==currentUser.name;});
+      var dEntry={name:currentUser.name,xp:finalXp,pct:pct,timeSecs:timeSecs};
+      var dmerged=dfiltered.concat([dEntry]);dmerged.sort(function(a,b){return b.xp-a.xp;});
+      var ndlb={};for(var dk in dlb)ndlb[dk]=dlb[dk];ndlb[today]=dmerged;
+      saveDailyLb(ndlb);setDailyLb(dmerged);
+      setIsDailyGame(false);
+    }
+
+    var wk=getWeekId();
+    var wlb=await loadWeeklyLb();var wToday=(wlb&&wlb[wk])||[];
+    var wExisting=wToday.find(function(e){return e.name===currentUser.name;});
+    var wEntry=wExisting?{name:wExisting.name,xp:wExisting.xp+finalXp,games:(wExisting.games||0)+1}:{name:currentUser.name,xp:finalXp,games:1};
+    var wFiltered=wToday.filter(function(e){return e.name!==currentUser.name;});
+    var wMerged=wFiltered.concat([wEntry]);wMerged.sort(function(a,b){return b.xp-a.xp;});
+    var nwlb={};for(var wk2 in wlb)nwlb[wk2]=wlb[wk2];nwlb[wk]=wMerged.slice(0,30);
+    saveWeeklyLb(nwlb);setWeeklyLb(wMerged.slice(0,30));
+
     var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr});
+    if(newQuestItems.length>0){
+      var nqd={};for(var qk in questsDone)nqd[qk]=questsDone[qk];
+      newQuestItems.forEach(function(q){nqd[q.id]=true;});
+      localStorage.setItem("rq-quests-"+currentUser.name+"-"+today,JSON.stringify(nqd));
+      setQuestsDone(nqd);
+    }
+    var questBonus=newQuestItems.reduce(function(s,q){return s+q.xp;},0);
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null});
     setStage("result");
   }
 
@@ -666,7 +1171,49 @@ export default function App(){
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setTotalXpSoFar(0);
     setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");
+    setIsDailyGame(false);setSavedWords(new Set());
+    setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
+    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);
     setStage("home");
+  }
+
+  async function startDailyChallenge(){
+    var today=new Date().toLocaleDateString();
+    var dc=dailyChallenge;
+    if(dc&&dc.date===today){
+      var mq2=null;for(var j2=0;j2<dc.questions.length;j2++){if(dc.questions[j2].type==="matching"){mq2=dc.questions[j2];break;}}
+      setLevel(dc.level||"B1");setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
+      setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights):[]);
+      setSelectedTypes(dc.questions.map(function(q){return q.type;}).filter(function(t,i,a){return a.indexOf(t)===i;}));
+      setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
+      setIsDailyGame(true);setStage("reading");return;
+    }
+    setError("");setStage("loading");setDailyLoading(true);
+    var dMsgs=["Picking today's topic...","Writing the passage...","Crafting questions...","Almost ready..."];
+    var dMi=0;setLoadMsg(dMsgs[0]);
+    var dIv=setInterval(function(){dMi=(dMi+1)%dMsgs.length;setLoadMsg(dMsgs[dMi]);},1600);
+    try{
+      var dTypes=["mcq","gap_word","gap_sentence","matching","heading","qa"];
+      var dTypeDescs={mcq:"mcq - 4-option multiple choice",gap_word:"gap_word - sentence with blank, pick word",gap_sentence:"gap_sentence - paragraph with blank, pick sentence",matching:"matching - match 3 lefts to 3 rights (correctPairs:[0,1,2])",heading:"heading - match 2 headings to 2 paragraphs (correctMap:[0,1])",qa:"qa - open answer with keywords"};
+      var dTypeEx={mcq:'{"type":"mcq","q":"?","options":["A","B","C","D"],"answer":0,"explanation":"Why."}',gap_word:'{"type":"gap_word","sentence":"The ___ rose.","options":["w1","w2","w3","w4"],"answer":1,"explanation":"Why."}',gap_sentence:'{"type":"gap_sentence","paragraph":"Start. ___ End.","options":["S1.","S2.","S3.","S4."],"answer":2,"explanation":"Why."}',matching:'{"type":"matching","instruction":"Match.","lefts":["T1","T2","T3"],"rights":["D1","D2","D3"],"correctPairs":[0,1,2],"explanation":"Why."}',heading:'{"type":"heading","instruction":"Match headings.","paragraphs":["P1...","P2..."],"headings":["H A","H B","H C"],"correctMap":[0,1],"explanation":"Why."}',qa:'{"type":"qa","q":"Explain X.","keywords":["k1","k2","k3"],"explanation":"Should mention..."}'};
+      var dTL="",dEL="";for(var dti=0;dti<dTypes.length;dti++){dTL+=(dti+1)+". "+dTypeDescs[dTypes[dti]]+"\n";dEL+="    "+dTypeEx[dTypes[dti]]+(dti<dTypes.length-1?",":"")+"\\n";}
+      var dPt="You are an expert language teacher. Level: B1.\nPassage: 140-160 words, moderate vocabulary, interesting topic for "+today+".\nPick a RANDOM varied topic.\n\nCreate EXACTLY "+dTypes.length+" question(s):\n"+dTL+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+dEL+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level B1 appropriate.";
+      var dRes=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:dPt}]})});
+      var dData=await dRes.json();
+      var dRaw="";if(dData.content){for(var di=0;di<dData.content.length;di++){if(dData.content[di].text)dRaw+=dData.content[di].text;}}
+      var dJson=JSON.parse(dRaw.replace(/```json/g,"").replace(/```/g,"").trim());
+      var newDc={date:today,level:"B1",passage:dJson.passage,topic:dJson.topic||"Daily Reading",questions:dJson.questions};
+      await saveDaily(newDc);setDailyChallenge(newDc);
+      var mq3=null;for(var j3=0;j3<dJson.questions.length;j3++){if(dJson.questions[j3].type==="matching"){mq3=dJson.questions[j3];break;}}
+      setLevel("B1");setPassage(dJson.passage);setTopic(dJson.topic||"Daily Reading");setQuestions(dJson.questions);
+      setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights):[]);
+      setSelectedTypes(dTypes);
+      setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
+      setIsDailyGame(true);setStage("reading");
+    }catch(e){console.log("daily err",e);setError("Daily challenge failed - please try again.");setStage("home");}
+    clearInterval(dIv);setDailyLoading(false);
   }
 
   // ── style helpers ─────────────────────────────────────────
@@ -750,6 +1297,11 @@ export default function App(){
               </div>
               <div className="rq-home-nav">
                 <button onClick={function(){setStage("friends");}} style={GHOST}>Friends</button>
+                <button onClick={function(){setStage("analytics");}} style={GHOST}>Stats</button>
+                <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>Vocab</button>
+                <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
+                <button onClick={function(){setStage("library");}} style={GHOST}>Library</button>
+                <button onClick={function(){setStage("weekly");}} style={GHOST}>Weekly</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
               </div>
@@ -769,6 +1321,80 @@ export default function App(){
                 })}
               </div>
             )}
+
+            {/* daily challenge card */}
+            {currentUser&&(function(){
+              var today=new Date().toLocaleDateString();
+              var done=dailyDone&&dailyDone.date===today;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:done?"rgba(251,191,36,0.3)":"rgba(6,182,212,0.3)",background:done?"rgba(251,191,36,0.05)":"rgba(6,182,212,0.05)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div>
+                      <p style={{fontSize:11,color:done?"#fbbf24":"#06b6d4",fontWeight:700,letterSpacing:0.6,margin:"0 0 2px"}}>TODAY'S DAILY CHALLENGE</p>
+                      <p style={{fontSize:12,color:"#9ca3af",margin:0}}>{done?"Completed! "+dailyDone.xp+" XP · "+dailyDone.pct+"%":dailyChallenge&&dailyChallenge.date===today?dailyChallenge.topic+" (B1)":"B1 · All question types"}</p>
+                    </div>
+                    <button onClick={done?function(){setStage("dailyleaderboard");}:startDailyChallenge} disabled={dailyLoading} style={{...mkBtn(done?"#fbbf24":"#06b6d4","#0d0d1a"),padding:"9px 16px",fontSize:13,flexShrink:0}}>{dailyLoading?"Loading...":done?"Leaderboard":"Play"}</button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* recommendations card */}
+            {currentUser&&(function(){
+              var recs=getRecommendations(currentUser.games||[],3);
+              if(!recs.length)return null;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14}}>
+                  <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.6,margin:"0 0 10px"}}>RECOMMENDED FOR YOU</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {recs.map(function(s){
+                      var lo=getLv(s.level);
+                      return(
+                        <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"8px 10px",borderRadius:10,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}} onClick={function(){startStoryFromLibrary(s);}}>
+                          <span style={{fontSize:20}}>{({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"})[s.level]||"📖"}</span>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:600,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.title}</div>
+                            <div style={{fontSize:11,color:"#6b7280"}}>{s.topic}</div>
+                          </div>
+                          <span style={{fontSize:11,fontWeight:700,color:lo.color,flexShrink:0}}>{s.level}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* daily quests card */}
+            {currentUser&&dailyQuests.length>0&&(function(){
+              var today=new Date().toLocaleDateString();
+              var todayGames=(currentUser.games||[]).filter(function(g){return g.date===today;});
+              var doneToday=dailyDone&&dailyDone.date===today;
+              var allDone=dailyQuests.every(function(q){return questsDone[q.id]||checkQuest(q.id,todayGames,vocab.length,{dailyDone:doneToday,streak:myStreak});});
+              var doneCount=dailyQuests.filter(function(q){return questsDone[q.id];}).length;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:allDone?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.1)",background:allDone?"rgba(52,211,153,0.04)":"rgba(255,255,255,0.02)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <p style={{fontSize:11,color:allDone?"#34d399":"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>TODAY'S QUESTS</p>
+                    <span style={{fontSize:11,color:"#6b7280"}}>{doneCount}/{dailyQuests.length} done</span>
+                  </div>
+                  {dailyQuests.map(function(q){
+                    var done=!!questsDone[q.id];
+                    return(<div key={q.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                      <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid "+(done?"#34d399":"rgba(255,255,255,0.15)"),background:done?"#34d399":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        {done&&<span style={{fontSize:10,color:"#0d0d1a",fontWeight:900}}>✓</span>}
+                      </div>
+                      <div style={{flex:1}}>
+                        <span style={{fontSize:13,fontWeight:600,color:done?"#6b7280":"#f3f4f6",textDecoration:done?"line-through":"none"}}>{q.title}</span>
+                        <span style={{fontSize:11,color:"#4b5563",marginLeft:6}}>{q.desc}</span>
+                      </div>
+                      <span style={{fontSize:12,fontWeight:700,color:done?"#6b7280":"#34d399",flexShrink:0}}>+{q.xp} XP</span>
+                    </div>);
+                  })}
+                  {allDone&&<div style={{marginTop:4,padding:"6px 10px",borderRadius:8,background:"rgba(52,211,153,0.1)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#34d399",textAlign:"center",fontWeight:700}}>All quests complete! Come back tomorrow for new ones.</div>}
+                </div>
+              );
+            })()}
 
             {/* question type selector */}
             <div style={{...CARD,marginBottom:12,padding:14}}>
@@ -815,23 +1441,171 @@ export default function App(){
         )}
 
         {/* ── READING ───────────────────────────────────────── */}
-        {stage==="reading"&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <span style={{...pill(lv?lv.color:"#34d399","#fff")}}>{level}</span>
-              <span style={{color:"#6b7280",fontSize:12}}>{topic}</span>
+        {stage==="reading"&&(function(){
+          var wordCount=passage.split(/\s+/).length;
+          var estSecs=Math.max(30,Math.round(wordCount/3));
+          var readPct=Math.min(100,Math.round((readingTimerSecs/estSecs)*100));
+          var liveWpm=readingTimerSecs>5?getWpmFromSecs(wordCount,readingTimerSecs):0;
+          var difficulty=analyzePassage(passage);
+
+          // Split passage into sentences for sentence TTS
+          var sentences=passage.match(/[^.!?]+[.!?]+/g)||[passage];
+
+          function WordTokens(){
+            return passage.split(/(\s+)/).map(function(token,i){
+              if(/^\s+$/.test(token))return<span key={i}>{token}</span>;
+              var word=token.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
+              if(!word)return<span key={i}>{token}</span>;
+              var saved=savedWords.has(word),isSelected=selectedWord===word;
+              var isHard=heatmapOn&&word.length>2&&!COMMON_WORDS.has(word.replace(/[^a-z]/g,""));
+              var bg=isSelected?"rgba(251,191,36,0.3)":saved?"rgba(6,182,212,0.2)":isHard?"rgba(245,158,11,0.22)":"transparent";
+              var col=isSelected?"#fbbf24":saved?"#06b6d4":isHard?"#fbbf24":"inherit";
+              return<span key={i} onClick={function(){lookupWord(word);}} title={isHard?"Uncommon word":undefined} style={{cursor:"pointer",borderRadius:3,background:bg,color:col,padding:"0 2px",transition:"background 0.12s",textDecoration:isSelected?"underline":isHard?"underline dotted":"none",textDecorationColor:isSelected?"#fbbf24":"rgba(245,158,11,0.5)"}}>{token}</span>;
+            });
+          }
+
+          function SentencePassage(){
+            return sentences.map(function(sent,si){
+              var isActive=activeSentence===sent.trim();
+              return<span key={si} onClick={function(){speakSentence(sent.trim());}} style={{cursor:"pointer",borderRadius:4,padding:"1px 2px",background:isActive?"rgba(99,102,241,0.2)":"transparent",borderBottom:isActive?"2px solid #818cf8":"none",transition:"background 0.15s"}}>{sent}</span>;
+            });
+          }
+
+          if(focusMode)return(
+            <div>
+              <button onClick={function(){setFocusMode(false);}} style={{position:"fixed",top:14,right:14,background:"rgba(13,13,26,0.85)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",zIndex:100,backdropFilter:"blur(8px)"}}>✕ Exit Focus</button>
+              <div style={{paddingTop:10,paddingBottom:100}}>
+                <h2 style={{margin:"0 0 18px",fontSize:20,fontWeight:900,color:"#f9fafb"}}>{topic}</h2>
+                <p style={{lineHeight:2.1,fontSize:18,color:"#e5e7eb",margin:0,letterSpacing:0.2}}><WordTokens/></p>
+                {activeSentence&&(
+                  <div style={{...CARD,marginTop:12,padding:12,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.3)"}}>
+                    <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                      <span style={{fontSize:12,color:"#9ca3af",flex:1}}>{activeSentence}</span>
+                      <button onClick={function(){translateSentence(activeSentence);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid #818cf8",color:"#a78bfa",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{translating?"...":"Translate"}</button>
+                      <select value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:6,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}>
+                        <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
+                      </select>
+                    </div>
+                    {translation&&<p style={{fontSize:13,color:"#c7d2fe",margin:"8px 0 0",fontStyle:"italic"}}>{translation}</p>}
+                  </div>
+                )}
+                {selectedWord&&(
+                  <div style={{...CARD,marginTop:12,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.3)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                      <span style={{fontSize:17,fontWeight:900,color:"#fbbf24"}}>{selectedWord}</span>
+                      <div style={{display:"flex",gap:6}}>
+                        {wordDef&&wordDef.audio&&<button onClick={function(){new Audio(wordDef.audio).play().catch(function(){});}} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",color:"#fbbf24",borderRadius:7,padding:"4px 9px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>}
+                        <button onClick={function(){toggleWord(selectedWord);}} style={{background:savedWords.has(selectedWord)?"rgba(6,182,212,0.2)":"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:savedWords.has(selectedWord)?"#06b6d4":"#9ca3af",borderRadius:7,padding:"4px 9px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{savedWords.has(selectedWord)?"⭐ Saved":"⭐ Save"}</button>
+                        <button onClick={function(){setSelectedWord(null);setWordDef(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:18,cursor:"pointer",lineHeight:1}}>×</button>
+                      </div>
+                    </div>
+                    {wordDefLoading&&<p style={{fontSize:13,color:"#6b7280",margin:0}}>Looking up...</p>}
+                    {wordDef&&!wordDefLoading&&<><p style={{fontSize:13,color:"#d1d5db",margin:0,lineHeight:1.6}}>{wordDef.def}</p>{wordDef.example&&<p style={{fontSize:12,color:"#6b7280",margin:"4px 0 0",fontStyle:"italic"}}>"{wordDef.example}"</p>}</>}
+                  </div>
+                )}
+              </div>
+              <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(13,13,26,0.95)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"10px 16px",display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",zIndex:99,backdropFilter:"blur(10px)"}}>
+                <span style={{fontSize:12,color:"#6b7280"}}>⏱ {formatTime(readingTimerSecs)}{liveWpm>0&&" · "+liveWpm+" WPM"}</span>
+                <button onClick={speakPassage} style={{background:isSpeaking?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),color:isSpeaking?"#818cf8":"#9ca3af",borderRadius:8,padding:"6px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking?"⏹":"🔊"}</button>
+                <div style={{display:"flex",gap:3}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.08)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"4px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
+                </div>
+                {savedWords.size>0&&<span style={{fontSize:11,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size}</span>}
+                <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"9px 18px",fontSize:13}}>Begin Quiz →</button>
+              </div>
             </div>
-            <div style={{...CARD,marginBottom:12}}>
-              <p style={{fontSize:11,fontWeight:700,color:lv?lv.color:"#34d399",letterSpacing:0.8,marginBottom:8,textTransform:"uppercase"}}>Read carefully - timer starts on Begin</p>
-              <p style={{lineHeight:2,fontSize:17,color:"#e5e7eb",margin:0}}>{passage}</p>
+          );
+
+          return(
+            <div>
+              {/* header */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,paddingTop:6}}>
+                <span style={{...pill(lv?lv.color:"#34d399","#0d0d1a"),fontSize:12,fontWeight:900}}>{level} · {selectedTypes.length} questions</span>
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={function(){toggleFav(currentStoryId,topic,level);}} style={{background:favs.some(function(f){return f.id===currentStoryId;})?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"rgba(255,255,255,0.12)"),color:favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"#9ca3af",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:currentStoryId?"pointer":"default",fontFamily:"inherit"}}>{favs.some(function(f){return f.id===currentStoryId;})?"❤️":"🤍"}</button>
+                  <button onClick={function(){setFocusMode(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>📖 Focus</button>
+                </div>
+              </div>
+
+              {/* difficulty analyzer card */}
+              <div style={{...CARD,padding:"10px 14px",marginBottom:10,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
+                <div>
+                  <span style={{fontSize:10,color:"#6b7280",fontWeight:700,letterSpacing:0.5}}>DIFFICULTY </span>
+                  <span style={{fontSize:13,color:"#fbbf24"}}>{"⭐".repeat(difficulty.stars)+"☆".repeat(5-difficulty.stars)}</span>
+                </div>
+                <div style={{fontSize:11,color:"#6b7280"}}>📖 {difficulty.wordCount} words · ~{difficulty.estReadMins} min</div>
+                <div style={{fontSize:11,color:"#a78bfa"}}>🆕 ~{difficulty.newWords} new words</div>
+                {liveWpm>0&&<div style={{fontSize:11,color:"#34d399",marginLeft:"auto"}}>⚡ {liveWpm} WPM · {getWpmLabel(liveWpm)}</div>}
+              </div>
+
+              {/* title + progress */}
+              <h2 style={{margin:"0 0 10px",fontSize:21,fontWeight:900,color:"#f9fafb",lineHeight:1.3}}>{topic}</h2>
+              <div style={{marginBottom:12}}>
+                <div style={{background:"rgba(255,255,255,0.07)",borderRadius:999,height:6,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:readPct+"%",background:lv?lv.color:"#34d399",borderRadius:999,transition:"width 1s linear"}}/>
+                </div>
+              </div>
+
+              {/* passage — sentence TTS mode or word mode */}
+              <div style={{...CARD,marginBottom:12}}>
+                <p style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb",margin:0}}>
+                  {activeSentence!==null?<SentencePassage/>:<WordTokens/>}
+                </p>
+                <p style={{fontSize:11,color:"#4b5563",margin:"10px 0 0",textAlign:"center"}}>{activeSentence!==null?"Tap a sentence to listen":"Tap any word to look it up"}</p>
+              </div>
+
+              {/* active sentence panel (translation) */}
+              {activeSentence&&(
+                <div style={{...CARD,marginBottom:12,padding:12,background:"rgba(99,102,241,0.07)",borderColor:"rgba(99,102,241,0.3)"}}>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:6}}>
+                    <span style={{fontSize:12,color:"#c7d2fe",flex:1,lineHeight:1.5}}>{activeSentence}</span>
+                    <button onClick={function(){translateSentence(activeSentence);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid #818cf8",color:"#a78bfa",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{translating?"...":"🌐 Translate"}</button>
+                    <select value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:6,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}>
+                      <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
+                    </select>
+                    <button onClick={function(){setActiveSentence(null);setTranslation(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:16,cursor:"pointer",lineHeight:1}}>×</button>
+                  </div>
+                  {translation&&<p style={{fontSize:13,color:"#c7d2fe",margin:0,fontStyle:"italic"}}>{translation}</p>}
+                </div>
+              )}
+
+              {/* vocab popup */}
+              {selectedWord&&!activeSentence&&(
+                <div style={{...CARD,marginBottom:12,background:"rgba(251,191,36,0.07)",borderColor:"rgba(251,191,36,0.3)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <div>
+                      <span style={{fontSize:19,fontWeight:900,color:"#fbbf24"}}>{selectedWord}</span>
+                      {wordDef&&wordDef.phonetic&&<span style={{fontSize:12,color:"#9ca3af",marginLeft:9}}>{wordDef.phonetic}</span>}
+                    </div>
+                    <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                      {wordDef&&wordDef.audio&&<button onClick={function(){new Audio(wordDef.audio).play().catch(function(){});}} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",color:"#fbbf24",borderRadius:7,padding:"5px 10px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>}
+                      <button onClick={function(){toggleWord(selectedWord);}} style={{background:savedWords.has(selectedWord)?"rgba(6,182,212,0.2)":"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.15)",color:savedWords.has(selectedWord)?"#06b6d4":"#9ca3af",borderRadius:7,padding:"5px 10px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{savedWords.has(selectedWord)?"⭐ Saved":"⭐ Save"}</button>
+                      <button onClick={function(){setSelectedWord(null);setWordDef(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:20,cursor:"pointer",lineHeight:1,padding:"0 2px"}}>×</button>
+                    </div>
+                  </div>
+                  {wordDefLoading&&<p style={{fontSize:13,color:"#6b7280",margin:0}}>Looking up definition...</p>}
+                  {wordDef&&!wordDefLoading&&(
+                    <>
+                      <p style={{fontSize:14,color:"#d1d5db",margin:0,lineHeight:1.7}}>{wordDef.def}</p>
+                      {wordDef.example&&<p style={{fontSize:12,color:"#6b7280",margin:"5px 0 0",fontStyle:"italic"}}>e.g. "{wordDef.example}"</p>}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* bottom action bar */}
+              <div style={{...CARD,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:12,color:"#9ca3af"}}>⏱ {formatTime(readingTimerSecs)}</span>
+                <button onClick={speakPassage} style={{background:isSpeaking&&!activeSentence?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:isSpeaking&&!activeSentence?"#818cf8":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking&&!activeSentence?"⏹ Stop":"🔊 Listen"}</button>
+                <button onClick={function(){setActiveSentence(activeSentence!==null?null:"");setTranslation(null);}} style={{background:activeSentence!==null?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(activeSentence!==null?"#818cf8":"rgba(255,255,255,0.1)"),color:activeSentence!==null?"#a78bfa":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🌐 {activeSentence!==null?"Exit Translate":"Translate"}</button>
+                <button onClick={function(){setHeatmapOn(function(h){return!h;});}} style={{background:heatmapOn?"rgba(245,158,11,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(heatmapOn?"#f59e0b":"rgba(255,255,255,0.1)"),color:heatmapOn?"#fbbf24":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>💡 Hard words</button>
+                <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.06)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"3px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
+                </div>
+              </div>
+
+              <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>Begin Quiz →</button>
             </div>
-            <div style={{...CARD,marginBottom:12,padding:12,fontSize:12,color:"#9ca3af",display:"flex",justifyContent:"space-between"}}>
-              <span>{selectedTypes.length} question type(s)</span>
-              <span>Limit: {formatTime(lv?lv.timeLimit:180)} | Bonus: up to {lv?lv.timeBonus:200} XP</span>
-            </div>
-            <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15}}>Start Timer and Begin!</button>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── QUIZ ──────────────────────────────────────────── */}
         {stage==="quiz"&&q&&(
@@ -879,22 +1653,242 @@ export default function App(){
             <div style={{...CARD,marginBottom:10}}>
               <div style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
               <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
-              <div style={{display:"flex",gap:7}}>
-                {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"}].map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:14,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
+              <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
               </div>
               {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>Speed bonus: +{result.timeBonus} XP!</div>}
             </div>
+            {result.newBadges&&result.newBadges.length>0&&(
+              <div style={{...CARD,marginBottom:10,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.4)"}}>
+                <p style={{fontWeight:700,fontSize:12,color:"#fbbf24",marginBottom:10,textAlign:"left"}}>🏅 NEW BADGE{result.newBadges.length>1?"S":""} UNLOCKED!</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {result.newBadges.map(function(id){
+                    var b=BADGES.find(function(x){return x.id===id;});
+                    if(!b)return null;
+                    return(<div key={id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.25)",borderRadius:10,padding:"8px 12px",flex:"1 1 auto"}}>
+                      <span style={{fontSize:22}}>{b.icon}</span>
+                      <div style={{textAlign:"left"}}><div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{b.name}</div><div style={{fontSize:11,color:"#9ca3af"}}>{b.desc}</div></div>
+                    </div>);
+                  })}
+                </div>
+              </div>
+            )}
+            {result.newQuests&&result.newQuests.length>0&&(
+              <div style={{...CARD,marginBottom:10,background:"rgba(52,211,153,0.07)",borderColor:"rgba(52,211,153,0.35)"}}>
+                <p style={{fontWeight:700,fontSize:12,color:"#34d399",marginBottom:8,textAlign:"left"}}>QUEST{result.newQuests.length>1?"S":""} COMPLETE! +{result.questBonus} XP</p>
+                {result.newQuests.map(function(q){return(
+                  <div key={q.id} style={{display:"flex",alignItems:"center",gap:8,textAlign:"left",marginBottom:4}}>
+                    <span style={{fontSize:14,color:"#34d399"}}>✓</span>
+                    <span style={{fontSize:13,color:"#d1fae5",fontWeight:600}}>{q.title}</span>
+                    <span style={{fontSize:12,color:"#34d399",marginLeft:"auto",fontWeight:700}}>+{q.xp} XP</span>
+                  </div>
+                );})}
+              </div>
+            )}
             <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
               <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>BREAKDOWN</p>
               {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
             </div>
-            <div style={{display:"flex",gap:7}}>
+            {result.typeStats&&Object.keys(result.typeStats).length>1&&(
+              <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:10}}>BY QUESTION TYPE</p>
+                {Object.keys(result.typeStats).map(function(t){
+                  var ts=result.typeStats[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
+                  return(<div key={t} style={{marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                      <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
+                      <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999,transition:"width 0.5s ease"}}/>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            )}
+            {result.wasDaily&&dailyLb.length>0&&(
+              <div style={{...CARD,marginBottom:10,textAlign:"left",borderColor:"rgba(251,191,36,0.3)"}}>
+                <p style={{fontWeight:700,fontSize:11,color:"#fbbf24",marginBottom:8}}>TODAY'S DAILY BOARD</p>
+                {dailyLb.slice(0,5).map(function(e,i){
+                  var isMe=currentUser&&e.name===currentUser.name;
+                  return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<Math.min(dailyLb.length,5)-1?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                    <span style={{width:22,fontSize:11,color:"#fbbf24",fontWeight:700}}>{i+1}</span>
+                    <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#fbbf24":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
+                    <span style={{fontSize:12,fontWeight:800,color:"#fbbf24"}}>{e.xp} XP</span>
+                    <span style={{fontSize:11,color:pctColor(e.pct)}}>{e.pct}%</span>
+                  </div>);
+                })}
+              </div>
+            )}
+            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
+              {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
               <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
               <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
           </div>
         )}
+
+        {/* ── VOCAB NOTEBOOK ────────────────────────────────── */}
+        {stage==="vocab"&&currentUser&&(function(){
+          var words=vocab.slice().reverse();
+          var reviewWords=words.filter(function(w){return w.status!=="known";});
+          var display=vocabFilter==="review"?reviewWords:words;
+          var safeIdx=display.length>0?vocabCard%display.length:0;
+          var curWord=display.length>0?display[safeIdx]:null;
+          function markKnown(){
+            var nv=vocab.map(function(v){return v.word===curWord.word?{word:v.word,level:v.level,topic:v.topic,date:v.date,status:"known"}:v;});
+            setVocab(nv);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;setAllVocab(nAll);saveVocab(nAll);
+            setVocabFlipped(false);
+            setVocabCard(function(c){return display.length<=1?0:(c>=display.length-1?0:c+1);});
+          }
+          function next(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c+1)%display.length;});}
+          function prev(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c>0?c-1:display.length-1);});}
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#06b6d4"}}>Vocabulary</h2>
+                <div style={{display:"flex",gap:6}}>
+                  {vocab.length>=2&&<button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);setStage("vocabgame");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"7px 14px",fontSize:12}}>🎮 Practice</button>}
+                  <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:5,marginBottom:12}}>
+                {[["all","All ("+words.length+")"],["review","Review ("+reviewWords.length+")"]].map(function(t){
+                  return<button key={t[0]} onClick={function(){setVocabFilter(t[0]);setVocabCard(0);setVocabFlipped(false);}} style={{background:vocabFilter===t[0]?"#06b6d4":"rgba(255,255,255,0.05)",color:vocabFilter===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
+                })}
+              </div>
+              {curWord?(
+                <div>
+                  <div onClick={function(){setVocabFlipped(function(f){return!f;});}} style={{...CARD,cursor:"pointer",textAlign:"center",minHeight:150,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:10,background:"rgba(6,182,212,0.06)",borderColor:"rgba(6,182,212,0.25)"}}>
+                    {!vocabFlipped?(
+                      <div><div style={{fontSize:28,fontWeight:900,color:"#06b6d4",marginBottom:6}}>{curWord.word}</div><div style={{fontSize:12,color:"#4b5563"}}>Tap to reveal context</div></div>
+                    ):(
+                      <div><div style={{fontSize:22,fontWeight:900,color:"#06b6d4",marginBottom:8}}>{curWord.word}</div><div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>From: <span style={{color:"#f3f4f6",fontWeight:600}}>{curWord.topic}</span></div><div style={{fontSize:12,color:"#6b7280"}}>{curWord.level} · {curWord.date}</div></div>
+                    )}
+                  </div>
+                  {vocabFlipped&&(
+                    <div style={{display:"flex",gap:7,marginBottom:10}}>
+                      <button onClick={markKnown} style={{...mkBtn("#22c55e","#0d0d1a"),flex:1,fontSize:13}}>Know it</button>
+                      <button onClick={next} style={{...mkBtn("#374151"),flex:1,fontSize:13}}>Study more</button>
+                    </div>
+                  )}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <button onClick={prev} style={{...GHOST,padding:"7px 14px",fontSize:13}}>Prev</button>
+                    <span style={{fontSize:12,color:"#6b7280"}}>{safeIdx+1} / {display.length}</span>
+                    <button onClick={next} style={{...GHOST,padding:"7px 14px",fontSize:13}}>Next</button>
+                  </div>
+                  {words.length>0&&(
+                    <div style={{...CARD,marginTop:14}}>
+                      <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>ALL WORDS ({words.length})</p>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {words.map(function(w,i){return<span key={i} onClick={function(){var idx=display.findIndex(function(d){return d.word===w.word;});if(idx!==-1){setVocabCard(idx);setVocabFlipped(false);}}} style={{background:w.status==="known"?"rgba(34,197,94,0.15)":"rgba(6,182,212,0.1)",color:w.status==="known"?"#22c55e":"#06b6d4",borderRadius:999,padding:"4px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{w.word}</span>;})}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ):(
+                <div style={{...CARD,textAlign:"center",padding:40}}>
+                  <div style={{fontSize:36,marginBottom:10}}>📚</div>
+                  <p style={{color:"#6b7280",fontSize:14}}>{vocabFilter==="review"?"All caught up! No words left to review.":"No saved words yet — tap words in the reading passage to save them."}</p>
+                  <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Start Reading</button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── DAILY LEADERBOARD ─────────────────────────────── */}
+        {stage==="dailyleaderboard"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
+              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Daily Board</h2>
+              <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+            </div>
+            <p style={{color:"#6b7280",fontSize:12,marginBottom:12}}>Today · {new Date().toLocaleDateString()} · B1</p>
+            {dailyLb.length===0?(
+              <div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No one has played today's challenge yet.</p><button onClick={startDailyChallenge} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Be First!</button></div>
+            ):(
+              <div style={CARD}>
+                <div style={{display:"flex",padding:"0 0 7px",borderBottom:"1px solid rgba(255,255,255,0.06)",marginBottom:5}}>
+                  {["#","PLAYER","XP","%","TIME"].map(function(h,i){return<span key={h} style={{fontSize:10,color:"#4b5563",width:i===0?28:i===1?"1fr":i===2?55:i===3?36:46,flex:i===1?1:0,textAlign:i>1?"right":"left"}}>{h}</span>;})}
+                </div>
+                {dailyLb.map(function(e,i){
+                  var isMe=currentUser&&e.name===currentUser.name;
+                  return(<div key={i} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:i<dailyLb.length-1?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(251,191,36,0.06)":"transparent",borderRadius:7,marginBottom:2}}>
+                    <span style={{width:28,fontSize:i<3?13:11,color:"#fbbf24",fontWeight:700}}>{i===0?"1st":i===1?"2nd":i===2?"3rd":(i+1)}</span>
+                    <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#fbbf24":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
+                    <span style={{width:55,textAlign:"right",fontWeight:800,color:"#fbbf24",fontSize:12}}>{e.xp}</span>
+                    <span style={{width:36,textAlign:"right",fontSize:12,color:pctColor(e.pct)}}>{e.pct}%</span>
+                    <span style={{width:46,textAlign:"right",fontSize:11,color:"#6b7280"}}>{formatTime(e.timeSecs)}</span>
+                  </div>);
+                })}
+              </div>
+            )}
+            {!(dailyDone&&dailyDone.date===new Date().toLocaleDateString())&&<button onClick={startDailyChallenge} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:12}}>Play Today's Challenge</button>}
+          </div>
+        )}
+
+        {/* ── HISTORY ───────────────────────────────────────── */}
+        {stage==="history"&&currentUser&&(function(){
+          var games=(currentUser.games||[]).slice().reverse();
+          var filtered=historyLevel?games.filter(function(g){return g.level===historyLevel;}):games;
+          var totalXp=filtered.reduce(function(s,g){return s+g.xp;},0);
+          var avgPct=filtered.length?Math.round(filtered.reduce(function(s,g){return s+g.pct;},0)/filtered.length):0;
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#34d399"}}>Reading History</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+
+              {/* level filter pills */}
+              <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
+                <button onClick={function(){setHistoryLevel("");}} style={{background:historyLevel===""?"#34d399":"rgba(255,255,255,0.05)",color:historyLevel===""?"#0d0d1a":"#9ca3af",border:"1px solid "+(historyLevel===""?"#34d399":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>All</button>
+                {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setHistoryLevel(l.key);}} style={{background:historyLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:historyLevel===l.key?"#0d0d1a":"#9ca3af",border:"1px solid "+(historyLevel===l.key?l.color:"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
+              </div>
+
+              {/* summary bar */}
+              {filtered.length>0&&(
+                <div style={{display:"flex",gap:7,marginBottom:12}}>
+                  {[{v:filtered.length,l:"Sessions",c:"#34d399"},{v:totalXp,l:"Total XP",c:"#fbbf24"},{v:avgPct+"%",l:"Avg Score",c:pctColor(avgPct)}].map(function(s){
+                    return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:15,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;
+                  })}
+                </div>
+              )}
+
+              {/* entries */}
+              {filtered.length===0&&(
+                <div style={{...CARD,textAlign:"center",padding:40}}>
+                  <div style={{fontSize:36,marginBottom:10}}>📖</div>
+                  <p style={{color:"#6b7280",fontSize:14}}>{historyLevel?"No "+historyLevel+" sessions yet.":"No sessions yet — play your first game!"}</p>
+                  <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),marginTop:14}}>Start Reading</button>
+                </div>
+              )}
+              {filtered.length>0&&(
+                <div style={CARD}>
+                  {filtered.map(function(g,i){
+                    var glv=getLv(g.level);
+                    return(
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                        <div style={{width:32,height:32,borderRadius:8,background:glv.glow,border:"2px solid "+glv.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:glv.color,flexShrink:0}}>{g.level}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.topic}</div>
+                          <div style={{fontSize:10,color:"#6b7280",marginTop:1}}>{g.date} · {formatTime(g.timeSecs)}</div>
+                        </div>
+                        <div style={{textAlign:"right",flexShrink:0}}>
+                          <div style={{fontSize:13,fontWeight:900,color:"#fbbf24"}}>{g.xp} XP</div>
+                          <div style={{fontSize:11,color:pctColor(g.pct),marginTop:1}}>{g.pct}%</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {currentUser&&<button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:12}}>Play Again</button>}
+            </div>
+          );
+        })()}
 
         {/* ── LEADERBOARD ───────────────────────────────────── */}
         {stage==="leaderboard"&&(
@@ -1205,6 +2199,27 @@ export default function App(){
                 <GameChart games={games}/>
               </div>
             )}
+            {(function(){
+              var typeAgg={};
+              games.forEach(function(g){if(!g.typeStats)return;Object.keys(g.typeStats).forEach(function(t){if(!typeAgg[t])typeAgg[t]={earned:0,max:0};typeAgg[t].earned+=g.typeStats[t].earned;typeAgg[t].max+=g.typeStats[t].max;});});
+              var types=Object.keys(typeAgg);
+              if(!types.length)return null;
+              return(<div style={{...CARD,marginBottom:10}}>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:10}}>ACCURACY BY TYPE</p>
+                {types.map(function(t){
+                  var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
+                  return(<div key={t} style={{marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                      <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
+                      <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999}}/>
+                    </div>
+                  </div>);
+                })}
+              </div>);
+            })()}
             {games.length>0&&(<div style={{...CARD,marginBottom:10}}>
               <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>RECENT GAMES</p>
               {games.slice().reverse().slice(0,8).map(function(g,i){
@@ -1217,11 +2232,473 @@ export default function App(){
               })}
             </div>)}
             {games.length===0&&<div style={{...CARD,textAlign:"center",padding:30}}><p style={{color:"#6b7280"}}>No games yet - start playing!</p></div>}
+            {(function(){
+              var myBadges=checkBadges(currentUser,vocab,myStreak);
+              var earnedCount=BADGES.filter(function(b){return myBadges[b.id];}).length;
+              return(<div style={{...CARD,marginBottom:10,cursor:"pointer"}} onClick={function(){setStage("badges");}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>🏅 My Badges</span>
+                  <span style={{fontSize:12,color:"#6b7280"}}>{earnedCount} / {BADGES.length} earned →</span>
+                </div>
+                <div style={{display:"flex",gap:4,marginTop:8,flexWrap:"wrap"}}>
+                  {BADGES.map(function(b){return<span key={b.id} style={{fontSize:18,opacity:myBadges[b.id]?1:0.2,filter:myBadges[b.id]?"none":"grayscale(1)"}}>{b.icon}</span>;})}
+                </div>
+              </div>);
+            })()}
             <div style={{display:"flex",gap:7}}>
               <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
               <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
             </div>
           </div>);
+        })()}
+
+        {/* ── ANALYTICS ─────────────────────────────────────── */}
+        {stage==="analytics"&&currentUser&&(function(){
+          var games=currentUser.games||[];
+          var today=new Date().toLocaleDateString();
+          var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
+          var totalTimeSecs=games.reduce(function(s,g){return s+g.timeSecs;},0);
+          var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
+          var lvlInfo=getLevelProgress(totalXp);
+
+          // weekly activity (last 7 days)
+          var week=[];
+          for(var d=6;d>=0;d--){
+            var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toLocaleDateString();
+            var dayGames=games.filter(function(g){return g.date===ds;});
+            week.push({label:dt.toLocaleDateString("en",{weekday:"short"}),date:ds,count:dayGames.length,xp:dayGames.reduce(function(s,g){return s+g.xp;},0),isToday:ds===today});
+          }
+          var maxDayXp=Math.max(1,Math.max.apply(null,week.map(function(w){return w.xp;})));
+
+          // per-level breakdown
+          var byLevel={};
+          games.forEach(function(g){if(!byLevel[g.level])byLevel[g.level]={count:0,xpTotal:0,pctTotal:0};byLevel[g.level].count++;byLevel[g.level].xpTotal+=g.xp;byLevel[g.level].pctTotal+=g.pct;});
+
+          // type accuracy aggregate
+          var typeAgg={};
+          games.forEach(function(g){if(!g.typeStats)return;Object.keys(g.typeStats).forEach(function(t){if(!typeAgg[t])typeAgg[t]={earned:0,max:0};typeAgg[t].earned+=g.typeStats[t].earned;typeAgg[t].max+=g.typeStats[t].max;});});
+
+          var earnedBadges=checkBadges(currentUser,vocab,myStreak);
+          var badgeCount=BADGES.filter(function(b){return earnedBadges[b.id];}).length;
+
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#06b6d4"}}>My Analytics</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+
+              {/* top stats */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                {[
+                  {v:games.length,     l:"Sessions",      c:"#34d399"},
+                  {v:totalXp,          l:"Total XP",      c:"#fbbf24"},
+                  {v:avgPct+"%",       l:"Avg Score",     c:pctColor(avgPct)},
+                  {v:vocab.length,     l:"Words Saved",   c:"#06b6d4"},
+                  {v:Math.floor(totalTimeSecs/60)+"m", l:"Time Reading", c:"#a78bfa"},
+                  {v:badgeCount+"/"+BADGES.length, l:"Badges",   c:"#f472b6"},
+                ].map(function(s){
+                  return<div key={s.l} style={{textAlign:"center",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:"14px 8px"}}>
+                    <div style={{fontSize:18,fontWeight:900,color:s.c}}>{s.v}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:3}}>{s.l}</div>
+                  </div>;
+                })}
+              </div>
+
+              {/* level progress */}
+              <div style={{...CARD,marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <span style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>⭐ Player Level {lvlInfo.level}</span>
+                  <span style={{fontSize:11,color:"#6b7280"}}>{lvlInfo.xpNeeded>0?lvlInfo.xpNeeded+" XP to next":"Max level!"}</span>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.05)",borderRadius:999,height:8,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:lvlInfo.progress+"%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:999,transition:"width 0.4s ease"}}/>
+                </div>
+              </div>
+
+              {/* weekly activity bar chart */}
+              <div style={{...CARD,marginBottom:12}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>WEEKLY ACTIVITY</p>
+                <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
+                  {week.map(function(w){
+                    var h=w.xp>0?Math.max(8,Math.round((w.xp/maxDayXp)*68)):4;
+                    return(<div key={w.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                      <div style={{width:"100%",height:h,background:w.isToday?"#06b6d4":w.xp>0?"#6366f1":"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0",transition:"height 0.3s ease"}}/>
+                      <span style={{fontSize:9,color:w.isToday?"#06b6d4":"#6b7280",fontWeight:w.isToday?700:400}}>{w.label}</span>
+                      {w.count>0&&<span style={{fontSize:9,color:"#4b5563"}}>{w.count}</span>}
+                    </div>);
+                  })}
+                </div>
+              </div>
+
+              {/* per-level breakdown */}
+              {Object.keys(byLevel).length>0&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>BY CEFR LEVEL</p>
+                  {["A1","A2","B1","B2","C1","C2"].filter(function(l){return byLevel[l];}).map(function(l){
+                    var lv=getLv(l),ld=byLevel[l];
+                    var ap=Math.round(ld.pctTotal/ld.count);
+                    return(<div key={l} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                      <span style={{fontSize:11,fontWeight:900,color:lv.color,width:24}}>{l}</span>
+                      <div style={{flex:1}}>
+                        <div style={{background:"rgba(255,255,255,0.05)",borderRadius:999,height:6,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:ap+"%",background:lv.color,borderRadius:999}}/>
+                        </div>
+                      </div>
+                      <span style={{fontSize:11,color:pctColor(ap),fontWeight:700,width:32,textAlign:"right"}}>{ap}%</span>
+                      <span style={{fontSize:10,color:"#6b7280",width:40,textAlign:"right"}}>{ld.count} {ld.count===1?"game":"games"}</span>
+                    </div>);
+                  })}
+                </div>
+              )}
+
+              {/* question type accuracy */}
+              {Object.keys(typeAgg).length>0&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>ACCURACY BY TYPE</p>
+                  {Object.keys(typeAgg).map(function(t){
+                    var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
+                    return(<div key={t} style={{marginBottom:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                        <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
+                        <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                      </div>
+                      <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999}}/>
+                      </div>
+                    </div>);
+                  })}
+                </div>
+              )}
+
+              {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No data yet — complete your first quiz!</p></div>}
+              <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>Start Reading</button>
+            </div>
+          );
+        })()}
+
+        {/* ── STORY LIBRARY ─────────────────────────────────── */}
+        {stage==="library"&&currentUser&&(function(){
+          var unlockedMap=getUnlockedStories(currentUser.games||[]);
+          var levelOrder=["A1","A2","B1","B2","C1","C2"];
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#34d399"}}>Story Library</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+              <p style={{color:"#6b7280",fontSize:12,marginBottom:12,lineHeight:1.5}}>Pre-written stories — instant play. Unlock more by completing quizzes.</p>
+              {favs.length>0&&(
+                <div style={{marginBottom:16}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#f472b6",letterSpacing:0.5,margin:"0 0 8px"}}>❤️ MY FAVORITES</p>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {favs.map(function(f){
+                      var story=STORY_LIBRARY.find(function(s){return s.id===f.id;});
+                      if(!story)return null;
+                      var lo=getLv(story.level);
+                      return(
+                        <div key={f.id} style={{...CARD,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",flex:"1 1 auto",minWidth:140,border:"1px solid rgba(236,72,153,0.3)",background:"rgba(236,72,153,0.05)"}} onClick={function(){startStoryFromLibrary(story);}}>
+                          <span style={{fontSize:20}}>{({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"})[story.level]||"📖"}</span>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:600,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
+                            <div style={{fontSize:11,color:lo.color}}>{story.level} · {story.topic}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {levelOrder.map(function(lk){
+                var lObj=getLv(lk);
+                var stories=STORY_LIBRARY.filter(function(s){return s.level===lk;});
+                return(
+                  <div key={lk} style={{marginBottom:20}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <span style={{fontSize:13,fontWeight:900,color:lObj.color}}>{lk}</span>
+                      <span style={{fontSize:11,color:"#4b5563"}}>{lObj.desc}</span>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {stories.map(function(story){
+                        var isUnlocked=!!unlockedMap[story.id];
+                        return(
+                          <div key={story.id} style={{...CARD,padding:14,display:"flex",alignItems:"center",gap:12,opacity:isUnlocked?1:0.45,border:"1px solid "+(isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
+                            <div style={{fontSize:28,flexShrink:0}}>{isUnlocked?({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"}[lk]||"📖"):"🔒"}</div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:14,fontWeight:700,color:isUnlocked?"#f3f4f6":"#6b7280",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
+                              <div style={{fontSize:11,color:"#6b7280"}}>{story.topic} · {story.questions.length} questions</div>
+                              {!isUnlocked&&<div style={{fontSize:10,color:"#4b5563",marginTop:2}}>Complete more {lk} quizzes to unlock</div>}
+                            </div>
+                            {isUnlocked&&<div style={{fontSize:11,fontWeight:700,color:lObj.color,flexShrink:0}}>Play →</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              <button onClick={function(){setStage("home");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:4}}>Back to Home</button>
+            </div>
+          );
+        })()}
+
+        {/* ── BADGES ────────────────────────────────────────── */}
+        {stage==="badges"&&currentUser&&(function(){
+          var myBadges=checkBadges(currentUser,vocab,myStreak);
+          var earnedCount=BADGES.filter(function(b){return myBadges[b.id];}).length;
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:6}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Badges</h2>
+                <button onClick={function(){setStage("profile");}} style={GHOST}>Back</button>
+              </div>
+              <p style={{color:"#6b7280",fontSize:13,marginBottom:14}}>{earnedCount} of {BADGES.length} earned</p>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                {BADGES.map(function(b){
+                  var earned=!!myBadges[b.id];
+                  return(
+                    <div key={b.id} style={{...CARD,padding:14,display:"flex",gap:10,alignItems:"flex-start",opacity:earned?1:0.45,border:"1px solid "+(earned?"rgba(251,191,36,0.35)":"rgba(255,255,255,0.08)"),background:earned?"rgba(251,191,36,0.06)":"rgba(255,255,255,0.03)"}}>
+                      <span style={{fontSize:26,flexShrink:0,filter:earned?"none":"grayscale(1)"}}>{b.icon}</span>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:earned?"#fbbf24":"#6b7280",marginBottom:2}}>{b.name}</div>
+                        <div style={{fontSize:11,color:"#4b5563",lineHeight:1.4}}>{b.desc}</div>
+                        {earned&&<div style={{fontSize:10,color:"#22c55e",marginTop:4,fontWeight:700}}>✓ Unlocked</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button onClick={doRestart} style={{...mkBtn("#fbbf24","#0d0d1a"),width:"100%",marginTop:14}}>Keep Playing to Unlock More</button>
+            </div>
+          );
+        })()}
+
+        {/* ── VOCAB GAME ────────────────────────────────────── */}
+        {stage==="vocabgame"&&currentUser&&(function(){
+          var gameWords=vocab.filter(function(w){return w.status!=="known";});
+          if(!gameWords.length)gameWords=vocab.slice();
+          if(!gameWords.length)return(<div style={{textAlign:"center",paddingTop:60}}><p style={{color:"#6b7280"}}>Save some words to your notebook first!</p><button onClick={function(){setStage("vocab");}} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:16}}>Go to Vocab</button></div>);
+
+          if(!vocabGameMode)return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>Vocab Practice</h2>
+                <button onClick={function(){setStage("vocab");}} style={GHOST}>Back</button>
+              </div>
+              <p style={{color:"#6b7280",fontSize:13,marginBottom:16}}>{gameWords.length} words to practice</p>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {[{m:"flashcard",icon:"🃏",name:"Flashcards",desc:"Flip to reveal the meaning"},{m:"mcq",icon:"🎯",name:"Word Quiz",desc:"Pick the correct definition"},{m:"blank",icon:"✏️",name:"Fill the Blank",desc:"Complete the sentence"}].map(function(item){
+                  return(
+                    <button key={item.m} onClick={function(){setVocabGameMode(item.m);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);}} style={{...CARD,border:"1px solid rgba(167,139,250,0.25)",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:14,padding:16}}>
+                      <span style={{fontSize:30}}>{item.icon}</span>
+                      <div><div style={{fontSize:15,fontWeight:700,color:"#f3f4f6",marginBottom:2}}>{item.name}</div><div style={{fontSize:12,color:"#6b7280"}}>{item.desc}</div></div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+
+          var shuffled=gameWords.slice().sort(function(){return Math.random()-0.5;});
+          var curW=shuffled[vocabGameIdx%shuffled.length];
+          var isDone=vocabGameIdx>=shuffled.length;
+          if(isDone)return(
+            <div style={{textAlign:"center",paddingTop:40}}>
+              <div style={{fontSize:50,marginBottom:10}}>🎉</div>
+              <h2 style={{fontSize:22,fontWeight:900,color:"#a78bfa",marginBottom:6}}>Practice Complete!</h2>
+              <p style={{color:"#9ca3af",marginBottom:20}}>Score: {vocabGameScore} / {shuffled.length}</p>
+              <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                <button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);}} style={mkBtn("#a78bfa","#0d0d1a")}>Play Again</button>
+                <button onClick={function(){setStage("vocab");}} style={mkBtn("#374151")}>Back to Vocab</button>
+              </div>
+            </div>
+          );
+
+          if(vocabGameMode==="flashcard")return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>Flashcards</h2>
+                <span style={{fontSize:12,color:"#6b7280"}}>{vocabGameIdx+1}/{shuffled.length}</span>
+              </div>
+              <div onClick={function(){setVocabFlipped(function(f){return!f;});}} style={{...CARD,minHeight:180,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",marginBottom:14,background:vocabFlipped?"rgba(167,139,250,0.1)":"rgba(255,255,255,0.04)",borderColor:vocabFlipped?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.1)",transition:"all 0.3s"}}>
+                <div style={{textAlign:"center"}}>
+                  {!vocabFlipped?<><div style={{fontSize:26,fontWeight:900,color:"#f3f4f6",marginBottom:8}}>{curW.word}</div><div style={{fontSize:12,color:"#6b7280"}}>Tap to reveal</div></>
+                  :<><div style={{fontSize:22,fontWeight:700,color:"#a78bfa",marginBottom:4}}>{curW.word}</div><div style={{fontSize:13,color:"#d1d5db",lineHeight:1.6,maxWidth:280}}>{curW.def||"No definition saved."}</div><div style={{fontSize:11,color:"#6b7280",marginTop:8}}>{curW.level} · {curW.topic}</div></>}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={function(){setVocabFlipped(false);setVocabGameIdx(function(i){return i+1;});}} style={{...mkBtn("#374151"),flex:1}}>Next →</button>
+              </div>
+            </div>
+          );
+
+          if(vocabGameMode==="mcq"){
+            var distractors=gameWords.filter(function(w){return w.word!==curW.word;}).sort(function(){return Math.random()-0.5;}).slice(0,3);
+            var options=[curW].concat(distractors).sort(function(){return Math.random()-0.5;});
+            var correctIdx=options.indexOf(curW);
+            return(
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                  <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>Word Quiz</h2>
+                  <span style={{fontSize:12,color:"#6b7280"}}>{vocabGameIdx+1}/{shuffled.length} · {vocabGameScore} pts</span>
+                </div>
+                <div style={{...CARD,marginBottom:14,textAlign:"center",padding:20}}>
+                  <p style={{fontSize:11,color:"#6b7280",marginBottom:6}}>Which word matches this definition?</p>
+                  <p style={{fontSize:15,color:"#e5e7eb",lineHeight:1.7,margin:0}}>{curW.def||"A word saved from your reading."}</p>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
+                  {options.map(function(opt,oi){
+                    var isCorrect=oi===correctIdx;
+                    var isSelected=vocabGameAnswered===oi;
+                    var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
+                    if(vocabGameAnswered!==null){if(isCorrect){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSelected){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
+                    else if(isSelected){bg="rgba(167,139,250,0.2)";bd="1px solid #a78bfa";col="#a78bfa";}
+                    return<button key={oi} disabled={vocabGameAnswered!==null} onClick={function(){setVocabGameAnswered(oi);if(isCorrect)setVocabGameScore(function(s){return s+1;});}} style={{background:bg,border:bd,borderRadius:10,padding:"11px 14px",color:col,fontSize:14,fontWeight:600,cursor:vocabGameAnswered!==null?"default":"pointer",fontFamily:"inherit",textAlign:"left"}}>{opt.word}</button>;
+                  })}
+                </div>
+                {vocabGameAnswered!==null&&<button onClick={function(){setVocabGameAnswered(null);setVocabGameIdx(function(i){return i+1;});}} style={{...mkBtn("#a78bfa","#0d0d1a"),width:"100%"}}>Next →</button>}
+              </div>
+            );
+          }
+
+          if(vocabGameMode==="blank"){
+            var sentence=(curW.example||"The word ___ is used in many contexts.").replace(new RegExp("\\b"+curW.word+"\\b","i"),"___");
+            var bDistractors=gameWords.filter(function(w){return w.word!==curW.word;}).sort(function(){return Math.random()-0.5;}).slice(0,3);
+            var bOptions=[curW].concat(bDistractors).sort(function(){return Math.random()-0.5;});
+            var bCorrect=bOptions.indexOf(curW);
+            return(
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                  <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>Fill the Blank</h2>
+                  <span style={{fontSize:12,color:"#6b7280"}}>{vocabGameIdx+1}/{shuffled.length} · {vocabGameScore} pts</span>
+                </div>
+                <div style={{...CARD,marginBottom:14,padding:16}}>
+                  <p style={{fontSize:16,color:"#e5e7eb",lineHeight:1.9,margin:0}}>{sentence.split("___")[0]}<span style={{display:"inline-block",minWidth:80,borderBottom:"2px solid #818cf8",textAlign:"center",color:"#818cf8",fontWeight:700}}>{vocabGameAnswered!==null?bOptions[vocabGameAnswered].word:"_____"}</span>{sentence.split("___")[1]||""}</p>
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+                  {bOptions.map(function(opt,oi){
+                    var isCorrect=oi===bCorrect;
+                    var isSelected=vocabGameAnswered===oi;
+                    var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
+                    if(vocabGameAnswered!==null){if(isCorrect){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSelected){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
+                    return<button key={oi} disabled={vocabGameAnswered!==null} onClick={function(){setVocabGameAnswered(oi);if(isCorrect)setVocabGameScore(function(s){return s+1;});}} style={{background:bg,border:bd,borderRadius:8,padding:"8px 14px",color:col,fontSize:13,fontWeight:600,cursor:vocabGameAnswered!==null?"default":"pointer",fontFamily:"inherit"}}>{opt.word}</button>;
+                  })}
+                </div>
+                {vocabGameAnswered!==null&&<button onClick={function(){setVocabGameAnswered(null);setVocabGameIdx(function(i){return i+1;});}} style={{...mkBtn("#a78bfa","#0d0d1a"),width:"100%"}}>Next →</button>}
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+        {/* ── WEEKLY BOARD ──────────────────────────────────── */}
+        {stage==="weekly"&&currentUser&&(function(){
+          var wk=getWeekId();
+          var myEntry=weeklyLb.find(function(e){return e.name===currentUser.name;});
+          var myPos=weeklyLb.findIndex(function(e){return e.name===currentUser.name;});
+          var weekGames=(currentUser.games||[]).filter(function(g){
+            var d=new Date(g.date);var dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/(864e5));
+            var gameWk=d.getFullYear()+"-W"+Math.ceil(dayOfYear/7);
+            return gameWk===wk;
+          });
+          var weekXp=weekGames.reduce(function(s,g){return s+g.xp;},0);
+          var goalMet=weekGames.length>=3;
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#818cf8"}}>Weekly Board</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(129,140,248,0.3)",background:"rgba(129,140,248,0.05)"}}>
+                <p style={{fontSize:11,color:"#818cf8",fontWeight:700,letterSpacing:0.5,margin:"0 0 8px"}}>THIS WEEK</p>
+                <div style={{display:"flex",gap:10}}>
+                  <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#818cf8"}}>{weekXp}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>XP earned</div>
+                  </div>
+                  <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#34d399"}}>{weekGames.length}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>stories read</div>
+                  </div>
+                  <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>#{myPos>=0?myPos+1:"–"}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>rank</div>
+                  </div>
+                </div>
+                <div style={{marginTop:10,padding:"8px 10px",borderRadius:8,background:goalMet?"rgba(52,211,153,0.1)":"rgba(255,255,255,0.04)",border:"1px solid "+(goalMet?"rgba(52,211,153,0.4)":"rgba(255,255,255,0.1)")}}>
+                  <span style={{fontSize:12,color:goalMet?"#34d399":"#9ca3af",fontWeight:600}}>{goalMet?"✓ Weekly goal complete! 3+ stories read":"Weekly goal: read 3 stories · "+weekGames.length+"/3 done"}</span>
+                </div>
+              </div>
+              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.5,marginBottom:8}}>LEADERBOARD</p>
+              {weeklyLb.length===0&&<p style={{color:"#6b7280",fontSize:13,textAlign:"center",padding:20}}>No data yet — play some stories!</p>}
+              {weeklyLb.slice(0,20).map(function(e,i){
+                var isMe=e.name===currentUser.name;
+                var medals=["🥇","🥈","🥉"];
+                return(
+                  <div key={i} className="rq-lb-row" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,marginBottom:5,background:isMe?"rgba(129,140,248,0.1)":"rgba(255,255,255,0.03)",border:isMe?"1px solid rgba(129,140,248,0.3)":"1px solid transparent"}}>
+                    <span style={{width:24,fontSize:i<3?16:12,textAlign:"center",color:"#fbbf24",fontWeight:700}}>{i<3?medals[i]:i+1}</span>
+                    <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#818cf8":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"#818cf8"}}>{e.xp} XP</span>
+                    <span style={{fontSize:11,color:"#6b7280"}}>{e.games} {e.games===1?"story":"stories"}</span>
+                  </div>
+                );
+              })}
+              <button onClick={doRestart} style={{...mkBtn("#818cf8","#0d0d1a"),width:"100%",marginTop:10}}>Read a Story</button>
+            </div>
+          );
+        })()}
+
+        {/* ── STORY DISCUSSION ──────────────────────────────── */}
+        {stage==="discuss"&&currentUser&&(function(){
+          var story=STORY_LIBRARY.find(function(s){return s.id===discussStoryId;});
+          var posts=(allDiscuss&&allDiscuss[discussStoryId])||[];
+          var today=new Date().toLocaleDateString();
+          var alreadyPosted=posts.some(function(p){return p.user===currentUser.name&&p.date===today;});
+          function submitPost(){
+            if(!discussInput.trim()||discussInput.trim().length<3||alreadyPosted)return;
+            var newPost={user:currentUser.name,text:discussInput.trim().slice(0,200),date:today};
+            var newPosts=[newPost].concat(posts).slice(0,50);
+            var nAll={};for(var k in allDiscuss)nAll[k]=allDiscuss[k];nAll[discussStoryId]=newPosts;
+            setAllDiscuss(nAll);saveDiscuss(nAll);setDiscussInput("");
+          }
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#ec4899"}}>Discussion</h2>
+                <button onClick={function(){setStage("result");}} style={GHOST}>Back</button>
+              </div>
+              {story&&<div style={{...CARD,marginBottom:12,padding:12,background:"rgba(236,72,153,0.06)",borderColor:"rgba(236,72,153,0.25)"}}>
+                <p style={{fontSize:11,color:"#f472b6",fontWeight:700,margin:"0 0 4px"}}>📖 {story.title} · {story.level}</p>
+                <p style={{fontSize:13,color:"#9ca3af",margin:0,lineHeight:1.5}}>{story.prompt||"What did you find most interesting about this passage?"}</p>
+              </div>}
+              {!alreadyPosted?(
+                <div style={{...CARD,marginBottom:12,padding:14}}>
+                  <textarea value={discussInput} onChange={function(e){setDiscussInput(e.target.value.slice(0,200));}} placeholder="Share your thoughts..." style={{width:"100%",minHeight:70,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:13,padding:"9px 11px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
+                    <span style={{fontSize:11,color:"#6b7280"}}>{discussInput.length}/200</span>
+                    <button onClick={submitPost} disabled={discussInput.trim().length<3} style={{...mkBtn(discussInput.trim().length>=3?"#ec4899":"#374151","#0d0d1a"),padding:"8px 18px",fontSize:13}}>Post</button>
+                  </div>
+                </div>
+              ):(
+                <div style={{...CARD,marginBottom:12,padding:12,background:"rgba(52,211,153,0.05)",borderColor:"rgba(52,211,153,0.3)"}}>
+                  <p style={{fontSize:12,color:"#34d399",margin:0}}>✓ You've posted today. Come back tomorrow to share more!</p>
+                </div>
+              )}
+              {posts.length===0&&<p style={{color:"#6b7280",fontSize:13,textAlign:"center",padding:20}}>Be the first to share your thoughts!</p>}
+              {posts.map(function(p,i){
+                var isMe=p.user===currentUser.name;
+                return(
+                  <div key={i} style={{...CARD,marginBottom:8,padding:12,background:isMe?"rgba(236,72,153,0.06)":"rgba(255,255,255,0.03)",borderColor:isMe?"rgba(236,72,153,0.25)":"rgba(255,255,255,0.08)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                      <span style={{fontSize:12,fontWeight:700,color:isMe?"#f472b6":"#9ca3af"}}>{p.user}{isMe?" (you)":""}</span>
+                      <span style={{fontSize:10,color:"#4b5563"}}>{p.date}</span>
+                    </div>
+                    <p style={{fontSize:13,color:"#e5e7eb",margin:0,lineHeight:1.6}}>{p.text}</p>
+                  </div>
+                );
+              })}
+            </div>
+          );
         })()}
 
       </div>

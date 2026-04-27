@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Generate Story{% endblock %}
+{% block content %}
+<div class="form-container">
+  <h1>✨ Generate AI Story</h1>
+  <form method="post" action="{% url 'ai:generate' %}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>CEFR Level</label>
+      <div class="level-picker">
+        {% for level in levels %}
+        <label class="level-option">
+          <input type="radio" name="level" value="{{ level }}" {% if level == user.cefr_level %}checked{% endif %}>
+          <span class="badge-level-{{ level }}">{{ level }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="topic">Topic (optional)</label>
+      <input type="text" name="topic" id="topic" placeholder="e.g. space exploration, history, food" class="form-control">
+    </div>
+    <button type="submit" class="btn btn-primary btn-full">Generate Story</button>
+  </form>
+</div>
+{% endblock %}

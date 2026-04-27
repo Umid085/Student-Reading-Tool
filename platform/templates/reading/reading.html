@@ -1,0 +1,73 @@
+{% load static %}
+{% extends 'base.html' %}
+{% block title %}Reading – {{ session.topic }}{% endblock %}
+{% block content %}
+<div class="reading-container">
+  <div class="reading-header" id="readingHeader">
+    <div>
+      <h1>{% if story %}{{ story.title }}{% else %}{{ session.topic }}{% endif %}</h1>
+      <span class="badge-level-{{ session.cefr_level }}">{{ session.cefr_level }}</span>
+    </div>
+    <div class="reading-controls">
+      <div class="timer" id="timer">0:00</div>
+      <div class="wpm-display" id="wpmDisplay">-- WPM</div>
+      <div class="tts-controls">
+        <button class="btn btn-sm" onclick="speakAll()">🔊 Read Aloud</button>
+        <select id="speechRate" onchange="updateRate(this.value)">
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.25">1.25×</option>
+          <option value="1.5">1.5×</option>
+        </select>
+        <button class="btn btn-sm" onclick="stopSpeech()">⏹</button>
+      </div>
+      <button class="btn btn-sm" id="heatmapBtn" onclick="toggleHeatmap()">🌡 Heatmap</button>
+      <button class="btn btn-sm" id="focusBtn" onclick="toggleFocusMode()">⛶ Focus</button>
+    </div>
+  </div>
+
+  <div id="focusBar" class="focus-exit-bar hidden">
+    <span>Focus Mode — <button class="focus-exit-btn" onclick="toggleFocusMode()">Exit Focus ✕</button></span>
+    <div class="timer" id="focusTimer">0:00</div>
+  </div>
+
+  <div class="reading-progress-bar" id="readingProgressBar">
+    <div class="reading-progress-fill" id="progressFill" style="width: {{ saved_pct|default:0 }}%"></div>
+    <span class="reading-progress-label" id="progressLabel">{{ saved_pct|default:0 }}%</span>
+  </div>
+  {% if saved_pct %}
+  <p class="resume-hint">Resuming from {{ saved_pct }}% — scroll to continue where you left off.</p>
+  {% endif %}
+
+  <div class="passage" id="passage" data-words="{{ session.passage_text|wordcount }}">
+    {{ session.passage_text|linebreaks }}
+  </div>
+
+  <div class="reading-footer">
+    <form method="post" action="{% url 'reading:finish' session.pk %}" id="finishForm">
+      {% csrf_token %}
+      <input type="hidden" name="time_secs" id="timeSecs" value="0">
+      <input type="hidden" name="wpm" id="wpmInput" value="0">
+      <button type="submit" class="btn btn-primary btn-lg">I've Finished Reading →</button>
+    </form>
+  </div>
+</div>
+
+<div id="vocabPopup" class="vocab-popup hidden">
+  <div class="vocab-popup-word" id="popupWord"></div>
+  <div class="vocab-popup-actions">
+    <button onclick="saveWord()" class="btn btn-sm">📝 Save Word</button>
+    <button onclick="closePopup()" class="btn btn-sm">✕</button>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/reading.js' %}"></script>
+<script>
+  var SESSION_ID = {{ session.pk }};
+  var WORD_COUNT = {{ session.passage_text|wordcount }};
+  var SAVED_PCT = {{ saved_pct|default:0 }};
+  var PROGRESS_URL = '{% url "reading:save_progress" session.pk %}';
+  initReading(SESSION_ID, WORD_COUNT, SAVED_PCT, PROGRESS_URL);
+</script>
+{% endblock %}

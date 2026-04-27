@@ -1,0 +1,8 @@
+[
+  {"model": "gamification.dailyquest", "pk": 1, "fields": {"slug": "complete_story", "title": "Complete a Story", "description": "Read and quiz on any story", "xp_reward": 50, "sort_order": 1}},
+  {"model": "gamification.dailyquest", "pk": 2, "fields": {"slug": "perfect_score", "title": "Perfect Score", "description": "Get 100% on a quiz", "xp_reward": 100, "sort_order": 2}},
+  {"model": "gamification.dailyquest", "pk": 3, "fields": {"slug": "vocab_save", "title": "Save a Word", "description": "Add a word to your vocabulary notebook", "xp_reward": 25, "sort_order": 3}},
+  {"model": "gamification.dailyquest", "pk": 4, "fields": {"slug": "daily_challenge", "title": "Daily Challenge", "description": "Complete today's daily challenge", "xp_reward": 150, "sort_order": 4}},
+  {"model": "gamification.dailyquest", "pk": 5, "fields": {"slug": "speed_run", "title": "Speed Run", "description": "Finish a quiz in under half the time limit", "xp_reward": 75, "sort_order": 5}},
+  {"model": "gamification.dailyquest", "pk": 6, "fields": {"slug": "three_stories", "title": "Three in a Row", "description": "Complete 3 stories today", "xp_reward": 200, "sort_order": 6}}
+]

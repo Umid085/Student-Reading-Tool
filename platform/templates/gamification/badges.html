@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Badges{% endblock %}
+{% block content %}
+<h1>🏅 Badges</h1>
+<div class="badges-grid">
+  {% for item in badges %}
+  <div class="badge-card {% if item.earned %}earned{% else %}locked{% endif %}">
+    <div class="badge-icon">{{ item.badge.icon }}</div>
+    <div class="badge-name">{{ item.badge.name }}</div>
+    <div class="badge-desc">{{ item.badge.description }}</div>
+    {% if not item.earned %}<div class="badge-lock">🔒</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

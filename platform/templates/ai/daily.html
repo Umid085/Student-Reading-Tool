@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Daily Challenge{% endblock %}
+{% block content %}
+<div class="daily-container">
+  <h1>⚡ Daily Challenge</h1>
+  <div class="challenge-info">
+    <span class="badge-level-{{ challenge.cefr_level }}">{{ challenge.cefr_level }}</span>
+    <h2>{{ challenge.topic }}</h2>
+    <p>{{ challenge.passage|truncatewords:50 }}…</p>
+  </div>
+  {% if already_done %}
+  <div class="done-state">
+    <h2>✅ Completed!</h2>
+    <p>Come back tomorrow for a new challenge.</p>
+    <a href="{% url 'reading:home' %}" class="btn btn-primary">Back to Home</a>
+  </div>
+  {% else %}
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary btn-lg">Start Daily Challenge →</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

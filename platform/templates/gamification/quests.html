@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Daily Quests{% endblock %}
+{% block content %}
+<h1>📋 Daily Quests</h1>
+<p class="date-label">{{ today }}</p>
+<div class="quests-list">
+  {% for item in quests %}
+  <div class="quest-card {% if item.done %}done{% endif %}">
+    <div class="quest-status">{% if item.done %}✅{% else %}⬜{% endif %}</div>
+    <div class="quest-info">
+      <div class="quest-title">{{ item.quest.title }}</div>
+      <div class="quest-desc">{{ item.quest.description }}</div>
+    </div>
+    <div class="quest-reward">+{{ item.quest.xp_reward }} XP</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
