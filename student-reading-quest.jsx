@@ -478,6 +478,14 @@ export default function App(){
   var [dailyLb,setDailyLb]=useState([]);
   var [isDailyGame,setIsDailyGame]=useState(false);
   var [dailyLoading,setDailyLoading]=useState(false);
+  // reading screen enhancements
+  var [focusMode,setFocusMode]=useState(false);
+  var [readingTimerSecs,setReadingTimerSecs]=useState(0);
+  var readingTimerRef=useRef(null);
+  var [isSpeaking,setIsSpeaking]=useState(false);
+  var [selectedWord,setSelectedWord]=useState(null);
+  var [wordDef,setWordDef]=useState(null);
+  var [wordDefLoading,setWordDefLoading]=useState(false);
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -490,6 +498,19 @@ export default function App(){
       setAppReady(true);
     });
   },[]);
+
+  // reading screen timer + TTS cleanup
+  useEffect(function(){
+    if(stage==="reading"){
+      setReadingTimerSecs(0);setSelectedWord(null);setWordDef(null);
+      readingTimerRef.current=setInterval(function(){setReadingTimerSecs(function(s){return s+1;});},1000);
+    } else {
+      if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}
+      if(window.speechSynthesis){window.speechSynthesis.cancel();}
+      setIsSpeaking(false);
+    }
+    return function(){if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}};
+  },[stage]);
 
   // load vocab + daily challenge when user logs in
   useEffect(function(){
@@ -607,6 +628,34 @@ export default function App(){
     setSavedWords(function(s){var n=new Set(s);if(n.has(word))n.delete(word);else n.add(word);return n;});
   }
 
+  function speakPassage(){
+    if(!window.speechSynthesis)return;
+    if(isSpeaking){window.speechSynthesis.cancel();setIsSpeaking(false);return;}
+    var utt=new SpeechSynthesisUtterance(passage);
+    utt.onend=function(){setIsSpeaking(false);};
+    utt.onerror=function(){setIsSpeaking(false);};
+    window.speechSynthesis.speak(utt);
+    setIsSpeaking(true);
+  }
+
+  async function lookupWord(word){
+    if(selectedWord===word){setSelectedWord(null);setWordDef(null);return;}
+    setSelectedWord(word);setWordDef(null);setWordDefLoading(true);
+    try{
+      var r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(word));
+      if(!r.ok)throw new Error("not found");
+      var data=await r.json();
+      var entry=data[0];
+      var phonetic=entry.phonetic||(entry.phonetics&&entry.phonetics[0]&&entry.phonetics[0].text)||"";
+      var audio=(entry.phonetics&&entry.phonetics.find(function(p){return p.audio;})||{}).audio||"";
+      var meaning=entry.meanings&&entry.meanings[0]&&entry.meanings[0].definitions&&entry.meanings[0].definitions[0];
+      setWordDef({phonetic:phonetic,audio:audio,def:meaning?meaning.definition:"",example:meaning&&meaning.example?meaning.example:""});
+    }catch(e){
+      setWordDef({phonetic:"",audio:"",def:"No definition found for this word.",example:""});
+    }
+    setWordDefLoading(false);
+  }
+
   // ── game ──────────────────────────────────────────────────
   function shuffleArr(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
@@ -640,6 +689,8 @@ export default function App(){
   }
 
   function startQuiz(){
+    if(window.speechSynthesis){window.speechSynthesis.cancel();setIsSpeaking(false);}
+    setFocusMode(false);setSelectedWord(null);setWordDef(null);
     if(currentUser&&savedWords.size>0){
       var today=new Date().toLocaleDateString();
       var newEntries=[];
@@ -736,6 +787,7 @@ export default function App(){
     setConfirmed(false);setStreak(0);setTotalXpSoFar(0);
     setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");
     setIsDailyGame(false);setSavedWords(new Set());
+    setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
     setStage("home");
   }
 
@@ -943,35 +995,114 @@ export default function App(){
         )}
 
         {/* ── READING ───────────────────────────────────────── */}
-        {stage==="reading"&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <span style={{...pill(lv?lv.color:"#34d399","#fff")}}>{level}</span>
-              <span style={{color:"#6b7280",fontSize:12}}>{topic}</span>
-            </div>
-            <div style={{...CARD,marginBottom:12}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <p style={{fontSize:11,fontWeight:700,color:lv?lv.color:"#34d399",letterSpacing:0.8,margin:0,textTransform:"uppercase"}}>Read carefully - timer starts on Begin</p>
-                {savedWords.size>0&&<span style={{fontSize:11,color:"#06b6d4",fontWeight:700}}>{savedWords.size} saved</span>}
+        {stage==="reading"&&(function(){
+          var wordCount=passage.split(/\s+/).length;
+          var estSecs=Math.max(30,Math.round(wordCount/3));
+          var readPct=Math.min(100,Math.round((readingTimerSecs/estSecs)*100));
+          function WordTokens(){
+            return passage.split(/(\s+)/).map(function(token,i){
+              if(/^\s+$/.test(token))return<span key={i}>{token}</span>;
+              var word=token.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
+              if(!word)return<span key={i}>{token}</span>;
+              var saved=savedWords.has(word),isSelected=selectedWord===word;
+              return<span key={i} onClick={function(){lookupWord(word);}} style={{cursor:"pointer",borderRadius:3,background:isSelected?"rgba(251,191,36,0.25)":saved?"rgba(6,182,212,0.2)":"transparent",color:isSelected?"#fbbf24":saved?"#06b6d4":"inherit",padding:"0 2px",transition:"background 0.12s",textDecoration:isSelected?"underline":"none",textDecorationColor:"#fbbf24"}}>{token}</span>;
+            });
+          }
+
+          if(focusMode)return(
+            <div>
+              <button onClick={function(){setFocusMode(false);}} style={{position:"fixed",top:14,right:14,background:"rgba(13,13,26,0.85)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",zIndex:100,backdropFilter:"blur(8px)"}}>✕ Exit Focus</button>
+              <div style={{paddingTop:10,paddingBottom:80}}>
+                <h2 style={{margin:"0 0 18px",fontSize:20,fontWeight:900,color:"#f9fafb"}}>{topic}</h2>
+                <p style={{lineHeight:2.1,fontSize:18,color:"#e5e7eb",margin:0,letterSpacing:0.2}}><WordTokens/></p>
+                {selectedWord&&(
+                  <div style={{...CARD,marginTop:16,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.3)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                      <span style={{fontSize:17,fontWeight:900,color:"#fbbf24"}}>{selectedWord}</span>
+                      <div style={{display:"flex",gap:6}}>
+                        {wordDef&&wordDef.audio&&<button onClick={function(){new Audio(wordDef.audio).play().catch(function(){});}} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",color:"#fbbf24",borderRadius:7,padding:"4px 9px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>}
+                        <button onClick={function(){toggleWord(selectedWord);}} style={{background:savedWords.has(selectedWord)?"rgba(6,182,212,0.2)":"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:savedWords.has(selectedWord)?"#06b6d4":"#9ca3af",borderRadius:7,padding:"4px 9px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{savedWords.has(selectedWord)?"⭐ Saved":"⭐ Save"}</button>
+                        <button onClick={function(){setSelectedWord(null);setWordDef(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:18,cursor:"pointer",lineHeight:1}}>×</button>
+                      </div>
+                    </div>
+                    {wordDefLoading&&<p style={{fontSize:13,color:"#6b7280",margin:0}}>Looking up...</p>}
+                    {wordDef&&!wordDefLoading&&<><p style={{fontSize:13,color:"#d1d5db",margin:0,lineHeight:1.6}}>{wordDef.def}</p>{wordDef.example&&<p style={{fontSize:12,color:"#6b7280",margin:"4px 0 0",fontStyle:"italic"}}>"{wordDef.example}"</p>}</>}
+                  </div>
+                )}
               </div>
-              <p style={{lineHeight:2,fontSize:17,color:"#e5e7eb",margin:0}}>
-                {passage.split(/(\s+)/).map(function(token,i){
-                  if(/^\s+$/.test(token))return<span key={i}>{token}</span>;
-                  var word=token.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
-                  if(!word)return<span key={i}>{token}</span>;
-                  var saved=savedWords.has(word);
-                  return<span key={i} onClick={function(){toggleWord(word);}} style={{cursor:"pointer",borderRadius:3,background:saved?"rgba(6,182,212,0.2)":"transparent",color:saved?"#06b6d4":"inherit",padding:"0 1px",transition:"all 0.15s"}}>{token}</span>;
-                })}
-              </p>
-              <p style={{fontSize:11,color:"#4b5563",margin:"8px 0 0",textAlign:"center"}}>Tap words to save them to your vocab notebook</p>
+              <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(13,13,26,0.95)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"12px 20px",display:"flex",gap:10,alignItems:"center",zIndex:99,backdropFilter:"blur(10px)"}}>
+                <span style={{fontSize:13,color:"#6b7280",minWidth:50}}>⏱ {formatTime(readingTimerSecs)}</span>
+                <button onClick={speakPassage} style={{background:isSpeaking?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),color:isSpeaking?"#818cf8":"#9ca3af",borderRadius:8,padding:"7px 13px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking?"⏹ Stop":"🔊 Listen"}</button>
+                {savedWords.size>0&&<span style={{fontSize:12,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size}</span>}
+                <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"10px 20px",fontSize:14}}>Begin Quiz →</button>
+              </div>
             </div>
-            <div style={{...CARD,marginBottom:12,padding:12,fontSize:12,color:"#9ca3af",display:"flex",justifyContent:"space-between"}}>
-              <span>{selectedTypes.length} question type(s)</span>
-              <span>Limit: {formatTime(lv?lv.timeLimit:180)} | Bonus: up to {lv?lv.timeBonus:200} XP</span>
+          );
+
+          return(
+            <div>
+              {/* header */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingTop:6}}>
+                <span style={{...pill(lv?lv.color:"#34d399","#0d0d1a"),fontSize:12,fontWeight:900}}>{level} · {selectedTypes.length} questions</span>
+                <button onClick={function(){setFocusMode(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>📖 Focus Mode</button>
+              </div>
+
+              {/* title */}
+              <h2 style={{margin:"0 0 12px",fontSize:21,fontWeight:900,color:"#f9fafb",lineHeight:1.3}}>{topic}</h2>
+
+              {/* progress bar */}
+              <div style={{marginBottom:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#6b7280",marginBottom:5}}>
+                  <span>Progress</span>
+                  <span>{wordCount} words · ~{Math.max(1,Math.ceil(wordCount/180))} min read</span>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.07)",borderRadius:999,height:6,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:readPct+"%",background:lv?lv.color:"#34d399",borderRadius:999,transition:"width 1s linear"}}/>
+                </div>
+              </div>
+
+              {/* passage */}
+              <div style={{...CARD,marginBottom:12}}>
+                <p style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb",margin:0}}><WordTokens/></p>
+                <p style={{fontSize:11,color:"#4b5563",margin:"10px 0 0",textAlign:"center"}}>Tap any word to look it up</p>
+              </div>
+
+              {/* vocab popup */}
+              {selectedWord&&(
+                <div style={{...CARD,marginBottom:12,background:"rgba(251,191,36,0.07)",borderColor:"rgba(251,191,36,0.3)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <div>
+                      <span style={{fontSize:19,fontWeight:900,color:"#fbbf24"}}>{selectedWord}</span>
+                      {wordDef&&wordDef.phonetic&&<span style={{fontSize:12,color:"#9ca3af",marginLeft:9}}>{wordDef.phonetic}</span>}
+                    </div>
+                    <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                      {wordDef&&wordDef.audio&&<button onClick={function(){new Audio(wordDef.audio).play().catch(function(){});}} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",color:"#fbbf24",borderRadius:7,padding:"5px 10px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>}
+                      <button onClick={function(){toggleWord(selectedWord);}} style={{background:savedWords.has(selectedWord)?"rgba(6,182,212,0.2)":"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.15)",color:savedWords.has(selectedWord)?"#06b6d4":"#9ca3af",borderRadius:7,padding:"5px 10px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{savedWords.has(selectedWord)?"⭐ Saved":"⭐ Save"}</button>
+                      <button onClick={function(){setSelectedWord(null);setWordDef(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:20,cursor:"pointer",lineHeight:1,padding:"0 2px"}}>×</button>
+                    </div>
+                  </div>
+                  {wordDefLoading&&<p style={{fontSize:13,color:"#6b7280",margin:0}}>Looking up definition...</p>}
+                  {wordDef&&!wordDefLoading&&(
+                    <>
+                      <p style={{fontSize:14,color:"#d1d5db",margin:0,lineHeight:1.7}}>{wordDef.def}</p>
+                      {wordDef.example&&<p style={{fontSize:12,color:"#6b7280",margin:"5px 0 0",fontStyle:"italic"}}>e.g. "{wordDef.example}"</p>}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* bottom action bar */}
+              <div style={{...CARD,padding:"11px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <span style={{fontSize:13,color:"#9ca3af",minWidth:56}}>⏱ {formatTime(readingTimerSecs)}</span>
+                <button onClick={speakPassage} style={{background:isSpeaking?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.05)",border:"1px solid "+(isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),color:isSpeaking?"#818cf8":"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking?"⏹ Stop":"🔊 Listen"}</button>
+                {savedWords.size>0&&<span style={{fontSize:12,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size} saved</span>}
+                <div style={{marginLeft:"auto",fontSize:11,color:"#4b5563"}}>Bonus: up to {lv?lv.timeBonus:200} XP</div>
+              </div>
+
+              <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>Begin Quiz →</button>
             </div>
-            <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15}}>Start Timer and Begin!</button>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── QUIZ ──────────────────────────────────────────── */}
         {stage==="quiz"&&q&&(
