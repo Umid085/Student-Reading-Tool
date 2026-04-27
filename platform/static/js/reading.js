@@ -12,7 +12,10 @@ function updateTimer() {
   var elapsed = Math.floor((Date.now() - startTime) / 1000);
   var mins = Math.floor(elapsed / 60);
   var secs = elapsed % 60;
-  document.getElementById('timer').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+  var timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+  document.getElementById('timer').textContent = timeStr;
+  var focusTimerEl = document.getElementById('focusTimer');
+  if (focusTimerEl) focusTimerEl.textContent = timeStr;
   var wpm = wordCount > 0 && elapsed > 0 ? Math.round(wordCount / (elapsed / 60)) : 0;
   document.getElementById('wpmDisplay').textContent = wpm + ' WPM';
 }
@@ -85,6 +88,20 @@ function saveWord() {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCookie('csrftoken') },
     body: 'word=' + encodeURIComponent(word) + '&definition='
   }).then(function() { closePopup(); });
+}
+
+function toggleFocusMode() {
+  var active = document.body.classList.toggle('focus-mode');
+  var focusBar = document.getElementById('focusBar');
+  var btn = document.getElementById('focusBtn');
+  if (active) {
+    focusBar.classList.remove('hidden');
+    if (btn) btn.textContent = '⛶ Exit Focus';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    focusBar.classList.add('hidden');
+    if (btn) btn.textContent = '⛶ Focus';
+  }
 }
 
 function getCookie(name) {

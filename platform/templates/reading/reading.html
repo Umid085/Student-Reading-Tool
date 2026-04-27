@@ -3,7 +3,7 @@
 {% block title %}Reading – {{ session.topic }}{% endblock %}
 {% block content %}
 <div class="reading-container">
-  <div class="reading-header">
+  <div class="reading-header" id="readingHeader">
     <div>
       <h1>{% if story %}{{ story.title }}{% else %}{{ session.topic }}{% endif %}</h1>
       <span class="badge-level-{{ session.cefr_level }}">{{ session.cefr_level }}</span>
@@ -22,7 +22,13 @@
         <button class="btn btn-sm" onclick="stopSpeech()">⏹</button>
       </div>
       <button class="btn btn-sm" id="heatmapBtn" onclick="toggleHeatmap()">🌡 Heatmap</button>
+      <button class="btn btn-sm" id="focusBtn" onclick="toggleFocusMode()">⛶ Focus</button>
     </div>
+  </div>
+
+  <div id="focusBar" class="focus-exit-bar hidden">
+    <span>Focus Mode — <button class="focus-exit-btn" onclick="toggleFocusMode()">Exit Focus ✕</button></span>
+    <div class="timer" id="focusTimer">0:00</div>
   </div>
 
   <div class="passage" id="passage" data-words="{{ session.passage_text|wordcount }}">

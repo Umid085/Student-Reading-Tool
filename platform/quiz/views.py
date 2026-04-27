@@ -144,15 +144,54 @@ def quiz_view(request, session_id):
     })
 
 
+def _difficulty_advice(user, cefr_level, window=5):
+    """
+    Look at the last `window` quiz attempts at this CEFR level.
+    Return a suggestion dict or None if there is not enough data.
+    """
+    from django.conf import settings
+    recent = (
+        QuizAttempt.objects.filter(
+            user=user,
+            quiz__session__cefr_level=cefr_level,
+        )
+        .order_by('-completed_at')[:window]
+    )
+    if recent.count() < 3:
+        return None
+
+    avg_pct = sum(a.pct for a in recent) / recent.count()
+    level_order = settings.CEFR_LEVELS
+    idx = level_order.index(cefr_level)
+
+    if avg_pct < 50 and idx > 0:
+        return {
+            'type': 'down',
+            'avg': round(avg_pct),
+            'suggested': level_order[idx - 1],
+            'message': f'Your last {recent.count()} scores averaged {round(avg_pct)}% at {cefr_level}. Try {level_order[idx - 1]} stories to build confidence.',
+        }
+    if avg_pct >= 90 and idx < len(level_order) - 1:
+        return {
+            'type': 'up',
+            'avg': round(avg_pct),
+            'suggested': level_order[idx + 1],
+            'message': f'Excellent! You averaged {round(avg_pct)}% at {cefr_level}. You\'re ready to try {level_order[idx + 1]}.',
+        }
+    return None
+
+
 @login_required
 def result_view(request, attempt_id):
     attempt = get_object_or_404(QuizAttempt, pk=attempt_id, user=request.user)
     new_badges = request.session.pop('new_badges', [])
     new_quests = request.session.pop('new_quests', [])
+    difficulty_advice = _difficulty_advice(request.user, attempt.quiz.session.cefr_level)
     return render(request, 'quiz/result.html', {
         'attempt': attempt,
         'new_badges': new_badges,
         'new_quests': new_quests,
+        'difficulty_advice': difficulty_advice,
     })
 
 

@@ -41,25 +41,30 @@ def home_view(request):
 
 @login_required
 def library_view(request):
-    level_filter = request.GET.get('level', '')
-    stories = Story.objects.filter(is_library=True)
-    if level_filter:
-        stories = stories.filter(cefr_level=level_filter)
-
     from django.conf import settings
+    from django.db.models import Q
+
+    level_filter = request.GET.get('level', '')
+    search_query = request.GET.get('q', '').strip()
+
     stories_by_level = {}
     for level in settings.CEFR_LEVELS:
-        level_stories = Story.objects.filter(cefr_level=level, is_library=True)
+        qs = Story.objects.filter(cefr_level=level, is_library=True)
+        if search_query:
+            qs = qs.filter(Q(title__icontains=search_query) | Q(topic__icontains=search_query))
         stories_by_level[level] = [
             {'story': s, 'unlocked': s.is_unlocked_for(request.user)}
-            for s in level_stories
+            for s in qs
         ]
 
     fav_ids = set(FavoriteStory.objects.filter(user=request.user).values_list('story_id', flat=True))
+    total_results = sum(len(v) for v in stories_by_level.values())
     return render(request, 'reading/library.html', {
         'stories_by_level': stories_by_level,
         'fav_ids': fav_ids,
         'active_level': level_filter,
+        'search_query': search_query,
+        'total_results': total_results,
     })
 
 

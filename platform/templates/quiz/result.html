@@ -33,6 +33,19 @@
   </div>
   {% endif %}
 
+  {% if difficulty_advice %}
+  <div class="difficulty-advice advice-{{ difficulty_advice.type }}">
+    <div class="advice-icon">{% if difficulty_advice.type == 'up' %}🚀{% else %}💡{% endif %}</div>
+    <div class="advice-body">
+      <strong>{% if difficulty_advice.type == 'up' %}Level Up Ready!{% else %}Try a Easier Level{% endif %}</strong>
+      <p>{{ difficulty_advice.message }}</p>
+      <a href="{% url 'reading:library' %}?level={{ difficulty_advice.suggested }}" class="btn btn-sm btn-primary">
+        Browse {{ difficulty_advice.suggested }} Stories →
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="result-actions">
     <a href="{% url 'reading:home' %}" class="btn btn-primary">Home</a>
     <a href="{% url 'reading:library' %}" class="btn btn-secondary">Library</a>

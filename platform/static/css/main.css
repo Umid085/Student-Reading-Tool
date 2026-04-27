@@ -286,3 +286,33 @@ p { margin-bottom: 0.75rem; }
 .fav-star { float: right; }
 
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+/* ── Library Search ─────────────────────────────────────────────────────── */
+.library-search-form { margin-bottom: 1.5rem; }
+.search-bar { display: flex; gap: 0.75rem; }
+.search-input { flex: 1; max-width: 480px; }
+.search-results-count { margin-bottom: 1.5rem; color: var(--text2); font-size: 0.9rem; }
+.search-results-count strong { color: var(--text); }
+
+/* ── Focus Mode ─────────────────────────────────────────────────────────── */
+body.focus-mode .navbar,
+body.focus-mode .xp-bar-container,
+body.focus-mode .quest-sidebar,
+body.focus-mode .reading-header,
+body.focus-mode .reading-footer { display: none !important; }
+body.focus-mode .passage { font-size: 1.2rem; line-height: 2; border: none; box-shadow: none; background: transparent; max-width: 700px; margin: 0 auto; padding: 3rem 1rem; }
+body.focus-mode .reading-container { max-width: 100%; }
+body.focus-mode .focus-exit-bar { display: flex !important; }
+.focus-exit-bar { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: rgba(13,13,26,0.95); border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text2); }
+.focus-exit-bar.hidden { display: none; }
+.focus-exit-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.9rem; padding: 0.2rem 0.5rem; }
+.focus-exit-btn:hover { text-decoration: underline; }
+#focusBar .timer { font-size: 1rem; color: var(--accent); }
+
+/* ── Difficulty Advice ───────────────────────────────────────────────────── */
+.difficulty-advice { display: flex; gap: 1.25rem; align-items: flex-start; padding: 1.25rem 1.5rem; border-radius: var(--radius); margin: 1.5rem 0; text-align: left; }
+.advice-up { background: rgba(34,197,94,0.1); border: 1px solid var(--success); }
+.advice-down { background: rgba(245,158,11,0.1); border: 1px solid var(--warning); }
+.advice-icon { font-size: 2rem; flex-shrink: 0; }
+.advice-body strong { display: block; margin-bottom: 0.35rem; font-size: 1rem; }
+.advice-body p { font-size: 0.9rem; color: var(--text2); margin-bottom: 0.75rem; }

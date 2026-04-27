@@ -3,16 +3,30 @@
 {% block content %}
 <div class="page-header">
   <h1>📚 Story Library</h1>
-  <div class="level-filter">
-    <a href="{% url 'reading:library' %}" class="btn-filter {% if not active_level %}active{% endif %}">All</a>
-    {% for level in stories_by_level.keys %}
-    <a href="?level={{ level }}" class="btn-filter {% if active_level == level %}active{% endif %}">{{ level }}</a>
-    {% endfor %}
-  </div>
 </div>
 
+<form method="get" action="{% url 'reading:library' %}" class="library-search-form">
+  <div class="search-bar">
+    <input type="text" name="q" value="{{ search_query }}" placeholder="Search by title or topic…" class="form-control search-input" autofocus>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if search_query %}<a href="{% url 'reading:library' %}" class="btn btn-secondary">Clear</a>{% endif %}
+  </div>
+  <div class="level-filter" style="margin-top:0.75rem">
+    <a href="{% url 'reading:library' %}{% if search_query %}?q={{ search_query }}{% endif %}" class="btn-filter {% if not active_level %}active{% endif %}">All</a>
+    {% for level in stories_by_level.keys %}
+    <a href="?level={{ level }}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn-filter {% if active_level == level %}active{% endif %}">{{ level }}</a>
+    {% endfor %}
+  </div>
+</form>
+
+{% if search_query %}
+<p class="search-results-count">
+  {% if total_results %}Found {{ total_results }} stor{{ total_results|pluralize:"y,ies" }} matching "<strong>{{ search_query }}</strong>"{% else %}No stories found for "<strong>{{ search_query }}</strong>"{% endif %}
+</p>
+{% endif %}
+
 {% for level, items in stories_by_level.items %}
-{% if not active_level or active_level == level %}
+{% if items and not active_level or active_level == level and items %}
 <div class="level-section">
   <h2 class="level-heading badge-level-{{ level }}">{{ level }}</h2>
   <div class="story-grid">
