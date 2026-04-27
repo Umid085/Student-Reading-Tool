@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 
 var API        = "/.netlify/functions/generate";
-var USERS_KEY  = "rq-users-v6";
-var BOARDS_KEY = "rq-boards-v6";
-var SOCIAL_KEY = "rq-social-v6";
-var CREDS_KEY  = "rq-credentials";
+var USERS_KEY    = "rq-users-v6";
+var BOARDS_KEY   = "rq-boards-v6";
+var SOCIAL_KEY   = "rq-social-v6";
+var CREDS_KEY    = "rq-credentials";
+var VOCAB_KEY    = "rq-vocab-v1";
+var DAILY_KEY    = "rq-daily-v1";
+var DAILY_LB_KEY = "rq-daily-lb-v1";
 
 var LEVELS = [
   {key:"A1",color:"#22c55e",glow:"rgba(34,197,94,0.25)",  mult:1,  timeLimit:150,timeBonus:200,desc:"Elementary"},
@@ -102,6 +105,12 @@ async function loadBoards(){var v=await apiGet(BOARDS_KEY);return v||{};}
 async function saveBoards(b){await apiSet(BOARDS_KEY,b);}
 async function loadSocial(){var v=await apiGet(SOCIAL_KEY);return v||{};}
 async function saveSocial(s){await apiSet(SOCIAL_KEY,s);}
+async function loadVocab(){var v=await apiGet(VOCAB_KEY);return v||{};}
+async function saveVocab(v){await apiSet(VOCAB_KEY,v);}
+async function loadDaily(){var v=await apiGet(DAILY_KEY);return v||null;}
+async function saveDaily(d){await apiSet(DAILY_KEY,d);}
+async function loadDailyLb(){var v=await apiGet(DAILY_LB_KEY);return v||{};}
+async function saveDailyLb(d){await apiSet(DAILY_LB_KEY,d);}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
@@ -456,6 +465,19 @@ export default function App(){
   var [socialMsg,setSocialMsg]=useState("");
   // history
   var [historyLevel,setHistoryLevel]=useState("");
+  // vocab notebook
+  var [vocab,setVocab]=useState([]);
+  var [allVocab,setAllVocab]=useState({});
+  var [savedWords,setSavedWords]=useState(new Set());
+  var [vocabCard,setVocabCard]=useState(0);
+  var [vocabFlipped,setVocabFlipped]=useState(false);
+  var [vocabFilter,setVocabFilter]=useState("all");
+  // daily challenge
+  var [dailyChallenge,setDailyChallenge]=useState(null);
+  var [dailyDone,setDailyDone]=useState(null);
+  var [dailyLb,setDailyLb]=useState([]);
+  var [isDailyGame,setIsDailyGame]=useState(false);
+  var [dailyLoading,setDailyLoading]=useState(false);
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -468,6 +490,17 @@ export default function App(){
       setAppReady(true);
     });
   },[]);
+
+  // load vocab + daily challenge when user logs in
+  useEffect(function(){
+    if(!currentUser)return;
+    var today=new Date().toLocaleDateString();
+    loadVocab().then(function(v){setAllVocab(v||{});setVocab((v&&v[currentUser.name])||[]);});
+    loadDaily().then(function(d){if(d&&d.date===today)setDailyChallenge(d);});
+    var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
+    setDailyDone(doneRaw&&doneRaw.date===today?doneRaw:null);
+    loadDailyLb().then(function(lb){setDailyLb((lb&&lb[today])||[]);});
+  },[currentUser]);
 
   // always pull fresh users when entering friends page or typing a search
   useEffect(function(){
@@ -569,6 +602,11 @@ export default function App(){
     return allUsers.filter(function(u){return u.name!==currentUser.name&&u.name.toLowerCase().indexOf(q2)!==-1;});
   }
 
+  // ── vocab ─────────────────────────────────────────────────
+  function toggleWord(word){
+    setSavedWords(function(s){var n=new Set(s);if(n.has(word))n.delete(word);else n.add(word);return n;});
+  }
+
   // ── game ──────────────────────────────────────────────────
   function shuffleArr(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
@@ -601,7 +639,19 @@ export default function App(){
     clearInterval(iv);
   }
 
-  function startQuiz(){startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");}
+  function startQuiz(){
+    if(currentUser&&savedWords.size>0){
+      var today=new Date().toLocaleDateString();
+      var newEntries=[];
+      savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;}))newEntries.push({word:w,level:level,topic:topic,date:today,status:"new"});});
+      if(newEntries.length>0){
+        var nv=vocab.concat(newEntries);
+        var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;
+        setVocab(nv);setAllVocab(nAll);saveVocab(nAll);
+      }
+    }
+    startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");
+  }
   function handleExpire(){setTimerRunning(false);setTimeExpired(true);doFinish();}
 
   function getCurrentAnswer(){if(!q)return null;if(q.type==="matching")return matchState;if(q.type==="heading")return headingState;return userAnswers[current]!==undefined?userAnswers[current]:null;}
@@ -631,7 +681,7 @@ export default function App(){
 
   async function doFinish(){
     var timeSecs=startTimeRef.current?Math.round((Date.now()-startTimeRef.current)/1000):(lv?lv.timeLimit:180);
-    var totalEarned=0,totalMax=0,ansArr=[];
+    var totalEarned=0,totalMax=0,ansArr=[],typeStats={};
     for(var i=0;i<questions.length;i++){
       var qs=questions[i],ans=null;
       if(qs.type==="matching")ans=matchState;
@@ -640,6 +690,8 @@ export default function App(){
       var pts=scoreQuestion(qs,ans),mx=maxPoints(qs);
       ansArr.push(pts>=Math.ceil(mx/2));
       totalEarned+=pts;totalMax+=mx;
+      if(!typeStats[qs.type])typeStats[qs.type]={earned:0,max:0};
+      typeStats[qs.type].earned+=pts;typeStats[qs.type].max+=mx;
     }
     var pct=totalMax>0?Math.round((totalEarned/totalMax)*100):0;
     var stars=pct>=90?5:pct>=75?4:pct>=60?3:pct>=40?2:1;
@@ -648,7 +700,7 @@ export default function App(){
     var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
     var today=new Date().toLocaleDateString();
 
-    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today};
+    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats};
     var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
     var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
     await saveUsers(newUsers);setAllUsers(newUsers);setCurrentUser(updatedUser);
@@ -658,8 +710,23 @@ export default function App(){
     var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,20);
     await saveBoards(nb);setBoards(nb);
 
+    var wasDaily=isDailyGame;
+    if(isDailyGame&&currentUser){
+      var done={date:today,xp:finalXp,pct:pct,timeSecs:timeSecs};
+      localStorage.setItem("rq-daily-done-"+currentUser.name,JSON.stringify(done));
+      setDailyDone(done);
+      var dlb=await loadDailyLb();
+      var todayDlb=(dlb&&dlb[today])||[];
+      var dfiltered=todayDlb.filter(function(e){return e.name!==currentUser.name;});
+      var dEntry={name:currentUser.name,xp:finalXp,pct:pct,timeSecs:timeSecs};
+      var dmerged=dfiltered.concat([dEntry]);dmerged.sort(function(a,b){return b.xp-a.xp;});
+      var ndlb={};for(var dk in dlb)ndlb[dk]=dlb[dk];ndlb[today]=dmerged;
+      saveDailyLb(ndlb);setDailyLb(dmerged);
+      setIsDailyGame(false);
+    }
+
     var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr});
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily});
     setStage("result");
   }
 
@@ -668,7 +735,47 @@ export default function App(){
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setTotalXpSoFar(0);
     setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");
+    setIsDailyGame(false);setSavedWords(new Set());
     setStage("home");
+  }
+
+  async function startDailyChallenge(){
+    var today=new Date().toLocaleDateString();
+    var dc=dailyChallenge;
+    if(dc&&dc.date===today){
+      var mq2=null;for(var j2=0;j2<dc.questions.length;j2++){if(dc.questions[j2].type==="matching"){mq2=dc.questions[j2];break;}}
+      setLevel(dc.level||"B1");setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
+      setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights):[]);
+      setSelectedTypes(dc.questions.map(function(q){return q.type;}).filter(function(t,i,a){return a.indexOf(t)===i;}));
+      setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
+      setIsDailyGame(true);setStage("reading");return;
+    }
+    setError("");setStage("loading");setDailyLoading(true);
+    var dMsgs=["Picking today's topic...","Writing the passage...","Crafting questions...","Almost ready..."];
+    var dMi=0;setLoadMsg(dMsgs[0]);
+    var dIv=setInterval(function(){dMi=(dMi+1)%dMsgs.length;setLoadMsg(dMsgs[dMi]);},1600);
+    try{
+      var dTypes=["mcq","gap_word","gap_sentence","matching","heading","qa"];
+      var dTypeDescs={mcq:"mcq - 4-option multiple choice",gap_word:"gap_word - sentence with blank, pick word",gap_sentence:"gap_sentence - paragraph with blank, pick sentence",matching:"matching - match 3 lefts to 3 rights (correctPairs:[0,1,2])",heading:"heading - match 2 headings to 2 paragraphs (correctMap:[0,1])",qa:"qa - open answer with keywords"};
+      var dTypeEx={mcq:'{"type":"mcq","q":"?","options":["A","B","C","D"],"answer":0,"explanation":"Why."}',gap_word:'{"type":"gap_word","sentence":"The ___ rose.","options":["w1","w2","w3","w4"],"answer":1,"explanation":"Why."}',gap_sentence:'{"type":"gap_sentence","paragraph":"Start. ___ End.","options":["S1.","S2.","S3.","S4."],"answer":2,"explanation":"Why."}',matching:'{"type":"matching","instruction":"Match.","lefts":["T1","T2","T3"],"rights":["D1","D2","D3"],"correctPairs":[0,1,2],"explanation":"Why."}',heading:'{"type":"heading","instruction":"Match headings.","paragraphs":["P1...","P2..."],"headings":["H A","H B","H C"],"correctMap":[0,1],"explanation":"Why."}',qa:'{"type":"qa","q":"Explain X.","keywords":["k1","k2","k3"],"explanation":"Should mention..."}'};
+      var dTL="",dEL="";for(var dti=0;dti<dTypes.length;dti++){dTL+=(dti+1)+". "+dTypeDescs[dTypes[dti]]+"\n";dEL+="    "+dTypeEx[dTypes[dti]]+(dti<dTypes.length-1?",":"")+"\\n";}
+      var dPt="You are an expert language teacher. Level: B1.\nPassage: 140-160 words, moderate vocabulary, interesting topic for "+today+".\nPick a RANDOM varied topic.\n\nCreate EXACTLY "+dTypes.length+" question(s):\n"+dTL+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+dEL+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level B1 appropriate.";
+      var dRes=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:dPt}]})});
+      var dData=await dRes.json();
+      var dRaw="";if(dData.content){for(var di=0;di<dData.content.length;di++){if(dData.content[di].text)dRaw+=dData.content[di].text;}}
+      var dJson=JSON.parse(dRaw.replace(/```json/g,"").replace(/```/g,"").trim());
+      var newDc={date:today,level:"B1",passage:dJson.passage,topic:dJson.topic||"Daily Reading",questions:dJson.questions};
+      await saveDaily(newDc);setDailyChallenge(newDc);
+      var mq3=null;for(var j3=0;j3<dJson.questions.length;j3++){if(dJson.questions[j3].type==="matching"){mq3=dJson.questions[j3];break;}}
+      setLevel("B1");setPassage(dJson.passage);setTopic(dJson.topic||"Daily Reading");setQuestions(dJson.questions);
+      setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights):[]);
+      setSelectedTypes(dTypes);
+      setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
+      setIsDailyGame(true);setStage("reading");
+    }catch(e){console.log("daily err",e);setError("Daily challenge failed - please try again.");setStage("home");}
+    clearInterval(dIv);setDailyLoading(false);
   }
 
   // ── style helpers ─────────────────────────────────────────
@@ -752,6 +859,7 @@ export default function App(){
               </div>
               <div className="rq-home-nav">
                 <button onClick={function(){setStage("friends");}} style={GHOST}>Friends</button>
+                <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>Vocab</button>
                 <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
@@ -772,6 +880,23 @@ export default function App(){
                 })}
               </div>
             )}
+
+            {/* daily challenge card */}
+            {currentUser&&(function(){
+              var today=new Date().toLocaleDateString();
+              var done=dailyDone&&dailyDone.date===today;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:done?"rgba(251,191,36,0.3)":"rgba(6,182,212,0.3)",background:done?"rgba(251,191,36,0.05)":"rgba(6,182,212,0.05)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div>
+                      <p style={{fontSize:11,color:done?"#fbbf24":"#06b6d4",fontWeight:700,letterSpacing:0.6,margin:"0 0 2px"}}>TODAY'S DAILY CHALLENGE</p>
+                      <p style={{fontSize:12,color:"#9ca3af",margin:0}}>{done?"Completed! "+dailyDone.xp+" XP · "+dailyDone.pct+"%":dailyChallenge&&dailyChallenge.date===today?dailyChallenge.topic+" (B1)":"B1 · All question types"}</p>
+                    </div>
+                    <button onClick={done?function(){setStage("dailyleaderboard");}:startDailyChallenge} disabled={dailyLoading} style={{...mkBtn(done?"#fbbf24":"#06b6d4","#0d0d1a"),padding:"9px 16px",fontSize:13,flexShrink:0}}>{dailyLoading?"Loading...":done?"Leaderboard":"Play"}</button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* question type selector */}
             <div style={{...CARD,marginBottom:12,padding:14}}>
@@ -825,8 +950,20 @@ export default function App(){
               <span style={{color:"#6b7280",fontSize:12}}>{topic}</span>
             </div>
             <div style={{...CARD,marginBottom:12}}>
-              <p style={{fontSize:11,fontWeight:700,color:lv?lv.color:"#34d399",letterSpacing:0.8,marginBottom:8,textTransform:"uppercase"}}>Read carefully - timer starts on Begin</p>
-              <p style={{lineHeight:2,fontSize:17,color:"#e5e7eb",margin:0}}>{passage}</p>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <p style={{fontSize:11,fontWeight:700,color:lv?lv.color:"#34d399",letterSpacing:0.8,margin:0,textTransform:"uppercase"}}>Read carefully - timer starts on Begin</p>
+                {savedWords.size>0&&<span style={{fontSize:11,color:"#06b6d4",fontWeight:700}}>{savedWords.size} saved</span>}
+              </div>
+              <p style={{lineHeight:2,fontSize:17,color:"#e5e7eb",margin:0}}>
+                {passage.split(/(\s+)/).map(function(token,i){
+                  if(/^\s+$/.test(token))return<span key={i}>{token}</span>;
+                  var word=token.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
+                  if(!word)return<span key={i}>{token}</span>;
+                  var saved=savedWords.has(word);
+                  return<span key={i} onClick={function(){toggleWord(word);}} style={{cursor:"pointer",borderRadius:3,background:saved?"rgba(6,182,212,0.2)":"transparent",color:saved?"#06b6d4":"inherit",padding:"0 1px",transition:"all 0.15s"}}>{token}</span>;
+                })}
+              </p>
+              <p style={{fontSize:11,color:"#4b5563",margin:"8px 0 0",textAlign:"center"}}>Tap words to save them to your vocab notebook</p>
             </div>
             <div style={{...CARD,marginBottom:12,padding:12,fontSize:12,color:"#9ca3af",display:"flex",justifyContent:"space-between"}}>
               <span>{selectedTypes.length} question type(s)</span>
@@ -891,11 +1028,139 @@ export default function App(){
               <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>BREAKDOWN</p>
               {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
             </div>
+            {result.typeStats&&Object.keys(result.typeStats).length>1&&(
+              <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:10}}>BY QUESTION TYPE</p>
+                {Object.keys(result.typeStats).map(function(t){
+                  var ts=result.typeStats[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
+                  return(<div key={t} style={{marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                      <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
+                      <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999,transition:"width 0.5s ease"}}/>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            )}
+            {result.wasDaily&&dailyLb.length>0&&(
+              <div style={{...CARD,marginBottom:10,textAlign:"left",borderColor:"rgba(251,191,36,0.3)"}}>
+                <p style={{fontWeight:700,fontSize:11,color:"#fbbf24",marginBottom:8}}>TODAY'S DAILY BOARD</p>
+                {dailyLb.slice(0,5).map(function(e,i){
+                  var isMe=currentUser&&e.name===currentUser.name;
+                  return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<Math.min(dailyLb.length,5)-1?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                    <span style={{width:22,fontSize:11,color:"#fbbf24",fontWeight:700}}>{i+1}</span>
+                    <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#fbbf24":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
+                    <span style={{fontSize:12,fontWeight:800,color:"#fbbf24"}}>{e.xp} XP</span>
+                    <span style={{fontSize:11,color:pctColor(e.pct)}}>{e.pct}%</span>
+                  </div>);
+                })}
+              </div>
+            )}
             <div style={{display:"flex",gap:7}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
               <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
+          </div>
+        )}
+
+        {/* ── VOCAB NOTEBOOK ────────────────────────────────── */}
+        {stage==="vocab"&&currentUser&&(function(){
+          var words=vocab.slice().reverse();
+          var reviewWords=words.filter(function(w){return w.status!=="known";});
+          var display=vocabFilter==="review"?reviewWords:words;
+          var safeIdx=display.length>0?vocabCard%display.length:0;
+          var curWord=display.length>0?display[safeIdx]:null;
+          function markKnown(){
+            var nv=vocab.map(function(v){return v.word===curWord.word?{word:v.word,level:v.level,topic:v.topic,date:v.date,status:"known"}:v;});
+            setVocab(nv);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;setAllVocab(nAll);saveVocab(nAll);
+            setVocabFlipped(false);
+            setVocabCard(function(c){return display.length<=1?0:(c>=display.length-1?0:c+1);});
+          }
+          function next(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c+1)%display.length;});}
+          function prev(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c>0?c-1:display.length-1);});}
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#06b6d4"}}>Vocabulary</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+              <div style={{display:"flex",gap:5,marginBottom:12}}>
+                {[["all","All ("+words.length+")"],["review","Review ("+reviewWords.length+")"]].map(function(t){
+                  return<button key={t[0]} onClick={function(){setVocabFilter(t[0]);setVocabCard(0);setVocabFlipped(false);}} style={{background:vocabFilter===t[0]?"#06b6d4":"rgba(255,255,255,0.05)",color:vocabFilter===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
+                })}
+              </div>
+              {curWord?(
+                <div>
+                  <div onClick={function(){setVocabFlipped(function(f){return!f;});}} style={{...CARD,cursor:"pointer",textAlign:"center",minHeight:150,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:10,background:"rgba(6,182,212,0.06)",borderColor:"rgba(6,182,212,0.25)"}}>
+                    {!vocabFlipped?(
+                      <div><div style={{fontSize:28,fontWeight:900,color:"#06b6d4",marginBottom:6}}>{curWord.word}</div><div style={{fontSize:12,color:"#4b5563"}}>Tap to reveal context</div></div>
+                    ):(
+                      <div><div style={{fontSize:22,fontWeight:900,color:"#06b6d4",marginBottom:8}}>{curWord.word}</div><div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>From: <span style={{color:"#f3f4f6",fontWeight:600}}>{curWord.topic}</span></div><div style={{fontSize:12,color:"#6b7280"}}>{curWord.level} · {curWord.date}</div></div>
+                    )}
+                  </div>
+                  {vocabFlipped&&(
+                    <div style={{display:"flex",gap:7,marginBottom:10}}>
+                      <button onClick={markKnown} style={{...mkBtn("#22c55e","#0d0d1a"),flex:1,fontSize:13}}>Know it</button>
+                      <button onClick={next} style={{...mkBtn("#374151"),flex:1,fontSize:13}}>Study more</button>
+                    </div>
+                  )}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <button onClick={prev} style={{...GHOST,padding:"7px 14px",fontSize:13}}>Prev</button>
+                    <span style={{fontSize:12,color:"#6b7280"}}>{safeIdx+1} / {display.length}</span>
+                    <button onClick={next} style={{...GHOST,padding:"7px 14px",fontSize:13}}>Next</button>
+                  </div>
+                  {words.length>0&&(
+                    <div style={{...CARD,marginTop:14}}>
+                      <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>ALL WORDS ({words.length})</p>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {words.map(function(w,i){return<span key={i} onClick={function(){var idx=display.findIndex(function(d){return d.word===w.word;});if(idx!==-1){setVocabCard(idx);setVocabFlipped(false);}}} style={{background:w.status==="known"?"rgba(34,197,94,0.15)":"rgba(6,182,212,0.1)",color:w.status==="known"?"#22c55e":"#06b6d4",borderRadius:999,padding:"4px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{w.word}</span>;})}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ):(
+                <div style={{...CARD,textAlign:"center",padding:40}}>
+                  <div style={{fontSize:36,marginBottom:10}}>📚</div>
+                  <p style={{color:"#6b7280",fontSize:14}}>{vocabFilter==="review"?"All caught up! No words left to review.":"No saved words yet — tap words in the reading passage to save them."}</p>
+                  <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Start Reading</button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── DAILY LEADERBOARD ─────────────────────────────── */}
+        {stage==="dailyleaderboard"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
+              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Daily Board</h2>
+              <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+            </div>
+            <p style={{color:"#6b7280",fontSize:12,marginBottom:12}}>Today · {new Date().toLocaleDateString()} · B1</p>
+            {dailyLb.length===0?(
+              <div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No one has played today's challenge yet.</p><button onClick={startDailyChallenge} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Be First!</button></div>
+            ):(
+              <div style={CARD}>
+                <div style={{display:"flex",padding:"0 0 7px",borderBottom:"1px solid rgba(255,255,255,0.06)",marginBottom:5}}>
+                  {["#","PLAYER","XP","%","TIME"].map(function(h,i){return<span key={h} style={{fontSize:10,color:"#4b5563",width:i===0?28:i===1?"1fr":i===2?55:i===3?36:46,flex:i===1?1:0,textAlign:i>1?"right":"left"}}>{h}</span>;})}
+                </div>
+                {dailyLb.map(function(e,i){
+                  var isMe=currentUser&&e.name===currentUser.name;
+                  return(<div key={i} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:i<dailyLb.length-1?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(251,191,36,0.06)":"transparent",borderRadius:7,marginBottom:2}}>
+                    <span style={{width:28,fontSize:i<3?13:11,color:"#fbbf24",fontWeight:700}}>{i===0?"1st":i===1?"2nd":i===2?"3rd":(i+1)}</span>
+                    <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#fbbf24":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
+                    <span style={{width:55,textAlign:"right",fontWeight:800,color:"#fbbf24",fontSize:12}}>{e.xp}</span>
+                    <span style={{width:36,textAlign:"right",fontSize:12,color:pctColor(e.pct)}}>{e.pct}%</span>
+                    <span style={{width:46,textAlign:"right",fontSize:11,color:"#6b7280"}}>{formatTime(e.timeSecs)}</span>
+                  </div>);
+                })}
+              </div>
+            )}
+            {!(dailyDone&&dailyDone.date===new Date().toLocaleDateString())&&<button onClick={startDailyChallenge} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:12}}>Play Today's Challenge</button>}
           </div>
         )}
 
@@ -1269,6 +1534,27 @@ export default function App(){
                 <GameChart games={games}/>
               </div>
             )}
+            {(function(){
+              var typeAgg={};
+              games.forEach(function(g){if(!g.typeStats)return;Object.keys(g.typeStats).forEach(function(t){if(!typeAgg[t])typeAgg[t]={earned:0,max:0};typeAgg[t].earned+=g.typeStats[t].earned;typeAgg[t].max+=g.typeStats[t].max;});});
+              var types=Object.keys(typeAgg);
+              if(!types.length)return null;
+              return(<div style={{...CARD,marginBottom:10}}>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:10}}>ACCURACY BY TYPE</p>
+                {types.map(function(t){
+                  var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
+                  return(<div key={t} style={{marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                      <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
+                      <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999}}/>
+                    </div>
+                  </div>);
+                })}
+              </div>);
+            })()}
             {games.length>0&&(<div style={{...CARD,marginBottom:10}}>
               <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>RECENT GAMES</p>
               {games.slice().reverse().slice(0,8).map(function(g,i){
