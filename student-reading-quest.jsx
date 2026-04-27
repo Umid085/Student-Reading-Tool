@@ -101,6 +101,34 @@ function checkBadges(user,vocab,streak){
   return e;
 }
 
+var QUEST_POOL=[
+  {id:"play_story",     title:"Read a Story",     desc:"Complete any quiz today",         xp:20},
+  {id:"score_80",       title:"High Score",        desc:"Score 80%+ on a quiz",            xp:15},
+  {id:"save_words",     title:"Word Saver",        desc:"Save 3+ words to your notebook",  xp:10},
+  {id:"daily_challenge",title:"Daily Player",      desc:"Complete the daily challenge",     xp:25},
+  {id:"score_perfect",  title:"Perfectionist",     desc:"Score 100% on any quiz",          xp:30},
+  {id:"play_b1plus",    title:"Challenge Seeker",  desc:"Play B1 level or higher",         xp:15},
+  {id:"fast_finish",    title:"Speed Runner",      desc:"Finish a quiz under 2 minutes",   xp:20},
+  {id:"streak_day",     title:"Streak Keeper",     desc:"Keep your reading streak alive",  xp:10},
+];
+function getDayQuests(date){
+  var seed=0;for(var i=0;i<date.length;i++)seed=seed*31+date.charCodeAt(i);
+  seed=Math.abs(seed);var n=QUEST_POOL.length,picked=[];
+  while(picked.length<3){var idx=seed%n;if(picked.indexOf(idx)===-1)picked.push(idx);seed=Math.abs(Math.floor(seed/n+seed*7+13))%99991;}
+  return picked.map(function(i){return QUEST_POOL[i];});
+}
+function checkQuest(id,todayGames,vocabCount,extras){
+  if(id==="play_story")return todayGames.length>=1;
+  if(id==="score_80")return todayGames.some(function(g){return g.pct>=80;});
+  if(id==="save_words")return vocabCount>=3;
+  if(id==="daily_challenge")return!!extras.dailyDone;
+  if(id==="score_perfect")return todayGames.some(function(g){return g.pct===100;});
+  if(id==="play_b1plus"){var hi=["B1","B2","C1","C2"];return todayGames.some(function(g){return hi.indexOf(g.level)!==-1;});}
+  if(id==="fast_finish")return todayGames.some(function(g){return g.timeSecs<120;});
+  if(id==="streak_day")return extras.streak>=1;
+  return false;
+}
+
 var LEVEL_THRESHOLDS=[0,1000,2500,4500,7000,10500,15000,21000,28000,36000,45000,55000,66000,78000,91000,105000,120000,136000,153000,171000,190000];
 function getUserLevel(totalXp){
   for(var i=LEVEL_THRESHOLDS.length-1;i>=0;i--){
@@ -519,6 +547,9 @@ export default function App(){
   var [dailyLb,setDailyLb]=useState([]);
   var [isDailyGame,setIsDailyGame]=useState(false);
   var [dailyLoading,setDailyLoading]=useState(false);
+  // daily quests
+  var [dailyQuests,setDailyQuests]=useState([]);
+  var [questsDone,setQuestsDone]=useState({});
   // reading screen enhancements
   var [focusMode,setFocusMode]=useState(false);
   var [readingTimerSecs,setReadingTimerSecs]=useState(0);
@@ -562,6 +593,9 @@ export default function App(){
     var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
     setDailyDone(doneRaw&&doneRaw.date===today?doneRaw:null);
     loadDailyLb().then(function(lb){setDailyLb((lb&&lb[today])||[]);});
+    var todayQuests=getDayQuests(today);setDailyQuests(todayQuests);
+    var qDoneRaw=null;try{qDoneRaw=JSON.parse(localStorage.getItem("rq-quests-"+currentUser.name+"-"+today));}catch(e){}
+    setQuestsDone(qDoneRaw||{});
   },[currentUser]);
 
   // always pull fresh users when entering friends page or typing a search
@@ -793,6 +827,15 @@ export default function App(){
     var today=new Date().toLocaleDateString();
 
     var badgesBefore=checkBadges(currentUser,vocab,calcStreak(currentUser.games));
+    // quest bonus: check which quests complete with this game
+    var tempTodayGames=currentUser.games.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
+    var newQuestItems=[];
+    dailyQuests.forEach(function(qt){
+      if(questsDone[qt.id])return;
+      if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreak(currentUser.games.concat([{date:today}]))})){
+        newQuestItems.push(qt);finalXp+=qt.xp;
+      }
+    });
     var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false};
     var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
     var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
@@ -822,7 +865,14 @@ export default function App(){
     }
 
     var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds});
+    if(newQuestItems.length>0){
+      var nqd={};for(var qk in questsDone)nqd[qk]=questsDone[qk];
+      newQuestItems.forEach(function(q){nqd[q.id]=true;});
+      localStorage.setItem("rq-quests-"+currentUser.name+"-"+today,JSON.stringify(nqd));
+      setQuestsDone(nqd);
+    }
+    var questBonus=newQuestItems.reduce(function(s,q){return s+q.xp;},0);
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus});
     setStage("result");
   }
 
@@ -991,6 +1041,37 @@ export default function App(){
                     </div>
                     <button onClick={done?function(){setStage("dailyleaderboard");}:startDailyChallenge} disabled={dailyLoading} style={{...mkBtn(done?"#fbbf24":"#06b6d4","#0d0d1a"),padding:"9px 16px",fontSize:13,flexShrink:0}}>{dailyLoading?"Loading...":done?"Leaderboard":"Play"}</button>
                   </div>
+                </div>
+              );
+            })()}
+
+            {/* daily quests card */}
+            {currentUser&&dailyQuests.length>0&&(function(){
+              var today=new Date().toLocaleDateString();
+              var todayGames=(currentUser.games||[]).filter(function(g){return g.date===today;});
+              var doneToday=dailyDone&&dailyDone.date===today;
+              var allDone=dailyQuests.every(function(q){return questsDone[q.id]||checkQuest(q.id,todayGames,vocab.length,{dailyDone:doneToday,streak:myStreak});});
+              var doneCount=dailyQuests.filter(function(q){return questsDone[q.id];}).length;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:allDone?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.1)",background:allDone?"rgba(52,211,153,0.04)":"rgba(255,255,255,0.02)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <p style={{fontSize:11,color:allDone?"#34d399":"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>TODAY'S QUESTS</p>
+                    <span style={{fontSize:11,color:"#6b7280"}}>{doneCount}/{dailyQuests.length} done</span>
+                  </div>
+                  {dailyQuests.map(function(q){
+                    var done=!!questsDone[q.id];
+                    return(<div key={q.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                      <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid "+(done?"#34d399":"rgba(255,255,255,0.15)"),background:done?"#34d399":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        {done&&<span style={{fontSize:10,color:"#0d0d1a",fontWeight:900}}>✓</span>}
+                      </div>
+                      <div style={{flex:1}}>
+                        <span style={{fontSize:13,fontWeight:600,color:done?"#6b7280":"#f3f4f6",textDecoration:done?"line-through":"none"}}>{q.title}</span>
+                        <span style={{fontSize:11,color:"#4b5563",marginLeft:6}}>{q.desc}</span>
+                      </div>
+                      <span style={{fontSize:12,fontWeight:700,color:done?"#6b7280":"#34d399",flexShrink:0}}>+{q.xp} XP</span>
+                    </div>);
+                  })}
+                  {allDone&&<div style={{marginTop:4,padding:"6px 10px",borderRadius:8,background:"rgba(52,211,153,0.1)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#34d399",textAlign:"center",fontWeight:700}}>All quests complete! Come back tomorrow for new ones.</div>}
                 </div>
               );
             })()}
@@ -1213,6 +1294,18 @@ export default function App(){
                     </div>);
                   })}
                 </div>
+              </div>
+            )}
+            {result.newQuests&&result.newQuests.length>0&&(
+              <div style={{...CARD,marginBottom:10,background:"rgba(52,211,153,0.07)",borderColor:"rgba(52,211,153,0.35)"}}>
+                <p style={{fontWeight:700,fontSize:12,color:"#34d399",marginBottom:8,textAlign:"left"}}>QUEST{result.newQuests.length>1?"S":""} COMPLETE! +{result.questBonus} XP</p>
+                {result.newQuests.map(function(q){return(
+                  <div key={q.id} style={{display:"flex",alignItems:"center",gap:8,textAlign:"left",marginBottom:4}}>
+                    <span style={{fontSize:14,color:"#34d399"}}>✓</span>
+                    <span style={{fontSize:13,color:"#d1fae5",fontWeight:600}}>{q.title}</span>
+                    <span style={{fontSize:12,color:"#34d399",marginLeft:"auto",fontWeight:700}}>+{q.xp} XP</span>
+                  </div>
+                );})}
               </div>
             )}
             <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
