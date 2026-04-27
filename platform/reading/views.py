@@ -153,4 +153,31 @@ def toggle_favorite_view(request, story_id):
 @login_required
 def session_view(request, session_id):
     session = get_object_or_404(ReadingSession, pk=session_id, user=request.user)
-    return render(request, 'reading/reading.html', {'session': session, 'story': session.story})
+    from .models import ReadingProgress
+    saved_pct = 0
+    prog = ReadingProgress.objects.filter(session=session).first()
+    if prog:
+        saved_pct = prog.pct
+    return render(request, 'reading/reading.html', {
+        'session': session,
+        'story': session.story,
+        'saved_pct': saved_pct,
+    })
+
+
+@login_required
+@require_POST
+def save_progress_view(request, session_id):
+    session = get_object_or_404(ReadingSession, pk=session_id, user=request.user)
+    try:
+        import json as _json
+        body = _json.loads(request.body)
+        pct = max(0, min(100, int(body.get('pct', 0))))
+    except (ValueError, KeyError):
+        return JsonResponse({'error': 'invalid'}, status=400)
+    from .models import ReadingProgress
+    ReadingProgress.objects.update_or_create(
+        session=session,
+        defaults={'user': request.user, 'pct': pct},
+    )
+    return JsonResponse({'saved': pct})

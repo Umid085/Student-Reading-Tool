@@ -70,3 +70,14 @@ class FavoriteStory(models.Model):
 
     class Meta:
         unique_together = ('user', 'story')
+
+
+class ReadingProgress(models.Model):
+    """Persists scroll progress so students can resume where they left off."""
+    user     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reading_progress')
+    session  = models.OneToOneField(ReadingSession, on_delete=models.CASCADE, related_name='progress')
+    pct      = models.PositiveSmallIntegerField(default=0)  # 0–100
+    updated  = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.user.username} – {self.pct}%'

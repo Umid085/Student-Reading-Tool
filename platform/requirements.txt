@@ -1,0 +1,6 @@
+Django==5.2.13
+python-decouple==3.8
+anthropic==0.97.0
+psycopg2-binary==2.9.12
+whitenoise==6.12.0
+gunicorn==25.3.0

@@ -12,4 +12,5 @@ urlpatterns = [
     path('session/<int:session_id>/finish/', views.finish_reading_view, name='finish'),
     path('favorites/', views.favorites_view, name='favorites'),
     path('favorite/toggle/<int:story_id>/', views.toggle_favorite_view, name='toggle_favorite'),
+    path('session/<int:session_id>/progress/', views.save_progress_view, name='save_progress'),
 ]

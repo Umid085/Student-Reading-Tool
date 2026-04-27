@@ -1,11 +1,62 @@
-var startTime, timerInterval, wordCount, speechRate = 1, activeSentenceEl = null;
+var startTime, timerInterval, wordCount, speechRate = 1;
+var progressUrl = '', lastSavedPct = 0;
 
-function initReading(sessionId, words) {
+function initReading(sessionId, words, savedPct, progressEndpoint) {
   wordCount = words;
+  progressUrl = progressEndpoint || '';
+  lastSavedPct = savedPct || 0;
   startTime = Date.now();
   timerInterval = setInterval(updateTimer, 1000);
   setupHeatmap();
   setupWordPopup();
+  setupProgressTracking(savedPct);
+}
+
+function setupProgressTracking(savedPct) {
+  var passage = document.getElementById('passage');
+  if (!passage || !progressUrl) return;
+
+  // Restore scroll position if resuming
+  if (savedPct > 0) {
+    var targetScroll = (savedPct / 100) * (document.body.scrollHeight - window.innerHeight);
+    setTimeout(function() { window.scrollTo({ top: targetScroll, behavior: 'smooth' }); }, 300);
+  }
+
+  var saveTimer = null;
+  window.addEventListener('scroll', function() {
+    var pct = calcScrollPct();
+    updateProgressBar(pct);
+    // Debounce saves — wait 2s of no scrolling, save if moved ≥ 2%
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function() {
+      if (Math.abs(pct - lastSavedPct) >= 2) {
+        saveProgress(pct);
+      }
+    }, 2000);
+  });
+}
+
+function calcScrollPct() {
+  var scrolled = window.scrollY;
+  var total = document.body.scrollHeight - window.innerHeight;
+  return total > 0 ? Math.min(100, Math.round((scrolled / total) * 100)) : 0;
+}
+
+function updateProgressBar(pct) {
+  var fill = document.getElementById('progressFill');
+  var label = document.getElementById('progressLabel');
+  if (fill) fill.style.width = pct + '%';
+  if (label) label.textContent = pct + '%';
+}
+
+function saveProgress(pct) {
+  if (!progressUrl) return;
+  lastSavedPct = pct;
+  fetch(progressUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ pct: pct }),
+  });
 }
 
 function updateTimer() {

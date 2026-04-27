@@ -31,6 +31,14 @@
     <div class="timer" id="focusTimer">0:00</div>
   </div>
 
+  <div class="reading-progress-bar" id="readingProgressBar">
+    <div class="reading-progress-fill" id="progressFill" style="width: {{ saved_pct|default:0 }}%"></div>
+    <span class="reading-progress-label" id="progressLabel">{{ saved_pct|default:0 }}%</span>
+  </div>
+  {% if saved_pct %}
+  <p class="resume-hint">Resuming from {{ saved_pct }}% — scroll to continue where you left off.</p>
+  {% endif %}
+
   <div class="passage" id="passage" data-words="{{ session.passage_text|wordcount }}">
     {{ session.passage_text|linebreaks }}
   </div>
@@ -58,6 +66,8 @@
 <script>
   var SESSION_ID = {{ session.pk }};
   var WORD_COUNT = {{ session.passage_text|wordcount }};
-  initReading(SESSION_ID, WORD_COUNT);
+  var SAVED_PCT = {{ saved_pct|default:0 }};
+  var PROGRESS_URL = '{% url "reading:save_progress" session.pk %}';
+  initReading(SESSION_ID, WORD_COUNT, SAVED_PCT, PROGRESS_URL);
 </script>
 {% endblock %}
