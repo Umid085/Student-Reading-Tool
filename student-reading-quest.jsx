@@ -454,6 +454,8 @@ export default function App(){
   var [challengeLevel,setChallengeLevel]=useState("B1");
   var [challengeTypes,setChallengeTypes]=useState(["mcq","qa"]);
   var [socialMsg,setSocialMsg]=useState("");
+  // history
+  var [historyLevel,setHistoryLevel]=useState("");
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -750,6 +752,7 @@ export default function App(){
               </div>
               <div className="rq-home-nav">
                 <button onClick={function(){setStage("friends");}} style={GHOST}>Friends</button>
+                <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
               </div>
@@ -895,6 +898,67 @@ export default function App(){
             </div>
           </div>
         )}
+
+        {/* ── HISTORY ───────────────────────────────────────── */}
+        {stage==="history"&&currentUser&&(function(){
+          var games=(currentUser.games||[]).slice().reverse();
+          var filtered=historyLevel?games.filter(function(g){return g.level===historyLevel;}):games;
+          var totalXp=filtered.reduce(function(s,g){return s+g.xp;},0);
+          var avgPct=filtered.length?Math.round(filtered.reduce(function(s,g){return s+g.pct;},0)/filtered.length):0;
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#34d399"}}>Reading History</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+
+              {/* level filter pills */}
+              <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
+                <button onClick={function(){setHistoryLevel("");}} style={{background:historyLevel===""?"#34d399":"rgba(255,255,255,0.05)",color:historyLevel===""?"#0d0d1a":"#9ca3af",border:"1px solid "+(historyLevel===""?"#34d399":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>All</button>
+                {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setHistoryLevel(l.key);}} style={{background:historyLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:historyLevel===l.key?"#0d0d1a":"#9ca3af",border:"1px solid "+(historyLevel===l.key?l.color:"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
+              </div>
+
+              {/* summary bar */}
+              {filtered.length>0&&(
+                <div style={{display:"flex",gap:7,marginBottom:12}}>
+                  {[{v:filtered.length,l:"Sessions",c:"#34d399"},{v:totalXp,l:"Total XP",c:"#fbbf24"},{v:avgPct+"%",l:"Avg Score",c:pctColor(avgPct)}].map(function(s){
+                    return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:15,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;
+                  })}
+                </div>
+              )}
+
+              {/* entries */}
+              {filtered.length===0&&(
+                <div style={{...CARD,textAlign:"center",padding:40}}>
+                  <div style={{fontSize:36,marginBottom:10}}>📖</div>
+                  <p style={{color:"#6b7280",fontSize:14}}>{historyLevel?"No "+historyLevel+" sessions yet.":"No sessions yet — play your first game!"}</p>
+                  <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),marginTop:14}}>Start Reading</button>
+                </div>
+              )}
+              {filtered.length>0&&(
+                <div style={CARD}>
+                  {filtered.map(function(g,i){
+                    var glv=getLv(g.level);
+                    return(
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                        <div style={{width:32,height:32,borderRadius:8,background:glv.glow,border:"2px solid "+glv.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:glv.color,flexShrink:0}}>{g.level}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.topic}</div>
+                          <div style={{fontSize:10,color:"#6b7280",marginTop:1}}>{g.date} · {formatTime(g.timeSecs)}</div>
+                        </div>
+                        <div style={{textAlign:"right",flexShrink:0}}>
+                          <div style={{fontSize:13,fontWeight:900,color:"#fbbf24"}}>{g.xp} XP</div>
+                          <div style={{fontSize:11,color:pctColor(g.pct),marginTop:1}}>{g.pct}%</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {currentUser&&<button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:12}}>Play Again</button>}
+            </div>
+          );
+        })()}
 
         {/* ── LEADERBOARD ───────────────────────────────────── */}
         {stage==="leaderboard"&&(
