@@ -725,14 +725,14 @@ export default function App(){
             <p style={{color:"#6b7280",marginBottom:26,fontSize:15}}>6 question types · Friends · Compete</p>
             <div style={CARD}>
               <div style={{display:"flex",gap:4,marginBottom:18,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:4}}>
-                {["register","login"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} style={{flex:1,padding:"10px 0",border:"none",borderRadius:8,fontFamily:"inherit",fontWeight:700,fontSize:15,cursor:"pointer",background:authMode===m?"#34d399":"transparent",color:authMode===m?"#0d0d1a":"#6b7280"}}>{m==="login"?"Log In":"Register"}</button>;})}
+                {["register","login"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} aria-label={m==="login"?"Switch to login mode":"Switch to register mode"} style={{flex:1,padding:"10px 0",border:"none",borderRadius:8,fontFamily:"inherit",fontWeight:700,fontSize:15,cursor:"pointer",background:authMode===m?"#34d399":"transparent",color:authMode===m?"#0d0d1a":"#6b7280"}}>{m==="login"?"Log In":"Register"}</button>;})}
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 <input style={INP} placeholder="Username" value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
                 <input style={INP} type="password" placeholder="Password (min 4 chars)" value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
               </div>
               {authErr&&<p style={{color:"#f87171",fontSize:14,marginTop:10}}>{authErr}</p>}
-              <button onClick={authMode==="login"?doLogin:doRegister} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?"Log In":"Create Account"}</button>
+              <button onClick={authMode==="login"?doLogin:doRegister} aria-label={authMode==="login"?"Log in with username and password":"Create new account"} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?"Log In":"Create Account"}</button>
             </div>
           </div>
         )}
@@ -751,9 +751,9 @@ export default function App(){
                 </div>
               </div>
               <div className="rq-home-nav">
-                <button onClick={function(){setStage("friends");}} style={GHOST}>Friends</button>
-                <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
-                <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
+                <button onClick={function(){setStage("friends");}} aria-label="View friends and social interactions" style={GHOST}>Friends</button>
+                <button onClick={function(){setStage("profile");}} aria-label="View your profile and stats" style={GHOST}>Profile</button>
+                <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} aria-label="View leaderboard rankings" style={GHOST}>Board</button>
               </div>
             </div>
 
@@ -803,7 +803,7 @@ export default function App(){
               })}
             </div>
             {error&&<p style={{color:"#f87171",fontSize:13,marginBottom:10}}>{error}</p>}
-            <button onClick={generate} disabled={!level} style={{...mkBtn(level?lv.color:"#374151",level?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>{level?"Start "+level+" Quest!":"Select a level to begin"}</button>
+            <button onClick={generate} disabled={!level} aria-label={level?"Start quiz for CEFR level "+level:"Select a language level to start quiz"} style={{...mkBtn(level?lv.color:"#374151",level?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>{level?"Start "+level+" Quest!":"Select a level to begin"}</button>
           </div>
         )}
 
@@ -831,7 +831,7 @@ export default function App(){
               <span>{selectedTypes.length} question type(s)</span>
               <span>Limit: {formatTime(lv?lv.timeLimit:180)} | Bonus: up to {lv?lv.timeBonus:200} XP</span>
             </div>
-            <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15}}>Start Timer and Begin!</button>
+            <button onClick={startQuiz} aria-label="Start the quiz timer and begin answering questions" style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15}}>Start Timer and Begin!</button>
           </div>
         )}
 
@@ -865,8 +865,8 @@ export default function App(){
               {q.type==="ynng"&&<YnngQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {confirmed&&q.explanation&&q.type!=="qa"&&(<div style={{marginTop:10,padding:"9px 11px",borderRadius:10,background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#d1fae5"}}>{q.explanation}</div>)}
               <div style={{marginTop:12,display:"flex",justifyContent:"flex-end"}}>
-                {!confirmed?<button onClick={doConfirm} disabled={!canConfirm()} style={mkBtn(canConfirm()?"#6366f1":"#374151")}>Check Answer</button>
-                :<button onClick={doNext} style={mkBtn(lv?lv.color:"#34d399","#0d0d1a")}>{current+1>=questions.length?"See Results":"Next Question"}</button>}
+                {!confirmed?<button onClick={doConfirm} disabled={!canConfirm()} aria-label="Submit answer to check if correct" style={mkBtn(canConfirm()?"#6366f1":"#374151")}>Check Answer</button>
+                :<button onClick={doNext} aria-label={current+1>=questions.length?"View results and see your score":"Continue to next question"} style={mkBtn(lv?lv.color:"#34d399","#0d0d1a")}>{current+1>=questions.length?"See Results":"Next Question"}</button>}
               </div>
             </div>
           </div>
@@ -891,9 +891,9 @@ export default function App(){
               {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
             </div>
             <div style={{display:"flex",gap:7}}>
-              <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
-              <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
-              <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
+              <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} aria-label="View leaderboard for this level" style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
+              <button onClick={function(){setStage("profile");}} aria-label="View your profile and statistics" style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
+              <button onClick={doRestart} aria-label="Take another quiz with new questions" style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
           </div>
         )}
@@ -906,7 +906,7 @@ export default function App(){
               <button onClick={function(){setStage(currentUser?"home":"auth");}} style={GHOST}>Back</button>
             </div>
             <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
-              {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setLbLevel(l.key);}} style={{background:lbLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:lbLevel===l.key?"#0d0d1a":"#9ca3af",border:"1px solid "+(lbLevel===l.key?l.color:"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
+              {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setLbLevel(l.key);}} aria-label={"View leaderboard for CEFR level "+l.key} aria-pressed={lbLevel===l.key} style={{background:lbLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:lbLevel===l.key?"#0d0d1a":"#9ca3af",border:"1px solid "+(lbLevel===l.key?l.color:"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
             </div>
             {(function(){
               var bd=boards[lbLevel]||[];var lvd=getLv(lbLevel);
