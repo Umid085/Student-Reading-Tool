@@ -157,7 +157,7 @@ function doSendChallenge(social,from,to,level,types){
   var n=JSON.parse(JSON.stringify(social));
   if(!n[to])n[to]={friends:[],requests:[],likes:0,challenges:[]};
   if(!n[to].challenges)n[to].challenges=[];
-  n[to].challenges.push({from:from,level:level,types:types,date:new Date().toLocaleDateString(),status:"pending"});
+  n[to].challenges.push({from:from,level:level,types:types,date:new Date().toISOString().split('T')[0],status:"pending"});
   return n;
 }
 
@@ -573,7 +573,7 @@ export default function App(){
   async function generate(){
     if(!level){setError("Pick a level first!");return;}
     if(selectedTypes.length===0){setError("Select at least one question type.");return;}
-    setError("");setStage("loading");
+    setError("");setQuestions([]);setUserAnswers([]);setMatchState({});setHeadingState({});setStage("loading");
     var msgs=["Picking a topic...","Writing your passage...","Crafting questions...","Almost ready..."];
     var mi=0;setLoadMsg(msgs[0]);
     var iv=setInterval(function(){mi=(mi+1)%msgs.length;setLoadMsg(msgs[mi]);},1600);
@@ -1057,13 +1057,13 @@ export default function App(){
           var fuGames=fu&&fu.games?fu.games:[];
           var fStreak=calcStreak(fuGames);
           var fBest=getBestLevel(fuGames);
-          var totalXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
-          var avgPct=fuGames.length?Math.round(fuGames.reduce(function(s,g){return s+(g.pct);},0)/fuGames.length):0;
+          var totalXp=fuGames.reduce(function(s,g){return s+(g.xp||0);},0);
+          var avgPct=fuGames.length?Math.round(fuGames.reduce(function(s,g){return s+(g.pct||0);},0)/fuGames.length):0;
           var fLvlInfo=getLevelProgress(totalXp);
           // comparison with current user
           var curGames=currentUser&&currentUser.games?currentUser.games:[];
-          var myTotalXp=curGames.reduce(function(s,g){return s+g.xp;},0);
-          var myAvgPct=curGames.length?Math.round(curGames.reduce(function(s,g){return s+g.pct;},0)/curGames.length):0;
+          var myTotalXp=curGames.reduce(function(s,g){return s+(g.xp||0);},0);
+          var myAvgPct=curGames.length?Math.round(curGames.reduce(function(s,g){return s+(g.pct||0);},0)/curGames.length):0;
           return(<div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
               <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>{viewingUser}'s Profile</h2>
