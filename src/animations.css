@@ -1,0 +1,475 @@
+/* ═══════════════════════════════════════════════════════════════════ */
+/* STUDENT READING TOOL — ANIMATIONS & MICRO-INTERACTIONS */
+/* CSS for smooth, delightful UI transitions */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* PAGE TRANSITIONS & SCREEN CHANGES */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* BUTTON & INTERACTIVE ELEMENT MICRO-INTERACTIONS */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes buttonPress {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes buttonHover {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2px);
+  }
+}
+
+/* Button click feedback */
+.interactive-button:active {
+  animation: buttonPress 200ms ease-out;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* QUIZ ANSWER SELECTION */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes optionSelect {
+  0% {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: transparent;
+  }
+  100% {
+    border-color: #818cf8;
+    background: rgba(129, 140, 248, 0.2);
+  }
+}
+
+@keyframes optionCorrect {
+  0% {
+    background: rgba(52, 211, 153, 0.05);
+    border-color: rgba(52, 211, 153, 0.3);
+  }
+  50% {
+    background: rgba(52, 211, 153, 0.2);
+    border-color: #34d399;
+    transform: scale(1.02);
+  }
+  100% {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: #34d399;
+    transform: scale(1);
+  }
+}
+
+@keyframes optionWrong {
+  0% {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    transform: translateX(-3px);
+  }
+  100% {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    transform: translateX(0);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* RESULTS SCREEN ANIMATIONS */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes scoreReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scoreCountUp {
+  from {
+    content: '0%';
+  }
+  to {
+    content: '100%';
+  }
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes confetti {
+  0% {
+    opacity: 1;
+    transform: translateY(-20px) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(360deg);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* LOADING & PROGRESS ANIMATIONS */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes progressBar {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* NOTIFICATION & TOAST ANIMATIONS */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(400px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(400px);
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* LEADERBOARD & LIST ANIMATIONS */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes listItemSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes rankBadgeGrow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* FORM INTERACTIONS */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes inputFocus {
+  from {
+    box-shadow: 0 0 0 0 rgba(129, 140, 248, 0);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.5);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* HOVER & INTERACTIVE STATES */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.hover-lift {
+  transition: all 150ms ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hover-glow {
+  transition: box-shadow 150ms ease-out;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 8px rgba(129, 140, 248, 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* UTILITY ANIMATION CLASSES */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.animate-fade-in {
+  animation: fadeIn 300ms ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 400ms ease-out;
+}
+
+.animate-slide-in-down {
+  animation: slideInDown 400ms ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 400ms ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 300ms ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-score-reveal {
+  animation: scoreReveal 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animate-toast-in {
+  animation: toastSlideIn 300ms ease-out;
+}
+
+.animate-toast-out {
+  animation: toastSlideOut 300ms ease-in;
+}
+
+.animate-list-item {
+  animation: listItemSlideIn 300ms ease-out;
+}
+
+.animate-success {
+  animation: successPulse 500ms ease-out;
+}
+
+.animate-shake {
+  animation: shake 400ms ease-in-out;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* REDUCED MOTION SUPPORT (WCAG AA) */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* STAGGERED ANIMATIONS (for lists) */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.list-item-stagger-1 {
+  animation: listItemSlideIn 300ms ease-out 100ms both;
+}
+
+.list-item-stagger-2 {
+  animation: listItemSlideIn 300ms ease-out 200ms both;
+}
+
+.list-item-stagger-3 {
+  animation: listItemSlideIn 300ms ease-out 300ms both;
+}
+
+.list-item-stagger-4 {
+  animation: listItemSlideIn 300ms ease-out 400ms both;
+}
+
+.list-item-stagger-5 {
+  animation: listItemSlideIn 300ms ease-out 500ms both;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* TRANSITIONS (not animations) */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.transition-fast {
+  transition: all 150ms ease-in-out;
+}
+
+.transition-normal {
+  transition: all 200ms ease-in-out;
+}
+
+.transition-slow {
+  transition: all 300ms ease-in-out;
+}
+
+/* Color transitions */
+.transition-color {
+  transition: color 150ms ease-in-out, background-color 150ms ease-in-out, border-color 150ms ease-in-out;
+}
+
+/* Transform transitions */
+.transition-transform {
+  transition: transform 150ms ease-in-out;
+}
