@@ -71,3 +71,35 @@ Set in `.env.local` for local dev; configure in Netlify dashboard for deployment
 - Dark theme (`#0d0d1a` base) with per-level gradient accent colors
 - `var` declarations throughout (pre-ES6 style) — maintain consistency when editing
 - Responsive: mobile-first, breakpoint at 640px for grid columns
+
+### Design System
+
+A comprehensive design system is available in `src/designSystem.js` with:
+
+**Color Tokens** — Semantic colors (primary, success, error), backgrounds, text levels, and CEFR level colors
+```javascript
+import { colors, spacing, typography } from './designSystem';
+// Use colors.primary, colors.success, colors.error, etc.
+```
+
+**Spacing Scale** — 8px base unit: xs(4px), sm(8px), md(12px), lg(16px), xl(20px), 2xl(24px), 3xl(32px), 4xl(40px)
+```javascript
+style={{ padding: spacing.md, gap: spacing.lg }}
+```
+
+**Typography Scale** — h1/h2/h3, body, bodySmall, label, caption, button
+```javascript
+style={{ fontSize: typography.h2.fontSize, fontWeight: typography.h2.fontWeight }}
+```
+
+**Utility Functions** — `getOptionStyle()`, `getTextColor()`, `getLevelColor()`, `getLevelGlow()`
+```javascript
+style={getOptionStyle(isSelected, isCorrect, isConfirmed)}
+```
+
+**Reusable Style Objects** — buttonBase, buttonPrimary, ghostButton, inputBase, card, focusRing
+```javascript
+style={{ ...styles.buttonBase, ...styles.buttonPrimary }}
+```
+
+When adding new components or modifying styles, import and use design tokens from `designSystem.js` instead of hardcoding colors/spacing. This ensures consistency and makes theme changes trivial.
