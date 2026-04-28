@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, lazy, Suspense, useMemo } from "react";
 import { colors, spacing, typography, radius, styles } from "./src/designSystem.js";
 import { announceToScreenReader, getOptionButtonA11y, focusRingStyle } from "./src/a11yUtils.js";
 
@@ -412,6 +412,26 @@ function Timer(props){
   </div>);
 }
 
+// ── Virtual Scrolling Helper ─────────────────────────────────
+// Renders only visible items in a scrollable container for performance
+function useVirtualScroll(items, itemHeight, containerHeight) {
+  var [scrollTop, setScrollTop] = useState(0);
+
+  var startIndex = Math.floor(scrollTop / itemHeight);
+  var visibleCount = Math.ceil(containerHeight / itemHeight) + 1; // +1 for buffer
+  var endIndex = Math.min(startIndex + visibleCount, items.length);
+  var visibleItems = items.slice(startIndex, endIndex);
+
+  return {
+    scrollTop,
+    setScrollTop,
+    startIndex,
+    visibleItems,
+    offsetY: startIndex * itemHeight,
+    totalHeight: items.length * itemHeight
+  };
+}
+
 // ── Main App ─────────────────────────────────────────────────
 export default function App(){
   // auth
@@ -456,6 +476,9 @@ export default function App(){
   var [challengeLevel,setChallengeLevel]=useState("B1");
   var [challengeTypes,setChallengeTypes]=useState(["mcq","qa"]);
   var [socialMsg,setSocialMsg]=useState("");
+  // virtual scrolling
+  var [lbScroll,setLbScroll]=useState(0);
+  var [friendsScroll,setFriendsScroll]=useState(0);
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
