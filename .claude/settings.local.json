@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:sreadingtool.netlify.app)"
+      "WebFetch(domain:sreadingtool.netlify.app)",
+      "WebFetch(domain:app.netlify.com)",
+      "PowerShell(python \"C:\\\\Users\\\\USER\\\\.claude\\\\skills\\\\canvas-design\\\\generate_mindmap.py\")",
+      "PowerShell(pip install *)",
+      "PowerShell(python -m pip install cairosvg 2>&1 | Select-Object -Last 3)",
+      "PowerShell(python \"C:\\\\Users\\\\USER\\\\.claude\\\\skills\\\\canvas-design\\\\convert_to_pdf.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\USER\\\\.claude\\\\skills\\\\canvas-design\\\\generate_pdf.py\")",
+      "Read(//c/Users/USER/.agents/skills/canvas-design/**)",
+      "Read(//c/Users/USER/.claude/skills/canvas-design/**)",
+      "PowerShell(head *)"
     ]
   }
 }

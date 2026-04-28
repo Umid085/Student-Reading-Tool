@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { colors, spacing, typography, radius, styles } from "./src/designSystem.js";
+import { announceToScreenReader, getOptionButtonA11y, focusRingStyle } from "./src/a11yUtils.js";
 
 var API        = "/.netlify/functions/generate";
 var USERS_KEY  = "rq-users-v6";
@@ -21,7 +23,7 @@ var Q_XP = {mcq:1,gap_word:1,gap_sentence:1,matching:3,heading:3,qa:2,tfnm:1,ynn
 // ── pure helpers ─────────────────────────────────────────────
 function getLv(k){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].key===k)return LEVELS[i];}return LEVELS[0];}
 function formatTime(s){if(s<=0)return"0:00";var m=Math.floor(s/60),sec=s%60;return m+":"+(sec<10?"0":"")+sec;}
-function pctColor(p){return p>=80?"#22c55e":p>=60?"#f59e0b":"#ef4444";}
+function pctColor(p){return p>=80?colors.success:p>=60?colors.warning:colors.error;}
 function enc(p){try{return btoa(p);}catch(e){return p;}}
 
 function calcStreak(games) {
