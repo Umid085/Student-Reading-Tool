@@ -1,0 +1,21 @@
+# Sitemap location
+Sitemap: https://student-reading-tool.netlify.app/sitemap.xml
+
+# Allow all bots
+User-agent: *
+Allow: /
+
+# Disallow Netlify internals
+Disallow: /.netlify/
+
+# Disallow admin/config pages (if any)
+Disallow: /admin/
+Disallow: /config/
+Disallow: /api/
+
+# Slow crawlers
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
