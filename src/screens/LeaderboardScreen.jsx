@@ -26,7 +26,8 @@ function LeaderboardScreen(props) {
           <div style={{maxHeight:400,overflow:"auto"}}>
             {bd.slice(0,50).map(function(e,i){
               var isMe=currentUser&&e.name===currentUser.name;
-              return(<div key={i} className="rq-lb-row" onClick={function(){if(currentUser&&e.name===currentUser.name){setStage("profile");}else{setViewingUser(e.name);setStage("friendProfile");}}} style={{display:"flex",alignItems:"center",padding:"8px "+(isMe?"5px":"0"),borderBottom:i<Math.min(bd.length-1,49)?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(52,211,153,0.06)":"transparent",borderRadius:7,marginBottom:2,cursor:"pointer",userSelect:"none"}}>
+              var handleSelect=function(){if(currentUser&&e.name===currentUser.name){setStage("profile");}else{setViewingUser(e.name);setStage("friendProfile");}};
+              return(<div key={i} className="rq-lb-row" role="button" tabIndex={0} aria-label={(i+1)+(i===0?"st":i===1?"nd":i===2?"rd":"th")+". "+e.name+", "+e.xp+" XP, "+e.pct+"%, "+formatTime(e.timeSecs)} onClick={handleSelect} onKeyDown={function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();handleSelect();}}} style={{display:"flex",alignItems:"center",padding:"8px "+(isMe?"5px":"0"),borderBottom:i<Math.min(bd.length-1,49)?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(52,211,153,0.06)":"transparent",borderRadius:7,marginBottom:2,cursor:"pointer",userSelect:"none"}}>
                 <span style={{width:28,fontSize:i<3?13:11,color:i<3?"#fbbf24":"#6b7280",fontWeight:700}}>{i===0?"1st":i===1?"2nd":i===2?"3rd":(i+1)}</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:13,fontWeight:700,color:isMe?lvd.color:"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</div>
