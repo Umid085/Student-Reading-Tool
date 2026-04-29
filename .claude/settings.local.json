@@ -11,7 +11,14 @@
       "Read(//c/Users/USER/.agents/skills/canvas-design/**)",
       "Read(//c/Users/USER/.claude/skills/canvas-design/**)",
       "PowerShell(head *)",
-      "PowerShell(npm run *)"
+      "PowerShell(npm run *)",
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Read(//tmp/**)",
+      "Bash(npm install *)",
+      "Bash(npm list *)",
+      "Bash(npm uninstall *)"
     ]
   }
 }
