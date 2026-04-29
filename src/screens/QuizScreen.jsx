@@ -8,7 +8,7 @@ function QuizScreen(props) {
     McqQ, GapWordQ, GapSentQ, MatchingQ, HeadingQ, QAQ, TfnmQ, YnngQ,
     userAnswers, setUserAnswers, matchState, setMatchState, shuffledRights,
     headingState, setHeadingState, confirmed, doConfirm, doNext,
-    canConfirm, mkBtn, streak, tts
+    canConfirm, mkBtn, streak, tts, def, ClickablePassage
   } = props;
 
   var togglePassage = useCallback(function(){setShowPassage(function(p){return!p;});}, [setShowPassage]);
@@ -38,7 +38,7 @@ function QuizScreen(props) {
           <button onClick={togglePassage} style={{flex:1,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?"Hide passage":"Show passage"}</button>
           <button onClick={function(){if(tts.isSpeaking){tts.stop();}else{tts.speak(passage);}}} aria-label={tts.isSpeaking?"Stop reading passage":"Read passage aloud"} style={{background:tts.isSpeaking?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(tts.isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:10,padding:"8px 12px",color:tts.isSpeaking?"#c7d2fe":"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",flexShrink:0,transition:"all 0.2s"}}>🔊</button>
         </div>
-        {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px"}}><p style={{lineHeight:1.9,fontSize:15,color:"#d1d5db",margin:0}}>{passage}</p></div>)}
+        {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px"}}><ClickablePassage text={passage} onWordClick={def.lookupWord} pStyle={{lineHeight:1.9,fontSize:15,color:"#d1d5db",margin:0}}/></div>)}
       </div>
       <div style={CARD}>
         {(q.q||q.instruction)&&(

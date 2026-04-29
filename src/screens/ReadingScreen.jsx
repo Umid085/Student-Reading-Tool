@@ -5,7 +5,7 @@ import React from 'react';
 export default function ReadingScreen(props) {
   var {
     level, topic, passage, selectedTypes, lv, CARD, pill, mkBtn,
-    formatTime, startQuiz, tts
+    formatTime, startQuiz, tts, def, ClickablePassage
   } = props;
 
   return (
@@ -19,7 +19,7 @@ export default function ReadingScreen(props) {
           <p style={{fontSize:11,fontWeight:700,color:lv?lv.color:"#34d399",letterSpacing:0.8,textTransform:"uppercase",margin:0}}>Read carefully - timer starts on Begin</p>
           <button onClick={function(){if(tts.isSpeaking){tts.stop();}else{tts.speak(passage);}}} aria-label={tts.isSpeaking?"Stop reading passage":"Read passage aloud"} style={{background:tts.isSpeaking?"rgba(99,102,241,0.25)":"transparent",border:"1px solid "+(tts.isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:6,padding:"5px 10px",cursor:"pointer",fontFamily:"inherit",fontSize:13,color:tts.isSpeaking?"#c7d2fe":"#9ca3af",fontWeight:700,transition:"all 0.2s"}}>🔊 {tts.isSpeaking?"Stop":"Listen"}</button>
         </div>
-        <p style={{lineHeight:2,fontSize:17,color:"#e5e7eb",margin:0}}>{passage}</p>
+        <ClickablePassage text={passage} onWordClick={def.lookupWord} pStyle={{lineHeight:2,fontSize:17,color:"#e5e7eb",margin:0}}/>
       </div>
       <div style={{...CARD,marginBottom:12,padding:12,fontSize:12,color:"#9ca3af",display:"flex",justifyContent:"space-between"}}>
         <span>{selectedTypes.length} question type(s)</span>

@@ -428,6 +428,110 @@ function useTTS(){
   return{isSpeaking:isSpeaking,speak:speak,stop:stop};
 }
 
+// ── Definition Lookup (Free Dictionary API) ─────────────────
+function useDefinition(){
+  var [defWord,setDefWord]=useState(null);
+  var [defData,setDefData]=useState(null);
+  var [defLoading,setDefLoading]=useState(false);
+  var [defError,setDefError]=useState(null);
+  var [defPos,setDefPos]=useState({x:0,y:0});
+  var cacheRef=useRef({});
+  var activeKeyRef=useRef(null);
+
+  var lookupWord=function(word,x,y){
+    if(!word)return;
+    var key=word.toLowerCase();
+    var TW=280,TH=220,M=12;
+    var sx=Math.min(Math.max(M,x-TW/2),window.innerWidth-TW-M);
+    var above=(y+TH+M)>window.innerHeight;
+    var sy=above?Math.max(M,y-TH-M):y+M;
+    setDefPos({x:sx,y:sy});
+    setDefWord(key);setDefError(null);setDefData(null);
+    activeKeyRef.current=key;
+    if(cacheRef.current[key]){
+      if(cacheRef.current[key]==="error"){setDefError('No definition found for "'+key+'".');setDefLoading(false);}
+      else{setDefData(cacheRef.current[key]);setDefLoading(false);}
+      return;
+    }
+    setDefLoading(true);
+    var captured=key;
+    fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(key))
+      .then(function(r){if(!r.ok)throw new Error();return r.json();})
+      .then(function(arr){
+        if(activeKeyRef.current!==captured)return;
+        var e=arr[0],ph="";
+        if(e.phonetic)ph=e.phonetic;
+        else if(e.phonetics){for(var i=0;i<e.phonetics.length;i++){if(e.phonetics[i].text){ph=e.phonetics[i].text;break;}}}
+        var m=e.meanings&&e.meanings[0],d=m&&m.definitions&&m.definitions[0];
+        var parsed={word:e.word||key,phonetic:ph,partOfSpeech:m?m.partOfSpeech:"",definition:d?d.definition:"No definition available.",example:d?(d.example||""):""};
+        cacheRef.current[captured]=parsed;setDefData(parsed);setDefLoading(false);
+      })
+      .catch(function(){
+        if(activeKeyRef.current!==captured)return;
+        cacheRef.current[captured]="error";setDefError('No definition found for "'+captured+'".');setDefLoading(false);
+      });
+  };
+  var clearDef=function(){setDefWord(null);setDefData(null);setDefError(null);setDefLoading(false);};
+  return{defWord,defData,defLoading,defError,defPos,lookupWord,clearDef};
+}
+
+// ── Clickable Passage Component ──────────────────────────────
+function ClickablePassage(props){
+  var tokens=props.text.split(/(\s+)/);
+  return React.createElement("p",{style:props.pStyle},
+    tokens.map(function(tok,idx){
+      if(/^\s+$/.test(tok))return tok;
+      var clean=tok.replace(/^[^a-zA-ZÀ-ɏ]+|[^a-zA-ZÀ-ɏ]+$/g,"");
+      if(!clean)return React.createElement("span",{key:idx},tok);
+      return React.createElement("span",{
+        key:idx,
+        onClick:function(e){props.onWordClick(clean.toLowerCase(),e.clientX,e.clientY);},
+        style:{cursor:"pointer",borderBottom:"1px dotted rgba(129,140,248,0.35)",transition:"border-color 0.15s"},
+        onMouseEnter:function(e){e.currentTarget.style.borderBottomColor="rgba(129,140,248,0.85)";},
+        onMouseLeave:function(e){e.currentTarget.style.borderBottomColor="rgba(129,140,248,0.35)";}
+      },tok);
+    })
+  );
+}
+
+// ── Definition Tooltip Component ─────────────────────────────
+function DefinitionTooltip(props){
+  var ref=useRef(null);
+  useEffect(function(){
+    if(!props.defWord)return;
+    var h=function(e){if(ref.current&&!ref.current.contains(e.target))props.clearDef();};
+    document.addEventListener("mousedown",h);
+    return function(){document.removeEventListener("mousedown",h);};
+  },[props.defWord,props.clearDef]);
+  useEffect(function(){
+    if(!props.defWord)return;
+    var h=function(e){if(e.key==="Escape")props.clearDef();};
+    document.addEventListener("keydown",h);
+    return function(){document.removeEventListener("keydown",h);};
+  },[props.defWord,props.clearDef]);
+  if(!props.defWord)return null;
+  return (
+    <div ref={ref} style={{position:"fixed",left:props.defPos.x,top:props.defPos.y,zIndex:9999,width:280,maxWidth:"calc(100vw - 24px)",background:"#1a1a2e",border:"1px solid rgba(129,140,248,0.3)",borderRadius:12,padding:"14px 16px",boxShadow:"0 8px 32px rgba(0,0,0,0.55)",fontFamily:"inherit",color:"#e5e7eb"}}>
+      {props.defLoading&&<div style={{textAlign:"center",padding:"12px 0"}}><div style={{width:24,height:24,borderRadius:"50%",border:"3px solid rgba(129,140,248,0.3)",borderTopColor:"#818cf8",margin:"0 auto",animation:"rqSpin 0.8s linear infinite"}}/></div>}
+      {props.defError&&<p style={{color:"#9ca3af",fontSize:13,margin:0}}>{props.defError}</p>}
+      {props.defData&&!props.defLoading&&(
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+            <div>
+              <span style={{fontSize:17,fontWeight:800,color:"#f3f4f6"}}>{props.defData.word}</span>
+              {props.defData.phonetic&&<span style={{fontSize:13,color:"#818cf8",marginLeft:8}}>{props.defData.phonetic}</span>}
+            </div>
+            <button onClick={props.clearDef} aria-label="Close definition" style={{background:"transparent",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16,padding:"0 0 0 8px",lineHeight:1}}>✕</button>
+          </div>
+          {props.defData.partOfSpeech&&<span style={{background:"rgba(129,140,248,0.15)",border:"1px solid rgba(129,140,248,0.3)",borderRadius:999,padding:"2px 8px",fontSize:11,color:"#c7d2fe",fontWeight:700,display:"inline-block",marginBottom:8}}>{props.defData.partOfSpeech}</span>}
+          <p style={{fontSize:14,color:"#e5e7eb",margin:"0 0 6px",lineHeight:1.6}}>{props.defData.definition}</p>
+          {props.defData.example&&<p style={{fontSize:13,color:"#9ca3af",margin:0,fontStyle:"italic",lineHeight:1.5}}>"{props.defData.example}"</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Timer ────────────────────────────────────────────────────
 function Timer(props){
   var [secs,setSecs]=useState(props.limit);
@@ -508,6 +612,7 @@ export default function App(){
   var [error,setError]=useState("");
   // tts
   var tts=useTTS();
+  var def=useDefinition();
   // social ui
   var [searchQuery,setSearchQuery]=useState("");
   var [friendStage,setFriendStage]=useState("search"); // search|requests|list
@@ -819,14 +924,14 @@ export default function App(){
         {/* ── READING ───────────────────────────────────────── */}
         {stage==="reading"&&(
           <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
-            <ReadingScreen {...{level, topic, passage, selectedTypes, lv, CARD, pill, mkBtn, formatTime, startQuiz, tts}}/>
+            <ReadingScreen {...{level, topic, passage, selectedTypes, lv, CARD, pill, mkBtn, formatTime, startQuiz, tts, def, ClickablePassage}}/>
           </Suspense>
         )}
 
         {/* ── QUIZ ──────────────────────────────────────────── */}
         {stage==="quiz"&&q&&(
           <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
-            <QuizScreen {...{q, current, questions, passage, showPassage, setShowPassage, CARD, pill, Q_LABELS, lv, totalXpSoFar, Timer, timerRunning, handleExpire, McqQ, GapWordQ, GapSentQ, MatchingQ, HeadingQ, QAQ, TfnmQ, YnngQ, userAnswers, setUserAnswers, matchState, setMatchState, shuffledRights, headingState, setHeadingState, confirmed, doConfirm, doNext, canConfirm, mkBtn, streak, tts}}/>
+            <QuizScreen {...{q, current, questions, passage, showPassage, setShowPassage, CARD, pill, Q_LABELS, lv, totalXpSoFar, Timer, timerRunning, handleExpire, McqQ, GapWordQ, GapSentQ, MatchingQ, HeadingQ, QAQ, TfnmQ, YnngQ, userAnswers, setUserAnswers, matchState, setMatchState, shuffledRights, headingState, setHeadingState, confirmed, doConfirm, doNext, canConfirm, mkBtn, streak, tts, def, ClickablePassage}}/>
           </Suspense>
         )}
 
@@ -839,7 +944,10 @@ export default function App(){
             <div style={{width:40,height:40,borderRadius:"50%",border:"3px solid #34d399",borderTopColor:"transparent",margin:"0 auto",animation:"spin 1s linear infinite"}}/>
           </div>
         )}
-        <style>{stage==="finishing"?`@keyframes spin{to{transform:rotate(360deg)}}`:""}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes rqSpin{to{transform:rotate(360deg)}}`}</style>
+
+        {/* ── Definition Tooltip ────────────────────────────── */}
+        <DefinitionTooltip defWord={def.defWord} defData={def.defData} defLoading={def.defLoading} defError={def.defError} defPos={def.defPos} clearDef={def.clearDef}/>
 
         {/* ── RESULT ────────────────────────────────────────── */}
         {stage==="result"&&result&&(
