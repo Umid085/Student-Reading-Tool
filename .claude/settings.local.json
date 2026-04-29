@@ -18,7 +18,10 @@
       "Read(//tmp/**)",
       "Bash(npm install *)",
       "Bash(npm list *)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(git push *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP Status: %{http_code}\\\\n\" https://student-reading-tool.netlify.app)"
     ]
   }
 }

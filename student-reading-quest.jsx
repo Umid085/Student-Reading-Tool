@@ -637,7 +637,18 @@ export default function App(){
   }
 
   function startQuiz(){startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");}
-  function handleExpire(){setTimerRunning(false);setTimeExpired(true);doFinish();}
+  function handleExpire(){
+    setTimerRunning(false);
+    if(!confirmed&&q){
+      if(q.type==="matching"){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=matchState;return n;});}
+      else if(q.type==="heading"){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=headingState;return n;});}
+      var ans=getCurrentAnswer(),pts=scoreQuestion(q,ans);
+      if(pts>0){setTotalXpSoFar(function(x){return x+Math.round(pts*(lv?lv.mult:1)*100);});}
+    }
+    setTimeExpired(true);
+    setStage("finishing");
+    doFinish();
+  }
 
   function getCurrentAnswer(){if(!q)return null;if(q.type==="matching")return matchState;if(q.type==="heading")return headingState;return userAnswers[current]!==undefined?userAnswers[current]:null;}
 
@@ -652,6 +663,8 @@ export default function App(){
 
   function doConfirm(){
     if(!canConfirm())return;
+    if(q.type==="matching"){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=matchState;return n;});}
+    else if(q.type==="heading"){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=headingState;return n;});}
     var ans=getCurrentAnswer(),pts=scoreQuestion(q,ans),mxp=maxPoints(q);
     var isGood=pts>=Math.ceil(mxp/2),ns=isGood?streak+1:0;
     setStreak(ns);
@@ -661,17 +674,14 @@ export default function App(){
 
   function doNext(){
     if(current+1>=questions.length){setTimerRunning(false);doFinish();}
-    else{setCurrent(function(c){return c+1;});setConfirmed(false);}
+    else{setCurrent(function(c){return c+1;});setConfirmed(false);setMatchState({});setHeadingState({});}
   }
 
   async function doFinish(){
     var timeSecs=startTimeRef.current?Math.round((Date.now()-startTimeRef.current)/1000):(lv?lv.timeLimit:180);
     var totalEarned=0,totalMax=0,ansArr=[];
     for(var i=0;i<questions.length;i++){
-      var qs=questions[i],ans=null;
-      if(qs.type==="matching")ans=matchState;
-      else if(qs.type==="heading")ans=headingState;
-      else ans=userAnswers[i]!==undefined?userAnswers[i]:null;
+      var qs=questions[i],ans=userAnswers[i]!==undefined?userAnswers[i]:null;
       var pts=scoreQuestion(qs,ans),mx=maxPoints(qs);
       ansArr.push(pts>=Math.ceil(mx/2));
       totalEarned+=pts;totalMax+=mx;
@@ -791,6 +801,17 @@ export default function App(){
             <QuizScreen {...{q, current, questions, passage, showPassage, setShowPassage, CARD, pill, Q_LABELS, lv, totalXpSoFar, Timer, timerRunning, handleExpire, McqQ, GapWordQ, GapSentQ, MatchingQ, HeadingQ, QAQ, TfnmQ, YnngQ, userAnswers, setUserAnswers, matchState, setMatchState, shuffledRights, headingState, setHeadingState, confirmed, doConfirm, doNext, canConfirm, mkBtn, streak}}/>
           </Suspense>
         )}
+
+        {/* ── FINISHING (time expired or submitting) ──────────── */}
+        {stage==="finishing"&&(
+          <div style={{textAlign:"center",paddingTop:60,color:"#34d399"}}>
+            <div style={{fontSize:48,marginBottom:12}}>⏱️</div>
+            <p style={{fontSize:18,fontWeight:700,marginBottom:6}}>Time's Up!</p>
+            <p style={{color:"#6b7280",marginBottom:20}}>Calculating your score...</p>
+            <div style={{width:40,height:40,borderRadius:"50%",border:"3px solid #34d399",borderTopColor:"transparent",margin:"0 auto",animation:"spin 1s linear infinite"}}/>
+          </div>
+        )}
+        <style>{stage==="finishing"?`@keyframes spin{to{transform:rotate(360deg)}}`:""}</style>
 
         {/* ── RESULT ────────────────────────────────────────── */}
         {stage==="result"&&result&&(
