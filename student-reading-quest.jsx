@@ -2,6 +2,18 @@ import { useState, useRef, useEffect, lazy, Suspense, useMemo } from "react";
 import { colors, spacing, typography, radius, styles } from "./src/designSystem.js";
 import { announceToScreenReader, getOptionButtonA11y, focusRingStyle } from "./src/a11yUtils.js";
 
+// Lazy-loaded screen components
+var AuthScreen = lazy(function(){return import("./src/screens/AuthScreen.jsx");});
+var HomeScreen = lazy(function(){return import("./src/screens/HomeScreen.jsx");});
+var LoadingScreen = lazy(function(){return import("./src/screens/LoadingScreen.jsx");});
+var ReadingScreen = lazy(function(){return import("./src/screens/ReadingScreen.jsx");});
+var QuizScreen = lazy(function(){return import("./src/screens/QuizScreen.jsx");});
+var ResultsScreen = lazy(function(){return import("./src/screens/ResultsScreen.jsx");});
+var LeaderboardScreen = lazy(function(){return import("./src/screens/LeaderboardScreen.jsx");});
+var FriendsScreen = lazy(function(){return import("./src/screens/FriendsScreen.jsx");});
+var FriendProfileScreen = lazy(function(){return import("./src/screens/FriendProfileScreen.jsx");});
+var ProfileScreen = lazy(function(){return import("./src/screens/ProfileScreen.jsx");});
+
 var API        = "/.netlify/functions/generate";
 var USERS_KEY  = "rq-users-v6";
 var BOARDS_KEY = "rq-boards-v6";
@@ -742,271 +754,64 @@ export default function App(){
 
         {/* ── AUTH ──────────────────────────────────────────── */}
         {stage==="auth"&&(
-          <div style={{paddingTop:46,textAlign:"center"}}>
-            <div style={{fontSize:52,marginBottom:8}}>📖</div>
-            <h1 style={{fontSize:32,fontWeight:900,color:"#34d399",margin:"0 0 6px"}}>Reading Quest</h1>
-            <p style={{color:"#6b7280",marginBottom:26,fontSize:15}}>6 question types · Friends · Compete</p>
-            <div style={CARD}>
-              <div style={{display:"flex",gap:4,marginBottom:18,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:4}}>
-                {["register","login"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} aria-label={m==="login"?"Switch to login mode":"Switch to register mode"} style={{flex:1,padding:"10px 0",border:"none",borderRadius:8,fontFamily:"inherit",fontWeight:700,fontSize:15,cursor:"pointer",background:authMode===m?"#34d399":"transparent",color:authMode===m?"#0d0d1a":"#6b7280"}}>{m==="login"?"Log In":"Register"}</button>;})}
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <input style={INP} placeholder="Username" value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
-                <input style={INP} type="password" placeholder="Password (min 4 chars)" value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
-              </div>
-              {authErr&&<p style={{color:"#f87171",fontSize:14,marginTop:10}}>{authErr}</p>}
-              <button onClick={authMode==="login"?doLogin:doRegister} aria-label={authMode==="login"?"Log in with username and password":"Create new account"} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?"Log In":"Create Account"}</button>
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <div style={{paddingTop:46,textAlign:"center"}}>
+              <div style={{fontSize:52,marginBottom:8}}>📖</div>
+              <h1 style={{fontSize:32,fontWeight:900,color:"#34d399",margin:"0 0 6px"}}>Reading Quest</h1>
+              <p style={{color:"#6b7280",marginBottom:26,fontSize:15}}>6 question types · Friends · Compete</p>
+              <AuthScreen {...{authMode, setAuthMode, authErr, setAuthErr, nameInput, setNameInput, passInput, setPassInput, doLogin, doRegister, CARD, mkBtn, INP}}/>
             </div>
-          </div>
+          </Suspense>
         )}
 
         {/* ── HOME ──────────────────────────────────────────── */}
         {stage==="home"&&(
-          <div>
-            <div className="rq-home-hdr">
-              <div>
-                <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#34d399"}}>Hey, {currentUser?currentUser.name:""}!</h2>
-                <div className="rq-pills">
-                  <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {myStreak} day streak</span>
-                  <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>Friends: {myData.friends.length}</span>
-                  {myData.likes>0&&<span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes}</span>}
-                  {pendingChallenges.length>0&&<span style={pill("rgba(239,68,68,0.2)","#f87171")}>!{pendingChallenges.length} challenge</span>}
-                </div>
-              </div>
-              <div className="rq-home-nav">
-                <button onClick={function(){setStage("friends");}} aria-label="View friends and social interactions" style={GHOST}>Friends</button>
-                <button onClick={function(){setStage("profile");}} aria-label="View your profile and stats" style={GHOST}>Profile</button>
-                <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} aria-label="View leaderboard rankings" style={GHOST}>Board</button>
-              </div>
-            </div>
-
-            {/* pending challenges */}
-            {pendingChallenges.length>0&&(
-              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(239,68,68,0.3)"}}>
-                <p style={{fontSize:11,color:"#f87171",fontWeight:700,marginBottom:8}}>GAME CHALLENGES</p>
-                {pendingChallenges.map(function(c,idx){
-                  var realIdx=myData.challenges.indexOf(c);
-                  return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                    <span style={{fontSize:12,color:"#f3f4f6",flex:1}}><strong>{c.from}</strong> challenged you to <strong>{c.level}</strong></span>
-                    <button onClick={function(){respondChallenge(realIdx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
-                    <button onClick={function(){respondChallenge(realIdx,"declined",null);}} style={{...mkBtn("#374151"),padding:"5px 10px",fontSize:11}}>Decline</button>
-                  </div>);
-                })}
-              </div>
-            )}
-
-            {/* question type selector */}
-            <div style={{...CARD,marginBottom:12,padding:14}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>QUESTION TYPES (min 1)</p>
-                <span style={{fontSize:10,color:"#6b7280"}}>{selectedTypes.length} selected</span>
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {Object.keys(Q_LABELS).map(function(t){
-                  var active=selectedTypes.indexOf(t)!==-1;
-                  function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(t)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==t;});return prev.concat([t]);});}
-                  return(<button key={t} onClick={toggle} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{Q_LABELS[t]}</button>);
-                })}
-              </div>
-            </div>
-
-            {/* level selector */}
-            <p style={{fontWeight:700,color:"#d1fae5",fontSize:11,letterSpacing:0.8,marginBottom:8}}>CHOOSE LEVEL</p>
-            <div className="rq-lvgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-              {LEVELS.map(function(l){
-                var active=level===l.key;
-                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 14px "+l.glow:"none"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                    <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
-                    <span style={{background:active?l.color:"rgba(255,255,255,0.06)",color:active?"#0d0d1a":"#6b7280",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
-                  </div>
-                  <div style={{fontSize:11,color:"#6b7280"}}>{l.desc}</div>
-                  <div style={{fontSize:10,color:"#4b5563",marginTop:2}}>{formatTime(l.timeLimit)} limit</div>
-                </button>);
-              })}
-            </div>
-            {error&&<p style={{color:"#f87171",fontSize:13,marginBottom:10}}>{error}</p>}
-            <button onClick={generate} disabled={!level} aria-label={level?"Start quiz for CEFR level "+level:"Select a language level to start quiz"} style={{...mkBtn(level?lv.color:"#374151",level?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>{level?"Start "+level+" Quest!":"Select a level to begin"}</button>
-          </div>
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <HomeScreen {...{currentUser, myStreak, myData, pendingChallenges, GHOST, CARD, mkBtn, respondChallenge, selectedTypes, Q_LABELS, setSelectedTypes, pill, LEVELS, level, setLevel, setError, error, lv, generate, setStage, setLbLevel, formatTime}}/>
+          </Suspense>
         )}
 
         {/* ── LOADING ───────────────────────────────────────── */}
         {stage==="loading"&&(
-          <div style={{textAlign:"center",paddingTop:90}}>
-            <div style={{fontSize:44,marginBottom:14}}>...</div>
-            <h3 style={{color:lv?lv.color:"#34d399",fontWeight:800,fontSize:17,marginBottom:8}}>{loadMsg}</h3>
-            <p style={{color:"#6b7280",fontSize:13}}>Creating {selectedTypes.length} question type(s) for {level}...</p>
-          </div>
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <LoadingScreen {...{loadMsg, level, selectedTypes, lv}}/>
+          </Suspense>
         )}
 
         {/* ── READING ───────────────────────────────────────── */}
         {stage==="reading"&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <span style={{...pill(lv?lv.color:"#34d399","#fff")}}>{level}</span>
-              <span style={{color:"#6b7280",fontSize:12}}>{topic}</span>
-            </div>
-            <div style={{...CARD,marginBottom:12}}>
-              <p style={{fontSize:11,fontWeight:700,color:lv?lv.color:"#34d399",letterSpacing:0.8,marginBottom:8,textTransform:"uppercase"}}>Read carefully - timer starts on Begin</p>
-              <p style={{lineHeight:2,fontSize:17,color:"#e5e7eb",margin:0}}>{passage}</p>
-            </div>
-            <div style={{...CARD,marginBottom:12,padding:12,fontSize:12,color:"#9ca3af",display:"flex",justifyContent:"space-between"}}>
-              <span>{selectedTypes.length} question type(s)</span>
-              <span>Limit: {formatTime(lv?lv.timeLimit:180)} | Bonus: up to {lv?lv.timeBonus:200} XP</span>
-            </div>
-            <button onClick={startQuiz} aria-label="Start the quiz timer and begin answering questions" style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15}}>Start Timer and Begin!</button>
-          </div>
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <ReadingScreen {...{level, topic, passage, selectedTypes, lv, CARD, pill, mkBtn, formatTime, startQuiz}}/>
+          </Suspense>
         )}
 
         {/* ── QUIZ ──────────────────────────────────────────── */}
         {stage==="quiz"&&q&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{display:"flex",gap:5}}>
-                <span style={pill("#7c3aed")}>Q{current+1}/{questions.length}</span>
-                <span style={pill("rgba(255,255,255,0.07)","#c7d2fe")}>{Q_LABELS[q.type]||q.type}</span>
-                {streak>=3&&<span style={pill("#dc2626")}>Streak {streak}</span>}
-              </div>
-              <span style={{background:"rgba(255,255,255,0.07)",borderRadius:999,padding:"4px 11px",fontSize:12,color:lv?lv.color:"#34d399",fontWeight:700}}>{totalXpSoFar} XP</span>
-            </div>
-            <div style={{...CARD,padding:"11px 14px",marginBottom:9}}><Timer limit={lv?lv.timeLimit:180} running={timerRunning} onExpire={handleExpire}/></div>
-            <div style={{marginBottom:9}}>
-              <button onClick={function(){setShowPassage(function(p){return!p;});}} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?"Hide passage":"Show passage"}</button>
-              {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px"}}><p style={{lineHeight:1.9,fontSize:15,color:"#d1d5db",margin:0}}>{passage}</p></div>)}
-            </div>
-            <div style={CARD}>
-              {(q.q)&&<p style={{fontSize:17,fontWeight:700,lineHeight:1.6,marginBottom:14,color:"#f9fafb"}}>{q.q}</p>}
-              {(q.instruction)&&<p style={{fontSize:16,fontWeight:700,marginBottom:12,color:"#f9fafb"}}>{q.instruction}</p>}
-              {q.type==="gap_word"&&!q.q&&<p style={{fontSize:16,fontWeight:700,marginBottom:10,color:"#f9fafb"}}>Fill in the blank:</p>}
-              {q.type==="mcq"&&<McqQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="gap_word"&&<GapWordQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="gap_sentence"&&<GapSentQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="matching"&&<MatchingQ q={q} matches={matchState} conf={confirmed} shuffled={shuffledRights} onMatch={function(li,ri){var origIdx=q.rights?q.rights.indexOf(shuffledRights[ri]):ri;setMatchState(function(m){var n={};for(var k in m)n[k]=m[k];n[li]=origIdx;return n;});}}/>}
-              {q.type==="heading"&&<HeadingQ q={q} userMap={headingState} conf={confirmed} onMatch={function(pi,hi){setHeadingState(function(m){var n={};for(var k in m)n[k]=m[k];n[pi]=hi;return n;});}}/>}
-              {q.type==="qa"&&<QAQ q={q} val={userAnswers[current]||""} conf={confirmed} onChange={function(v){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=v;return n;});}}/>}
-              {q.type==="tfnm"&&<TfnmQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="ynng"&&<YnngQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {confirmed&&q.explanation&&q.type!=="qa"&&(<div style={{marginTop:10,padding:"9px 11px",borderRadius:10,background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#d1fae5"}}>{q.explanation}</div>)}
-              <div style={{marginTop:12,display:"flex",justifyContent:"flex-end"}}>
-                {!confirmed?<button onClick={doConfirm} disabled={!canConfirm()} aria-label="Submit answer to check if correct" style={mkBtn(canConfirm()?"#6366f1":"#374151")}>Check Answer</button>
-                :<button onClick={doNext} aria-label={current+1>=questions.length?"View results and see your score":"Continue to next question"} style={mkBtn(lv?lv.color:"#34d399","#0d0d1a")}>{current+1>=questions.length?"See Results":"Next Question"}</button>}
-              </div>
-            </div>
-          </div>
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <QuizScreen {...{q, current, questions, passage, showPassage, setShowPassage, CARD, pill, Q_LABELS, lv, totalXpSoFar, Timer, timerRunning, handleExpire, McqQ, GapWordQ, GapSentQ, MatchingQ, HeadingQ, QAQ, TfnmQ, YnngQ, userAnswers, setUserAnswers, matchState, setMatchState, shuffledRights, headingState, setHeadingState, confirmed, doConfirm, doNext, canConfirm, mkBtn, streak}}/>
+          </Suspense>
         )}
 
         {/* ── RESULT ────────────────────────────────────────── */}
         {stage==="result"&&result&&(
-          <div style={{textAlign:"center"}}>
-            <div style={{fontSize:50,marginBottom:5}}>{result.pct>=80?"★":"○"}</div>
-            <h2 style={{fontSize:22,fontWeight:900,margin:"0 0 4px",color:lv?lv.color:"#34d399"}}>{result.pct>=80?"Excellent!":result.pct>=60?"Good job!":"Keep going!"}</h2>
-            <p style={{color:"#9ca3af",marginBottom:14,fontSize:13}}>{level} - {topic}</p>
-            <div style={{...CARD,marginBottom:10}}>
-              <div style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
-              <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
-              <div style={{display:"flex",gap:7}}>
-                {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"}].map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:14,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
-              </div>
-              {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>Speed bonus: +{result.timeBonus} XP!</div>}
-            </div>
-            <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
-              <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>BREAKDOWN</p>
-              {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
-            </div>
-            <div style={{display:"flex",gap:7}}>
-              <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} aria-label="View leaderboard for this level" style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
-              <button onClick={function(){setStage("profile");}} aria-label="View your profile and statistics" style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
-              <button onClick={doRestart} aria-label="Take another quiz with new questions" style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
-            </div>
-          </div>
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <ResultsScreen {...{result, level, topic, lv, CARD, mkBtn, pctColor, formatTime, questions, setLbLevel, setStage, setViewingUser, doRestart}}/>
+          </Suspense>
         )}
 
         {/* ── LEADERBOARD ───────────────────────────────────── */}
         {stage==="leaderboard"&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Leaderboard</h2>
-              <button onClick={function(){setStage(currentUser?"home":"auth");}} style={GHOST}>Back</button>
-            </div>
-            <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
-              {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setLbLevel(l.key);}} aria-label={"View leaderboard for CEFR level "+l.key} aria-pressed={lbLevel===l.key} style={{background:lbLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:lbLevel===l.key?"#0d0d1a":"#9ca3af",border:"1px solid "+(lbLevel===l.key?l.color:"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
-            </div>
-            {(function(){
-              var bd=boards[lbLevel]||[];var lvd=getLv(lbLevel);
-              if(!bd.length)return<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No scores yet for {lbLevel}!</p></div>;
-              return(<div style={CARD}>
-                <div style={{display:"flex",padding:"0 0 7px",borderBottom:"1px solid rgba(255,255,255,0.06)",marginBottom:5}}>
-                  {["#","PLAYER","XP","%","TIME"].map(function(h,i){return<span key={h} style={{fontSize:10,color:"#4b5563",width:i===0?28:i===1?"1fr":i===2?55:i===3?36:46,flex:i===1?1:0,textAlign:i>1?"right":"left"}}>{h}</span>;})}
-                </div>
-                {bd.map(function(e,i){
-                  var isMe=currentUser&&e.name===currentUser.name;
-                  return(<div key={i} className="rq-lb-row" onClick={function(){if(currentUser&&e.name===currentUser.name){setStage("profile");}else{setViewingUser(e.name);setStage("friendProfile");}}} style={{display:"flex",alignItems:"center",padding:"8px "+(isMe?"5px":"0"),borderBottom:i<bd.length-1?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(52,211,153,0.06)":"transparent",borderRadius:7,marginBottom:2,cursor:"pointer",userSelect:"none"}}>
-                    <span style={{width:28,fontSize:i<3?13:11,color:i<3?"#fbbf24":"#6b7280",fontWeight:700}}>{i===0?"1st":i===1?"2nd":i===2?"3rd":(i+1)}</span>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,fontWeight:700,color:isMe?lvd.color:"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</div>
-                      <div style={{fontSize:10,color:"#4b5563",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.topic}</div>
-                    </div>
-                    <span style={{width:55,textAlign:"right",fontWeight:800,color:"#fbbf24",fontSize:12}}>{e.xp}</span>
-                    <span style={{width:36,textAlign:"right",fontSize:12,color:pctColor(e.pct)}}>{e.pct}%</span>
-                    <span style={{width:46,textAlign:"right",fontSize:11,color:"#6b7280"}}>{formatTime(e.timeSecs)}</span>
-                  </div>);
-                })}
-              </div>);
-            })()}
-            {currentUser&&<button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:12}}>Play and Climb!</button>}
-          </div>
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <LeaderboardScreen {...{boards, lbLevel, setLbLevel, LEVELS, GHOST, CARD, mkBtn, currentUser, pctColor, formatTime, getLv, setViewingUser, setStage, doRestart}}/>
+          </Suspense>
         )}
 
         {/* ── FRIENDS ───────────────────────────────────────── */}
         {stage==="friends"&&currentUser&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>Friends</h2>
-              <button onClick={function(){setStage("home");setSocialMsg("");}} style={GHOST}>Back</button>
-            </div>
-            {socialMsg&&<div style={{background:"rgba(52,211,153,0.1)",border:"1px solid #34d399",borderRadius:10,padding:"8px 12px",fontSize:13,color:"#34d399",marginBottom:10}}>{socialMsg}</div>}
-
-            {/* tabs */}
-            <div style={{display:"flex",gap:5,marginBottom:14}}>
-              {[["search","Search"],["requests","Requests ("+(myData.requests.length)+")"],["list","My Friends ("+myData.friends.length+")"]].map(function(t){
-                return<button key={t[0]} onClick={function(){setFriendStage(t[0]);setSocialMsg("");}} style={{background:friendStage===t[0]?"#a78bfa":"rgba(255,255,255,0.05)",color:friendStage===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
-              })}
-            </div>
-
-            {/* SEARCH */}
-            {friendStage==="search"&&(
-              <div>
-                <div style={{position:"relative",marginBottom:8}}>
-                  <input style={{...INP,paddingLeft:36}} placeholder="Search by username (min 2 chars)..." value={searchQuery} onChange={function(e){setSearchQuery(e.target.value);}}/>
-                  <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,opacity:0.5}}>🔍</span>
-                </div>
-                <button onClick={function(){loadUsers().then(function(u){setAllUsers(u);setSocialMsg("User list refreshed!");});}} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>Refresh User List</button>
-                {getSearchResults().map(function(u){
-                  var isFriend=myData.friends.indexOf(u.name)!==-1;
-                  var requested=(getSocial(social,u.name).requests||[]).indexOf(currentUser.name)!==-1;
-                  var uData=getSocial(social,u.name);
-                  var uTotalXp=u.games?u.games.reduce(function(s,g){return s+g.xp;},0):0;
-                  var uLevel=getUserLevel(uTotalXp);
-                  return(<div key={u.name} style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#fff",flexShrink:0}}>{u.name[0].toUpperCase()}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{u.name}</div>
-                      <div style={{fontSize:11,color:"#6b7280"}}>Lvl {uLevel} | Games: {u.games?u.games.length:0} | {uTotalXp} XP | Likes: {uData.likes||0}</div>
-                    </div>
-                    <div style={{display:"flex",gap:5}}>
-                      <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>View</button>
-                      {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>Add</button>}
-                      {requested&&<span style={{fontSize:11,color:"#6b7280",padding:"5px 0"}}>Pending</span>}
-                      {isFriend&&<span style={{fontSize:11,color:"#34d399",padding:"5px 0"}}>Friends</span>}
-                    </div>
-                  </div>);
-                })}
-                {searchQuery.length>=2&&getSearchResults().length===0&&<p style={{color:"#6b7280",textAlign:"center",padding:20}}>No users found for "{searchQuery}"</p>}
-              </div>
-            )}
-
-            {/* REQUESTS */}
-            {friendStage==="requests"&&(
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <FriendsScreen {...{GHOST, CARD, mkBtn, INP, pill, LEVELS, Q_LABELS, currentUser, myData, social, allUsers, friendStage, setFriendStage, socialMsg, setSocialMsg, searchQuery, setSearchQuery, challengeTarget, setChallengeTarget, challengeLevel, setChallengeLevel, challengeTypes, setChallengeTypes, getSearchResults, loadUsers, setAllUsers, getSocial, getUserLevel, calcStreak, acceptRequest, declineRequest, sendRequest, sendChallenge, setViewingUser, setStage}}/>
+          </Suspense>
+        )}
               <div>
                 {myData.requests.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No pending friend requests.</p></div>}
                 {myData.requests.map(function(from){
@@ -1071,7 +876,14 @@ export default function App(){
         )}
 
         {/* ── FRIEND PROFILE ────────────────────────────────── */}
-        {stage==="friendProfile"&&viewingUser&&currentUser&&(function(){
+        {stage==="friendProfile"&&viewingUser&&currentUser&&(
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <FriendProfileScreen {...{viewingUser, currentUser, allUsers, social, myData, GHOST, CARD, mkBtn, getSocial, pctColor, formatTime, getLv, getLevelProgress, hasLiked, sendRequest, removeFriend, likeProfile, setChallengeTarget, setStage, setFriendStage, GameChart, socialMsg, setSocialMsg}}/>
+          </Suspense>
+        )}
+
+        {/* ── OLD FRIEND PROFILE CODE ──────────────────────────────── */}
+        {false&&(function(){
           var fu=null;for(var i=0;i<allUsers.length;i++){if(allUsers[i].name===viewingUser){fu=allUsers[i];break;}}
           if(!fu)return<div style={{textAlign:"center",padding:40}}><p style={{color:"#6b7280"}}>User not found.</p><button onClick={function(){setStage("friends");}} style={GHOST}>Back</button></div>;
           var fData=getSocial(social,viewingUser);
@@ -1183,71 +995,11 @@ export default function App(){
         })()}
 
         {/* ── MY PROFILE ────────────────────────────────────── */}
-        {stage==="profile"&&currentUser&&(function(){
-          var games=(currentUser&&currentUser.games)?currentUser.games:[];
-          var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
-          var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
-          var avgTime=games.length?Math.round(games.reduce(function(s,g){return s+g.timeSecs;},0)/games.length):0;
-          var lvlInfo=getLevelProgress(totalXp);
-          return(<div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>My Profile</h2>
-              <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
-            </div>
-            <div style={{...CARD,marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",flexShrink:0}}>{currentUser.name[0].toUpperCase()}</div>
-              <div style={{flex:1}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                  <div style={{fontSize:18,fontWeight:900,color:"#f9fafb"}}>{currentUser.name}</div>
-                  <div style={{background:"linear-gradient(135deg,#fbbf24,#f59e0b)",padding:"2px 8px",borderRadius:999,fontSize:12,fontWeight:900,color:"#0d0d1a"}}>⭐ Lvl {lvlInfo.level}</div>
-                </div>
-                <div style={{fontSize:11,color:"#6b7280"}}>Joined {currentUser.joined}</div>
-                <div style={{display:"flex",gap:7,flexWrap:"wrap",marginTop:4}}>
-                  <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {myStreak} day streak</span>
-                  <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>Friends: {myData.friends.length}</span>
-                  <span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes||0}</span>
-                  <span style={pill("rgba(99,102,241,0.15)","#818cf8")}>Best: {myBestLevel}</span>
-                </div>
-              </div>
-            </div>
-            <div style={{...CARD,marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <span style={{fontSize:11,fontWeight:700,color:"#9ca3af"}}>LEVEL {lvlInfo.level} PROGRESS</span>
-                <span style={{fontSize:10,color:"#6b7280"}}>{lvlInfo.xpNeeded} XP to next</span>
-              </div>
-              <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:999,overflow:"hidden"}}>
-                <div style={{height:"100%",width:lvlInfo.progress+"%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",transition:"width 0.3s ease"}}/>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:7,marginBottom:10}}>
-              {[{v:games.length,l:"Games",c:"#34d399"},{v:totalXp,l:"Total XP",c:"#fbbf24"},{v:avgPct+"%",l:"Avg Score",c:pctColor(avgPct)},{v:formatTime(avgTime),l:"Avg Time",c:"#a78bfa"}].map(function(s){
-                return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:14,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;
-              })}
-            </div>
-            {games.length>0&&(
-              <div style={{marginBottom:10}}>
-                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>XP HISTORY</p>
-                <GameChart games={games}/>
-              </div>
-            )}
-            {games.length>0&&(<div style={{...CARD,marginBottom:10}}>
-              <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>RECENT GAMES</p>
-              {games.slice().reverse().slice(0,8).map(function(g,i){
-                var glv=getLv(g.level);
-                return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:i<7?"1px solid rgba(255,255,255,0.05)":"none"}}>
-                  <span style={{fontSize:11,fontWeight:900,color:glv.color,width:20}}>{g.level}</span>
-                  <div style={{flex:1}}><div style={{fontSize:12,color:"#f3f4f6"}}>{g.topic}</div><div style={{fontSize:10,color:"#6b7280"}}>{g.date} - {formatTime(g.timeSecs)}</div></div>
-                  <div style={{textAlign:"right"}}><div style={{fontSize:12,fontWeight:800,color:"#fbbf24"}}>{g.xp} XP</div><div style={{fontSize:10,color:pctColor(g.pct)}}>{g.pct}%</div></div>
-                </div>);
-              })}
-            </div>)}
-            {games.length===0&&<div style={{...CARD,textAlign:"center",padding:30}}><p style={{color:"#6b7280"}}>No games yet - start playing!</p></div>}
-            <div style={{display:"flex",gap:7}}>
-              <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
-              <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
-            </div>
-          </div>);
-        })()}
+        {stage==="profile"&&currentUser&&(
+          <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
+            <ProfileScreen {...{currentUser, myData, myStreak, myBestLevel, GHOST, CARD, mkBtn, pctColor, formatTime, getLv, getLevelProgress, doRestart, setStage, GameChart, setCurrentUser, setNameInput, setPassInput, CREDS_KEY}}/>
+          </Suspense>
+        )}
 
       </div>
     </div>

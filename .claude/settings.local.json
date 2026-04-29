@@ -10,7 +10,8 @@
       "PowerShell(python \"C:\\\\Users\\\\USER\\\\.claude\\\\skills\\\\canvas-design\\\\generate_pdf.py\")",
       "Read(//c/Users/USER/.agents/skills/canvas-design/**)",
       "Read(//c/Users/USER/.claude/skills/canvas-design/**)",
-      "PowerShell(head *)"
+      "PowerShell(head *)",
+      "PowerShell(npm run *)"
     ]
   }
 }

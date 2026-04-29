@@ -235,35 +235,18 @@ export function getLabelA11y(inputId, labelText) {
   };
 }
 
-// ───────────────────────────────────────────────────────────────────
-// SKIP LINKS
-// ───────────────────────────────────────────────────────────────────
-
-export function SkipLink() {
-  return (
-    <a
-      href="#main-content"
-      style={{
-        position: 'absolute',
-        left: '-10000px',
-        zIndex: 999,
-        padding: '8px 16px',
-        background: colors.primary,
-        color: colors.bg,
-        textDecoration: 'none',
-        borderRadius: radius.md,
-      }}
-      onFocus={function(e) {
-        e.target.style.left = '0';
-        e.target.style.top = '0';
-      }}
-      onBlur={function(e) {
-        e.target.style.left = '-10000px';
-      }}
-    >
-      Skip to main content
-    </a>
-  );
+// Skip links helper function (create as inline JSX in component if needed)
+export function getSkipLinkStyle() {
+  return {
+    position: 'absolute',
+    left: '-10000px',
+    zIndex: 999,
+    padding: '8px 16px',
+    background: colors.primary,
+    color: colors.bg,
+    textDecoration: 'none',
+    borderRadius: radius.md,
+  };
 }
 
 // ───────────────────────────────────────────────────────────────────
