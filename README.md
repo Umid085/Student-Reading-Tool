@@ -8,6 +8,8 @@ An AI-powered language reading and quiz app for students learning English. Users
 
 - **AI-generated content** — Each session calls Claude (`claude-sonnet-4-6`) to produce a unique reading passage and quiz tailored to the chosen level.
 - **6 question types** — Multiple Choice, Gap Fill (word & sentence), Matching, Match Headings, Open Answer.
+- **Click-to-define** — Tap any word in the passage to see its definition (word, phonetic, part of speech, definition, example) via Free Dictionary API. Results are cached to avoid repeated requests.
+- **Text-to-Speech** — Listen to passages and questions read aloud using the Web Speech API for accessibility.
 - **XP & scoring system** — Per-question scoring with level multipliers (A1 = 1×, C2 = 4×), time bonuses, and streak bonuses (+50 XP after 3 correct in a row).
 - **User leveling system** — 21 levels based on total XP progression (0–190k+ XP) with real-time progress tracking.
 - **Leaderboards** — Per-level rankings (A1–C2) stored in Firebase and cached locally. Each user appears once with their best score.
