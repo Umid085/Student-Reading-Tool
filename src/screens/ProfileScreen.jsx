@@ -1,8 +1,6 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
-// ProfileScreen Component - Extracted from main App component
-// Displays current user's profile with game history and stats
-export default function ProfileScreen(props) {
+function ProfileScreen(props) {
   var {
     currentUser, myData, myStreak, myBestLevel, GHOST, CARD, mkBtn,
     pctColor, formatTime, getLv, getLevelProgress,
@@ -77,3 +75,7 @@ export default function ProfileScreen(props) {
     })()
   );
 }
+
+export default React.memo(ProfileScreen, function(prev, next) {
+  return prev.currentUser === next.currentUser && prev.myData === next.myData && prev.myStreak === next.myStreak;
+});

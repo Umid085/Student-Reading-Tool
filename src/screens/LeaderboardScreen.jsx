@@ -1,7 +1,6 @@
 import React from 'react';
 
-// LeaderboardScreen Component - Extracted from main App component
-export default function LeaderboardScreen(props) {
+function LeaderboardScreen(props) {
   var {
     boards, lbLevel, setLbLevel, LEVELS, GHOST, CARD, mkBtn,
     currentUser, pctColor, formatTime, getLv,
@@ -43,3 +42,7 @@ export default function LeaderboardScreen(props) {
     </div>
   );
 }
+
+export default React.memo(LeaderboardScreen, function(prev, next) {
+  return prev.lbLevel === next.lbLevel && prev.boards === next.boards;
+});

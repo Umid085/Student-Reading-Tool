@@ -1,8 +1,6 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
-// FriendsScreen Component - Extracted from main App component
-// Handles Friends list management with search, friend requests, and existing friends
-export default function FriendsScreen(props) {
+function FriendsScreen(props) {
   var {
     GHOST, CARD, mkBtn, INP, pill, LEVELS, Q_LABELS,
     currentUser, myData, social, allUsers,
@@ -14,18 +12,28 @@ export default function FriendsScreen(props) {
     setViewingUser, setStage
   } = props;
 
+  var goHome = useCallback(function(){setStage("home");setSocialMsg("");}, [setStage, setSocialMsg]);
+  var handleTabClick = useCallback(function(tab){setFriendStage(tab);setSocialMsg("");}, [setFriendStage, setSocialMsg]);
+  var handleSearchChange = useCallback(function(e){setSearchQuery(e.target.value);}, [setSearchQuery]);
+  var handleRefreshUsers = useCallback(function(){loadUsers().then(function(u){setAllUsers(u);setSocialMsg("User list refreshed!");});}, [loadUsers, setAllUsers, setSocialMsg]);
+  var handleViewUser = useCallback(function(name){setViewingUser(name);setStage("friendProfile");}, [setViewingUser, setStage]);
+  var handleChallengeTargetSet = useCallback(function(name){setChallengeTarget(name);}, [setChallengeTarget]);
+  var handleChallengeTargetClear = useCallback(function(){setChallengeTarget(null);}, [setChallengeTarget]);
+  var handleChallengeLevelSelect = useCallback(function(level){setChallengeLevel(level);}, [setChallengeLevel]);
+  var handleChallengeTypeToggle = useCallback(function(type){setChallengeTypes(function(prev){var on=prev.indexOf(type)!==-1;if(on&&prev.length===1)return prev;if(on)return prev.filter(function(x){return x!==type;});return prev.concat([type]);});}, [setChallengeTypes]);
+
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
         <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>Friends</h2>
-        <button onClick={function(){setStage("home");setSocialMsg("");}} style={GHOST}>Back</button>
+        <button onClick={goHome} style={GHOST}>Back</button>
       </div>
       {socialMsg&&<div style={{background:"rgba(52,211,153,0.1)",border:"1px solid #34d399",borderRadius:10,padding:"8px 12px",fontSize:13,color:"#34d399",marginBottom:10}}>{socialMsg}</div>}
 
       {/* tabs */}
       <div style={{display:"flex",gap:5,marginBottom:14}}>
         {[["search","Search"],["requests","Requests ("+(myData.requests.length)+")"],["list","My Friends ("+myData.friends.length+")"]].map(function(t){
-          return<button key={t[0]} onClick={function(){setFriendStage(t[0]);setSocialMsg("");}} style={{background:friendStage===t[0]?"#a78bfa":"rgba(255,255,255,0.05)",color:friendStage===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
+          return<button key={t[0]} onClick={function(){handleTabClick(t[0]);}} style={{background:friendStage===t[0]?"#a78bfa":"rgba(255,255,255,0.05)",color:friendStage===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
         })}
       </div>
 
@@ -33,10 +41,10 @@ export default function FriendsScreen(props) {
       {friendStage==="search"&&(
         <div>
           <div style={{position:"relative",marginBottom:8}}>
-            <input style={{...INP,paddingLeft:36}} placeholder="Search by username (min 2 chars)..." value={searchQuery} onChange={function(e){setSearchQuery(e.target.value);}}/>
+            <input style={{...INP,paddingLeft:36}} placeholder="Search by username (min 2 chars)..." value={searchQuery} onChange={handleSearchChange}/>
             <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,opacity:0.5}}>🔍</span>
           </div>
-          <button onClick={function(){loadUsers().then(function(u){setAllUsers(u);setSocialMsg("User list refreshed!");});}} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>Refresh User List</button>
+          <button onClick={handleRefreshUsers} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>Refresh User List</button>
           {getSearchResults().map(function(u){
             var isFriend=myData.friends.indexOf(u.name)!==-1;
             var requested=(getSocial(social,u.name).requests||[]).indexOf(currentUser.name)!==-1;
@@ -50,7 +58,7 @@ export default function FriendsScreen(props) {
                 <div style={{fontSize:11,color:"#6b7280"}}>Lvl {uLevel} | Games: {u.games?u.games.length:0} | {uTotalXp} XP | Likes: {uData.likes||0}</div>
               </div>
               <div style={{display:"flex",gap:5}}>
-                <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>View</button>
+                <button onClick={function(){handleViewUser(u.name);}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>View</button>
                 {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>Add</button>}
                 {requested&&<span style={{fontSize:11,color:"#6b7280",padding:"5px 0"}}>Pending</span>}
                 {isFriend&&<span style={{fontSize:11,color:"#34d399",padding:"5px 0"}}>Friends</span>}
@@ -100,22 +108,22 @@ export default function FriendsScreen(props) {
                   </div>
                 </div>
                 <div style={{display:"flex",gap:5}}>
-                  <button onClick={function(){setViewingUser(fname);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>Profile</button>
-                  <button onClick={function(){setChallengeTarget(fname);}} style={{...mkBtn("#f59e0b","#0d0d1a"),padding:"5px 9px",fontSize:11}}>Challenge</button>
+                  <button onClick={function(){handleViewUser(fname);}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>Profile</button>
+                  <button onClick={function(){handleChallengeTargetSet(fname);}} style={{...mkBtn("#f59e0b","#0d0d1a"),padding:"5px 9px",fontSize:11}}>Challenge</button>
                 </div>
               </div>
               {challengeTarget===fname&&(
                 <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:10,padding:10,marginTop:4}}>
                   <p style={{fontSize:11,color:"#f59e0b",fontWeight:700,marginBottom:7}}>Challenge Settings</p>
                   <div style={{display:"flex",gap:5,marginBottom:7,flexWrap:"wrap"}}>
-                    {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setChallengeLevel(l.key);}} style={{background:challengeLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:challengeLevel===l.key?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
+                    {LEVELS.map(function(l){return<button key={l.key} onClick={function(){handleChallengeLevelSelect(l.key);}} style={{background:challengeLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:challengeLevel===l.key?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
                   </div>
                   <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>
-                    {Object.keys(Q_LABELS).map(function(t){var on=challengeTypes.indexOf(t)!==-1;return<button key={t} onClick={function(){setChallengeTypes(function(prev){var on2=prev.indexOf(t)!==-1;if(on2&&prev.length===1)return prev;if(on2)return prev.filter(function(x){return x!==t;});return prev.concat([t]);});}} style={{background:on?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(on?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"3px 9px",fontSize:10,color:on?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>{Q_LABELS[t]}</button>;})}
+                    {Object.keys(Q_LABELS).map(function(t){var on=challengeTypes.indexOf(t)!==-1;return<button key={t} onClick={function(){handleChallengeTypeToggle(t);}} style={{background:on?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(on?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"3px 9px",fontSize:10,color:on?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>{Q_LABELS[t]}</button>;})}
                   </div>
                   <div style={{display:"flex",gap:6}}>
                     <button onClick={sendChallenge} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>Send Challenge</button>
-                    <button onClick={function(){setChallengeTarget(null);}} style={{...mkBtn("#374151"),flex:1,fontSize:12}}>Cancel</button>
+                    <button onClick={handleChallengeTargetClear} style={{...mkBtn("#374151"),flex:1,fontSize:12}}>Cancel</button>
                   </div>
                 </div>
               )}
@@ -126,3 +134,7 @@ export default function FriendsScreen(props) {
     </div>
   );
 }
+
+export default React.memo(FriendsScreen, function(prev, next) {
+  return prev.friendStage === next.friendStage && prev.searchQuery === next.searchQuery && prev.myData === next.myData && prev.challengeTarget === next.challengeTarget && prev.challengeLevel === next.challengeLevel && prev.challengeTypes === next.challengeTypes;
+});

@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
-// HomeScreen Component - Extracted from main App component
-export default function HomeScreen(props) {
+function HomeScreen(props) {
   var {
     currentUser, myStreak, myData, pendingChallenges,
     GHOST, CARD, mkBtn,
@@ -9,6 +8,12 @@ export default function HomeScreen(props) {
     pill, LEVELS, level, setLevel, setError, error, lv,
     generate, setStage, setLbLevel, formatTime
   } = props;
+
+  var goToFriends = useCallback(function(){setStage("friends");}, [setStage]);
+  var goToProfile = useCallback(function(){setStage("profile");}, [setStage]);
+  var goToLeaderboard = useCallback(function(){setLbLevel("A1");setStage("leaderboard");}, [setLbLevel, setStage]);
+  var handleLevelSelect = useCallback(function(lvlKey){setLevel(lvlKey);setError("");}, [setLevel, setError]);
+  var handleTypeToggle = useCallback(function(type){setSelectedTypes(function(prev){var isAct=prev.indexOf(type)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==type;});return prev.concat([type]);});}, [setSelectedTypes]);
 
   return (
     <div>
@@ -23,9 +28,9 @@ export default function HomeScreen(props) {
           </div>
         </div>
         <div className="rq-home-nav">
-          <button onClick={function(){setStage("friends");}} aria-label="View friends and social interactions" style={GHOST}>Friends</button>
-          <button onClick={function(){setStage("profile");}} aria-label="View your profile and stats" style={GHOST}>Profile</button>
-          <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} aria-label="View leaderboard rankings" style={GHOST}>Board</button>
+          <button onClick={goToFriends} aria-label="View friends and social interactions" style={GHOST}>Friends</button>
+          <button onClick={goToProfile} aria-label="View your profile and stats" style={GHOST}>Profile</button>
+          <button onClick={goToLeaderboard} aria-label="View leaderboard rankings" style={GHOST}>Board</button>
         </div>
       </div>
 
@@ -53,8 +58,7 @@ export default function HomeScreen(props) {
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {Object.keys(Q_LABELS).map(function(t){
             var active=selectedTypes.indexOf(t)!==-1;
-            function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(t)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==t;});return prev.concat([t]);});}
-            return(<button key={t} onClick={toggle} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{Q_LABELS[t]}</button>);
+            return(<button key={t} onClick={function(){handleTypeToggle(t);}} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{Q_LABELS[t]}</button>);
           })}
         </div>
       </div>
@@ -64,7 +68,7 @@ export default function HomeScreen(props) {
       <div className="rq-lvgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
         {LEVELS.map(function(l){
           var active=level===l.key;
-          return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 14px "+l.glow:"none"}}>
+          return(<button key={l.key} className="rq-card-3d" onClick={function(){handleLevelSelect(l.key);}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 14px "+l.glow:"none"}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
               <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
               <span style={{background:active?l.color:"rgba(255,255,255,0.06)",color:active?"#0d0d1a":"#6b7280",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
@@ -79,3 +83,7 @@ export default function HomeScreen(props) {
     </div>
   );
 }
+
+export default React.memo(HomeScreen, function(prev, next) {
+  return prev.level === next.level && prev.selectedTypes === next.selectedTypes && prev.myStreak === next.myStreak && prev.error === next.error && prev.pendingChallenges === next.pendingChallenges;
+});
