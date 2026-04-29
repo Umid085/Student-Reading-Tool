@@ -44,6 +44,45 @@ export const colors = {
   levelB2Glow: 'rgba(217,119,6,0.25)',
   levelC1Glow: 'rgba(99,102,241,0.25)',
   levelC2Glow: 'rgba(236,72,153,0.25)',
+
+  // Extended text colors (brightness levels)
+  textBright: '#f3f4f6',
+  textBrightest: '#f9fafb',
+  textDisabled: '#6b7280',
+  textDimmer: '#4b5563',
+
+  // Accent colors (used frequently across screens)
+  amber: '#fbbf24',
+  pink: '#f472b6',
+  primaryMid: '#a78bfa',
+  violet: '#7c3aed',
+  white: '#fff',
+
+  // Semantic text variants
+  successText: '#d1fae5',
+
+  // Semantic backgrounds (dim variants)
+  successDim: 'rgba(52,211,153,0.08)',
+  errorDim: 'rgba(239,68,68,0.1)',
+  warningGlow: 'rgba(251,191,36,0.15)',
+  warningBorder: 'rgba(245,158,11,0.3)',
+
+  // Surface & background variants
+  bgDeep: 'rgba(0,0,0,0.3)',
+  surfaceLight: 'rgba(255,255,255,0.1)',
+  surfaceBtn: '#374151',
+
+  // Border variants
+  borderFaint: 'rgba(255,255,255,0.06)',
+  borderMid: 'rgba(255,255,255,0.12)',
+
+  // Primary & success surface variants
+  primarySurface: 'rgba(99,102,241,0.2)',
+  primaryDim: 'rgba(99,102,241,0.15)',
+  primaryBorder: 'rgba(129,140,248,0.3)',
+  primaryMidGlow: 'rgba(167,139,250,0.15)',
+  successBorder: 'rgba(52,211,153,0.3)',
+  levelC2Border: 'rgba(236,72,153,0.3)',
 };
 
 export const spacing = {
@@ -55,6 +94,8 @@ export const spacing = {
   '2xl': '24px',
   '3xl': '32px',
   '4xl': '40px',
+  smPlus: '10px',
+  smMd: '14px',
 };
 
 export const typography = {
@@ -102,6 +143,27 @@ export const typography = {
     fontWeight: 600,
     lineHeight: 1.4,
   },
+  // Extended sizes
+  bodyMedium: {
+    fontSize: '15px',
+    fontWeight: 400,
+    lineHeight: 1.5,
+  },
+  bodyLarge: {
+    fontSize: '16px',
+    fontWeight: 700,
+    lineHeight: 1.5,
+  },
+  bodyLarge2: {
+    fontSize: '17px',
+    fontWeight: 700,
+    lineHeight: 1.6,
+  },
+  micro: {
+    fontSize: '10px',
+    fontWeight: 500,
+    lineHeight: 1.4,
+  },
 };
 
 export const shadows = {
@@ -117,6 +179,8 @@ export const radius = {
   lg: '10px',
   xl: '14px',
   full: '999px',
+  '2xl': '12px',
+  '3xl': '18px',
 };
 
 export const transitions = {
