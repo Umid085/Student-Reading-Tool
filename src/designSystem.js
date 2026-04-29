@@ -24,8 +24,8 @@ export const colors = {
 
   // Text & Borders
   text: '#e5e7eb',              // Primary text
-  textSecondary: '#9ca3af',     // Secondary text
-  textMuted: '#6b7280',         // Muted text
+  textSecondary: '#d1d5db',     // Secondary text (WCAG AA compliant contrast)
+  textMuted: '#9ca3af',         // Muted text
   border: 'rgba(255,255,255,0.1)',
   borderLight: 'rgba(255,255,255,0.05)',
 

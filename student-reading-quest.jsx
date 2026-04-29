@@ -242,13 +242,13 @@ function GameChart(props){
 // ── question components ───────────────────────────────────────
 function McqQ(props){
   var q=props.q,sel=props.sel,conf=props.conf,onSel=props.onSel;
-  return(<div style={{display:"flex",flexDirection:"column",gap:8}}>
+  return(<div role="group" aria-label="Multiple choice options" style={{display:"flex",flexDirection:"column",gap:8}} onKeyDown={function(e){if(e.key==="ArrowDown"||e.key==="ArrowRight"){e.preventDefault();var next=(sel!==null&&sel!==undefined?sel+1:0)%q.options.length;if(!conf)onSel(next);}if(e.key==="ArrowUp"||e.key==="ArrowLeft"){e.preventDefault();var prev=sel!==null&&sel!==undefined?sel-1:-1;if(prev<0)prev=q.options.length-1;if(!conf)onSel(prev);}}}>
     {q.options.map(function(opt,i){
       var isOk=i===q.answer,isSel=i===sel;
       var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
       if(conf){if(isOk){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
       else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
-      return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:10,padding:"10px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
+      return(<button key={i} role="radio" aria-checked={isSel} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:10,padding:"10px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
         <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,background:(isSel||(conf&&isOk))?col:"rgba(255,255,255,0.1)",color:(isSel||(conf&&isOk))?"#0d0d1a":"#6b7280",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900}}>
           {conf&&isOk?"✓":conf&&isSel&&!isOk?"✕":["A","B","C","D"][i]}
         </span>{opt}
@@ -264,13 +264,13 @@ function GapWordQ(props){
     <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:14,color:"#e5e7eb",lineHeight:1.7}}>
       {parts[0]}<span style={{display:"inline-block",minWidth:70,borderBottom:"2px solid #818cf8",textAlign:"center",padding:"0 4px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#818cf8",fontWeight:700}}>{sel!==null?q.options[sel]:"_____"}</span>{parts[1]}
     </div>
-    <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+    <div role="group" aria-label="Word options" style={{display:"flex",flexWrap:"wrap",gap:8}} onKeyDown={function(e){if(e.key==="ArrowDown"||e.key==="ArrowRight"){e.preventDefault();var next=(sel!==null&&sel!==undefined?sel+1:0)%q.options.length;if(!conf)onSel(next);}if(e.key==="ArrowUp"||e.key==="ArrowLeft"){e.preventDefault();var prev=sel!==null&&sel!==undefined?sel-1:-1;if(prev<0)prev=q.options.length-1;if(!conf)onSel(prev);}}}>
       {q.options.map(function(opt,i){
         var isOk=i===q.answer,isSel=i===sel;
         var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
         if(conf){if(isOk){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
         else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
-        return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:8,padding:"7px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit"}}>{opt}</button>);
+        return(<button key={i} role="radio" aria-checked={isSel} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:8,padding:"7px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit"}}>{opt}</button>);
       })}
     </div>
   </div>);
@@ -880,6 +880,9 @@ export default function App(){
       .rq-lb-row{cursor:pointer;transition:background 0.15s,transform 0.15s}
       .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(3px)}
       .rq-wrap{width:100%;padding:16px 16px 64px}
+      button:focus{outline:none;box-shadow:0 0 0 3px rgba(129,140,248,0.5)!important}
+      input:focus{outline:none;box-shadow:0 0 0 3px rgba(129,140,248,0.5)!important}
+      a:focus{outline:none;box-shadow:0 0 0 3px rgba(129,140,248,0.5)!important}
       .rq-home-hdr{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding-top:8px;margin-bottom:14px}
       .rq-home-nav{display:flex;gap:6px;flex-shrink:0}
       .rq-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
