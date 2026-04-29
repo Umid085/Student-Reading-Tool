@@ -402,6 +402,32 @@ function YnngQ(props){
   </div>);
 }
 
+// ── Text-to-Speech ──────────────────────────────────────────
+function useTTS(){
+  var [isSpeaking,setIsSpeaking]=useState(false);
+  var utteranceRef=useRef(null);
+
+  var speak=function(text){
+    if(!text||!window.speechSynthesis)return;
+    window.speechSynthesis.cancel();
+    var utterance=new SpeechSynthesisUtterance(text);
+    utterance.rate=0.95;
+    utterance.pitch=1;
+    utterance.onstart=function(){setIsSpeaking(true);};
+    utterance.onend=function(){setIsSpeaking(false);};
+    utterance.onerror=function(){setIsSpeaking(false);};
+    utteranceRef.current=utterance;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  var stop=function(){
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
+  return{isSpeaking:isSpeaking,speak:speak,stop:stop};
+}
+
 // ── Timer ────────────────────────────────────────────────────
 function Timer(props){
   var [secs,setSecs]=useState(props.limit);
@@ -480,6 +506,8 @@ export default function App(){
   var [loadMsg,setLoadMsg]=useState("");
   var [lbLevel,setLbLevel]=useState("A1");
   var [error,setError]=useState("");
+  // tts
+  var tts=useTTS();
   // social ui
   var [searchQuery,setSearchQuery]=useState("");
   var [friendStage,setFriendStage]=useState("search"); // search|requests|list
@@ -791,14 +819,14 @@ export default function App(){
         {/* ── READING ───────────────────────────────────────── */}
         {stage==="reading"&&(
           <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
-            <ReadingScreen {...{level, topic, passage, selectedTypes, lv, CARD, pill, mkBtn, formatTime, startQuiz}}/>
+            <ReadingScreen {...{level, topic, passage, selectedTypes, lv, CARD, pill, mkBtn, formatTime, startQuiz, tts}}/>
           </Suspense>
         )}
 
         {/* ── QUIZ ──────────────────────────────────────────── */}
         {stage==="quiz"&&q&&(
           <Suspense fallback={<div style={{textAlign:"center",paddingTop:60,color:"#6b7280"}}>Loading...</div>}>
-            <QuizScreen {...{q, current, questions, passage, showPassage, setShowPassage, CARD, pill, Q_LABELS, lv, totalXpSoFar, Timer, timerRunning, handleExpire, McqQ, GapWordQ, GapSentQ, MatchingQ, HeadingQ, QAQ, TfnmQ, YnngQ, userAnswers, setUserAnswers, matchState, setMatchState, shuffledRights, headingState, setHeadingState, confirmed, doConfirm, doNext, canConfirm, mkBtn, streak}}/>
+            <QuizScreen {...{q, current, questions, passage, showPassage, setShowPassage, CARD, pill, Q_LABELS, lv, totalXpSoFar, Timer, timerRunning, handleExpire, McqQ, GapWordQ, GapSentQ, MatchingQ, HeadingQ, QAQ, TfnmQ, YnngQ, userAnswers, setUserAnswers, matchState, setMatchState, shuffledRights, headingState, setHeadingState, confirmed, doConfirm, doNext, canConfirm, mkBtn, streak, tts}}/>
           </Suspense>
         )}
 

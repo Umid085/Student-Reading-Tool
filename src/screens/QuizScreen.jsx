@@ -8,7 +8,7 @@ function QuizScreen(props) {
     McqQ, GapWordQ, GapSentQ, MatchingQ, HeadingQ, QAQ, TfnmQ, YnngQ,
     userAnswers, setUserAnswers, matchState, setMatchState, shuffledRights,
     headingState, setHeadingState, confirmed, doConfirm, doNext,
-    canConfirm, mkBtn, streak
+    canConfirm, mkBtn, streak, tts
   } = props;
 
   var togglePassage = useCallback(function(){setShowPassage(function(p){return!p;});}, [setShowPassage]);
@@ -34,12 +34,22 @@ function QuizScreen(props) {
       </div>
       <div style={{...CARD,padding:"11px 14px",marginBottom:9}}><Timer limit={lv?lv.timeLimit:180} running={timerRunning} onExpire={handleExpire}/></div>
       <div style={{marginBottom:9}}>
-        <button onClick={togglePassage} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?"Hide passage":"Show passage"}</button>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={togglePassage} style={{flex:1,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?"Hide passage":"Show passage"}</button>
+          <button onClick={function(){if(tts.isSpeaking){tts.stop();}else{tts.speak(passage);}}} aria-label={tts.isSpeaking?"Stop reading passage":"Read passage aloud"} style={{background:tts.isSpeaking?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(tts.isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:10,padding:"8px 12px",color:tts.isSpeaking?"#c7d2fe":"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",flexShrink:0,transition:"all 0.2s"}}>🔊</button>
+        </div>
         {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px"}}><p style={{lineHeight:1.9,fontSize:15,color:"#d1d5db",margin:0}}>{passage}</p></div>)}
       </div>
       <div style={CARD}>
-        {(q.q)&&<p style={{fontSize:17,fontWeight:700,lineHeight:1.6,marginBottom:14,color:"#f9fafb"}}>{q.q}</p>}
-        {(q.instruction)&&<p style={{fontSize:16,fontWeight:700,marginBottom:12,color:"#f9fafb"}}>{q.instruction}</p>}
+        {(q.q||q.instruction)&&(
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,gap:8}}>
+            <div style={{flex:1}}>
+              {(q.q)&&<p style={{fontSize:17,fontWeight:700,lineHeight:1.6,marginBottom:q.instruction?6:0,color:"#f9fafb"}}>{q.q}</p>}
+              {(q.instruction)&&<p style={{fontSize:16,fontWeight:700,color:"#f9fafb"}}>{q.instruction}</p>}
+            </div>
+            {(q.q||q.instruction)&&<button onClick={function(){var txt=q.q||q.instruction;if(tts.isSpeaking){tts.stop();}else{tts.speak(txt);}}} aria-label={tts.isSpeaking?"Stop reading question":"Read question aloud"} style={{background:tts.isSpeaking?"rgba(99,102,241,0.25)":"transparent",border:"1px solid "+(tts.isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:6,padding:"5px 9px",cursor:"pointer",fontFamily:"inherit",fontSize:12,color:tts.isSpeaking?"#c7d2fe":"#9ca3af",fontWeight:700,flexShrink:0,whiteSpace:"nowrap",transition:"all 0.2s"}}>🔊</button>}
+          </div>
+        )}
         {q.type==="gap_word"&&!q.q&&<p style={{fontSize:16,fontWeight:700,marginBottom:10,color:"#f9fafb"}}>Fill in the blank:</p>}
         {q.type==="mcq"&&<McqQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={handleMcqSelect}/>}
         {q.type==="gap_word"&&<GapWordQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={handleGapWordSelect}/>}
