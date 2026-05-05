@@ -98,7 +98,7 @@ describe("storage.js", () => {
       makeEvent({ httpMethod: "POST", body: JSON.stringify({ value: "x" }) })
     );
     expect(res.statusCode).toBe(400);
-    expect(JSON.parse(res.body).error).toMatch(/Missing key/);
+    expect(JSON.parse(res.body).error).toMatch(/Invalid key|Missing key/);
   });
 
   it("returns 405 for unsupported methods", async () => {

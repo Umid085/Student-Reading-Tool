@@ -59,7 +59,12 @@ function getWpmFromSecs(wordCount,secs){return secs>0?Math.round(wordCount/(secs
 function getLv(k){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].key===k)return LEVELS[i];}return LEVELS[0];}
 function formatTime(s){if(s<=0)return"0:00";var m=Math.floor(s/60),sec=s%60;return m+":"+(sec<10?"0":"")+sec;}
 function pctColor(p){return p>=80?"#22c55e":p>=60?"#f59e0b":"#ef4444";}
-function enc(p){try{return btoa(p);}catch(e){return p;}}
+async function enc(p){
+  try{
+    var buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(p));
+    return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,"0");}).join("");
+  }catch(e){return btoa(p);}
+}
 
 function calcStreak(games) {
   if (!games||games.length===0) return 0;
@@ -851,10 +856,11 @@ export default function App(){
   async function doRegister(){
     setAuthErr("");
     if(!nameInput.trim()||!passInput.trim()){setAuthErr("Name and password required.");return;}
+    if(!/^[a-zA-Z0-9_]{2,30}$/.test(nameInput.trim())){setAuthErr("Username must be 2–30 characters: letters, numbers, underscores only.");return;}
     if(passInput.length<4){setAuthErr("Password must be at least 4 characters.");return;}
     var fresh=await loadUsers();setAllUsers(fresh);
     for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){setAuthErr("Username taken.");return;}}
-    var user={name:nameInput.trim(),hash:enc(passInput),games:[],joined:new Date().toLocaleDateString()};
+    var user={name:nameInput.trim(),hash:await enc(passInput),games:[],joined:new Date().toLocaleDateString()};
     var nu=fresh.concat([user]);
     await saveUsers(nu);
     localStorage.setItem("rq-session",user.name);
@@ -869,7 +875,15 @@ export default function App(){
     var found=null;
     for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){found=fresh[i];break;}}
     if(!found){setAuthErr("User not found. Please register first.");return;}
-    if(found.hash!==enc(passInput)){setAuthErr("Wrong password.");return;}
+    var sha256=await enc(passInput);
+    var legacy=btoa(passInput);
+    if(found.hash!==sha256&&found.hash!==legacy){setAuthErr("Wrong password.");return;}
+    if(found.hash===legacy){
+      // migrate old btoa hash to SHA-256
+      found={...found,hash:sha256};
+      var migrated=fresh.map(function(u){return u.name===found.name?found:u;});
+      saveUsers(migrated);setAllUsers(migrated);
+    }
     localStorage.setItem("rq-session",found.name);
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:found.hash}));
     setCurrentUser(found);setStage("home");

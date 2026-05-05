@@ -5,6 +5,9 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
+const ALLOWED_KEYS = /^rq-[a-z0-9_-]{1,60}$/;
+const MAX_VALUE_BYTES = 512 * 1024; // 512 KB
+
 export const handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: CORS, body: "" };
@@ -24,6 +27,9 @@ export const handler = async function (event) {
   try {
     if (event.httpMethod === "GET") {
       const key = (event.queryStringParameters || {}).key;
+      if (!key || !ALLOWED_KEYS.test(key)) {
+        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid key" }) };
+      }
       const r = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`);
       const data = await r.json();
       return {
@@ -35,7 +41,15 @@ export const handler = async function (event) {
 
     if (event.httpMethod === "POST") {
       const { key, value } = JSON.parse(event.body || "{}");
-      if (!key) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Missing key" }) };
+      if (!key || !ALLOWED_KEYS.test(key)) {
+        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid key" }) };
+      }
+      if (typeof value !== "string") {
+        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Value must be a string" }) };
+      }
+      if (Buffer.byteLength(value, "utf8") > MAX_VALUE_BYTES) {
+        return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: "Value too large (max 512 KB)" }) };
+      }
       await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
