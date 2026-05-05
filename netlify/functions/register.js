@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+import { checkRateLimit } from "./_rateLimit.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +38,12 @@ export const handler = async function (event) {
   }
   if (!ALLOWED_NAME.test(name)) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid username" }) };
+  }
+
+  const ip = ((event.headers["x-forwarded-for"] || event.headers["client-ip"] || "").split(",")[0]).trim();
+  const rl = await checkRateLimit(DB, ip);
+  if (rl.limited) {
+    return { statusCode: 429, headers: { ...CORS, "Retry-After": String(rl.retryAfter) }, body: JSON.stringify({ error: "Too many attempts. Try again later." }) };
   }
 
   try {

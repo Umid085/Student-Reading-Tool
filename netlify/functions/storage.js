@@ -9,9 +9,10 @@ const CORS = {
 
 const ALLOWED_KEYS = /^rq-[a-z0-9_-]{1,60}$/;
 const MAX_VALUE_BYTES = 512 * 1024; // 512 KB
-// Credentials must never flow through the public storage endpoint
+// Credentials and internal keys must never flow through the public storage endpoint
 const READ_BLOCKED = new Set(["rq-users-v6", "rq-auth-v6"]);
 const WRITE_BLOCKED = new Set(["rq-auth-v6"]);
+const INTERNAL_KEY = /^rq-rl-/; // rate-limit counters, internal only
 
 function validateToken(token, secret) {
   if (!token || !secret) return false;
@@ -46,7 +47,7 @@ export const handler = async function (event) {
   try {
     if (event.httpMethod === "GET") {
       const key = (event.queryStringParameters || {}).key;
-      if (!key || !ALLOWED_KEYS.test(key) || READ_BLOCKED.has(key)) {
+      if (!key || !ALLOWED_KEYS.test(key) || READ_BLOCKED.has(key) || INTERNAL_KEY.test(key)) {
         return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid key" }) };
       }
       const r = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`);
@@ -70,7 +71,7 @@ export const handler = async function (event) {
       }
 
       const { key, value } = JSON.parse(event.body || "{}");
-      if (!key || !ALLOWED_KEYS.test(key) || WRITE_BLOCKED.has(key)) {
+      if (!key || !ALLOWED_KEYS.test(key) || WRITE_BLOCKED.has(key) || INTERNAL_KEY.test(key)) {
         return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid key" }) };
       }
       if (typeof value !== "string") {
