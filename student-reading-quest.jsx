@@ -969,6 +969,11 @@ export default function App(){
   var [tutorChat,setTutorChat]=useState([]);
   var [tutorInput,setTutorInput]=useState("");
   var [tutorLoading,setTutorLoading]=useState(false);
+  // writing feedback
+  var [writeSummary,setWriteSummary]=useState("");
+  var [writeFeedback,setWriteFeedback]=useState(null);
+  var [writeLoading,setWriteLoading]=useState(false);
+  var [writeError,setWriteError]=useState("");
   // streak shields
   var [shields,setShields]=useState(0);
   var [shieldDates,setShieldDates]=useState([]);
@@ -2292,6 +2297,15 @@ export default function App(){
                 </div>
               );
             })()}
+            <div style={{...CARD,marginBottom:10,padding:14,background:"rgba(245,158,11,0.06)",borderColor:"rgba(245,158,11,0.3)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fbbf24",marginBottom:2}}>✍️ Writing Challenge</div>
+                  <div style={{fontSize:11,color:"#9ca3af"}}>Write a short summary of the passage and get AI feedback on your writing.</div>
+                </div>
+                <button onClick={function(){setWriteSummary("");setWriteFeedback(null);setWriteError("");setStage("writefeedback");}} style={{...mkBtn("#f59e0b","#0d0d1a"),padding:"8px 16px",fontSize:12,flexShrink:0}}>Start →</button>
+              </div>
+            </div>
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
@@ -3537,6 +3551,101 @@ export default function App(){
               />
               <button onClick={function(){sendTutorMessage(tutorInput);}} disabled={tutorLoading||!tutorInput.trim()} style={{...mkBtn(tutorLoading||!tutorInput.trim()?"#374151":"#0891b2"),padding:"11px 18px",fontSize:14,flexShrink:0}}>Send</button>
             </div>
+          </div>
+        )}
+
+        {/* ── WRITING FEEDBACK ──────────────────────────────── */}
+        {stage==="writefeedback"&&(
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:6}}>
+              <button onClick={function(){setStage("result");}} style={GHOST}>← Back</button>
+              <h2 style={{fontSize:18,fontWeight:900,color:"#fbbf24",margin:0}}>✍️ Writing Challenge</h2>
+            </div>
+
+            {!writeFeedback&&(
+              <div>
+                <div style={{...CARD,marginBottom:12,padding:14,background:"rgba(245,158,11,0.06)",borderColor:"rgba(245,158,11,0.25)"}}>
+                  <p style={{fontSize:12,color:"#9ca3af",margin:"0 0 6px",fontWeight:700}}>PASSAGE TOPIC</p>
+                  <p style={{fontSize:13,color:"#fbbf24",margin:0,fontWeight:600}}>{topic}</p>
+                </div>
+                <div style={{...CARD,marginBottom:12,padding:14}}>
+                  <p style={{fontSize:12,color:"#9ca3af",margin:"0 0 10px",fontWeight:700}}>YOUR SUMMARY</p>
+                  <p style={{fontSize:11,color:"#6b7280",margin:"0 0 10px"}}>Write 3–6 sentences summarising the main ideas of the passage in your own words.</p>
+                  <textarea
+                    style={{width:"100%",minHeight:130,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",fontSize:14,color:"#f3f4f6",fontFamily:"inherit",outline:"none",resize:"vertical",boxSizing:"border-box",lineHeight:1.6}}
+                    placeholder="The passage is about…"
+                    value={writeSummary}
+                    onChange={function(e){setWriteSummary(e.target.value);}}
+                  />
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
+                    <span style={{fontSize:11,color:writeSummary.trim().split(/\s+/).filter(Boolean).length>=20?"#34d399":"#6b7280"}}>
+                      {writeSummary.trim().split(/\s+/).filter(Boolean).length} words {writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"(aim for 30+)":"✓"}
+                    </span>
+                    <button
+                      onClick={async function(){
+                        if(!writeSummary.trim()||writeLoading)return;
+                        setWriteLoading(true);setWriteError("");
+                        try{
+                          var r=await fetch("/.netlify/functions/writefeedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level,summary:writeSummary})});
+                          var d=await r.json();
+                          if(d.error)throw new Error(d.error);
+                          setWriteFeedback(d);
+                        }catch(e){setWriteError(e.message||"Failed — try again.");}
+                        setWriteLoading(false);
+                      }}
+                      disabled={writeLoading||writeSummary.trim().length<20}
+                      style={{...mkBtn(writeLoading||writeSummary.trim().length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
+                    >{writeLoading?"Grading…":"Get Feedback →"}</button>
+                  </div>
+                  {writeError&&<p style={{fontSize:12,color:"#ef4444",margin:"8px 0 0"}}>{writeError}</p>}
+                </div>
+              </div>
+            )}
+
+            {writeFeedback&&(function(){
+              var scoreColor=function(s){return s>=80?"#34d399":s>=60?"#fbbf24":"#ef4444";};
+              var dims=[{k:"content",label:"Content Accuracy",icon:"📖"},{k:"vocabulary",label:"Vocabulary",icon:"📝"},{k:"grammar",label:"Grammar",icon:"✔️"},{k:"structure",label:"Structure",icon:"🔗"}];
+              return(
+                <div>
+                  {/* overall score */}
+                  <div style={{...CARD,marginBottom:12,textAlign:"center",padding:20,background:"rgba(245,158,11,0.07)",borderColor:"rgba(245,158,11,0.35)"}}>
+                    <div style={{fontSize:48,fontWeight:900,color:scoreColor(writeFeedback.overall||0),marginBottom:4}}>{writeFeedback.overall||0}%</div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#fbbf24",marginBottom:8}}>Overall Writing Score</div>
+                    {writeFeedback.strengths&&<p style={{fontSize:13,color:"#34d399",margin:"0 0 4px"}}>💪 {writeFeedback.strengths}</p>}
+                    {writeFeedback.improvements&&<p style={{fontSize:13,color:"#9ca3af",margin:0}}>💡 {writeFeedback.improvements}</p>}
+                  </div>
+                  {/* dimension scores */}
+                  <div style={{...CARD,marginBottom:12,padding:14}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:"0 0 12px",letterSpacing:0.6}}>DETAILED SCORES</p>
+                    {dims.map(function(d){
+                      var sc=(writeFeedback.scores&&writeFeedback.scores[d.k])||0;
+                      var fb=(writeFeedback.feedback&&writeFeedback.feedback[d.k])||"";
+                      return(
+                        <div key={d.k} style={{marginBottom:14}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                            <span style={{fontSize:12,color:"#d1d5db",fontWeight:600}}>{d.icon} {d.label}</span>
+                            <span style={{fontSize:13,fontWeight:900,color:scoreColor(sc)}}>{sc}%</span>
+                          </div>
+                          <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:6,overflow:"hidden",marginBottom:5}}>
+                            <div style={{height:"100%",width:sc+"%",background:scoreColor(sc),borderRadius:999,transition:"width 0.6s ease"}}/>
+                          </div>
+                          {fb&&<p style={{fontSize:11,color:"#9ca3af",margin:0,lineHeight:1.5}}>{fb}</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* your summary */}
+                  <div style={{...CARD,marginBottom:12,padding:14}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:"0 0 8px",letterSpacing:0.6}}>YOUR SUMMARY</p>
+                    <p style={{fontSize:13,color:"#d1d5db",margin:0,lineHeight:1.7,fontStyle:"italic"}}>"{writeSummary}"</p>
+                  </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={function(){setWriteFeedback(null);setWriteSummary("");setWriteError("");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>Try Again</button>
+                    <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Back to Results</button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
