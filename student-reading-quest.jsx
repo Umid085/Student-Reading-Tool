@@ -769,6 +769,7 @@ export default function App(){
   var [speechRate,setSpeechRate]=useState(1);
   var [activeSentence,setActiveSentence]=useState(null);
   var [heatmapOn,setHeatmapOn]=useState(false);
+  var [savedWordDefs,setSavedWordDefs]=useState({});
   // favorites
   var [favs,setFavs]=useState([]);
   var [allFavs,setAllFavs]=useState({});
@@ -933,7 +934,13 @@ export default function App(){
 
   // ── vocab ─────────────────────────────────────────────────
   function toggleWord(word){
+    var adding=!savedWords.has(word);
     setSavedWords(function(s){var n=new Set(s);if(n.has(word))n.delete(word);else n.add(word);return n;});
+    if(adding&&selectedWord===word&&wordDef&&wordDef.def){
+      setSavedWordDefs(function(d){var n={};for(var k in d)n[k]=d[k];n[word]={def:wordDef.def,example:wordDef.example||""};return n;});
+    }else if(!adding){
+      setSavedWordDefs(function(d){var n={};for(var k in d)if(k!==word)n[k]=d[k];return n;});
+    }
   }
 
   function speakPassage(){
@@ -1025,7 +1032,8 @@ export default function App(){
       setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
       setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
-      setCurrentStoryId(null);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+      var aiId="ai_"+level.toLowerCase()+"_"+(json.topic||"").toLowerCase().replace(/[^a-z0-9]/g,"_").slice(0,20)+"_"+Date.now();
+      setCurrentStoryId(aiId);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
       setStage("reading");
     }catch(e){console.log("generate err",e);setError("Generation failed - please try again.");setStage("home");}
     clearInterval(iv);
@@ -1049,7 +1057,7 @@ export default function App(){
     if(currentUser&&savedWords.size>0){
       var today=new Date().toLocaleDateString();
       var newEntries=[];
-      savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;}))newEntries.push({word:w,level:level,topic:topic,date:today,status:"new"});});
+      savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;})){var wd=savedWordDefs&&savedWordDefs[w];newEntries.push({word:w,level:level,topic:topic,date:today,status:"new",def:wd?wd.def:"",example:wd?wd.example:""});}});
       if(newEntries.length>0){
         var nv=vocab.concat(newEntries);
         var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;
@@ -1173,7 +1181,7 @@ export default function App(){
     setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");
     setIsDailyGame(false);setSavedWords(new Set());
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
-    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);
+    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});
     setStage("home");
   }
 
@@ -1521,7 +1529,7 @@ export default function App(){
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,paddingTop:6}}>
                 <span style={{...pill(lv?lv.color:"#34d399","#0d0d1a"),fontSize:12,fontWeight:900}}>{level} · {selectedTypes.length} questions</span>
                 <div style={{display:"flex",gap:6}}>
-                  <button onClick={function(){toggleFav(currentStoryId,topic,level);}} style={{background:favs.some(function(f){return f.id===currentStoryId;})?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"rgba(255,255,255,0.12)"),color:favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"#9ca3af",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:currentStoryId?"pointer":"default",fontFamily:"inherit"}}>{favs.some(function(f){return f.id===currentStoryId;})?"❤️":"🤍"}</button>
+                  <button onClick={function(){if(currentStoryId)toggleFav(currentStoryId,topic,level);}} style={{background:favs.some(function(f){return f.id===currentStoryId;})?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"rgba(255,255,255,0.12)"),color:favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"#9ca3af",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{favs.some(function(f){return f.id===currentStoryId;})?"❤️":"🤍"}</button>
                   <button onClick={function(){setFocusMode(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>📖 Focus</button>
                 </div>
               </div>
