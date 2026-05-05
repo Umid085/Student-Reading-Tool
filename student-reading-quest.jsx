@@ -561,6 +561,32 @@ function challengeTimeLeft(expiresAt){
   return h>0?h+"h "+m+"m left":m+"m left";
 }
 
+// ── pronunciation helpers ────────────────────────────────────
+function splitSentences(text){
+  var raw=text.match(/[^.!?]+[.!?]*/g)||[text];
+  return raw.map(function(s){return s.trim();}).filter(function(s){return s.length>10;});
+}
+function editDistance(a,b){
+  var m=a.length,n=b.length,dp=[];
+  for(var i=0;i<=m;i++){dp[i]=[i];}
+  for(var j=0;j<=n;j++){dp[0][j]=j;}
+  for(var i=1;i<=m;i++){for(var j=1;j<=n;j++){dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);}}
+  return dp[m][n];
+}
+function comparePronunciation(expected,transcript){
+  function clean(s){return s.toLowerCase().replace(/[^a-z\s']/g,"").trim();}
+  var expWords=clean(expected).split(/\s+/).filter(Boolean);
+  var gotWords=clean(transcript).split(/\s+/).filter(Boolean);
+  var words=expWords.map(function(w,i){
+    var got=gotWords[i]||"";
+    if(got===w)return{word:w,status:"correct"};
+    if(got&&editDistance(got,w)<=1)return{word:w,status:"close",heard:got};
+    return{word:w,status:"wrong",heard:got||"—"};
+  });
+  var ok=words.filter(function(w){return w.status==="correct"||w.status==="close";}).length;
+  return{words:words,accuracy:expWords.length?Math.round(ok/expWords.length*100):0,transcript:transcript};
+}
+
 // ── reading goals ────────────────────────────────────────────
 var GOAL_DEFS=[
   {id:"weekly_games", label:"Games this week",            icon:"🎮", unit:"games", opts:[3,5,7,10]},
@@ -929,6 +955,12 @@ export default function App(){
   var [discussStoryId,setDiscussStoryId]=useState(null);
   var [allDiscuss,setAllDiscuss]=useState({});
   var [discussInput,setDiscussInput]=useState("");
+  // pronunciation check
+  var [pronMode,setPronMode]=useState(false);
+  var [pronSentence,setPronSentence]=useState("");
+  var [pronRecording,setPronRecording]=useState(false);
+  var [pronResult,setPronResult]=useState(null);
+  var pronRecRef=useRef(null);
   // reading goals
   var [goals,setGoals]=useState({});
   // ai tutor
@@ -1384,6 +1416,7 @@ export default function App(){
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});
     setTutorChat([]);setTutorInput("");setTutorLoading(false);
     setActiveChallengeIdx(null);setActiveChallengeFrom("");
+    setPronMode(false);setPronSentence("");setPronRecording(false);setPronResult(null);
     setStage("home");
   }
 
@@ -1427,6 +1460,27 @@ export default function App(){
       setTutorChat(newChat.concat([{role:"assistant",content:"Connection error — please try again."}]));
     }
     setTutorLoading(false);
+  }
+
+  function startPronCheck(sentence){
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setPronResult({error:"Speech recognition is not supported in this browser. Please use Chrome or Edge."});return;}
+    if(pronRecording&&pronRecRef.current){pronRecRef.current.stop();return;}
+    setPronResult(null);setPronRecording(true);
+    var rec=new SR();
+    rec.continuous=false;rec.interimResults=false;rec.lang="en-US";
+    rec.onresult=function(e){
+      var transcript=e.results[0][0].transcript;
+      setPronResult(comparePronunciation(sentence,transcript));
+      setPronRecording(false);
+    };
+    rec.onerror=function(e){
+      setPronResult({error:"Could not hear you — check mic permissions and try again. ("+e.error+")"});
+      setPronRecording(false);
+    };
+    rec.onend=function(){setPronRecording(false);};
+    pronRecRef.current=rec;
+    rec.start();
   }
 
   async function startDailyChallenge(){
@@ -1976,9 +2030,64 @@ export default function App(){
                 <button onClick={speakPassage} style={{background:isSpeaking&&!activeSentence?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:isSpeaking&&!activeSentence?"#818cf8":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking&&!activeSentence?"⏹ Stop":"🔊 Listen"}</button>
                 <button onClick={function(){setActiveSentence(activeSentence!==null?null:"");setTranslation(null);}} style={{background:activeSentence!==null?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(activeSentence!==null?"#818cf8":"rgba(255,255,255,0.1)"),color:activeSentence!==null?"#a78bfa":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🌐 {activeSentence!==null?"Exit Translate":"Translate"}</button>
                 <button onClick={function(){setHeatmapOn(function(h){return!h;});}} style={{background:heatmapOn?"rgba(245,158,11,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(heatmapOn?"#f59e0b":"rgba(255,255,255,0.1)"),color:heatmapOn?"#fbbf24":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>💡 Hard words</button>
+                <button onClick={function(){setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={{background:pronMode?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(pronMode?"#ec4899":"rgba(255,255,255,0.1)"),color:pronMode?"#f472b6":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🎤 {pronMode?"Exit":"Pronounce"}</button>
                 <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.06)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"3px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
                 </div>
               </div>
+
+              {/* pronunciation check panel */}
+              {pronMode&&(function(){
+                var sentences=splitSentences(passage);
+                return(
+                  <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(236,72,153,0.3)",background:"rgba(236,72,153,0.04)"}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#f472b6",marginBottom:10}}>🎤 PRONUNCIATION CHECK</p>
+                    {!pronSentence?(
+                      <>
+                        <p style={{fontSize:12,color:"#9ca3af",marginBottom:8}}>Tap a sentence to practise:</p>
+                        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                          {sentences.map(function(s,i){
+                            return<button key={i} onClick={function(){setPronSentence(s);setPronResult(null);}} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,padding:"8px 12px",color:"#d1d5db",fontSize:13,cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.6}}>{s}</button>;
+                          })}
+                        </div>
+                      </>
+                    ):(
+                      <>
+                        <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:14,color:"#e5e7eb",lineHeight:1.7,fontStyle:"italic"}}>"{pronSentence}"</div>
+                        <div style={{display:"flex",gap:8,marginBottom:10}}>
+                          <button onClick={function(){startPronCheck(pronSentence);}} disabled={pronRecording} style={{...mkBtn(pronRecording?"#ef4444":"#ec4899"),flex:1,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                            {pronRecording?<><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#fff",animation:"rqFloat 0.6s ease-in-out infinite"}}/>Recording…</>:"🎤 Record"}
+                          </button>
+                          {pronRecording&&<button onClick={function(){if(pronRecRef.current)pronRecRef.current.stop();}} style={{...mkBtn("#374151"),fontSize:13}}>⏹ Stop</button>}
+                          <button onClick={function(){setPronSentence("");setPronResult(null);}} style={{...GHOST,fontSize:12}}>← Back</button>
+                        </div>
+                        {pronResult&&pronResult.error&&<p style={{color:"#f87171",fontSize:12,margin:0}}>{pronResult.error}</p>}
+                        {pronResult&&!pronResult.error&&(
+                          <div>
+                            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                              <div style={{fontSize:26,fontWeight:900,color:pronResult.accuracy>=80?"#22c55e":pronResult.accuracy>=60?"#f59e0b":"#ef4444"}}>{pronResult.accuracy}%</div>
+                              <div>
+                                <div style={{fontSize:12,fontWeight:700,color:"#f3f4f6"}}>{pronResult.accuracy>=80?"Excellent!":pronResult.accuracy>=60?"Good effort!":"Keep practising!"}</div>
+                                <div style={{fontSize:11,color:"#6b7280"}}>Heard: "{pronResult.transcript}"</div>
+                              </div>
+                            </div>
+                            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
+                              {pronResult.words.map(function(w,i){
+                                var bg=w.status==="correct"?"rgba(34,197,94,0.2)":w.status==="close"?"rgba(245,158,11,0.2)":"rgba(239,68,68,0.2)";
+                                var col=w.status==="correct"?"#4ade80":w.status==="close"?"#fbbf24":"#f87171";
+                                return<span key={i} title={w.heard?("heard: "+w.heard):""} style={{background:bg,color:col,borderRadius:6,padding:"3px 8px",fontSize:13,fontWeight:600,cursor:w.heard?"help":"default"}}>{w.word}</span>;
+                              })}
+                            </div>
+                            <div style={{display:"flex",gap:6,fontSize:10,color:"#6b7280",flexWrap:"wrap",marginBottom:8}}>
+                              {[["rgba(34,197,94,0.2)","#4ade80","Correct"],["rgba(245,158,11,0.2)","#fbbf24","Close (hover to see)"],["rgba(239,68,68,0.2)","#f87171","Missed"]].map(function(p){return<span key={p[2]} style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:10,height:10,borderRadius:3,background:p[0],border:"1px solid "+p[1],display:"inline-block"}}/>{p[2]}</span>;})}
+                            </div>
+                            <button onClick={function(){setPronResult(null);}} style={{...mkBtn("#374151"),fontSize:12,width:"100%"}}>Try again</button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
 
               <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>Begin Quiz →</button>
             </div>
