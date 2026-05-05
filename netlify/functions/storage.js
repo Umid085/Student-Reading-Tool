@@ -1,12 +1,28 @@
+import { createHmac } from "crypto";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Content-Type": "application/json",
 };
 
 const ALLOWED_KEYS = /^rq-[a-z0-9_-]{1,60}$/;
 const MAX_VALUE_BYTES = 512 * 1024; // 512 KB
+
+function validateToken(token, secret) {
+  if (!token || !secret) return false;
+  const lastColon = token.lastIndexOf(":");
+  if (lastColon === -1) return false;
+  const payload = token.slice(0, lastColon);
+  const sig = token.slice(lastColon + 1);
+  const colonIdx = payload.indexOf(":");
+  if (colonIdx === -1) return false;
+  const expires = parseInt(payload.slice(colonIdx + 1));
+  if (isNaN(expires) || Date.now() > expires) return false;
+  const expected = createHmac("sha256", secret).update(payload).digest("hex");
+  return sig.length === expected.length && sig === expected;
+}
 
 export const handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -40,6 +56,16 @@ export const handler = async function (event) {
     }
 
     if (event.httpMethod === "POST") {
+      // Validate session token when SESSION_SECRET is configured
+      const secret = process.env.SESSION_SECRET || "";
+      if (secret) {
+        const auth = (event.headers["authorization"] || event.headers["Authorization"] || "");
+        const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+        if (!validateToken(token, secret)) {
+          return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Unauthorized" }) };
+        }
+      }
+
       const { key, value } = JSON.parse(event.body || "{}");
       if (!key || !ALLOWED_KEYS.test(key)) {
         return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid key" }) };
