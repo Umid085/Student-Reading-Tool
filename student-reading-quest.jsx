@@ -2517,10 +2517,10 @@ export default function App(){
 
           // weekly activity (last 7 days)
           var week=[];
-          for(var d=6;d>=0;d--){
-            var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toLocaleDateString();
-            var dayGames=games.filter(function(g){return g.date===ds;});
-            week.push({label:dt.toLocaleDateString("en",{weekday:"short"}),date:ds,count:dayGames.length,xp:dayGames.reduce(function(s,g){return s+g.xp;},0),isToday:ds===today});
+          for(var wd=6;wd>=0;wd--){
+            var wdt=new Date();wdt.setDate(wdt.getDate()-wd);var wds=wdt.toLocaleDateString();
+            var dayGames=games.filter(function(g){return g.date===wds;});
+            week.push({label:wdt.toLocaleDateString("en",{weekday:"short"}),date:wds,count:dayGames.length,xp:dayGames.reduce(function(s,g){return s+g.xp;},0),isToday:wds===today});
           }
           var maxDayXp=Math.max(1,Math.max.apply(null,week.map(function(w){return w.xp;})));
 
@@ -2534,6 +2534,51 @@ export default function App(){
 
           var earnedBadges=checkBadges(currentUser,vocab,myStreak);
           var badgeCount=BADGES.filter(function(b){return earnedBadges[b.id];}).length;
+
+          // score trend — last 20 games
+          var scoreTrend=games.slice(-20);
+          // wpm trend — last 15 games with wpm
+          var wpmTrend=games.filter(function(g){return g.wpm>0;}).slice(-15);
+          // cumulative XP over last 30 days
+          var xpByDay={};
+          games.forEach(function(g){xpByDay[g.date]=(xpByDay[g.date]||0)+g.xp;});
+          var xpDays=[];
+          for(var xi=29;xi>=0;xi--){var xd=new Date();xd.setDate(xd.getDate()-xi);var xds=xd.toLocaleDateString();xpDays.push({date:xds,xp:xpByDay[xds]||0});}
+          var cumXp=0;var cumXpDays=xpDays.map(function(d){cumXp+=d.xp;return{date:d.date,cum:cumXp};});
+          var maxCumXp=Math.max(1,cumXpDays[cumXpDays.length-1].cum);
+
+          // weak types — sorted ascending by accuracy
+          var typeList=Object.keys(typeAgg).map(function(t){var ts=typeAgg[t];return{t:t,pct:ts.max>0?Math.round(ts.earned/ts.max*100):0};}).sort(function(a,b){return a.pct-b.pct;});
+          var weakTypes=typeList.slice(0,2).filter(function(x){return x.pct<70;});
+
+          // 30-day activity calendar
+          var cal30=[];
+          for(var ci=29;ci>=0;ci--){var cd=new Date();cd.setDate(cd.getDate()-ci);var cds=cd.toLocaleDateString();var cg=games.filter(function(g){return g.date===cds;});cal30.push({date:cds,count:cg.length,avg:cg.length?Math.round(cg.reduce(function(s,g){return s+g.pct;},0)/cg.length):0});}
+
+          // SVG sparkline helper
+          function mkSparkline(vals,W,H,col,fill){
+            if(vals.length<2)return null;
+            var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+            var rng=mx-mn||1;
+            var pts=vals.map(function(v,i){
+              var x=i/(vals.length-1)*(W-4)+2;
+              var y=H-4-((v-mn)/rng)*(H-12);
+              return x+","+y;
+            });
+            var pStr=pts.join(" ");
+            var areaD="M "+pts[0]+" L "+pts.slice(1).join(" L ")+" L "+(W-2)+","+(H-2)+" L 2,"+  (H-2)+" Z";
+            return(
+              <svg width={W} height={H} style={{overflow:"visible"}}>
+                {fill&&<path d={areaD} fill={fill} opacity={0.15}/>}
+                <polyline points={pStr} fill="none" stroke={col} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"/>
+                {vals.map(function(v,i){
+                  var x=i/(vals.length-1)*(W-4)+2;
+                  var y=H-4-((v-mn)/rng)*(H-12);
+                  return<circle key={i} cx={x} cy={y} r={3} fill={col}/>;
+                })}
+              </svg>
+            );
+          }
 
           return(
             <div>
@@ -2570,20 +2615,92 @@ export default function App(){
                 </div>
               </div>
 
-              {/* weekly activity bar chart */}
+              {/* score accuracy trend */}
+              {scoreTrend.length>=2&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>SCORE TREND (LAST {scoreTrend.length} GAMES)</p>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:pctColor(avgPct)}}>{avgPct}%</div>
+                      <div style={{fontSize:10,color:"#6b7280"}}>avg</div>
+                    </div>
+                  </div>
+                  <div style={{position:"relative"}}>
+                    {mkSparkline(scoreTrend.map(function(g){return g.pct;}),320,72,pctColor(avgPct),"#6366f1")}
+                    <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:9,color:"#4b5563"}}>
+                      <span>oldest</span><span>newest</span>
+                    </div>
+                    <div style={{position:"absolute",top:0,right:0,display:"flex",flexDirection:"column",justifyContent:"space-between",height:72,fontSize:9,color:"#4b5563",textAlign:"right"}}>
+                      <span>100%</span><span>50%</span><span>0%</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* WPM trend */}
+              {wpmTrend.length>=2&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>READING SPEED TREND (WPM)</p>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>{Math.round(wpmTrend.reduce(function(s,g){return s+g.wpm;},0)/wpmTrend.length)} WPM</div>
+                      <div style={{fontSize:10,color:"#6b7280"}}>avg</div>
+                    </div>
+                  </div>
+                  {mkSparkline(wpmTrend.map(function(g){return g.wpm;}),320,72,"#a78bfa","#7c3aed")}
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:9,color:"#4b5563"}}>
+                    <span>oldest</span><span style={{color:"#a78bfa"}}>{getWpmLabel(Math.round(wpmTrend.reduce(function(s,g){return s+g.wpm;},0)/wpmTrend.length))}</span><span>newest</span>
+                  </div>
+                </div>
+              )}
+
+              {/* cumulative XP graph */}
+              {totalXp>0&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>XP GROWTH (30 DAYS)</p>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{totalXp.toLocaleString()} XP</div>
+                      <div style={{fontSize:10,color:"#6b7280"}}>total</div>
+                    </div>
+                  </div>
+                  {mkSparkline(cumXpDays.map(function(d){return d.cum;}),320,72,"#fbbf24","#f59e0b")}
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:9,color:"#4b5563"}}>
+                    <span>30 days ago</span><span>today</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 30-day activity calendar */}
               <div style={{...CARD,marginBottom:12}}>
-                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>WEEKLY ACTIVITY</p>
-                <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
-                  {week.map(function(w){
-                    var h=w.xp>0?Math.max(8,Math.round((w.xp/maxDayXp)*68)):4;
-                    return(<div key={w.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                      <div style={{width:"100%",height:h,background:w.isToday?"#06b6d4":w.xp>0?"#6366f1":"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0",transition:"height 0.3s ease"}}/>
-                      <span style={{fontSize:9,color:w.isToday?"#06b6d4":"#6b7280",fontWeight:w.isToday?700:400}}>{w.label}</span>
-                      {w.count>0&&<span style={{fontSize:9,color:"#4b5563"}}>{w.count}</span>}
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>ACTIVITY — LAST 30 DAYS</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                  {cal30.map(function(day,i){
+                    var bg=day.count===0?"rgba(255,255,255,0.05)":day.avg>=80?"#22c55e":day.avg>=60?"#f59e0b":"#6366f1";
+                    return<div key={i} title={day.date+(day.count?" · "+day.count+" game"+(day.count>1?"s":"")+" · avg "+day.avg+"%":"")} style={{width:14,height:14,borderRadius:3,background:bg,flexShrink:0,cursor:day.count>0?"default":"default"}}/>;
+                  })}
+                </div>
+                <div style={{display:"flex",gap:8,marginTop:8,fontSize:9,color:"#4b5563",flexWrap:"wrap"}}>
+                  {[["#22c55e","≥80%"],["#f59e0b","60–79%"],["#6366f1","<60%"],["rgba(255,255,255,0.05)","no activity"]].map(function(p){return<span key={p[1]} style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:10,height:10,borderRadius:2,background:p[0],display:"inline-block"}}/>{p[1]}</span>;})}
+                </div>
+              </div>
+
+              {/* weak question type highlight */}
+              {weakTypes.length>0&&(
+                <div style={{...CARD,marginBottom:12,borderColor:"rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.04)"}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#f87171",marginBottom:10}}>⚠️ FOCUS AREAS</p>
+                  {weakTypes.map(function(w){
+                    var tips={matching:"Try matching pairs step-by-step — eliminate confident ones first.",heading:"Read paragraph topic sentences carefully before matching headings.",qa:"Write 1-2 key words from the passage in your answer.",mcq:"Re-read the relevant sentence before choosing.",gap_word:"Think about grammar (noun/verb/adj) before guessing.",gap_sentence:"Check the sentence before and after the gap for context.",tfnm:"For 'Not Mentioned' — only choose if the passage has zero reference.",ynng:"'Not Given' means the passage doesn't confirm OR deny."};
+                    return(<div key={w.t} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8,padding:"10px 12px",background:"rgba(239,68,68,0.07)",borderRadius:10}}>
+                      <div style={{width:36,height:36,borderRadius:8,background:"rgba(239,68,68,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:900,color:"#f87171"}}>{w.pct}%</div>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#f3f4f6",marginBottom:2}}>{Q_LABELS[w.t]||w.t}</div>
+                        <div style={{fontSize:11,color:"#9ca3af"}}>{tips[w.t]||"Practice this type more!"}</div>
+                      </div>
                     </div>);
                   })}
                 </div>
-              </div>
+              )}
 
               {/* per-level breakdown */}
               {Object.keys(byLevel).length>0&&(
@@ -2610,20 +2727,34 @@ export default function App(){
               {Object.keys(typeAgg).length>0&&(
                 <div style={{...CARD,marginBottom:12}}>
                   <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>ACCURACY BY TYPE</p>
-                  {Object.keys(typeAgg).map(function(t){
-                    var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
-                    return(<div key={t} style={{marginBottom:8}}>
+                  {typeList.map(function(item){
+                    return(<div key={item.t} style={{marginBottom:8}}>
                       <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                        <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
-                        <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                        <span style={{color:"#9ca3af"}}>{Q_LABELS[item.t]||item.t}</span>
+                        <span style={{color:pctColor(item.pct),fontWeight:700}}>{item.pct}%</span>
                       </div>
                       <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999}}/>
+                        <div style={{height:"100%",width:item.pct+"%",background:pctColor(item.pct),borderRadius:999}}/>
                       </div>
                     </div>);
                   })}
                 </div>
               )}
+
+              {/* weekly activity bar chart */}
+              <div style={{...CARD,marginBottom:12}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>THIS WEEK</p>
+                <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
+                  {week.map(function(w){
+                    var h=w.xp>0?Math.max(8,Math.round((w.xp/maxDayXp)*68)):4;
+                    return(<div key={w.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                      <div style={{width:"100%",height:h,background:w.isToday?"#06b6d4":w.xp>0?"#6366f1":"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0",transition:"height 0.3s ease"}}/>
+                      <span style={{fontSize:9,color:w.isToday?"#06b6d4":"#6b7280",fontWeight:w.isToday?700:400}}>{w.label}</span>
+                      {w.count>0&&<span style={{fontSize:9,color:"#4b5563"}}>{w.count}</span>}
+                    </div>);
+                  })}
+                </div>
+              </div>
 
               {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No data yet — complete your first quiz!</p></div>}
               <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>Start Reading</button>
