@@ -877,6 +877,8 @@ export default function App(){
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
   var [customTopic,setCustomTopic]=useState("");
+  var [useWeakVocab,setUseWeakVocab]=useState(false);
+  var [personalizedWords,setPersonalizedWords]=useState([]);
   var [questions,setQuestions]=useState([]);
   var [shuffledRights,setShuffledRights]=useState([]);
   var [current,setCurrent]=useState(0);
@@ -1224,7 +1226,14 @@ export default function App(){
       var typeList="",exList="";
       for(var ti=0;ti<selectedTypes.length;ti++){typeList+=(ti+1)+". "+typeDescs[selectedTypes[ti]]+"\n";exList+="    "+typeExamples[selectedTypes[ti]]+(ti<selectedTypes.length-1?",":"")+"\\n";}
       var passInstr={A1:"80-100 words, basic vocabulary, daily life",A2:"110-130 words, everyday vocabulary, travel/hobbies",B1:"140-160 words, moderate vocabulary, tech/environment",B2:"170-190 words, varied vocabulary, nuanced argument",C1:"200-220 words, sophisticated vocabulary, philosophy/politics",C2:"230-260 words, advanced academic vocabulary, abstract topic"};
+      var weakWords=[];
+      if(useWeakVocab&&vocab.length>0){
+        var active=vocab.filter(function(w){return w.status!=="known";});
+        active.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
+        weakWords=active.slice(0,5).map(function(w){return w.word;});
+      }
       var topicInstr=customTopic.trim()?"Write about this specific topic: \""+customTopic.trim()+"\". Keep it relevant and appropriate for the level.":"Pick a RANDOM varied topic.";
+      if(weakWords.length>0){topicInstr+="\n\nIMPORTANT: Naturally incorporate these vocabulary words into the passage (the student is practising them): "+weakWords.join(", ")+". Use each word at least once in context.";}
       var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\n"+topicInstr+"\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
       var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:pt}]})});
       var data=await res.json();
@@ -1237,6 +1246,7 @@ export default function App(){
       setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
       var aiId="ai_"+level.toLowerCase()+"_"+(json.topic||"").toLowerCase().replace(/[^a-z0-9]/g,"_").slice(0,20)+"_"+Date.now();
       setCurrentStoryId(aiId);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+      setPersonalizedWords(weakWords);
       setStage("reading");
     }catch(e){console.log("generate err",e);setError("Generation failed - please try again.");setStage("home");}
     clearInterval(iv);
@@ -1841,6 +1851,24 @@ export default function App(){
                 {customTopic.trim()&&<button onClick={function(){setCustomTopic("");}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>✕</button>}
               </div>
               {customTopic.trim()&&<p style={{fontSize:11,color:"#818cf8",margin:"6px 0 0"}}>AI will write a passage about: <strong>{customTopic.trim()}</strong></p>}
+              {/* personalised passage toggle */}
+              {(function(){
+                var activeVocab=vocab.filter(function(w){return w.status!=="known";});
+                activeVocab.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
+                var previewWords=activeVocab.slice(0,5).map(function(w){return w.word;});
+                return(<div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <button onClick={function(){setUseWeakVocab(function(v){return !v;});}} style={{background:useWeakVocab?"rgba(16,185,129,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(useWeakVocab?"#10b981":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:11,color:useWeakVocab?"#34d399":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all 0.15s"}}>
+                        {useWeakVocab?"✓ Vocab-Personalised":"📚 Personalise with my vocab"}
+                      </button>
+                      {activeVocab.length===0&&<span style={{fontSize:10,color:"#4b5563"}}>(add words to vocab first)</span>}
+                    </div>
+                    {useWeakVocab&&previewWords.length>0&&<p style={{fontSize:11,color:"#34d399",margin:"5px 0 0"}}>Passage will include: {previewWords.map(function(w,i){return<span key={w} style={{background:"rgba(16,185,129,0.15)",borderRadius:4,padding:"1px 5px",marginRight:4,display:"inline-block"}}>{w}</span>;})}</p>}
+                    {useWeakVocab&&previewWords.length===0&&<p style={{fontSize:11,color:"#6b7280",margin:"5px 0 0"}}>No active vocab words — add some from the Vocab screen.</p>}
+                  </div>
+                </div>);
+              })()}
             </div>
 
             {/* level selector */}
@@ -1957,6 +1985,13 @@ export default function App(){
                   <button onClick={function(){setFocusMode(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>📖 Focus</button>
                 </div>
               </div>
+
+              {/* personalised vocab banner */}
+              {personalizedWords.length>0&&<div style={{background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.3)",borderRadius:10,padding:"8px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:12,color:"#34d399",fontWeight:700}}>📚 Personalised passage</span>
+                <span style={{fontSize:11,color:"#6b7280"}}>includes your vocab words:</span>
+                {personalizedWords.map(function(w){return<span key={w} style={{background:"rgba(16,185,129,0.2)",borderRadius:4,padding:"1px 6px",fontSize:11,color:"#34d399"}}>{w}</span>;})}
+              </div>}
 
               {/* difficulty analyzer card */}
               <div style={{...CARD,padding:"10px 14px",marginBottom:10,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
