@@ -43,8 +43,10 @@ export const handler = async function (event) {
   }
 
   try {
+    const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
+
     // Try the dedicated auth store first (new and migrated users)
-    const ar = await fetch(`${DB}/rq/rq-auth-v6.json`);
+    const ar = await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`);
     const authData = await ar.json();
     if (Array.isArray(authData)) {
       const authUser = authData.find(function (u) {
@@ -79,7 +81,7 @@ export const handler = async function (event) {
     // Migrate: write to rq-auth-v6 with SHA-256 hash going forward
     const authList = Array.isArray(authData) ? authData : [];
     const newAuthList = authList.concat([{ name: profileUser.name, hash }]);
-    await fetch(`${DB}/rq/rq-auth-v6.json`, {
+    await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newAuthList),
