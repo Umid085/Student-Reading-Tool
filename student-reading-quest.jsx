@@ -1579,10 +1579,10 @@ export default function App(){
 
   // ── style helpers ─────────────────────────────────────────
   var BG="linear-gradient(160deg,#0d0d1a 0%,#111827 55%,#0d1f12 100%)";
-  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20};
-  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600};
-  var INP={width:"100%",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
-  function mkBtn(bg,fg){return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit"};}
+  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.07)"};
+  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.14)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600,transition:"all 0.18s ease"};
+  var INP={width:"100%",background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.18s,box-shadow 0.18s"};
+  function mkBtn(bg,fg){var glow=bg&&bg.startsWith("#")?bg+"55":"rgba(99,102,241,0.35)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
   function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
 
   if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",color:"#34d399",fontFamily:"sans-serif"}}>Loading...</div>;
@@ -1612,18 +1612,43 @@ export default function App(){
   return(
     <>
     <style>{`
-      @keyframes rqFloat{0%,100%{transform:translateY(0px)}50%{transform:translateY(-22px)}}
+      @keyframes rqOrbDrift{
+        0%,100%{transform:translate(0,0) scale(1)}
+        20%{transform:translate(45px,-70px) scale(1.06)}
+        45%{transform:translate(-35px,-28px) scale(0.94)}
+        70%{transform:translate(28px,55px) scale(1.03)}
+      }
+      @keyframes rqPulseGlow{
+        0%,100%{opacity:1}
+        50%{opacity:0.72}
+      }
+      @keyframes rqShimmer{
+        0%{background-position:200% center}
+        100%{background-position:-200% center}
+      }
+      @keyframes rqFadeIn{
+        from{opacity:0;transform:translateY(10px)}
+        to{opacity:1;transform:translateY(0)}
+      }
       *{box-sizing:border-box;margin:0;padding:0}
       html,body{margin:0;padding:0;overflow-x:hidden}
-      .rq-orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;animation:rqFloat var(--dur,12s) ease-in-out infinite;z-index:0}
-      .rq-card-3d{transition:transform 0.22s ease,box-shadow 0.22s ease}
-      .rq-card-3d:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 16px 48px rgba(0,0,0,0.55)}
-      .rq-lb-row{cursor:pointer;transition:background 0.15s,transform 0.15s}
-      .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(3px)}
-      .rq-wrap{width:100%;padding:16px 16px 64px}
+      .rq-orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;animation:rqOrbDrift var(--dur,25s) ease-in-out infinite;z-index:0;will-change:transform}
+      .rq-card-3d{transition:transform 0.25s ease,box-shadow 0.25s ease}
+      .rq-card-3d:hover{transform:translateY(-4px) scale(1.012);box-shadow:0 20px 56px rgba(0,0,0,0.55),0 0 30px rgba(99,102,241,0.15)}
+      .rq-lb-row{cursor:pointer;transition:background 0.18s,transform 0.18s,box-shadow 0.18s}
+      .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(4px);box-shadow:inset 3px 0 0 #6366f1}
+      .rq-wrap{width:100%;padding:16px 16px 64px;animation:rqFadeIn 0.4s ease both}
       .rq-home-hdr{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding-top:8px;margin-bottom:14px}
       .rq-home-nav{display:flex;gap:6px;flex-shrink:0}
       .rq-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+      .rq-wrap button{transition:transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease,opacity 0.15s ease}
+      .rq-wrap button:hover:not(:disabled){filter:brightness(1.14)}
+      .rq-wrap button:active:not(:disabled){transform:scale(0.95)!important}
+      .rq-wrap input:focus,.rq-wrap textarea:focus{border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,0.22)!important;outline:none!important}
+      .rq-glow-green{text-shadow:0 0 12px rgba(52,211,153,0.7)}
+      .rq-glow-amber{text-shadow:0 0 12px rgba(251,191,36,0.7)}
+      .rq-glow-red{text-shadow:0 0 12px rgba(248,113,113,0.7)}
+      .rq-shimmer{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);background-size:200% auto;animation:rqShimmer 2.5s linear infinite}
       @media(max-width:400px){.rq-home-nav button{padding:7px 10px!important;font-size:12px!important}}
       @media(min-width:480px){.rq-wrap{max-width:480px;margin:0 auto;padding:18px 20px 64px}}
       @media(min-width:640px){.rq-wrap{max-width:660px;padding:22px 28px 72px}.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
@@ -1631,9 +1656,13 @@ export default function App(){
       @media(min-width:1440px){.rq-wrap{max-width:1040px;padding:36px 80px 100px}}
     `}</style>
     <div style={{minHeight:"100vh",background:BG,fontFamily:"'Trebuchet MS',sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
-      <div className="rq-orb" style={{width:520,height:520,background:"rgba(99,102,241,0.11)",top:"-18%",left:"-13%","--dur":"13s"}}/>
-      <div className="rq-orb" style={{width:380,height:380,background:"rgba(52,211,153,0.08)",top:"38%",right:"-10%","--dur":"17s",animationDelay:"4s"}}/>
-      <div className="rq-orb" style={{width:300,height:300,background:"rgba(236,72,153,0.07)",bottom:"4%",left:"8%","--dur":"21s",animationDelay:"9s"}}/>
+      <div className="rq-orb" style={{width:680,height:680,background:"rgba(99,102,241,0.14)",top:"-22%",left:"-16%","--dur":"28s"}}/>
+      <div className="rq-orb" style={{width:500,height:500,background:"rgba(52,211,153,0.10)",top:"35%",right:"-14%","--dur":"34s",animationDelay:"6s"}}/>
+      <div className="rq-orb" style={{width:420,height:420,background:"rgba(236,72,153,0.09)",bottom:"2%",left:"5%","--dur":"38s",animationDelay:"14s"}}/>
+      {/* scanlines */}
+      <div style={{position:"fixed",inset:0,backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px)",pointerEvents:"none",zIndex:2}}/>
+      {/* vignette */}
+      <div style={{position:"fixed",inset:0,background:"radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.45) 100%)",pointerEvents:"none",zIndex:2}}/>
       <div className="rq-wrap" style={{position:"relative",zIndex:1}}>
 
         {/* ── AUTH ──────────────────────────────────────────── */}
@@ -1689,7 +1718,7 @@ export default function App(){
                   <div style={{display:"flex",alignItems:"center",gap:12}}>
                     <div style={{fontSize:36,lineHeight:1}}>{streakAtRisk?"🛡️":"🔥"}</div>
                     <div>
-                      <div style={{fontSize:22,fontWeight:900,color:streakAtRisk?"#f87171":"#fbbf24",lineHeight:1}}>{myStreak} <span style={{fontSize:13,fontWeight:600}}>day streak</span></div>
+                      <div className={streakAtRisk?"rq-glow-red":"rq-glow-amber"} style={{fontSize:22,fontWeight:900,color:streakAtRisk?"#f87171":"#fbbf24",lineHeight:1}}>{myStreak} <span style={{fontSize:13,fontWeight:600}}>day streak</span></div>
                       {longestStreak>0&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Best: {longestStreak} days</div>}
                       {streakAtRisk&&<div style={{fontSize:11,color:"#f87171",marginTop:2,fontWeight:600}}>You missed yesterday — use a shield to save it!</div>}
                     </div>
@@ -1921,7 +1950,7 @@ export default function App(){
             <div className="rq-lvgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
               {LEVELS.map(function(l){
                 var active=level===l.key;
-                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 14px "+l.glow:"none"}}>
+                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 22px "+l.glow+",0 0 40px "+l.glow+"44,inset 0 1px 0 rgba(255,255,255,0.08)":"none"}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
                     <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
                     <span style={{background:active?l.color:"rgba(255,255,255,0.06)",color:active?"#0d0d1a":"#6b7280",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
@@ -1939,9 +1968,9 @@ export default function App(){
         {/* ── LOADING ───────────────────────────────────────── */}
         {stage==="loading"&&(
           <div style={{textAlign:"center",paddingTop:90}}>
-            <div style={{fontSize:44,marginBottom:14}}>...</div>
-            <h3 style={{color:lv?lv.color:"#34d399",fontWeight:800,fontSize:17,marginBottom:8}}>{loadMsg}</h3>
-            <p style={{color:"#6b7280",fontSize:13}}>Creating {selectedTypes.length} question type(s) for {level}...</p>
+            <div style={{fontSize:44,marginBottom:14,animation:"rqPulseGlow 1.4s ease-in-out infinite"}}>✦</div>
+            <h3 className="rq-shimmer" style={{color:lv?lv.color:"#34d399",fontWeight:800,fontSize:17,marginBottom:8,borderRadius:8,padding:"2px 0"}}>{loadMsg}</h3>
+            <p style={{color:"#6b7280",fontSize:13}}>Creating {selectedTypes.length} question type(s) for {level}…</p>
           </div>
         )}
 
@@ -2275,7 +2304,7 @@ export default function App(){
             <h2 style={{fontSize:22,fontWeight:900,margin:"0 0 4px",color:lv?lv.color:"#34d399"}}>{result.pct>=80?"Excellent!":result.pct>=60?"Good job!":"Keep going!"}</h2>
             <p style={{color:"#9ca3af",marginBottom:14,fontSize:13}}>{level} - {topic}</p>
             <div style={{...CARD,marginBottom:10}}>
-              <div style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
+              <div className="rq-glow-green" style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
               <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
               <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
                 {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
@@ -3724,7 +3753,7 @@ export default function App(){
                 <div>
                   {/* overall score */}
                   <div style={{...CARD,marginBottom:12,textAlign:"center",padding:20,background:"rgba(245,158,11,0.07)",borderColor:"rgba(245,158,11,0.35)"}}>
-                    <div style={{fontSize:48,fontWeight:900,color:scoreColor(writeFeedback.overall||0),marginBottom:4}}>{writeFeedback.overall||0}%</div>
+                    <div className="rq-glow-green" style={{fontSize:48,fontWeight:900,color:scoreColor(writeFeedback.overall||0),marginBottom:4}}>{writeFeedback.overall||0}%</div>
                     <div style={{fontSize:14,fontWeight:700,color:"#fbbf24",marginBottom:8}}>Overall Writing Score</div>
                     {writeFeedback.strengths&&<p style={{fontSize:13,color:"#34d399",margin:"0 0 4px"}}>💪 {writeFeedback.strengths}</p>}
                     {writeFeedback.improvements&&<p style={{fontSize:13,color:"#9ca3af",margin:0}}>💡 {writeFeedback.improvements}</p>}
@@ -3868,7 +3897,7 @@ export default function App(){
                   {/* score card after reveal */}
                   {ecRevealed&&(
                     <div style={{...CARD,marginBottom:12,padding:16,textAlign:"center",background:"rgba(239,68,68,0.07)",borderColor:"rgba(239,68,68,0.3)"}}>
-                      <div style={{fontSize:40,fontWeight:900,color:correctFinds>=4?"#34d399":correctFinds>=2?"#fbbf24":"#f87171",marginBottom:4}}>{correctFinds}/5</div>
+                      <div className={correctFinds>=4?"rq-glow-green":correctFinds>=2?"rq-glow-amber":"rq-glow-red"} style={{fontSize:40,fontWeight:900,color:correctFinds>=4?"#34d399":correctFinds>=2?"#fbbf24":"#f87171",marginBottom:4}}>{correctFinds}/5</div>
                       <div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>{correctFinds===5?"Perfect! All errors found!":correctFinds>=3?"Good detective work!":"Keep practising — try again!"}</div>
                       {falsePositives>0&&<div style={{fontSize:12,color:"#fbbf24"}}>{falsePositives} false positive{falsePositives>1?"s":""}</div>}
                     </div>
