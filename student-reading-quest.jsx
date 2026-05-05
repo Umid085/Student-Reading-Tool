@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 
 var API        = "/.netlify/functions/generate";
+var AUTH       = "/.netlify/functions/auth";
+var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
 var BOARDS_KEY   = "rq-boards-v6";
 var SOCIAL_KEY   = "rq-social-v6";
@@ -367,11 +369,19 @@ async function apiGet(key){
     try{var v=localStorage.getItem(key);return v?JSON.parse(v):null;}catch(e2){return null;}
   }
 }
+async function getSessionToken(name,hash){
+  try{
+    var r=await fetch(AUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,hash:hash})});
+    if(r.ok){var d=await r.json();if(d.token){_sessionToken=d.token;}}
+  }catch(e){}
+}
 async function apiSet(key,val){
   var str=JSON.stringify(val);
   try{localStorage.setItem(key,str);}catch(e){}  // always write locally first
   try{
-    var r=await fetch("/.netlify/functions/storage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key,value:str})});
+    var hdrs={"Content-Type":"application/json"};
+    if(_sessionToken)hdrs["Authorization"]="Bearer "+_sessionToken;
+    var r=await fetch("/.netlify/functions/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
     if(!r.ok)throw new Error("not ok");
   }catch(e){}  // local already saved, silent fail on remote
 }
@@ -801,8 +811,8 @@ export default function App(){
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
     Promise.all([loadUsers(),loadBoards(),loadSocial()]).then(function(v){
       setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);
-      if(saved){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===saved){found=v[0][i];break;}}if(found){setCurrentUser(found);setStage("home");}}
-      else if(savedCreds&&savedCreds.name&&savedCreds.hash){var found2=null;for(var j=0;j<v[0].length;j++){if(v[0][j].name===savedCreds.name&&v[0][j].hash===savedCreds.hash){found2=v[0][j];break;}}if(found2){setCurrentUser(found2);setStage("home");}}
+      if(saved){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===saved){found=v[0][i];break;}}if(found){getSessionToken(found.name,found.hash);setCurrentUser(found);setStage("home");}}
+      else if(savedCreds&&savedCreds.name&&savedCreds.hash){var found2=null;for(var j=0;j<v[0].length;j++){if(v[0][j].name===savedCreds.name&&v[0][j].hash===savedCreds.hash){found2=v[0][j];break;}}if(found2){getSessionToken(found2.name,found2.hash);setCurrentUser(found2);setStage("home");}}
       setAppReady(true);
     });
   },[]);
@@ -865,6 +875,7 @@ export default function App(){
     await saveUsers(nu);
     localStorage.setItem("rq-session",user.name);
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,hash:user.hash}));
+    getSessionToken(user.name,user.hash);
     setAllUsers(nu);setCurrentUser(user);setStage("home");
   }
 
@@ -886,6 +897,7 @@ export default function App(){
     }
     localStorage.setItem("rq-session",found.name);
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:found.hash}));
+    getSessionToken(found.name,found.hash);
     setCurrentUser(found);setStage("home");
   }
 
