@@ -561,6 +561,37 @@ function challengeTimeLeft(expiresAt){
   return h>0?h+"h "+m+"m left":m+"m left";
 }
 
+// ── reading goals ────────────────────────────────────────────
+var GOAL_DEFS=[
+  {id:"weekly_games", label:"Games this week",            icon:"🎮", unit:"games", opts:[3,5,7,10]},
+  {id:"weekly_xp",    label:"XP this week",               icon:"⚡", unit:"XP",   opts:[500,1000,2000,5000]},
+  {id:"avg_score",    label:"Avg score (next 5 games)",   icon:"🎯", unit:"%",    opts:[60,70,80,90]},
+  {id:"streak",       label:"Streak target",              icon:"🔥", unit:"days", opts:[3,7,14,30]},
+];
+function weekStart(){
+  var d=new Date();var day=d.getDay();
+  var diff=d.getDate()-day+(day===0?-6:1);
+  var m=new Date(d);m.setDate(diff);m.setHours(0,0,0,0);return m;
+}
+function getGoalProgress(goalId,goalData,games,streak){
+  var ws=weekStart();
+  var wkGames=games.filter(function(g){return new Date(g.date)>=ws;});
+  if(goalId==="weekly_games"){
+    var c=wkGames.length;return{current:c,target:goalData.target,pct:Math.min(100,Math.round(c/goalData.target*100)),done:c>=goalData.target};
+  }
+  if(goalId==="weekly_xp"){
+    var c=wkGames.reduce(function(s,g){return s+g.xp;},0);return{current:c,target:goalData.target,pct:Math.min(100,Math.round(c/goalData.target*100)),done:c>=goalData.target};
+  }
+  if(goalId==="avg_score"){
+    var tr=goalData.trackGames||[];var avg=tr.length?Math.round(tr.reduce(function(s,p){return s+p;},0)/tr.length):0;
+    return{current:avg,target:goalData.target,pct:Math.min(100,Math.round(tr.length/5*100)),done:tr.length>=5&&avg>=goalData.target,gamesPlayed:tr.length};
+  }
+  if(goalId==="streak"){
+    var c=streak;return{current:c,target:goalData.target,pct:Math.min(100,Math.round(c/goalData.target*100)),done:c>=goalData.target};
+  }
+  return{current:0,target:1,pct:0,done:false};
+}
+
 // ── chart component ──────────────────────────────────────────
 function GameChart(props){
   var games=props.games||[];
@@ -898,6 +929,8 @@ export default function App(){
   var [discussStoryId,setDiscussStoryId]=useState(null);
   var [allDiscuss,setAllDiscuss]=useState({});
   var [discussInput,setDiscussInput]=useState("");
+  // reading goals
+  var [goals,setGoals]=useState({});
   // ai tutor
   var [tutorChat,setTutorChat]=useState([]);
   var [tutorInput,setTutorInput]=useState("");
@@ -952,6 +985,9 @@ export default function App(){
     setShields(sd&&sd.shields!=null?sd.shields:0);
     setShieldDates(sd&&sd.shieldDates?sd.shieldDates:[]);
     setLongestStreak(sd&&sd.longestStreak?sd.longestStreak:0);
+    var gk="rq-goals-v1-"+currentUser.name;
+    var gd=null;try{gd=JSON.parse(localStorage.getItem(gk));}catch(e){}
+    setGoals(gd||{});
   },[currentUser]);
 
   // always pull fresh users when entering friends page or typing a search
@@ -1319,7 +1355,22 @@ export default function App(){
       setQuestsDone(nqd);
     }
     var questBonus=newQuestItems.reduce(function(s,q){return s+q.xp;},0);
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal});
+    // update reading goals
+    var updatedGoals=Object.assign({},goals);
+    var completedGoalIds=[];
+    var wkId=getWeekId();
+    GOAL_DEFS.forEach(function(def){
+      var g=updatedGoals[def.id];if(!g)return;
+      var wasReset=false;
+      if((def.id==="weekly_games"||def.id==="weekly_xp")&&g.weekId!==wkId){g=Object.assign({},g,{weekId:wkId});wasReset=true;}
+      var prevProg=getGoalProgress(def.id,g,currentUser.games,newStreakVal);
+      if(def.id==="avg_score"){var tr=(g.trackGames||[]).concat([pct]);g=Object.assign({},g,{trackGames:tr.slice(-5)});}
+      updatedGoals[def.id]=g;
+      var newProg=getGoalProgress(def.id,g,updatedUser.games,newStreakVal);
+      if(newProg.done&&!prevProg.done)completedGoalIds.push(def.id);
+    });
+    saveGoalsLocal(updatedGoals);
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds});
     setStage("result");
   }
 
@@ -1345,6 +1396,22 @@ export default function App(){
     setShields(newSh);setShieldDates(newSDs);
     var sKey="rq-streak-data-v1-"+currentUser.name;
     localStorage.setItem(sKey,JSON.stringify({shields:newSh,shieldDates:newSDs,longestStreak:longestStreak}));
+  }
+
+  function saveGoalsLocal(g){
+    if(!currentUser)return;
+    localStorage.setItem("rq-goals-v1-"+currentUser.name,JSON.stringify(g));
+    setGoals(g);
+  }
+  function setGoal(id,target){
+    var ng=Object.assign({},goals);
+    if(id==="avg_score")ng[id]={target:target,trackGames:[]};
+    else if(id==="weekly_games"||id==="weekly_xp")ng[id]={target:target,weekId:getWeekId()};
+    else ng[id]={target:target};
+    saveGoalsLocal(ng);
+  }
+  function removeGoal(id){
+    var ng=Object.assign({},goals);delete ng[id];saveGoalsLocal(ng);
   }
 
   async function sendTutorMessage(text){
@@ -1498,6 +1565,7 @@ export default function App(){
                 <button onClick={function(){setStage("analytics");}} style={GHOST}>Stats</button>
                 <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>Vocab</button>
                 <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
+                <button onClick={function(){setStage("goals");}} style={GHOST}>Goals</button>
                 <button onClick={function(){setStage("library");}} style={GHOST}>Library</button>
                 <button onClick={function(){setStage("weekly");}} style={GHOST}>Weekly</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
@@ -1543,6 +1611,34 @@ export default function App(){
                     </div>
                     <button onClick={function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}} style={{...mkBtn("#06b6d4","#0d0d1a"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Review</button>
                   </div>
+                </div>
+              );
+            })()}
+
+            {/* reading goals summary */}
+            {currentUser&&Object.keys(goals).length>0&&(function(){
+              var activeGoals=GOAL_DEFS.filter(function(d){return goals[d.id];});
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#818cf8",margin:0}}>🎯 READING GOALS</p>
+                    <button onClick={function(){setStage("goals");}} style={{background:"none",border:"none",color:"#6366f1",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>Manage →</button>
+                  </div>
+                  {activeGoals.map(function(def){
+                    var g=goals[def.id];
+                    var prog=getGoalProgress(def.id,g,currentUser.games,myStreak);
+                    return(
+                      <div key={def.id} style={{marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                          <span style={{color:"#9ca3af"}}>{def.icon} {def.label}</span>
+                          <span style={{color:prog.done?"#34d399":"#a78bfa",fontWeight:700}}>{prog.done?"✓ Done!":prog.current+(def.id==="avg_score"?" avg":"")+"/"+prog.target+" "+def.unit}</span>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:prog.pct+"%",background:prog.done?"#34d399":"#6366f1",borderRadius:999,transition:"width 0.4s ease"}}/>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -1964,6 +2060,21 @@ export default function App(){
                     <div style={{fontSize:11,color:"#9ca3af"}}>{result.newStreakVal}-day milestone — you now have {shields} shield{shields!==1?"s":""}. It will save your streak if you miss a day.</div>
                   </div>
                 </div>
+              </div>
+            )}
+            {result.completedGoals&&result.completedGoals.length>0&&(
+              <div style={{...CARD,marginBottom:10,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.4)"}}>
+                <p style={{fontWeight:700,fontSize:12,color:"#818cf8",marginBottom:8,textAlign:"left"}}>🎯 GOAL{result.completedGoals.length>1?"S":""} ACHIEVED!</p>
+                {result.completedGoals.map(function(id){
+                  var def=GOAL_DEFS.find(function(d){return d.id===id;});
+                  return def?(
+                    <div key={id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                      <span style={{fontSize:16}}>{def.icon}</span>
+                      <span style={{fontSize:13,color:"#c7d2fe",fontWeight:600}}>{def.label}</span>
+                      <span style={{marginLeft:"auto",fontSize:12,color:"#34d399",fontWeight:700}}>✓</span>
+                    </div>
+                  ):null;
+                })}
               </div>
             )}
             {result.newQuests&&result.newQuests.length>0&&(
@@ -2616,6 +2727,70 @@ export default function App(){
               <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
             </div>
           </div>);
+        })()}
+
+        {/* ── READING GOALS ─────────────────────────────────── */}
+        {stage==="goals"&&currentUser&&(function(){
+          var games=currentUser.games||[];
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#818cf8"}}>🎯 Reading Goals</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+
+              {/* active goals */}
+              {GOAL_DEFS.filter(function(d){return goals[d.id];}).length>0&&(
+                <div style={{...CARD,marginBottom:14,padding:16}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>ACTIVE GOALS</p>
+                  {GOAL_DEFS.filter(function(d){return goals[d.id];}).map(function(def){
+                    var g=goals[def.id];
+                    var prog=getGoalProgress(def.id,g,games,myStreak);
+                    var detail="";
+                    if(def.id==="avg_score")detail=(g.trackGames||[]).length+"/5 games tracked";
+                    else if(def.id==="weekly_games"||def.id==="weekly_xp")detail="resets each week";
+                    return(
+                      <div key={def.id} style={{marginBottom:14,padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:12,border:"1px solid "+(prog.done?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.07)")}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                          <div>
+                            <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{def.icon} {def.label}</div>
+                            {detail&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{detail}</div>}
+                          </div>
+                          <div style={{textAlign:"right",flexShrink:0,marginLeft:10}}>
+                            <div style={{fontSize:15,fontWeight:900,color:prog.done?"#34d399":"#a78bfa"}}>{prog.done?"✓ Done!":prog.current+(def.id==="avg_score"?" avg%":"")+"/"+prog.target+" "+def.unit}</div>
+                          </div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:7,overflow:"hidden",marginBottom:8}}>
+                          <div style={{height:"100%",width:prog.pct+"%",background:prog.done?"#34d399":"linear-gradient(90deg,#6366f1,#a78bfa)",borderRadius:999,transition:"width 0.4s ease"}}/>
+                        </div>
+                        <button onClick={function(){removeGoal(def.id);}} style={{background:"none",border:"1px solid rgba(239,68,68,0.25)",color:"#f87171",borderRadius:8,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Remove</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* add new goals */}
+              <div style={{...CARD,padding:16}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>SET A GOAL</p>
+                {GOAL_DEFS.filter(function(d){return!goals[d.id];}).map(function(def){
+                  return(
+                    <div key={def.id} style={{marginBottom:14}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",marginBottom:7}}>{def.icon} {def.label}</div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {def.opts.map(function(opt){
+                          return<button key={opt} onClick={function(){setGoal(def.id,opt);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",color:"#c7d2fe",borderRadius:999,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{opt} {def.unit}</button>;
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                {GOAL_DEFS.every(function(d){return goals[d.id];})&&(
+                  <p style={{color:"#6b7280",fontSize:13,textAlign:"center"}}>All goal types are active!</p>
+                )}
+              </div>
+            </div>
+          );
         })()}
 
         {/* ── ANALYTICS ─────────────────────────────────────── */}
