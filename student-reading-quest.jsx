@@ -974,6 +974,12 @@ export default function App(){
   var [writeFeedback,setWriteFeedback]=useState(null);
   var [writeLoading,setWriteLoading]=useState(false);
   var [writeError,setWriteError]=useState("");
+  // error correction challenge
+  var [ecData,setEcData]=useState(null);
+  var [ecLoading,setEcLoading]=useState(false);
+  var [ecError,setEcError]=useState("");
+  var [ecSelected,setEcSelected]=useState(new Set());
+  var [ecRevealed,setEcRevealed]=useState(false);
   // rsvp speed reader
   var [rsvpActive,setRsvpActive]=useState(false);
   var [rsvpWpm,setRsvpWpm]=useState(250);
@@ -2395,6 +2401,24 @@ export default function App(){
                 <button onClick={function(){setWriteSummary("");setWriteFeedback(null);setWriteError("");setStage("writefeedback");}} style={{...mkBtn("#f59e0b","#0d0d1a"),padding:"8px 16px",fontSize:12,flexShrink:0}}>Start →</button>
               </div>
             </div>
+            <div style={{...CARD,marginBottom:10,padding:14,background:"rgba(239,68,68,0.06)",borderColor:"rgba(239,68,68,0.3)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#f87171",marginBottom:2}}>🔍 Error Hunt</div>
+                  <div style={{fontSize:11,color:"#9ca3af"}}>Find 5 deliberate errors hidden in the passage. Can you spot them all?</div>
+                </div>
+                <button onClick={async function(){
+                  setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcError("");setEcLoading(true);setStage("errorcorrect");
+                  try{
+                    var r=await fetch("/.netlify/functions/errorcorrect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level})});
+                    var d=await r.json();
+                    if(d.error)throw new Error(d.error);
+                    setEcData(d);
+                  }catch(e){setEcError(e.message||"Failed — try again.");setStage("result");}
+                  setEcLoading(false);
+                }} style={{...mkBtn("#ef4444","#fff0f0"),padding:"8px 16px",fontSize:12,flexShrink:0}}>Start →</button>
+              </div>
+            </div>
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
@@ -3731,6 +3755,165 @@ export default function App(){
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                     <button onClick={function(){setWriteFeedback(null);setWriteSummary("");setWriteError("");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>Try Again</button>
                     <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Back to Results</button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ── ERROR CORRECTION CHALLENGE ────────────────────── */}
+        {stage==="errorcorrect"&&(
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:6}}>
+              <button onClick={function(){setStage("result");}} style={GHOST}>← Back</button>
+              <h2 style={{fontSize:18,fontWeight:900,color:"#f87171",margin:0}}>🔍 Error Hunt</h2>
+              {!ecRevealed&&ecData&&<span style={{marginLeft:"auto",fontSize:12,color:"#9ca3af"}}>{ecSelected.size}/5 selected</span>}
+            </div>
+
+            {/* loading */}
+            {ecLoading&&(
+              <div style={{...CARD,padding:40,textAlign:"center"}}>
+                <div style={{fontSize:28,marginBottom:12}}>🔍</div>
+                <div style={{fontSize:14,color:"#9ca3af"}}>Planting errors in the passage…</div>
+              </div>
+            )}
+
+            {/* error state */}
+            {ecError&&!ecLoading&&(
+              <div style={{...CARD,padding:20,textAlign:"center"}}>
+                <div style={{fontSize:13,color:"#ef4444",marginBottom:12}}>{ecError}</div>
+                <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),padding:"8px 20px",fontSize:13}}>Back</button>
+              </div>
+            )}
+
+            {/* game */}
+            {ecData&&!ecLoading&&(function(){
+              // tokenise corrupted passage into words keeping punctuation attached
+              var tokens=ecData.passage.match(/\S+/g)||[];
+              // build a lookup: stripped token → error index
+              function strip(t){return t.replace(/[^a-zA-Z']/g,"").toLowerCase();}
+              var errorMap={};
+              (ecData.errors||[]).forEach(function(err,i){
+                errorMap[err.corrupted.toLowerCase()]=i;
+              });
+
+              function toggleToken(idx){
+                if(ecRevealed)return;
+                setEcSelected(function(prev){
+                  var next=new Set(prev);
+                  if(next.has(idx))next.delete(idx);
+                  else if(next.size<5)next.add(idx);
+                  return next;
+                });
+              }
+
+              // scoring after reveal
+              var correctFinds=0,falsePositives=0;
+              var tokenResults={};
+              if(ecRevealed){
+                ecSelected.forEach(function(idx){
+                  var t=strip(tokens[idx]);
+                  if(errorMap[t]!==undefined){tokenResults[idx]="correct";correctFinds++;}
+                  else{tokenResults[idx]="false";falsePositives++;}
+                });
+                // find missed errors
+                (ecData.errors||[]).forEach(function(err){
+                  var found=false;
+                  ecSelected.forEach(function(idx){if(strip(tokens[idx])===err.corrupted.toLowerCase())found=true;});
+                  if(!found){
+                    // mark the token in the passage as missed
+                    tokens.forEach(function(t,idx){if(strip(t)===err.corrupted.toLowerCase())tokenResults[idx]="missed";});
+                  }
+                });
+              }
+
+              var typeColor={spelling:"#f87171",grammar:"#fb923c",vocabulary:"#a78bfa",tense:"#38bdf8"};
+
+              return(
+                <div>
+                  {/* instructions */}
+                  {!ecRevealed&&<div style={{...CARD,marginBottom:12,padding:"10px 14px",background:"rgba(239,68,68,0.06)",borderColor:"rgba(239,68,68,0.2)"}}>
+                    <p style={{fontSize:12,color:"#fca5a5",margin:0}}>Tap up to 5 words you think are errors. Then press <strong>Check Answers</strong>.</p>
+                  </div>}
+
+                  {/* passage */}
+                  <div style={{...CARD,marginBottom:12,padding:"16px 14px",lineHeight:2.2,fontSize:16,color:"#e5e7eb"}}>
+                    {tokens.map(function(tok,idx){
+                      var sel=ecSelected.has(idx);
+                      var res=tokenResults[idx];
+                      var bg=res==="correct"?"rgba(52,211,153,0.25)":res==="false"?"rgba(251,191,36,0.25)":res==="missed"?"rgba(239,68,68,0.25)":sel?"rgba(239,68,68,0.2)":"transparent";
+                      var border=res==="correct"?"2px solid #34d399":res==="false"?"2px solid #fbbf24":res==="missed"?"2px dashed #ef4444":sel?"2px solid #f87171":"2px solid transparent";
+                      var col=res==="correct"?"#34d399":res==="false"?"#fbbf24":res==="missed"?"#f87171":sel?"#fca5a5":"inherit";
+                      return(
+                        <span key={idx}>
+                          <span
+                            onClick={function(){toggleToken(idx);}}
+                            style={{background:bg,border:border,borderRadius:4,padding:"1px 3px",color:col,cursor:ecRevealed?"default":"pointer",transition:"all 0.12s",display:"inline-block",userSelect:"none"}}
+                          >{tok}</span>
+                          {" "}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  {/* legend after reveal */}
+                  {ecRevealed&&<div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:12,fontSize:11}}>
+                    <span><span style={{color:"#34d399"}}>■</span> Correct find</span>
+                    <span><span style={{color:"#fbbf24"}}>■</span> False positive</span>
+                    <span><span style={{color:"#f87171"}}>■</span> Missed error</span>
+                  </div>}
+
+                  {/* score card after reveal */}
+                  {ecRevealed&&(
+                    <div style={{...CARD,marginBottom:12,padding:16,textAlign:"center",background:"rgba(239,68,68,0.07)",borderColor:"rgba(239,68,68,0.3)"}}>
+                      <div style={{fontSize:40,fontWeight:900,color:correctFinds>=4?"#34d399":correctFinds>=2?"#fbbf24":"#f87171",marginBottom:4}}>{correctFinds}/5</div>
+                      <div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>{correctFinds===5?"Perfect! All errors found!":correctFinds>=3?"Good detective work!":"Keep practising — try again!"}</div>
+                      {falsePositives>0&&<div style={{fontSize:12,color:"#fbbf24"}}>{falsePositives} false positive{falsePositives>1?"s":""}</div>}
+                    </div>
+                  )}
+
+                  {/* error explanations after reveal */}
+                  {ecRevealed&&(
+                    <div style={{...CARD,marginBottom:12,padding:14}}>
+                      <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:"0 0 12px",letterSpacing:0.6}}>ALL 5 ERRORS</p>
+                      {(ecData.errors||[]).map(function(err,i){
+                        var tc=typeColor[err.type]||"#9ca3af";
+                        var wasFound=Array.from(ecSelected).some(function(idx){return strip(tokens[idx])===err.corrupted.toLowerCase();});
+                        return(
+                          <div key={i} style={{marginBottom:12,paddingBottom:12,borderBottom:i<ecData.errors.length-1?"1px solid rgba(255,255,255,0.06)":"none"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                              <span style={{background:"rgba(255,255,255,0.06)",borderRadius:4,padding:"2px 7px",fontSize:10,color:tc,fontWeight:700,textTransform:"uppercase"}}>{err.type}</span>
+                              <span style={{fontSize:13,color:"#ef4444",fontFamily:"monospace",fontWeight:700}}>{err.corrupted}</span>
+                              <span style={{fontSize:11,color:"#6b7280"}}>→</span>
+                              <span style={{fontSize:13,color:"#34d399",fontFamily:"monospace",fontWeight:700}}>{err.original}</span>
+                              <span style={{marginLeft:"auto",fontSize:12}}>{wasFound?"✓":"✗"}</span>
+                            </div>
+                            <p style={{fontSize:12,color:"#9ca3af",margin:0,lineHeight:1.5}}>{err.explanation}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* action buttons */}
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {!ecRevealed&&<button
+                      onClick={function(){setEcRevealed(true);}}
+                      disabled={ecSelected.size===0}
+                      style={{...mkBtn(ecSelected.size===0?"#374151":"#ef4444","#fff0f0"),flex:1,fontSize:13,padding:"11px 0"}}
+                    >Check Answers ({ecSelected.size}/5)</button>}
+                    {ecRevealed&&<button onClick={async function(){
+                      setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcError("");setEcLoading(true);
+                      try{
+                        var r=await fetch("/.netlify/functions/errorcorrect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level})});
+                        var d=await r.json();
+                        if(d.error)throw new Error(d.error);
+                        setEcData(d);
+                      }catch(e){setEcError(e.message||"Failed — try again.");}
+                      setEcLoading(false);
+                    }} style={{...mkBtn("#ef4444","#fff0f0"),flex:1,fontSize:13}}>Try Again</button>}
+                    <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:13}}>Back to Results</button>
                   </div>
                 </div>
               );
