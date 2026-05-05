@@ -1,40 +1,50 @@
-const Anthropic = require("@anthropic-ai/sdk");
+import Anthropic from "@anthropic-ai/sdk";
 
-exports.handler = async function (event) {
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Content-Type": "application/json",
+};
+
+const TIMEOUT_MS = 9000;
+
+export const handler = async function (event) {
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers: CORS, body: "" };
+  }
+
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method Not Allowed" }) };
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "ANTHROPIC_API_KEY is not set" }),
-    };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "ANTHROPIC_API_KEY is not set" }) };
   }
 
   let body;
   try {
     body = JSON.parse(event.body);
   } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: "Invalid JSON body" }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid JSON body" }) };
   }
+
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Claude API timeout — try again")), TIMEOUT_MS)
+  );
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const message = await client.messages.create({
-      model: body.model || "claude-sonnet-4-6",
-      max_tokens: body.max_tokens || 2000,
-      messages: body.messages,
-    });
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(message),
-    };
+    const message = await Promise.race([
+      client.messages.create({
+        model: body.model || "claude-sonnet-4-6",
+        max_tokens: body.max_tokens || 2000,
+        messages: body.messages,
+      }),
+      timeout,
+    ]);
+    return { statusCode: 200, headers: CORS, body: JSON.stringify(message) };
   } catch (e) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: e.message }),
-    };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }
 };
