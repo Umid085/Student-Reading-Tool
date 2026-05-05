@@ -88,6 +88,25 @@ function calcStreak(games) {
   return streak;
 }
 
+function calcStreakWithShields(games,shieldDates){
+  var dates=[];
+  for(var i=0;i<(games||[]).length;i++){var d=games[i].date;if(dates.indexOf(d)===-1)dates.push(d);}
+  for(var j=0;j<(shieldDates||[]).length;j++){if(dates.indexOf(shieldDates[j])===-1)dates.push(shieldDates[j]);}
+  if(!dates.length)return 0;
+  dates.sort(function(a,b){return new Date(b)-new Date(a);});
+  var today=new Date();today.setHours(0,0,0,0);
+  var first=new Date(dates[0]);first.setHours(0,0,0,0);
+  if(Math.round((today-first)/(864e5))>1)return 0;
+  var streak=1;
+  for(var k=1;k<dates.length;k++){
+    var prev=new Date(dates[k-1]);prev.setHours(0,0,0,0);
+    var curr=new Date(dates[k]);curr.setHours(0,0,0,0);
+    if(Math.round((prev-curr)/(864e5))===1)streak++;
+    else break;
+  }
+  return streak;
+}
+
 function getBestLevel(games){
   if(!games||!games.length)return"none";
   var lvOrder=["A1","A2","B1","B2","C1","C2"];
@@ -827,6 +846,10 @@ export default function App(){
   var [discussStoryId,setDiscussStoryId]=useState(null);
   var [allDiscuss,setAllDiscuss]=useState({});
   var [discussInput,setDiscussInput]=useState("");
+  // streak shields
+  var [shields,setShields]=useState(0);
+  var [shieldDates,setShieldDates]=useState([]);
+  var [longestStreak,setLongestStreak]=useState(0);
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -868,6 +891,11 @@ export default function App(){
     loadFavs().then(function(f){setAllFavs(f||{});setFavs((f&&f[currentUser.name])||[]);});
     loadWeeklyLb().then(function(w){var wk=getWeekId();setWeeklyLb((w&&w[wk])||[]);});
     loadDiscuss().then(function(d){setAllDiscuss(d||{});});
+    var sKey="rq-streak-data-v1-"+currentUser.name;
+    var sd=null;try{sd=JSON.parse(localStorage.getItem(sKey));}catch(e){}
+    setShields(sd&&sd.shields!=null?sd.shields:0);
+    setShieldDates(sd&&sd.shieldDates?sd.shieldDates:[]);
+    setLongestStreak(sd&&sd.longestStreak?sd.longestStreak:0);
   },[currentUser]);
 
   // always pull fresh users when entering friends page or typing a search
@@ -1163,13 +1191,13 @@ export default function App(){
     var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
     var today=new Date().toLocaleDateString();
 
-    var badgesBefore=checkBadges(currentUser,vocab,calcStreak(currentUser.games));
+    var badgesBefore=checkBadges(currentUser,vocab,calcStreakWithShields(currentUser.games,shieldDates));
     // quest bonus: check which quests complete with this game
     var tempTodayGames=currentUser.games.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
     var newQuestItems=[];
     dailyQuests.forEach(function(qt){
       if(questsDone[qt.id])return;
-      if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreak(currentUser.games.concat([{date:today}]))})){
+      if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreakWithShields(currentUser.games.concat([{date:today}]),shieldDates)})){
         newQuestItems.push(qt);finalXp+=qt.xp;
       }
     });
@@ -1178,9 +1206,16 @@ export default function App(){
     var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
     var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
     await saveUsers(newUsers);setAllUsers(newUsers);setCurrentUser(updatedUser);
-    var newStreakVal=calcStreak(updatedUser.games);
+    var prevStreakVal=calcStreakWithShields(currentUser.games,shieldDates);
+    var newStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
     var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
     var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
+    var newLongest=Math.max(longestStreak,newStreakVal);
+    var newShields=shields;
+    if(newStreakVal>0&&newStreakVal%7===0&&prevStreakVal%7!==0&&newShields<3){newShields=Math.min(3,newShields+1);}
+    setLongestStreak(newLongest);setShields(newShields);
+    var sKey2="rq-streak-data-v1-"+updatedUser.name;
+    localStorage.setItem(sKey2,JSON.stringify({shields:newShields,shieldDates:shieldDates,longestStreak:newLongest}));
 
     var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
     var nb={};for(var k in boards){nb[k]=boards[k];}
@@ -1219,7 +1254,7 @@ export default function App(){
       setQuestsDone(nqd);
     }
     var questBonus=newQuestItems.reduce(function(s,q){return s+q.xp;},0);
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null});
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal});
     setStage("result");
   }
 
@@ -1232,6 +1267,17 @@ export default function App(){
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});
     setStage("home");
+  }
+
+  function useShield(){
+    if(shields<=0||!currentUser)return;
+    var yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+    var yDate=yesterday.toLocaleDateString();
+    var newSDs=shieldDates.indexOf(yDate)===-1?shieldDates.concat([yDate]):shieldDates;
+    var newSh=shields-1;
+    setShields(newSh);setShieldDates(newSDs);
+    var sKey="rq-streak-data-v1-"+currentUser.name;
+    localStorage.setItem(sKey,JSON.stringify({shields:newSh,shieldDates:newSDs,longestStreak:longestStreak}));
   }
 
   async function startDailyChallenge(){
@@ -1288,9 +1334,22 @@ export default function App(){
   myData=myData||{friends:[],requests:[],likes:0,challenges:[]};
   myData.friends=myData.friends||[];
   myData.requests=myData.requests||[];
-  var myStreak=currentUser?calcStreak(currentUser.games):0;
+  var myStreak=currentUser?calcStreakWithShields(currentUser.games,shieldDates):0;
   var myBestLevel=currentUser?getBestLevel(currentUser.games):"none";
   var pendingChallenges=(myData.challenges||[]).filter(function(c){return c.status==="pending";});
+  // at-risk: pure streak is 0 but last activity was exactly 2 days ago → shield can cover yesterday
+  var streakAtRisk=(function(){
+    if(!currentUser||shields<=0)return false;
+    var pureS=calcStreak(currentUser.games);
+    if(pureS>0)return false; // still active without shield
+    var allDts=(currentUser.games||[]).map(function(g){return g.date;}).concat(shieldDates);
+    allDts=allDts.filter(function(d,i,a){return a.indexOf(d)===i;});
+    if(!allDts.length)return false;
+    allDts.sort(function(a,b){return new Date(b)-new Date(a);});
+    var last=new Date(allDts[0]);last.setHours(0,0,0,0);
+    var tod=new Date();tod.setHours(0,0,0,0);
+    return Math.round((tod-last)/(864e5))===2;
+  })();
 
   return(
     <>
@@ -1346,7 +1405,7 @@ export default function App(){
               <div>
                 <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#34d399"}}>Hey, {currentUser?currentUser.name:""}!</h2>
                 <div className="rq-pills">
-                  <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {myStreak} day streak</span>
+                  <span style={pill(streakAtRisk?"rgba(239,68,68,0.2)":"rgba(251,191,36,0.15)",streakAtRisk?"#f87171":"#fbbf24")}>{streakAtRisk?"⚠️":"🔥"} {myStreak} day streak{shields>0?" · "+"🛡️".repeat(shields):""}</span>
                   <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>Friends: {myData.friends.length}</span>
                   {myData.likes>0&&<span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes}</span>}
                   {pendingChallenges.length>0&&<span style={pill("rgba(239,68,68,0.2)","#f87171")}>!{pendingChallenges.length} challenge</span>}
@@ -1363,6 +1422,28 @@ export default function App(){
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
               </div>
             </div>
+
+            {/* streak card */}
+            {currentUser&&(myStreak>1||streakAtRisk)&&(
+              <div style={{...CARD,marginBottom:12,padding:14,borderColor:streakAtRisk?"rgba(239,68,68,0.35)":"rgba(251,191,36,0.3)",background:streakAtRisk?"rgba(239,68,68,0.06)":"rgba(251,191,36,0.05)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{fontSize:36,lineHeight:1}}>{streakAtRisk?"🛡️":"🔥"}</div>
+                    <div>
+                      <div style={{fontSize:22,fontWeight:900,color:streakAtRisk?"#f87171":"#fbbf24",lineHeight:1}}>{myStreak} <span style={{fontSize:13,fontWeight:600}}>day streak</span></div>
+                      {longestStreak>0&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Best: {longestStreak} days</div>}
+                      {streakAtRisk&&<div style={{fontSize:11,color:"#f87171",marginTop:2,fontWeight:600}}>You missed yesterday — use a shield to save it!</div>}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    {shields>0&&<div style={{fontSize:13,color:"#a78bfa",fontWeight:700}}>{"🛡️".repeat(shields)}</div>}
+                    {streakAtRisk&&shields>0&&<button onClick={useShield} style={{...mkBtn("#6366f1"),padding:"8px 14px",fontSize:12}}>Use Shield</button>}
+                  </div>
+                </div>
+                {!streakAtRisk&&shields<3&&myStreak>0&&myStreak%7!==0&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Earn a shield at {Math.ceil(myStreak/7)*7}-day streak milestone</div>}
+                {!streakAtRisk&&shields===3&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Max shields (3) — keep going!</div>}
+              </div>
+            )}
 
             {/* pending challenges */}
             {pendingChallenges.length>0&&(
@@ -1744,6 +1825,17 @@ export default function App(){
                       <div style={{textAlign:"left"}}><div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{b.name}</div><div style={{fontSize:11,color:"#9ca3af"}}>{b.desc}</div></div>
                     </div>);
                   })}
+                </div>
+              </div>
+            )}
+            {result.earnedShield&&(
+              <div style={{...CARD,marginBottom:10,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.4)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:28}}>🛡️</span>
+                  <div style={{textAlign:"left"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>STREAK SHIELD EARNED!</div>
+                    <div style={{fontSize:11,color:"#9ca3af"}}>{result.newStreakVal}-day milestone — you now have {shields} shield{shields!==1?"s":""}. It will save your streak if you miss a day.</div>
+                  </div>
                 </div>
               </div>
             )}
