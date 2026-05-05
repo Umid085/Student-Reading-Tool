@@ -59,6 +59,16 @@ function getWeekId(){
 }
 function getWpmFromSecs(wordCount,secs){return secs>0?Math.round(wordCount/(secs/60)):0;}
 
+var SRS_INTERVALS=[1,3,7,14]; // days between reviews
+function srsNextDate(days){var d=new Date();d.setDate(d.getDate()+days);return d.toLocaleDateString();}
+function srsDueToday(word){
+  if(word.status==="known")return false;
+  if(!word.nextReview)return true; // legacy words without SRS — treat as due
+  var today=new Date();today.setHours(0,0,0,0);
+  var due=new Date(word.nextReview);due.setHours(0,0,0,0);
+  return due<=today;
+}
+
 // ── pure helpers ─────────────────────────────────────────────
 function getLv(k){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].key===k)return LEVELS[i];}return LEVELS[0];}
 function formatTime(s){if(s<=0)return"0:00";var m=Math.floor(s/60),sec=s%60;return m+":"+(sec<10?"0":"")+sec;}
@@ -1146,7 +1156,7 @@ export default function App(){
     if(currentUser&&savedWords.size>0){
       var today=new Date().toLocaleDateString();
       var newEntries=[];
-      savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;})){var wd=savedWordDefs&&savedWordDefs[w];newEntries.push({word:w,level:level,topic:topic,date:today,status:"new",def:wd?wd.def:"",example:wd?wd.example:""});}});
+      savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;})){var wd=savedWordDefs&&savedWordDefs[w];newEntries.push({word:w,level:level,topic:topic,date:today,status:"new",def:wd?wd.def:"",example:wd?wd.example:"",srInterval:0,nextReview:srsNextDate(SRS_INTERVALS[0])});}});
       if(newEntries.length>0){
         var nv=vocab.concat(newEntries);
         var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;
@@ -1456,6 +1466,26 @@ export default function App(){
                 {!streakAtRisk&&shields===3&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Max shields (3) — keep going!</div>}
               </div>
             )}
+
+            {/* vocab SRS nudge */}
+            {currentUser&&(function(){
+              var due=vocab.filter(srsDueToday);
+              if(!due.length)return null;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(6,182,212,0.35)",background:"rgba(6,182,212,0.05)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:26}}>📚</span>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:"#06b6d4"}}>Vocab review due</div>
+                        <div style={{fontSize:11,color:"#6b7280"}}>{due.length} word{due.length!==1?"s":""} ready for review today</div>
+                      </div>
+                    </div>
+                    <button onClick={function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}} style={{...mkBtn("#06b6d4","#0d0d1a"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Review</button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* pending challenges */}
             {pendingChallenges.length>0&&(
@@ -1934,18 +1964,27 @@ export default function App(){
         {/* ── VOCAB NOTEBOOK ────────────────────────────────── */}
         {stage==="vocab"&&currentUser&&(function(){
           var words=vocab.slice().reverse();
+          var dueWords=words.filter(srsDueToday);
           var reviewWords=words.filter(function(w){return w.status!=="known";});
-          var display=vocabFilter==="review"?reviewWords:words;
+          var display=vocabFilter==="due"?dueWords:vocabFilter==="review"?reviewWords:words;
           var safeIdx=display.length>0?vocabCard%display.length:0;
           var curWord=display.length>0?display[safeIdx]:null;
-          function markKnown(){
-            var nv=vocab.map(function(v){return v.word===curWord.word?{word:v.word,level:v.level,topic:v.topic,date:v.date,status:"known"}:v;});
-            setVocab(nv);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;setAllVocab(nAll);saveVocab(nAll);
+          function saveVocabUpdate(nv){setVocab(nv);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;setAllVocab(nAll);saveVocab(nAll);}
+          function advanceSRS(word,hard){
+            var cur=word.srInterval||0;
+            var next=hard?0:Math.min(cur+1,SRS_INTERVALS.length);
+            var done=!hard&&next>=SRS_INTERVALS.length;
+            var nv=vocab.map(function(v){
+              if(v.word!==word.word)return v;
+              return Object.assign({},v,{status:done?"known":v.status,srInterval:next,nextReview:done?null:srsNextDate(SRS_INTERVALS[next]||14)});
+            });
+            saveVocabUpdate(nv);
             setVocabFlipped(false);
             setVocabCard(function(c){return display.length<=1?0:(c>=display.length-1?0:c+1);});
           }
           function next(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c+1)%display.length;});}
           function prev(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c>0?c-1:display.length-1);});}
+          var tabs=[["due","Due ("+dueWords.length+")"],["review","All active ("+reviewWords.length+")"],["all","All ("+words.length+")"]];
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
@@ -1955,8 +1994,8 @@ export default function App(){
                   <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
                 </div>
               </div>
-              <div style={{display:"flex",gap:5,marginBottom:12}}>
-                {[["all","All ("+words.length+")"],["review","Review ("+reviewWords.length+")"]].map(function(t){
+              <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
+                {tabs.map(function(t){
                   return<button key={t[0]} onClick={function(){setVocabFilter(t[0]);setVocabCard(0);setVocabFlipped(false);}} style={{background:vocabFilter===t[0]?"#06b6d4":"rgba(255,255,255,0.05)",color:vocabFilter===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
                 })}
               </div>
@@ -1964,15 +2003,26 @@ export default function App(){
                 <div>
                   <div onClick={function(){setVocabFlipped(function(f){return!f;});}} style={{...CARD,cursor:"pointer",textAlign:"center",minHeight:150,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:10,background:"rgba(6,182,212,0.06)",borderColor:"rgba(6,182,212,0.25)"}}>
                     {!vocabFlipped?(
-                      <div><div style={{fontSize:28,fontWeight:900,color:"#06b6d4",marginBottom:6}}>{curWord.word}</div><div style={{fontSize:12,color:"#4b5563"}}>Tap to reveal context</div></div>
+                      <div>
+                        <div style={{fontSize:28,fontWeight:900,color:"#06b6d4",marginBottom:6}}>{curWord.word}</div>
+                        {curWord.def&&<div style={{fontSize:13,color:"#9ca3af",marginBottom:4,maxWidth:280}}>{curWord.def}</div>}
+                        <div style={{fontSize:12,color:"#4b5563"}}>Tap to see details</div>
+                      </div>
                     ):(
-                      <div><div style={{fontSize:22,fontWeight:900,color:"#06b6d4",marginBottom:8}}>{curWord.word}</div><div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>From: <span style={{color:"#f3f4f6",fontWeight:600}}>{curWord.topic}</span></div><div style={{fontSize:12,color:"#6b7280"}}>{curWord.level} · {curWord.date}</div></div>
+                      <div>
+                        <div style={{fontSize:22,fontWeight:900,color:"#06b6d4",marginBottom:8}}>{curWord.word}</div>
+                        {curWord.def&&<div style={{fontSize:13,color:"#d1d5db",marginBottom:6,maxWidth:280}}>{curWord.def}</div>}
+                        {curWord.example&&<div style={{fontSize:12,color:"#9ca3af",fontStyle:"italic",marginBottom:6,maxWidth:280}}>{curWord.example}</div>}
+                        <div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>From: <span style={{color:"#f3f4f6",fontWeight:600}}>{curWord.topic}</span></div>
+                        <div style={{fontSize:12,color:"#6b7280"}}>{curWord.level} · {curWord.date}</div>
+                        {curWord.nextReview&&<div style={{fontSize:11,color:"#4b5563",marginTop:4}}>Next review: {curWord.nextReview}</div>}
+                      </div>
                     )}
                   </div>
                   {vocabFlipped&&(
                     <div style={{display:"flex",gap:7,marginBottom:10}}>
-                      <button onClick={markKnown} style={{...mkBtn("#22c55e","#0d0d1a"),flex:1,fontSize:13}}>Know it</button>
-                      <button onClick={next} style={{...mkBtn("#374151"),flex:1,fontSize:13}}>Study more</button>
+                      <button onClick={function(){advanceSRS(curWord,true);}} style={{...mkBtn("#ef4444"),flex:1,fontSize:13}}>✗ Hard — repeat soon</button>
+                      <button onClick={function(){advanceSRS(curWord,false);}} style={{...mkBtn("#22c55e","#0d0d1a"),flex:1,fontSize:13}}>{(curWord.srInterval||0)>=SRS_INTERVALS.length-1?"✓ Mastered!":"✓ Easy — "+SRS_INTERVALS[Math.min((curWord.srInterval||0)+1,SRS_INTERVALS.length-1)]+"d"}</button>
                     </div>
                   )}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1984,7 +2034,7 @@ export default function App(){
                     <div style={{...CARD,marginTop:14}}>
                       <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>ALL WORDS ({words.length})</p>
                       <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                        {words.map(function(w,i){return<span key={i} onClick={function(){var idx=display.findIndex(function(d){return d.word===w.word;});if(idx!==-1){setVocabCard(idx);setVocabFlipped(false);}}} style={{background:w.status==="known"?"rgba(34,197,94,0.15)":"rgba(6,182,212,0.1)",color:w.status==="known"?"#22c55e":"#06b6d4",borderRadius:999,padding:"4px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{w.word}</span>;})}
+                        {words.map(function(w,i){return<span key={i} onClick={function(){var idx=display.findIndex(function(d){return d.word===w.word;});if(idx!==-1){setVocabCard(idx);setVocabFlipped(false);}}} style={{background:w.status==="known"?"rgba(34,197,94,0.15)":srsDueToday(w)?"rgba(251,191,36,0.15)":"rgba(6,182,212,0.1)",color:w.status==="known"?"#22c55e":srsDueToday(w)?"#fbbf24":"#06b6d4",borderRadius:999,padding:"4px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{w.word}</span>;})}
                       </div>
                     </div>
                   )}
@@ -1992,7 +2042,9 @@ export default function App(){
               ):(
                 <div style={{...CARD,textAlign:"center",padding:40}}>
                   <div style={{fontSize:36,marginBottom:10}}>📚</div>
-                  <p style={{color:"#6b7280",fontSize:14}}>{vocabFilter==="review"?"All caught up! No words left to review.":"No saved words yet — tap words in the reading passage to save them."}</p>
+                  <p style={{color:"#6b7280",fontSize:14}}>
+                    {vocabFilter==="due"?"All caught up! No words due today — check back tomorrow.":vocabFilter==="review"?"No active words. Keep saving as you read!":"No saved words yet — tap words in the reading passage to save them."}
+                  </p>
                   <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Start Reading</button>
                 </div>
               )}
