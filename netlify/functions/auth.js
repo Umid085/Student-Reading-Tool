@@ -30,24 +30,55 @@ export const handler = async function (event) {
   try { body = JSON.parse(event.body || "{}"); }
   catch { return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid JSON" }) }; }
 
-  const { name, hash } = body;
+  const { name, hash, legacy } = body;
   if (!name || !hash) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Missing credentials" }) };
   }
 
   try {
-    const r = await fetch(`${DB}/rq/rq-users-v6.json`);
-    const users = await r.json();
-    if (!Array.isArray(users)) {
+    // Try the dedicated auth store first (new and migrated users)
+    const ar = await fetch(`${DB}/rq/rq-auth-v6.json`);
+    const authData = await ar.json();
+    if (Array.isArray(authData)) {
+      const authUser = authData.find(function (u) {
+        return u.name.toLowerCase() === name.toLowerCase() && u.hash === hash;
+      });
+      if (authUser) {
+        return { statusCode: 200, headers: CORS, body: JSON.stringify({ token: issueToken(authUser.name, secret) }) };
+      }
+    }
+
+    // Fall back to old profile list (users registered before the auth separation)
+    const pr = await fetch(`${DB}/rq/rq-users-v6.json`);
+    const profiles = await pr.json();
+    if (!Array.isArray(profiles)) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Invalid credentials" }) };
     }
-    const user = users.find(function (u) {
-      return u.name.toLowerCase() === name.toLowerCase() && u.hash === hash;
+
+    const profileUser = profiles.find(function (u) {
+      return u.name.toLowerCase() === name.toLowerCase();
     });
-    if (!user) {
+    if (!profileUser) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Invalid credentials" }) };
     }
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ token: issueToken(user.name, secret) }) };
+
+    // Accept SHA-256 hash or legacy btoa hash (migration path)
+    const hashMatches = profileUser.hash === hash;
+    const legacyMatches = legacy && profileUser.hash === legacy;
+    if (!hashMatches && !legacyMatches) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Invalid credentials" }) };
+    }
+
+    // Migrate: write to rq-auth-v6 with SHA-256 hash going forward
+    const authList = Array.isArray(authData) ? authData : [];
+    const newAuthList = authList.concat([{ name: profileUser.name, hash }]);
+    await fetch(`${DB}/rq/rq-auth-v6.json`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newAuthList),
+    });
+
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ token: issueToken(profileUser.name, secret) }) };
   } catch (e) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }

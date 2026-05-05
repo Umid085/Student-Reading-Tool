@@ -54,22 +54,22 @@ describe("storage.js", () => {
   });
 
   it("GET with key fetches from Firebase and returns value", async () => {
-    const fakeData = [{ name: "Alice" }];
+    const fakeData = [{ name: "Alice", score: 100 }];
     fetch.mockResolvedValue({ json: async () => fakeData });
     const handler = await loadHandler();
-    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-users-v6" } }));
+    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-boards-v6" } }));
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
     expect(JSON.parse(body.value)).toEqual(fakeData);
     expect(fetch).toHaveBeenCalledWith(
-      "https://fake.firebaseio.com/rq/rq-users-v6.json"
+      "https://fake.firebaseio.com/rq/rq-boards-v6.json"
     );
   });
 
   it("GET with key returns null value when Firebase has no data", async () => {
     fetch.mockResolvedValue({ json: async () => null });
     const handler = await loadHandler();
-    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-users-v6" } }));
+    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-boards-v6" } }));
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body).value).toBeNull();
   });
@@ -101,6 +101,26 @@ describe("storage.js", () => {
     expect(JSON.parse(res.body).error).toMatch(/Invalid key|Missing key/);
   });
 
+  it("GET rq-users-v6 returns 400 (blocked to protect credentials)", async () => {
+    const handler = await loadHandler();
+    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-users-v6" } }));
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("GET rq-auth-v6 returns 400 (blocked to protect credentials)", async () => {
+    const handler = await loadHandler();
+    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-auth-v6" } }));
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("POST rq-auth-v6 returns 400 even with valid token", async () => {
+    const handler = await loadHandler();
+    const res = await handler(
+      makeEvent({ httpMethod: "POST", body: JSON.stringify({ key: "rq-auth-v6", value: "[]" }) })
+    );
+    expect(res.statusCode).toBe(400);
+  });
+
   it("returns 405 for unsupported methods", async () => {
     const handler = await loadHandler();
     const res = await handler(makeEvent({ httpMethod: "DELETE" }));
@@ -110,7 +130,7 @@ describe("storage.js", () => {
   it("returns 500 when fetch throws", async () => {
     fetch.mockRejectedValue(new Error("network error"));
     const handler = await loadHandler();
-    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-users-v6" } }));
+    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-boards-v6" } }));
     expect(res.statusCode).toBe(500);
     expect(JSON.parse(res.body).error).toBe("network error");
   });

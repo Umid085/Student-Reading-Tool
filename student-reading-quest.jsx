@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 
 var API        = "/.netlify/functions/generate";
 var AUTH       = "/.netlify/functions/auth";
+var REGISTER   = "/.netlify/functions/register";
+var USERS_API  = "/.netlify/functions/users";
 var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
 var BOARDS_KEY   = "rq-boards-v6";
@@ -385,8 +387,18 @@ async function apiSet(key,val){
     if(!r.ok)throw new Error("not ok");
   }catch(e){}  // local already saved, silent fail on remote
 }
-async function loadUsers(){var v=await apiGet(USERS_KEY);return v||[];}
-async function saveUsers(u){await apiSet(USERS_KEY,u);}
+async function loadUsers(){
+  try{
+    var r=await fetch(USERS_API);
+    if(r.ok){var d=await r.json();if(Array.isArray(d.users)){try{localStorage.setItem(USERS_KEY,JSON.stringify(d.users));}catch(e){}return d.users;}}
+  }catch(e){}
+  try{var v=localStorage.getItem(USERS_KEY);return v?JSON.parse(v):[];}catch(e2){return [];}
+}
+async function saveUsers(u){
+  // Strip hash — credentials live in rq-auth-v6, not the public profile list
+  var profiles=u.map(function(usr){return {name:usr.name,games:usr.games,joined:usr.joined};});
+  await apiSet(USERS_KEY,profiles);
+}
 async function loadBoards(){var v=await apiGet(BOARDS_KEY);return v||{};}
 async function saveBoards(b){await apiSet(BOARDS_KEY,b);}
 async function loadSocial(){var v=await apiGet(SOCIAL_KEY);return v||{};}
@@ -811,8 +823,8 @@ export default function App(){
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
     Promise.all([loadUsers(),loadBoards(),loadSocial()]).then(function(v){
       setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);
-      if(saved){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===saved){found=v[0][i];break;}}if(found){getSessionToken(found.name,found.hash);setCurrentUser(found);setStage("home");}}
-      else if(savedCreds&&savedCreds.name&&savedCreds.hash){var found2=null;for(var j=0;j<v[0].length;j++){if(v[0][j].name===savedCreds.name&&v[0][j].hash===savedCreds.hash){found2=v[0][j];break;}}if(found2){getSessionToken(found2.name,found2.hash);setCurrentUser(found2);setStage("home");}}
+      var sessionName=saved||(savedCreds&&savedCreds.name);
+      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}setCurrentUser(found);setStage("home");}}
       setAppReady(true);
     });
   },[]);
@@ -868,36 +880,33 @@ export default function App(){
     if(!nameInput.trim()||!passInput.trim()){setAuthErr("Name and password required.");return;}
     if(!/^[a-zA-Z0-9_]{2,30}$/.test(nameInput.trim())){setAuthErr("Username must be 2–30 characters: letters, numbers, underscores only.");return;}
     if(passInput.length<4){setAuthErr("Password must be at least 4 characters.");return;}
+    var hash=await enc(passInput);
+    var r=await fetch(REGISTER,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:hash})});
+    var d=await r.json();
+    if(!r.ok){setAuthErr(d.error==="Username taken"?"Username taken.":(d.error||"Registration failed. Try again."));return;}
+    _sessionToken=d.token;
+    var user={name:nameInput.trim(),hash:hash,games:[],joined:new Date().toLocaleDateString()};
     var fresh=await loadUsers();setAllUsers(fresh);
-    for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){setAuthErr("Username taken.");return;}}
-    var user={name:nameInput.trim(),hash:await enc(passInput),games:[],joined:new Date().toLocaleDateString()};
-    var nu=fresh.concat([user]);
-    await saveUsers(nu);
     localStorage.setItem("rq-session",user.name);
-    localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,hash:user.hash}));
-    getSessionToken(user.name,user.hash);
-    setAllUsers(nu);setCurrentUser(user);setStage("home");
+    localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,hash:hash}));
+    setCurrentUser(user);setStage("home");
   }
 
   async function doLogin(){
     setAuthErr("");
     if(!nameInput.trim()||!passInput.trim()){setAuthErr("Please enter name and password.");return;}
-    var fresh=await loadUsers();setAllUsers(fresh);
-    var found=null;
-    for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){found=fresh[i];break;}}
-    if(!found){setAuthErr("User not found. Please register first.");return;}
     var sha256=await enc(passInput);
     var legacy=btoa(passInput);
-    if(found.hash!==sha256&&found.hash!==legacy){setAuthErr("Wrong password.");return;}
-    if(found.hash===legacy){
-      // migrate old btoa hash to SHA-256
-      found={...found,hash:sha256};
-      var migrated=fresh.map(function(u){return u.name===found.name?found:u;});
-      saveUsers(migrated);setAllUsers(migrated);
-    }
+    var r=await fetch(AUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:sha256,legacy:legacy})});
+    var d=await r.json();
+    if(!r.ok){setAuthErr("User not found or wrong password.");return;}
+    _sessionToken=d.token;
+    var fresh=await loadUsers();setAllUsers(fresh);
+    var found=null;for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){found=fresh[i];break;}}
+    if(!found){setAuthErr("Account error. Please try again.");return;}
+    found=Object.assign({},found,{hash:sha256});
     localStorage.setItem("rq-session",found.name);
-    localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:found.hash}));
-    getSessionToken(found.name,found.hash);
+    localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:sha256}));
     setCurrentUser(found);setStage("home");
   }
 
