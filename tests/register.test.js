@@ -24,7 +24,7 @@ describe("register.js", () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    process.env = { ...OLD_ENV, SESSION_SECRET: "test-secret", FIREBASE_DB_URL: "https://fake.firebaseio.com" };
+    process.env = { ...OLD_ENV, SESSION_SECRET: "test-secret", FIREBASE_DB_URL: "https://fake.firebaseio.com", RATE_LIMIT_DISABLED: "1" };
     fetch.mockReset();
   });
 
@@ -124,6 +124,18 @@ describe("register.js", () => {
     const authPut = JSON.parse(fetch.mock.calls[3][1].body);
     expect(authPut[0].name).toBe("Bob");
     expect(authPut[0].hash).toBe("myhash");
+  });
+
+  it("returns 429 when rate limit is exceeded", async () => {
+    delete process.env.RATE_LIMIT_DISABLED;
+    fetch.mockResolvedValueOnce({ json: async () => ({ count: 10, resetAt: Date.now() + 60000 }) });
+    const handler = await loadHandler();
+    const res = await handler(makeEvent({
+      headers: { "x-forwarded-for": "1.2.3.4" },
+      body: JSON.stringify({ name: "Alice", hash: "abc" }),
+    }));
+    expect(res.statusCode).toBe(429);
+    expect(JSON.parse(res.body).error).toMatch(/Too many/i);
   });
 
   it("returns 500 when Firebase fetch throws", async () => {

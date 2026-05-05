@@ -384,7 +384,17 @@ async function apiSet(key,val){
     var hdrs={"Content-Type":"application/json"};
     if(_sessionToken)hdrs["Authorization"]="Bearer "+_sessionToken;
     var r=await fetch("/.netlify/functions/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
-    if(!r.ok)throw new Error("not ok");
+    if(r.status===401&&_sessionToken){
+      // Token expired — refresh silently and retry once
+      var creds=null;try{creds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e2){}
+      if(creds&&creds.name&&creds.hash){
+        await getSessionToken(creds.name,creds.hash);
+        if(_sessionToken){
+          hdrs["Authorization"]="Bearer "+_sessionToken;
+          await fetch("/.netlify/functions/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
+        }
+      }
+    }
   }catch(e){}  // local already saved, silent fail on remote
 }
 async function loadUsers(){
@@ -883,6 +893,7 @@ export default function App(){
     var hash=await enc(passInput);
     var r=await fetch(REGISTER,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:hash})});
     var d=await r.json();
+    if(r.status===429){setAuthErr("Too many attempts. Please wait 15 minutes.");return;}
     if(!r.ok){setAuthErr(d.error==="Username taken"?"Username taken.":(d.error||"Registration failed. Try again."));return;}
     _sessionToken=d.token;
     var user={name:nameInput.trim(),hash:hash,games:[],joined:new Date().toLocaleDateString()};
@@ -899,6 +910,7 @@ export default function App(){
     var legacy=btoa(passInput);
     var r=await fetch(AUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:sha256,legacy:legacy})});
     var d=await r.json();
+    if(r.status===429){setAuthErr("Too many login attempts. Please wait 15 minutes.");return;}
     if(!r.ok){setAuthErr("User not found or wrong password.");return;}
     _sessionToken=d.token;
     var fresh=await loadUsers();setAllUsers(fresh);

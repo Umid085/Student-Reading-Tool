@@ -33,7 +33,7 @@ describe("auth.js", () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    process.env = { ...OLD_ENV, SESSION_SECRET: "test-secret-abc", FIREBASE_DB_URL: "https://fake.firebaseio.com" };
+    process.env = { ...OLD_ENV, SESSION_SECRET: "test-secret-abc", FIREBASE_DB_URL: "https://fake.firebaseio.com", RATE_LIMIT_DISABLED: "1" };
     fetch.mockReset();
   });
 
@@ -184,6 +184,19 @@ describe("auth.js", () => {
     const handler = await loadHandler();
     await handler(makeEvent({ body: JSON.stringify({ name: "Alice", hash: "myhash123" }) }));
     expect(fetch.mock.calls[0][0]).toContain("rq-auth-v6");
+  });
+
+  it("returns 429 when rate limit is exceeded", async () => {
+    delete process.env.RATE_LIMIT_DISABLED;
+    fetch.mockResolvedValueOnce({ json: async () => ({ count: 10, resetAt: Date.now() + 60000 }) });
+    const handler = await loadHandler();
+    const res = await handler(makeEvent({
+      headers: { "x-forwarded-for": "1.2.3.4" },
+      body: JSON.stringify({ name: "Alice", hash: "abc" }),
+    }));
+    expect(res.statusCode).toBe(429);
+    expect(JSON.parse(res.body).error).toMatch(/Too many/i);
+    expect(res.headers["Retry-After"]).toBeDefined();
   });
 
   it("returns 500 when Firebase fetch throws", async () => {
