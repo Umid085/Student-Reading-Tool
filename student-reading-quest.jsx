@@ -868,6 +868,10 @@ export default function App(){
   var [discussStoryId,setDiscussStoryId]=useState(null);
   var [allDiscuss,setAllDiscuss]=useState({});
   var [discussInput,setDiscussInput]=useState("");
+  // ai tutor
+  var [tutorChat,setTutorChat]=useState([]);
+  var [tutorInput,setTutorInput]=useState("");
+  var [tutorLoading,setTutorLoading]=useState(false);
   // streak shields
   var [shields,setShields]=useState(0);
   var [shieldDates,setShieldDates]=useState([]);
@@ -1288,6 +1292,7 @@ export default function App(){
     setIsDailyGame(false);setSavedWords(new Set());
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});
+    setTutorChat([]);setTutorInput("");setTutorLoading(false);
     setStage("home");
   }
 
@@ -1300,6 +1305,21 @@ export default function App(){
     setShields(newSh);setShieldDates(newSDs);
     var sKey="rq-streak-data-v1-"+currentUser.name;
     localStorage.setItem(sKey,JSON.stringify({shields:newSh,shieldDates:newSDs,longestStreak:longestStreak}));
+  }
+
+  async function sendTutorMessage(text){
+    if(!text||!text.trim()||tutorLoading)return;
+    var userMsg={role:"user",content:text.trim()};
+    var newChat=tutorChat.concat([userMsg]);
+    setTutorChat(newChat);setTutorInput("");setTutorLoading(true);
+    try{
+      var r=await fetch("/.netlify/functions/tutor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:passage,topic:topic,level:level,messages:newChat.map(function(m){return{role:m.role,content:m.content};})})});
+      var d=await r.json();
+      setTutorChat(newChat.concat([{role:"assistant",content:d.reply||d.error||"Sorry, I couldn't respond. Try again."}]));
+    }catch(e){
+      setTutorChat(newChat.concat([{role:"assistant",content:"Connection error — please try again."}]));
+    }
+    setTutorLoading(false);
   }
 
   async function startDailyChallenge(){
@@ -1955,6 +1975,7 @@ export default function App(){
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
+              <button onClick={function(){setTutorChat([]);setStage("tutor");}} style={{...mkBtn("#0891b2"),flex:1,fontSize:12}}>🤖 Tutor</button>
               <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
               <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
@@ -3032,6 +3053,82 @@ export default function App(){
             </div>
           );
         })()}
+
+        {/* ── AI TUTOR ──────────────────────────────────────── */}
+        {stage==="tutor"&&currentUser&&(
+          <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 80px)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10,flexShrink:0}}>
+              <div>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#0891b2"}}>🤖 AI Tutor</h2>
+                <p style={{margin:0,fontSize:11,color:"#6b7280"}}>{level} · {topic}</p>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={function(){setStage("result");}} style={GHOST}>Back</button>
+                <button onClick={doRestart} style={{...GHOST,color:"#34d399",borderColor:"rgba(52,211,153,0.3)"}}>Home</button>
+              </div>
+            </div>
+
+            {/* passage peek */}
+            {passage&&(function(){
+              var [open,setOpen]=useState(false);
+              return(
+                <div style={{...CARD,padding:"10px 14px",marginBottom:10,flexShrink:0}}>
+                  <button onClick={function(){setOpen(function(o){return!o;});}} style={{background:"none",border:"none",color:"#9ca3af",fontFamily:"inherit",fontSize:12,cursor:"pointer",fontWeight:600,padding:0,width:"100%",textAlign:"left"}}>
+                    {open?"▲ Hide passage":"▼ Show passage"}
+                  </button>
+                  {open&&<p style={{margin:"8px 0 0",fontSize:13,color:"#d1d5db",lineHeight:1.8}}>{passage}</p>}
+                </div>
+              );
+            })()}
+
+            {/* starter prompts */}
+            {tutorChat.length===0&&(
+              <div style={{marginBottom:10,flexShrink:0}}>
+                <p style={{fontSize:11,color:"#6b7280",marginBottom:6}}>Try asking:</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {["What is the main idea?","Explain a difficult word","Why did I get a question wrong?","Give me a grammar tip from the passage","Summarise in simple English"].map(function(s){
+                    return<button key={s} onClick={function(){sendTutorMessage(s);}} style={{background:"rgba(8,145,178,0.12)",border:"1px solid rgba(8,145,178,0.25)",color:"#67e8f9",borderRadius:999,padding:"5px 12px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>{s}</button>;
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* chat messages */}
+            <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+              {tutorChat.map(function(m,i){
+                var isUser=m.role==="user";
+                return(
+                  <div key={i} style={{display:"flex",justifyContent:isUser?"flex-end":"flex-start"}}>
+                    <div style={{maxWidth:"82%",padding:"10px 14px",borderRadius:isUser?"16px 16px 4px 16px":"16px 16px 16px 4px",background:isUser?"rgba(8,145,178,0.25)":"rgba(255,255,255,0.06)",border:"1px solid "+(isUser?"rgba(8,145,178,0.4)":"rgba(255,255,255,0.1)"),fontSize:13,color:"#f3f4f6",lineHeight:1.7,whiteSpace:"pre-wrap"}}>
+                      {!isUser&&<div style={{fontSize:10,color:"#0891b2",fontWeight:700,marginBottom:4}}>🤖 TUTOR</div>}
+                      {m.content}
+                    </div>
+                  </div>
+                );
+              })}
+              {tutorLoading&&(
+                <div style={{display:"flex",justifyContent:"flex-start"}}>
+                  <div style={{padding:"10px 14px",borderRadius:"16px 16px 16px 4px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",fontSize:13,color:"#6b7280"}}>
+                    <span style={{display:"inline-block",animation:"rqFloat 1s ease-in-out infinite"}}>●</span> Thinking…
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* input */}
+            <div style={{display:"flex",gap:8,flexShrink:0}}>
+              <input
+                style={{...INP,flex:1,padding:"11px 14px",fontSize:14}}
+                placeholder="Ask about the passage, vocabulary, grammar…"
+                value={tutorInput}
+                onChange={function(e){setTutorInput(e.target.value);}}
+                onKeyDown={function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendTutorMessage(tutorInput);}}}
+                disabled={tutorLoading}
+              />
+              <button onClick={function(){sendTutorMessage(tutorInput);}} disabled={tutorLoading||!tutorInput.trim()} style={{...mkBtn(tutorLoading||!tutorInput.trim()?"#374151":"#0891b2"),padding:"11px 18px",fontSize:14,flexShrink:0}}>Send</button>
+            </div>
+          </div>
+        )}
 
         {/* ── STORY DISCUSSION ──────────────────────────────── */}
         {stage==="discuss"&&currentUser&&(function(){
