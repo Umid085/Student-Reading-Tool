@@ -974,6 +974,14 @@ export default function App(){
   var [writeFeedback,setWriteFeedback]=useState(null);
   var [writeLoading,setWriteLoading]=useState(false);
   var [writeError,setWriteError]=useState("");
+  // rsvp speed reader
+  var [rsvpActive,setRsvpActive]=useState(false);
+  var [rsvpWpm,setRsvpWpm]=useState(250);
+  var [rsvpIdx,setRsvpIdx]=useState(0);
+  var [rsvpPaused,setRsvpPaused]=useState(false);
+  var [rsvpDone,setRsvpDone]=useState(false);
+  var rsvpRef=useRef(null);
+  var rsvpWordsRef=useRef([]);
   // streak shields
   var [shields,setShields]=useState(0);
   var [shieldDates,setShieldDates]=useState([]);
@@ -1000,9 +1008,33 @@ export default function App(){
       if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}
       if(window.speechSynthesis){window.speechSynthesis.cancel();}
       setIsSpeaking(false);
+      // reset rsvp when leaving reading screen
+      if(rsvpRef.current){clearInterval(rsvpRef.current);rsvpRef.current=null;}
+      setRsvpActive(false);setRsvpIdx(0);setRsvpPaused(false);setRsvpDone(false);
     }
     return function(){if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}};
   },[stage]);
+
+  // rsvp ticker
+  useEffect(function(){
+    if(!rsvpActive||rsvpPaused||rsvpDone){
+      if(rsvpRef.current){clearInterval(rsvpRef.current);rsvpRef.current=null;}
+      return;
+    }
+    var ms=Math.round(60000/rsvpWpm);
+    rsvpRef.current=setInterval(function(){
+      setRsvpIdx(function(i){
+        var next=i+1;
+        if(next>=rsvpWordsRef.current.length){
+          clearInterval(rsvpRef.current);rsvpRef.current=null;
+          setRsvpDone(true);setRsvpPaused(true);
+          return i;
+        }
+        return next;
+      });
+    },ms);
+    return function(){if(rsvpRef.current){clearInterval(rsvpRef.current);rsvpRef.current=null;}};
+  },[rsvpActive,rsvpPaused,rsvpDone,rsvpWpm]);
 
   // load vocab + daily challenge when user logs in
   useEffect(function(){
@@ -1975,6 +2007,10 @@ export default function App(){
                 <div style={{display:"flex",gap:3}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.08)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"4px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
                 </div>
                 {savedWords.size>0&&<span style={{fontSize:11,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size}</span>}
+                <button onClick={function(){
+                  if(rsvpActive){setRsvpActive(false);setRsvpPaused(false);setRsvpIdx(0);setRsvpDone(false);}
+                  else{rsvpWordsRef.current=passage.split(/\s+/).filter(Boolean);setRsvpIdx(0);setRsvpPaused(false);setRsvpDone(false);setRsvpActive(true);}
+                }} style={{background:rsvpActive?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(rsvpActive?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpActive?"#a78bfa":"#9ca3af",borderRadius:8,padding:"6px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>⚡ RSVP</button>
                 <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"9px 18px",fontSize:13}}>Begin Quiz →</button>
               </div>
             </div>
@@ -2017,13 +2053,66 @@ export default function App(){
                 </div>
               </div>
 
-              {/* passage — sentence TTS mode or word mode */}
-              <div style={{...CARD,marginBottom:12}}>
+              {/* RSVP speed reader */}
+              {rsvpActive&&(function(){
+                var words=rsvpWordsRef.current;
+                var pct=words.length>0?Math.round((rsvpIdx/(words.length-1))*100):0;
+                var cur=words[rsvpIdx]||"";
+                var prev=rsvpIdx>0?words[rsvpIdx-1]:"";
+                var nxt=rsvpIdx<words.length-1?words[rsvpIdx+1]:"";
+                // highlight the optimal recognition point (about 30% into word)
+                var midIdx=Math.max(0,Math.round(cur.replace(/[^a-zA-Z]/g,"").length*0.3)-1);
+                var pre=cur.slice(0,midIdx),highlight=cur.slice(midIdx,midIdx+1),post=cur.slice(midIdx+1);
+                return(
+                  <div style={{...CARD,marginBottom:12,padding:20}}>
+                    {/* wpm selector */}
+                    <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+                      <span style={{fontSize:11,color:"#6b7280",alignSelf:"center",marginRight:4}}>WPM:</span>
+                      {[150,200,250,300,400,500].map(function(w){return(
+                        <button key={w} onClick={function(){setRsvpWpm(w);}} style={{background:rsvpWpm===w?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(rsvpWpm===w?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpWpm===w?"#c4b5fd":"#6b7280",borderRadius:6,padding:"3px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:rsvpWpm===w?700:400}}>{w}</button>
+                      );})}
+                    </div>
+                    {/* progress */}
+                    <div style={{background:"rgba(255,255,255,0.07)",borderRadius:999,height:4,overflow:"hidden",marginBottom:20}}>
+                      <div style={{height:"100%",width:pct+"%",background:"#a78bfa",borderRadius:999,transition:"width 0.1s linear"}}/>
+                    </div>
+                    {/* word display */}
+                    {!rsvpDone?(
+                      <div style={{textAlign:"center",minHeight:120,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",gap:10}}>
+                        <div style={{fontSize:13,color:"#4b5563",minHeight:20}}>{prev}</div>
+                        <div style={{fontSize:42,fontWeight:900,letterSpacing:1,lineHeight:1,fontFamily:"monospace",userSelect:"none"}}>
+                          <span style={{color:"#9ca3af"}}>{pre}</span>
+                          <span style={{color:"#f9a8d4"}}>{highlight}</span>
+                          <span style={{color:"#f9fafb"}}>{post}</span>
+                        </div>
+                        <div style={{fontSize:13,color:"#4b5563",minHeight:20}}>{nxt}</div>
+                        <div style={{fontSize:11,color:"#6b7280",marginTop:4}}>{rsvpIdx+1} / {words.length}</div>
+                      </div>
+                    ):(
+                      <div style={{textAlign:"center",padding:"20px 0"}}>
+                        <div style={{fontSize:32,marginBottom:8}}>✓</div>
+                        <div style={{fontSize:16,fontWeight:700,color:"#a78bfa",marginBottom:4}}>Speed read complete!</div>
+                        <div style={{fontSize:12,color:"#9ca3af",marginBottom:16}}>{words.length} words at {rsvpWpm} WPM</div>
+                        <button onClick={startQuiz} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"10px 24px",fontSize:14}}>Take the Quiz →</button>
+                      </div>
+                    )}
+                    {/* controls */}
+                    {!rsvpDone&&<div style={{display:"flex",justifyContent:"center",gap:10,marginTop:16}}>
+                      <button onClick={function(){setRsvpIdx(function(i){return Math.max(0,i-10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>−10</button>
+                      <button onClick={function(){setRsvpPaused(function(p){return !p;});}} style={{background:rsvpPaused?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(rsvpPaused?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpPaused?"#c4b5fd":"#9ca3af",borderRadius:8,padding:"7px 20px",fontSize:14,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{rsvpPaused?"▶ Play":"⏸ Pause"}</button>
+                      <button onClick={function(){setRsvpIdx(function(i){return Math.min(words.length-1,i+10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+10</button>
+                    </div>}
+                  </div>
+                );
+              })()}
+
+              {/* passage — sentence TTS mode or word mode (hidden during RSVP) */}
+              {!rsvpActive&&<div style={{...CARD,marginBottom:12}}>
                 <p style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb",margin:0}}>
                   {activeSentence!==null?<SentencePassage/>:<WordTokens/>}
                 </p>
                 <p style={{fontSize:11,color:"#4b5563",margin:"10px 0 0",textAlign:"center"}}>{activeSentence!==null?"Tap a sentence to listen":"Tap any word to look it up"}</p>
-              </div>
+              </div>}
 
               {/* active sentence panel (translation) */}
               {activeSentence&&(
