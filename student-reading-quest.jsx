@@ -107,6 +107,18 @@ function calcStreakWithShields(games,shieldDates){
   return streak;
 }
 
+function getAdaptiveSuggestion(games,currentLevel){
+  var lvOrder=["A1","A2","B1","B2","C1","C2"];
+  var idx=lvOrder.indexOf(currentLevel);
+  if(idx===-1)return null;
+  var recent=(games||[]).filter(function(g){return g.level===currentLevel;}).slice(-5);
+  if(recent.length<3)return null;
+  var avg=Math.round(recent.reduce(function(s,g){return s+g.pct;},0)/recent.length);
+  if(avg>=80&&idx<lvOrder.length-1)return{direction:"up",level:lvOrder[idx+1],avg:avg};
+  if(avg<=40&&idx>0)return{direction:"down",level:lvOrder[idx-1],avg:avg};
+  return null;
+}
+
 function getBestLevel(games){
   if(!games||!games.length)return"none";
   var lvOrder=["A1","A2","B1","B2","C1","C2"];
@@ -1886,6 +1898,30 @@ export default function App(){
                 })}
               </div>
             )}
+            {(function(){
+              var sug=currentUser?getAdaptiveSuggestion(currentUser.games,level):null;
+              if(!sug)return null;
+              var sugLv=getLv(sug.level);
+              var isUp=sug.direction==="up";
+              return(
+                <div style={{...CARD,marginBottom:10,padding:14,borderColor:isUp?"rgba(52,211,153,0.4)":"rgba(251,191,36,0.4)",background:isUp?"rgba(52,211,153,0.06)":"rgba(251,191,36,0.06)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{fontSize:28}}>{isUp?"🚀":"💡"}</div>
+                    <div style={{flex:1,textAlign:"left"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:isUp?"#34d399":"#fbbf24",marginBottom:2}}>
+                        {isUp?"Level up?":"Slow down a bit?"}
+                      </div>
+                      <div style={{fontSize:11,color:"#9ca3af"}}>
+                        {isUp
+                          ?"You're averaging "+sug.avg+"% on "+level+" — ready for "+sug.level+"?"
+                          :"Averaging "+sug.avg+"% on "+level+" — try "+sug.level+" to build confidence."}
+                      </div>
+                    </div>
+                    <button onClick={function(){doRestart();setLevel(sug.level);}} style={{...mkBtn(sugLv.color,"#0d0d1a"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Try {sug.level}</button>
+                  </div>
+                </div>
+              );
+            })()}
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
