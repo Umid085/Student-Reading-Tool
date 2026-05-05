@@ -519,9 +519,14 @@ function hasLiked(social,liker,target){return!!(social._likes&&social._likes[lik
 
 function doSendChallenge(social,from,to,level,types){
   var n=JSON.parse(JSON.stringify(social));
+  var id=Date.now().toString(36);
+  var expiresAt=Date.now()+48*60*60*1000;
   if(!n[to])n[to]={friends:[],requests:[],likes:0,challenges:[]};
   if(!n[to].challenges)n[to].challenges=[];
-  n[to].challenges.push({from:from,level:level,types:types,date:new Date().toLocaleDateString(),status:"pending"});
+  n[to].challenges.push({id:id,from:from,level:level,types:types,date:new Date().toLocaleDateString(),status:"pending",expiresAt:expiresAt});
+  if(!n[from])n[from]={friends:[],requests:[],likes:0,challenges:[],sent:[]};
+  if(!n[from].sent)n[from].sent=[];
+  n[from].sent.push({id:id,to:to,level:level,date:new Date().toLocaleDateString(),status:"pending",expiresAt:expiresAt});
   return n;
 }
 
@@ -531,6 +536,29 @@ function doRespondChallenge(social,username,idx,status){
     n[username].challenges[idx].status=status;
   }
   return n;
+}
+
+function doCompleteChallenge(social,recipient,challengeIdx,result){
+  var n=JSON.parse(JSON.stringify(social));
+  var ch=n[recipient]&&n[recipient].challenges&&n[recipient].challenges[challengeIdx];
+  if(!ch)return n;
+  ch.status="completed";ch.result=result;
+  // write result notification back to sender's sent list
+  var sender=ch.from;
+  if(n[sender]&&n[sender].sent){
+    var si=n[sender].sent.findIndex(function(s){return s.id===ch.id;});
+    if(si!==-1){n[sender].sent[si].status="completed";n[sender].sent[si].result={pct:result.pct,xp:result.xp,by:recipient};}
+  }
+  return n;
+}
+
+function challengeTimeLeft(expiresAt){
+  if(!expiresAt)return null;
+  var ms=expiresAt-Date.now();
+  if(ms<=0)return"expired";
+  var h=Math.floor(ms/3600000);
+  var m=Math.floor((ms%3600000)/60000);
+  return h>0?h+"h "+m+"m left":m+"m left";
 }
 
 // ── chart component ──────────────────────────────────────────
@@ -818,6 +846,8 @@ export default function App(){
   var [challengeTarget,setChallengeTarget]=useState(null);
   var [challengeLevel,setChallengeLevel]=useState("B1");
   var [challengeTypes,setChallengeTypes]=useState(["mcq","qa"]);
+  var [activeChallengeIdx,setActiveChallengeIdx]=useState(null);
+  var [activeChallengeFrom,setActiveChallengeFrom]=useState("");
   var [socialMsg,setSocialMsg]=useState("");
   // history
   var [historyLevel,setHistoryLevel]=useState("");
@@ -1019,6 +1049,8 @@ export default function App(){
     var n=doRespondChallenge(social,currentUser.name,idx,status);
     await saveSocial(n);setSocial(n);
     if(status==="accepted"&&challenge){
+      setActiveChallengeIdx(idx);
+      setActiveChallengeFrom(challenge.from||"");
       setLevel(challenge.level);
       setSelectedTypes(challenge.types||["mcq","qa"]);
       setSocialMsg("");
@@ -1248,6 +1280,13 @@ export default function App(){
     var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,20);
     await saveBoards(nb);setBoards(nb);
 
+    // write challenge result back so challenger sees it
+    if(activeChallengeIdx!==null&&activeChallengeFrom&&currentUser){
+      var nc=doCompleteChallenge(social,currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});
+      await saveSocial(nc);setSocial(nc);
+      setActiveChallengeIdx(null);setActiveChallengeFrom("");
+    }
+
     var wasDaily=isDailyGame;
     if(isDailyGame&&currentUser){
       var done={date:today,xp:finalXp,pct:pct,timeSecs:timeSecs};
@@ -1293,6 +1332,7 @@ export default function App(){
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});
     setTutorChat([]);setTutorInput("");setTutorLoading(false);
+    setActiveChallengeIdx(null);setActiveChallengeFrom("");
     setStage("home");
   }
 
@@ -1378,7 +1418,7 @@ export default function App(){
   myData.requests=myData.requests||[];
   var myStreak=currentUser?calcStreakWithShields(currentUser.games,shieldDates):0;
   var myBestLevel=currentUser?getBestLevel(currentUser.games):"none";
-  var pendingChallenges=(myData.challenges||[]).filter(function(c){return c.status==="pending";});
+  var pendingChallenges=(myData.challenges||[]).filter(function(c){return c.status==="pending"&&(!c.expiresAt||c.expiresAt>Date.now());});
   // at-risk: pure streak is 0 but last activity was exactly 2 days ago → shield can cover yesterday
   var streakAtRisk=(function(){
     if(!currentUser||shields<=0)return false;
@@ -1508,19 +1548,44 @@ export default function App(){
             })()}
 
             {/* pending challenges */}
-            {pendingChallenges.length>0&&(
-              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(239,68,68,0.3)"}}>
-                <p style={{fontSize:11,color:"#f87171",fontWeight:700,marginBottom:8}}>GAME CHALLENGES</p>
-                {pendingChallenges.map(function(c,idx){
-                  var realIdx=myData.challenges.indexOf(c);
-                  return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                    <span style={{fontSize:12,color:"#f3f4f6",flex:1}}><strong>{c.from}</strong> challenged you to <strong>{c.level}</strong></span>
-                    <button onClick={function(){respondChallenge(realIdx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
-                    <button onClick={function(){respondChallenge(realIdx,"declined",null);}} style={{...mkBtn("#374151"),padding:"5px 10px",fontSize:11}}>Decline</button>
-                  </div>);
-                })}
-              </div>
-            )}
+            {currentUser&&(function(){
+              var live=pendingChallenges.filter(function(c){return!c.expiresAt||c.expiresAt>Date.now();});
+              var completedSent=(myData.sent||[]).filter(function(s){return s.status==="completed";});
+              if(!live.length&&!completedSent.length)return null;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(245,158,11,0.35)",background:"rgba(245,158,11,0.04)"}}>
+                  {live.length>0&&(
+                    <>
+                      <p style={{fontSize:11,color:"#f59e0b",fontWeight:700,marginBottom:8}}>⚔️ CHALLENGES RECEIVED</p>
+                      {live.map(function(c,idx){
+                        var realIdx=myData.challenges.indexOf(c);
+                        var tl=challengeTimeLeft(c.expiresAt);
+                        var lvC=getLv(c.level);
+                        return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid rgba(255,255,255,0.07)"}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,color:"#f3f4f6",fontWeight:600}}><strong>{c.from}</strong> → <span style={{color:lvC.color}}>{c.level}</span></div>
+                            {tl&&<div style={{fontSize:10,color:tl==="expired"?"#f87171":"#6b7280",marginTop:1}}>⏱ {tl}</div>}
+                          </div>
+                          <button onClick={function(){respondChallenge(realIdx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
+                          <button onClick={function(){respondChallenge(realIdx,"declined",null);}} style={{...mkBtn("#374151"),padding:"5px 10px",fontSize:11}}>✕</button>
+                        </div>);
+                      })}
+                    </>
+                  )}
+                  {completedSent.length>0&&(
+                    <>
+                      <p style={{fontSize:11,color:"#34d399",fontWeight:700,marginBottom:8,marginTop:live.length?10:0}}>✅ CHALLENGE RESULTS</p>
+                      {completedSent.map(function(s,i){
+                        return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,fontSize:12}}>
+                          <span style={{color:"#9ca3af",flex:1}}><strong style={{color:"#f3f4f6"}}>{s.to}</strong> scored <strong style={{color:pctColor(s.result.pct)}}>{s.result.pct}%</strong> on your {s.level} challenge</span>
+                          <span style={{color:"#fbbf24",fontWeight:700,fontSize:11}}>{s.result.xp} XP</span>
+                        </div>);
+                      })}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* daily challenge card */}
             {currentUser&&(function(){
@@ -2306,6 +2371,32 @@ export default function App(){
                           <button onClick={function(){setChallengeTarget(null);}} style={{...mkBtn("#374151"),flex:1,fontSize:12}}>Cancel</button>
                         </div>
                       </div>
+                    )}
+                  </div>);
+                })}
+              </div>
+            )}
+
+            {/* sent challenges tracker */}
+            {(myData.sent||[]).length>0&&(
+              <div style={{...CARD,marginTop:12,padding:14}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>⚔️ SENT CHALLENGES</p>
+                {(myData.sent||[]).slice().reverse().map(function(s,i){
+                  var tl=challengeTimeLeft(s.expiresAt);
+                  var expired=tl==="expired";
+                  var done=s.status==="completed";
+                  return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid rgba(255,255,255,0.07)",opacity:expired&&!done?0.5:1}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,color:"#f3f4f6",fontWeight:600}}>→ <strong>{s.to}</strong> · <span style={{color:getLv(s.level).color}}>{s.level}</span></div>
+                      <div style={{fontSize:10,color:"#6b7280",marginTop:1}}>{s.date}{!done&&tl?" · ⏱ "+tl:""}</div>
+                    </div>
+                    {done?(
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:pctColor(s.result.pct)}}>{s.result.pct}%</div>
+                        <div style={{fontSize:10,color:"#fbbf24"}}>{s.result.xp} XP</div>
+                      </div>
+                    ):(
+                      <span style={{fontSize:10,color:expired?"#f87171":"#6b7280",fontWeight:600}}>{expired?"expired":"pending"}</span>
                     )}
                   </div>);
                 })}
