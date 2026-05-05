@@ -1470,6 +1470,8 @@ export default function App(){
     setTutorChat([]);setTutorInput("");setTutorLoading(false);
     setActiveChallengeIdx(null);setActiveChallengeFrom("");
     setPronMode(false);setPronSentence("");setPronRecording(false);setPronResult(null);
+    setPersonalizedWords([]);setWriteFeedback(null);setWriteSummary("");setWriteLoading(false);setWriteError("");
+    setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcLoading(false);setEcError("");
     setStage("home");
   }
 
@@ -2106,7 +2108,7 @@ export default function App(){
                     {!rsvpDone&&<div style={{display:"flex",justifyContent:"center",gap:10,marginTop:16}}>
                       <button onClick={function(){setRsvpIdx(function(i){return Math.max(0,i-10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>−10</button>
                       <button onClick={function(){setRsvpPaused(function(p){return !p;});}} style={{background:rsvpPaused?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(rsvpPaused?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpPaused?"#c4b5fd":"#9ca3af",borderRadius:8,padding:"7px 20px",fontSize:14,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{rsvpPaused?"▶ Play":"⏸ Pause"}</button>
-                      <button onClick={function(){setRsvpIdx(function(i){return Math.min(words.length-1,i+10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+10</button>
+                      <button onClick={function(){setRsvpIdx(function(i){return Math.min(Math.max(0,words.length-1),i+10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+10</button>
                     </div>}
                   </div>
                 );
@@ -3671,7 +3673,7 @@ export default function App(){
         {stage==="writefeedback"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:6}}>
-              <button onClick={function(){setStage("result");}} style={GHOST}>← Back</button>
+              <button onClick={function(){if(!writeLoading)setStage("result");}} disabled={writeLoading} style={GHOST}>← Back</button>
               <h2 style={{fontSize:18,fontWeight:900,color:"#fbbf24",margin:0}}>✍️ Writing Challenge</h2>
             </div>
 
@@ -3691,9 +3693,9 @@ export default function App(){
                     onChange={function(e){setWriteSummary(e.target.value);}}
                   />
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
-                    <span style={{fontSize:11,color:writeSummary.trim().split(/\s+/).filter(Boolean).length>=20?"#34d399":"#6b7280"}}>
-                      {writeSummary.trim().split(/\s+/).filter(Boolean).length} words {writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"(aim for 30+)":"✓"}
-                    </span>
+                    {(function(){var wc=writeSummary.trim().split(/\s+/).filter(Boolean).length;return(
+                      <span style={{fontSize:11,color:wc>=20?"#34d399":"#6b7280"}}>{wc} words {wc<20?"(aim for 20+)":"✓"}</span>
+                    );})()}
                     <button
                       onClick={async function(){
                         if(!writeSummary.trim()||writeLoading)return;
@@ -3706,8 +3708,8 @@ export default function App(){
                         }catch(e){setWriteError(e.message||"Failed — try again.");}
                         setWriteLoading(false);
                       }}
-                      disabled={writeLoading||writeSummary.trim().length<20}
-                      style={{...mkBtn(writeLoading||writeSummary.trim().length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
+                      disabled={writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20}
+                      style={{...mkBtn(writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
                     >{writeLoading?"Grading…":"Get Feedback →"}</button>
                   </div>
                   {writeError&&<p style={{fontSize:12,color:"#ef4444",margin:"8px 0 0"}}>{writeError}</p>}
@@ -3795,7 +3797,7 @@ export default function App(){
               function strip(t){return t.replace(/[^a-zA-Z']/g,"").toLowerCase();}
               var errorMap={};
               (ecData.errors||[]).forEach(function(err,i){
-                errorMap[err.corrupted.toLowerCase()]=i;
+                errorMap[strip(err.corrupted)]=i;
               });
 
               function toggleToken(idx){
@@ -3820,10 +3822,9 @@ export default function App(){
                 // find missed errors
                 (ecData.errors||[]).forEach(function(err){
                   var found=false;
-                  ecSelected.forEach(function(idx){if(strip(tokens[idx])===err.corrupted.toLowerCase())found=true;});
+                  ecSelected.forEach(function(idx){if(strip(tokens[idx])===strip(err.corrupted))found=true;});
                   if(!found){
-                    // mark the token in the passage as missed
-                    tokens.forEach(function(t,idx){if(strip(t)===err.corrupted.toLowerCase())tokenResults[idx]="missed";});
+                    tokens.forEach(function(t,idx){if(strip(t)===strip(err.corrupted))tokenResults[idx]="missed";});
                   }
                 });
               }
@@ -3879,7 +3880,7 @@ export default function App(){
                       <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:"0 0 12px",letterSpacing:0.6}}>ALL 5 ERRORS</p>
                       {(ecData.errors||[]).map(function(err,i){
                         var tc=typeColor[err.type]||"#9ca3af";
-                        var wasFound=Array.from(ecSelected).some(function(idx){return strip(tokens[idx])===err.corrupted.toLowerCase();});
+                        var wasFound=Array.from(ecSelected).some(function(idx){return strip(tokens[idx])===strip(err.corrupted);});
                         return(
                           <div key={i} style={{marginBottom:12,paddingBottom:12,borderBottom:i<ecData.errors.length-1?"1px solid rgba(255,255,255,0.06)":"none"}}>
                             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
