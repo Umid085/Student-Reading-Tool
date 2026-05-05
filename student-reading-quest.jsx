@@ -750,6 +750,7 @@ export default function App(){
   var [selectedTypes,setSelectedTypes]=useState(["mcq","gap_word","gap_sentence","matching","heading","qa"]);
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
+  var [customTopic,setCustomTopic]=useState("");
   var [questions,setQuestions]=useState([]);
   var [shuffledRights,setShuffledRights]=useState([]);
   var [current,setCurrent]=useState(0);
@@ -1069,7 +1070,8 @@ export default function App(){
       var typeList="",exList="";
       for(var ti=0;ti<selectedTypes.length;ti++){typeList+=(ti+1)+". "+typeDescs[selectedTypes[ti]]+"\n";exList+="    "+typeExamples[selectedTypes[ti]]+(ti<selectedTypes.length-1?",":"")+"\\n";}
       var passInstr={A1:"80-100 words, basic vocabulary, daily life",A2:"110-130 words, everyday vocabulary, travel/hobbies",B1:"140-160 words, moderate vocabulary, tech/environment",B2:"170-190 words, varied vocabulary, nuanced argument",C1:"200-220 words, sophisticated vocabulary, philosophy/politics",C2:"230-260 words, advanced academic vocabulary, abstract topic"};
-      var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\nPick a RANDOM varied topic.\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
+      var topicInstr=customTopic.trim()?"Write about this specific topic: \""+customTopic.trim()+"\". Keep it relevant and appropriate for the level.":"Pick a RANDOM varied topic.";
+      var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\n"+topicInstr+"\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
       var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:pt}]})});
       var data=await res.json();
       var raw="";if(data.content){for(var i=0;i<data.content.length;i++){if(data.content[i].text)raw+=data.content[i].text;}}
@@ -1464,6 +1466,23 @@ export default function App(){
                   return(<button key={t} onClick={toggle} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{Q_LABELS[t]}</button>);
                 })}
               </div>
+            </div>
+
+            {/* custom topic input */}
+            <div style={{...CARD,marginBottom:12,padding:14}}>
+              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>TOPIC <span style={{color:"#4b5563",fontWeight:400,letterSpacing:0}}>(optional — leave blank for random)</span></p>
+              <div style={{display:"flex",gap:8}}>
+                <input
+                  style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid "+(customTopic.trim()?"#818cf8":"rgba(255,255,255,0.12)"),borderRadius:10,padding:"9px 12px",fontSize:13,color:"#f3f4f6",fontFamily:"inherit",outline:"none"}}
+                  placeholder="e.g. climate change, football, the Moon..."
+                  value={customTopic}
+                  onChange={function(e){setCustomTopic(e.target.value);}}
+                  onKeyDown={function(e){if(e.key==="Enter"&&level)generate();}}
+                  maxLength={80}
+                />
+                {customTopic.trim()&&<button onClick={function(){setCustomTopic("");}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>✕</button>}
+              </div>
+              {customTopic.trim()&&<p style={{fontSize:11,color:"#818cf8",margin:"6px 0 0"}}>AI will write a passage about: <strong>{customTopic.trim()}</strong></p>}
             </div>
 
             {/* level selector */}
