@@ -8,10 +8,10 @@ export async function checkRateLimit(DB, ip) {
   if (!DB || !ip) return { limited: false };
 
   const ipHash = createHash("sha256").update(ip).digest("hex").slice(0, 12);
-  const key = `rq-rl-${ipHash}`;
+  const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
 
   try {
-    const r = await fetch(`${DB}/rq/${key}.json`);
+    const r = await fetch(`${DB}/rl/${ipHash}.json${fbAuth}`);
     const data = await r.json();
     const now = Date.now();
     const inWindow = data && typeof data.count === "number" && data.resetAt > now;
@@ -23,7 +23,7 @@ export async function checkRateLimit(DB, ip) {
     }
 
     // Increment counter — fire-and-forget so auth latency is unaffected
-    fetch(`${DB}/rq/${key}.json`, {
+    fetch(`${DB}/rl/${ipHash}.json${fbAuth}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ count: count + 1, resetAt }),

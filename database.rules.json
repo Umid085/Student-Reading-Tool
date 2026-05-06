@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "rq": {
+      "rq-auth-v6": {
+        ".read": false,
+        ".write": false
+      },
+      "$key": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "rl": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

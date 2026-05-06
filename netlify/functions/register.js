@@ -47,6 +47,8 @@ export const handler = async function (event) {
   }
 
   try {
+    const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
+
     // Check for duplicate name in profile list
     const pr = await fetch(`${DB}/rq/rq-users-v6.json`);
     const profiles = await pr.json();
@@ -67,11 +69,11 @@ export const handler = async function (event) {
     });
 
     // Write credentials to rq-auth-v6 (separate, never exposed via storage.js)
-    const ar = await fetch(`${DB}/rq/rq-auth-v6.json`);
+    const ar = await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`);
     const authData = await ar.json();
     const authList = Array.isArray(authData) ? authData : [];
     const newAuthList = authList.concat([{ name, hash }]);
-    await fetch(`${DB}/rq/rq-auth-v6.json`, {
+    await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newAuthList),

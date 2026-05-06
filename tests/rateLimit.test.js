@@ -82,11 +82,19 @@ describe("_rateLimit.js", () => {
     expect(result.limited).toBe(false);
   });
 
-  it("reads from a hashed IP path under /rq/rq-rl-", async () => {
+  it("reads from a hashed IP path under /rl/", async () => {
     fetch.mockResolvedValueOnce({ json: async () => null }).mockResolvedValue({});
     const checkRateLimit = await loadCheckRateLimit();
     await checkRateLimit(DB, "1.2.3.4");
-    expect(fetch.mock.calls[0][0]).toMatch(/fake\.firebaseio\.com\/rq\/rq-rl-[a-f0-9]{12}\.json/);
+    expect(fetch.mock.calls[0][0]).toMatch(/fake\.firebaseio\.com\/rl\/[a-f0-9]{12}\.json/);
+  });
+
+  it("appends ?auth= when FIREBASE_DB_SECRET is set", async () => {
+    process.env.FIREBASE_DB_SECRET = "my-db-secret";
+    fetch.mockResolvedValueOnce({ json: async () => null }).mockResolvedValue({});
+    const checkRateLimit = await loadCheckRateLimit();
+    await checkRateLimit(DB, "1.2.3.4");
+    expect(fetch.mock.calls[0][0]).toContain("?auth=my-db-secret");
   });
 
   it("same IP always maps to same rate-limit key", async () => {

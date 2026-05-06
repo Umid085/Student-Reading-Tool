@@ -24,7 +24,7 @@ describe("register.js", () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    process.env = { ...OLD_ENV, SESSION_SECRET: "test-secret", FIREBASE_DB_URL: "https://fake.firebaseio.com", RATE_LIMIT_DISABLED: "1" };
+    process.env = { ...OLD_ENV, SESSION_SECRET: "test-secret", FIREBASE_DB_URL: "https://fake.firebaseio.com", FIREBASE_DB_SECRET: "test-db-secret", RATE_LIMIT_DISABLED: "1" };
     fetch.mockReset();
   });
 
@@ -103,6 +103,19 @@ describe("register.js", () => {
     const body = JSON.parse(res.body);
     expect(typeof body.token).toBe("string");
     expect(verifyToken(body.token, "test-secret")).toBe(true);
+  });
+
+  it("appends ?auth= to rq-auth-v6 calls when FIREBASE_DB_SECRET is set", async () => {
+    fetch
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ json: async () => [] })
+      .mockResolvedValueOnce({});
+    const handler = await loadHandler();
+    await handler(makeEvent({ body: JSON.stringify({ name: "Bob", hash: "myhash" }) }));
+    // 3rd call is GET rq-auth-v6, 4th is PUT rq-auth-v6 — both should have ?auth=
+    expect(fetch.mock.calls[2][0]).toContain("?auth=test-db-secret");
+    expect(fetch.mock.calls[3][0]).toContain("?auth=test-db-secret");
   });
 
   it("writes profile without hash and credentials to auth list", async () => {

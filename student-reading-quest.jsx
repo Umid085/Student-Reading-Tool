@@ -59,6 +59,16 @@ function getWeekId(){
 }
 function getWpmFromSecs(wordCount,secs){return secs>0?Math.round(wordCount/(secs/60)):0;}
 
+var SRS_INTERVALS=[1,3,7,14]; // days between reviews
+function srsNextDate(days){var d=new Date();d.setDate(d.getDate()+days);return d.toLocaleDateString();}
+function srsDueToday(word){
+  if(word.status==="known")return false;
+  if(!word.nextReview)return true; // legacy words without SRS — treat as due
+  var today=new Date();today.setHours(0,0,0,0);
+  var due=new Date(word.nextReview);due.setHours(0,0,0,0);
+  return due<=today;
+}
+
 // ── pure helpers ─────────────────────────────────────────────
 function getLv(k){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].key===k)return LEVELS[i];}return LEVELS[0];}
 function formatTime(s){if(s<=0)return"0:00";var m=Math.floor(s/60),sec=s%60;return m+":"+(sec<10?"0":"")+sec;}
@@ -86,6 +96,37 @@ function calcStreak(games) {
     else break;
   }
   return streak;
+}
+
+function calcStreakWithShields(games,shieldDates){
+  var dates=[];
+  for(var i=0;i<(games||[]).length;i++){var d=games[i].date;if(dates.indexOf(d)===-1)dates.push(d);}
+  for(var j=0;j<(shieldDates||[]).length;j++){if(dates.indexOf(shieldDates[j])===-1)dates.push(shieldDates[j]);}
+  if(!dates.length)return 0;
+  dates.sort(function(a,b){return new Date(b)-new Date(a);});
+  var today=new Date();today.setHours(0,0,0,0);
+  var first=new Date(dates[0]);first.setHours(0,0,0,0);
+  if(Math.round((today-first)/(864e5))>1)return 0;
+  var streak=1;
+  for(var k=1;k<dates.length;k++){
+    var prev=new Date(dates[k-1]);prev.setHours(0,0,0,0);
+    var curr=new Date(dates[k]);curr.setHours(0,0,0,0);
+    if(Math.round((prev-curr)/(864e5))===1)streak++;
+    else break;
+  }
+  return streak;
+}
+
+function getAdaptiveSuggestion(games,currentLevel){
+  var lvOrder=["A1","A2","B1","B2","C1","C2"];
+  var idx=lvOrder.indexOf(currentLevel);
+  if(idx===-1)return null;
+  var recent=(games||[]).filter(function(g){return g.level===currentLevel;}).slice(-5);
+  if(recent.length<3)return null;
+  var avg=Math.round(recent.reduce(function(s,g){return s+g.pct;},0)/recent.length);
+  if(avg>=80&&idx<lvOrder.length-1)return{direction:"up",level:lvOrder[idx+1],avg:avg};
+  if(avg<=40&&idx>0)return{direction:"down",level:lvOrder[idx-1],avg:avg};
+  return null;
 }
 
 function getBestLevel(games){
@@ -478,9 +519,14 @@ function hasLiked(social,liker,target){return!!(social._likes&&social._likes[lik
 
 function doSendChallenge(social,from,to,level,types){
   var n=JSON.parse(JSON.stringify(social));
+  var id=Date.now().toString(36);
+  var expiresAt=Date.now()+48*60*60*1000;
   if(!n[to])n[to]={friends:[],requests:[],likes:0,challenges:[]};
   if(!n[to].challenges)n[to].challenges=[];
-  n[to].challenges.push({from:from,level:level,types:types,date:new Date().toLocaleDateString(),status:"pending"});
+  n[to].challenges.push({id:id,from:from,level:level,types:types,date:new Date().toLocaleDateString(),status:"pending",expiresAt:expiresAt});
+  if(!n[from])n[from]={friends:[],requests:[],likes:0,challenges:[],sent:[]};
+  if(!n[from].sent)n[from].sent=[];
+  n[from].sent.push({id:id,to:to,level:level,date:new Date().toLocaleDateString(),status:"pending",expiresAt:expiresAt});
   return n;
 }
 
@@ -490,6 +536,86 @@ function doRespondChallenge(social,username,idx,status){
     n[username].challenges[idx].status=status;
   }
   return n;
+}
+
+function doCompleteChallenge(social,recipient,challengeIdx,result){
+  var n=JSON.parse(JSON.stringify(social));
+  var ch=n[recipient]&&n[recipient].challenges&&n[recipient].challenges[challengeIdx];
+  if(!ch)return n;
+  ch.status="completed";ch.result=result;
+  // write result notification back to sender's sent list
+  var sender=ch.from;
+  if(n[sender]&&n[sender].sent){
+    var si=n[sender].sent.findIndex(function(s){return s.id===ch.id;});
+    if(si!==-1){n[sender].sent[si].status="completed";n[sender].sent[si].result={pct:result.pct,xp:result.xp,by:recipient};}
+  }
+  return n;
+}
+
+function challengeTimeLeft(expiresAt){
+  if(!expiresAt)return null;
+  var ms=expiresAt-Date.now();
+  if(ms<=0)return"expired";
+  var h=Math.floor(ms/3600000);
+  var m=Math.floor((ms%3600000)/60000);
+  return h>0?h+"h "+m+"m left":m+"m left";
+}
+
+// ── pronunciation helpers ────────────────────────────────────
+function splitSentences(text){
+  var raw=text.match(/[^.!?]+[.!?]*/g)||[text];
+  return raw.map(function(s){return s.trim();}).filter(function(s){return s.length>10;});
+}
+function editDistance(a,b){
+  var m=a.length,n=b.length,dp=[];
+  for(var i=0;i<=m;i++){dp[i]=[i];}
+  for(var j=0;j<=n;j++){dp[0][j]=j;}
+  for(var i=1;i<=m;i++){for(var j=1;j<=n;j++){dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);}}
+  return dp[m][n];
+}
+function comparePronunciation(expected,transcript){
+  function clean(s){return s.toLowerCase().replace(/[^a-z\s']/g,"").trim();}
+  var expWords=clean(expected).split(/\s+/).filter(Boolean);
+  var gotWords=clean(transcript).split(/\s+/).filter(Boolean);
+  var words=expWords.map(function(w,i){
+    var got=gotWords[i]||"";
+    if(got===w)return{word:w,status:"correct"};
+    if(got&&editDistance(got,w)<=1)return{word:w,status:"close",heard:got};
+    return{word:w,status:"wrong",heard:got||"—"};
+  });
+  var ok=words.filter(function(w){return w.status==="correct"||w.status==="close";}).length;
+  return{words:words,accuracy:expWords.length?Math.round(ok/expWords.length*100):0,transcript:transcript};
+}
+
+// ── reading goals ────────────────────────────────────────────
+var GOAL_DEFS=[
+  {id:"weekly_games", label:"Games this week",            icon:"🎮", unit:"games", opts:[3,5,7,10]},
+  {id:"weekly_xp",    label:"XP this week",               icon:"⚡", unit:"XP",   opts:[500,1000,2000,5000]},
+  {id:"avg_score",    label:"Avg score (next 5 games)",   icon:"🎯", unit:"%",    opts:[60,70,80,90]},
+  {id:"streak",       label:"Streak target",              icon:"🔥", unit:"days", opts:[3,7,14,30]},
+];
+function weekStart(){
+  var d=new Date();var day=d.getDay();
+  var diff=d.getDate()-day+(day===0?-6:1);
+  var m=new Date(d);m.setDate(diff);m.setHours(0,0,0,0);return m;
+}
+function getGoalProgress(goalId,goalData,games,streak){
+  var ws=weekStart();
+  var wkGames=games.filter(function(g){return new Date(g.date)>=ws;});
+  if(goalId==="weekly_games"){
+    var c=wkGames.length;return{current:c,target:goalData.target,pct:Math.min(100,Math.round(c/goalData.target*100)),done:c>=goalData.target};
+  }
+  if(goalId==="weekly_xp"){
+    var c=wkGames.reduce(function(s,g){return s+g.xp;},0);return{current:c,target:goalData.target,pct:Math.min(100,Math.round(c/goalData.target*100)),done:c>=goalData.target};
+  }
+  if(goalId==="avg_score"){
+    var tr=goalData.trackGames||[];var avg=tr.length?Math.round(tr.reduce(function(s,p){return s+p;},0)/tr.length):0;
+    return{current:avg,target:goalData.target,pct:Math.min(100,Math.round(tr.length/5*100)),done:tr.length>=5&&avg>=goalData.target,gamesPlayed:tr.length};
+  }
+  if(goalId==="streak"){
+    var c=streak;return{current:c,target:goalData.target,pct:Math.min(100,Math.round(c/goalData.target*100)),done:c>=goalData.target};
+  }
+  return{current:0,target:1,pct:0,done:false};
 }
 
 // ── chart component ──────────────────────────────────────────
@@ -750,6 +876,9 @@ export default function App(){
   var [selectedTypes,setSelectedTypes]=useState(["mcq","gap_word","gap_sentence","matching","heading","qa"]);
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
+  var [customTopic,setCustomTopic]=useState("");
+  var [useWeakVocab,setUseWeakVocab]=useState(false);
+  var [personalizedWords,setPersonalizedWords]=useState([]);
   var [questions,setQuestions]=useState([]);
   var [shuffledRights,setShuffledRights]=useState([]);
   var [current,setCurrent]=useState(0);
@@ -776,6 +905,8 @@ export default function App(){
   var [challengeTarget,setChallengeTarget]=useState(null);
   var [challengeLevel,setChallengeLevel]=useState("B1");
   var [challengeTypes,setChallengeTypes]=useState(["mcq","qa"]);
+  var [activeChallengeIdx,setActiveChallengeIdx]=useState(null);
+  var [activeChallengeFrom,setActiveChallengeFrom]=useState("");
   var [socialMsg,setSocialMsg]=useState("");
   // history
   var [historyLevel,setHistoryLevel]=useState("");
@@ -826,6 +957,41 @@ export default function App(){
   var [discussStoryId,setDiscussStoryId]=useState(null);
   var [allDiscuss,setAllDiscuss]=useState({});
   var [discussInput,setDiscussInput]=useState("");
+  // pronunciation check
+  var [pronMode,setPronMode]=useState(false);
+  var [pronSentence,setPronSentence]=useState("");
+  var [pronRecording,setPronRecording]=useState(false);
+  var [pronResult,setPronResult]=useState(null);
+  var pronRecRef=useRef(null);
+  // reading goals
+  var [goals,setGoals]=useState({});
+  // ai tutor
+  var [tutorChat,setTutorChat]=useState([]);
+  var [tutorInput,setTutorInput]=useState("");
+  var [tutorLoading,setTutorLoading]=useState(false);
+  // writing feedback
+  var [writeSummary,setWriteSummary]=useState("");
+  var [writeFeedback,setWriteFeedback]=useState(null);
+  var [writeLoading,setWriteLoading]=useState(false);
+  var [writeError,setWriteError]=useState("");
+  // error correction challenge
+  var [ecData,setEcData]=useState(null);
+  var [ecLoading,setEcLoading]=useState(false);
+  var [ecError,setEcError]=useState("");
+  var [ecSelected,setEcSelected]=useState(new Set());
+  var [ecRevealed,setEcRevealed]=useState(false);
+  // rsvp speed reader
+  var [rsvpActive,setRsvpActive]=useState(false);
+  var [rsvpWpm,setRsvpWpm]=useState(250);
+  var [rsvpIdx,setRsvpIdx]=useState(0);
+  var [rsvpPaused,setRsvpPaused]=useState(false);
+  var [rsvpDone,setRsvpDone]=useState(false);
+  var rsvpRef=useRef(null);
+  var rsvpWordsRef=useRef([]);
+  // streak shields
+  var [shields,setShields]=useState(0);
+  var [shieldDates,setShieldDates]=useState([]);
+  var [longestStreak,setLongestStreak]=useState(0);
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -848,9 +1014,33 @@ export default function App(){
       if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}
       if(window.speechSynthesis){window.speechSynthesis.cancel();}
       setIsSpeaking(false);
+      // reset rsvp when leaving reading screen
+      if(rsvpRef.current){clearInterval(rsvpRef.current);rsvpRef.current=null;}
+      setRsvpActive(false);setRsvpIdx(0);setRsvpPaused(false);setRsvpDone(false);
     }
     return function(){if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}};
   },[stage]);
+
+  // rsvp ticker
+  useEffect(function(){
+    if(!rsvpActive||rsvpPaused||rsvpDone){
+      if(rsvpRef.current){clearInterval(rsvpRef.current);rsvpRef.current=null;}
+      return;
+    }
+    var ms=Math.round(60000/rsvpWpm);
+    rsvpRef.current=setInterval(function(){
+      setRsvpIdx(function(i){
+        var next=i+1;
+        if(next>=rsvpWordsRef.current.length){
+          clearInterval(rsvpRef.current);rsvpRef.current=null;
+          setRsvpDone(true);setRsvpPaused(true);
+          return i;
+        }
+        return next;
+      });
+    },ms);
+    return function(){if(rsvpRef.current){clearInterval(rsvpRef.current);rsvpRef.current=null;}};
+  },[rsvpActive,rsvpPaused,rsvpDone,rsvpWpm]);
 
   // load vocab + daily challenge when user logs in
   useEffect(function(){
@@ -867,6 +1057,14 @@ export default function App(){
     loadFavs().then(function(f){setAllFavs(f||{});setFavs((f&&f[currentUser.name])||[]);});
     loadWeeklyLb().then(function(w){var wk=getWeekId();setWeeklyLb((w&&w[wk])||[]);});
     loadDiscuss().then(function(d){setAllDiscuss(d||{});});
+    var sKey="rq-streak-data-v1-"+currentUser.name;
+    var sd=null;try{sd=JSON.parse(localStorage.getItem(sKey));}catch(e){}
+    setShields(sd&&sd.shields!=null?sd.shields:0);
+    setShieldDates(sd&&sd.shieldDates?sd.shieldDates:[]);
+    setLongestStreak(sd&&sd.longestStreak?sd.longestStreak:0);
+    var gk="rq-goals-v1-"+currentUser.name;
+    var gd=null;try{gd=JSON.parse(localStorage.getItem(gk));}catch(e){}
+    setGoals(gd||{});
   },[currentUser]);
 
   // always pull fresh users when entering friends page or typing a search
@@ -964,6 +1162,8 @@ export default function App(){
     var n=doRespondChallenge(social,currentUser.name,idx,status);
     await saveSocial(n);setSocial(n);
     if(status==="accepted"&&challenge){
+      setActiveChallengeIdx(idx);
+      setActiveChallengeFrom(challenge.from||"");
       setLevel(challenge.level);
       setSelectedTypes(challenge.types||["mcq","qa"]);
       setSocialMsg("");
@@ -1069,7 +1269,15 @@ export default function App(){
       var typeList="",exList="";
       for(var ti=0;ti<selectedTypes.length;ti++){typeList+=(ti+1)+". "+typeDescs[selectedTypes[ti]]+"\n";exList+="    "+typeExamples[selectedTypes[ti]]+(ti<selectedTypes.length-1?",":"")+"\\n";}
       var passInstr={A1:"80-100 words, basic vocabulary, daily life",A2:"110-130 words, everyday vocabulary, travel/hobbies",B1:"140-160 words, moderate vocabulary, tech/environment",B2:"170-190 words, varied vocabulary, nuanced argument",C1:"200-220 words, sophisticated vocabulary, philosophy/politics",C2:"230-260 words, advanced academic vocabulary, abstract topic"};
-      var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\nPick a RANDOM varied topic.\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
+      var weakWords=[];
+      if(useWeakVocab&&vocab.length>0){
+        var active=vocab.filter(function(w){return w.status!=="known";});
+        active.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
+        weakWords=active.slice(0,5).map(function(w){return w.word;});
+      }
+      var topicInstr=customTopic.trim()?"Write about this specific topic: \""+customTopic.trim()+"\". Keep it relevant and appropriate for the level.":"Pick a RANDOM varied topic.";
+      if(weakWords.length>0){topicInstr+="\n\nIMPORTANT: Naturally incorporate these vocabulary words into the passage (the student is practising them): "+weakWords.join(", ")+". Use each word at least once in context.";}
+      var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\n"+topicInstr+"\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
       var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:pt}]})});
       var data=await res.json();
       var raw="";if(data.content){for(var i=0;i<data.content.length;i++){if(data.content[i].text)raw+=data.content[i].text;}}
@@ -1081,6 +1289,7 @@ export default function App(){
       setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
       var aiId="ai_"+level.toLowerCase()+"_"+(json.topic||"").toLowerCase().replace(/[^a-z0-9]/g,"_").slice(0,20)+"_"+Date.now();
       setCurrentStoryId(aiId);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+      setPersonalizedWords(weakWords);
       setStage("reading");
     }catch(e){console.log("generate err",e);setError("Generation failed - please try again.");setStage("home");}
     clearInterval(iv);
@@ -1104,7 +1313,7 @@ export default function App(){
     if(currentUser&&savedWords.size>0){
       var today=new Date().toLocaleDateString();
       var newEntries=[];
-      savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;})){var wd=savedWordDefs&&savedWordDefs[w];newEntries.push({word:w,level:level,topic:topic,date:today,status:"new",def:wd?wd.def:"",example:wd?wd.example:""});}});
+      savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;})){var wd=savedWordDefs&&savedWordDefs[w];newEntries.push({word:w,level:level,topic:topic,date:today,status:"new",def:wd?wd.def:"",example:wd?wd.example:"",srInterval:0,nextReview:srsNextDate(SRS_INTERVALS[0])});}});
       if(newEntries.length>0){
         var nv=vocab.concat(newEntries);
         var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;
@@ -1161,13 +1370,13 @@ export default function App(){
     var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
     var today=new Date().toLocaleDateString();
 
-    var badgesBefore=checkBadges(currentUser,vocab,calcStreak(currentUser.games));
+    var badgesBefore=checkBadges(currentUser,vocab,calcStreakWithShields(currentUser.games,shieldDates));
     // quest bonus: check which quests complete with this game
     var tempTodayGames=currentUser.games.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
     var newQuestItems=[];
     dailyQuests.forEach(function(qt){
       if(questsDone[qt.id])return;
-      if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreak(currentUser.games.concat([{date:today}]))})){
+      if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreakWithShields(currentUser.games.concat([{date:today}]),shieldDates)})){
         newQuestItems.push(qt);finalXp+=qt.xp;
       }
     });
@@ -1176,14 +1385,28 @@ export default function App(){
     var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
     var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
     await saveUsers(newUsers);setAllUsers(newUsers);setCurrentUser(updatedUser);
-    var newStreakVal=calcStreak(updatedUser.games);
+    var prevStreakVal=calcStreakWithShields(currentUser.games,shieldDates);
+    var newStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
     var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
     var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
+    var newLongest=Math.max(longestStreak,newStreakVal);
+    var newShields=shields;
+    if(newStreakVal>0&&newStreakVal%7===0&&prevStreakVal%7!==0&&newShields<3){newShields=Math.min(3,newShields+1);}
+    setLongestStreak(newLongest);setShields(newShields);
+    var sKey2="rq-streak-data-v1-"+updatedUser.name;
+    localStorage.setItem(sKey2,JSON.stringify({shields:newShields,shieldDates:shieldDates,longestStreak:newLongest}));
 
     var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
     var nb={};for(var k in boards){nb[k]=boards[k];}
     var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,20);
     await saveBoards(nb);setBoards(nb);
+
+    // write challenge result back so challenger sees it
+    if(activeChallengeIdx!==null&&activeChallengeFrom&&currentUser){
+      var nc=doCompleteChallenge(social,currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});
+      await saveSocial(nc);setSocial(nc);
+      setActiveChallengeIdx(null);setActiveChallengeFrom("");
+    }
 
     var wasDaily=isDailyGame;
     if(isDailyGame&&currentUser){
@@ -1217,7 +1440,22 @@ export default function App(){
       setQuestsDone(nqd);
     }
     var questBonus=newQuestItems.reduce(function(s,q){return s+q.xp;},0);
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null});
+    // update reading goals
+    var updatedGoals=Object.assign({},goals);
+    var completedGoalIds=[];
+    var wkId=getWeekId();
+    GOAL_DEFS.forEach(function(def){
+      var g=updatedGoals[def.id];if(!g)return;
+      var wasReset=false;
+      if((def.id==="weekly_games"||def.id==="weekly_xp")&&g.weekId!==wkId){g=Object.assign({},g,{weekId:wkId});wasReset=true;}
+      var prevProg=getGoalProgress(def.id,g,currentUser.games,newStreakVal);
+      if(def.id==="avg_score"){var tr=(g.trackGames||[]).concat([pct]);g=Object.assign({},g,{trackGames:tr.slice(-5)});}
+      updatedGoals[def.id]=g;
+      var newProg=getGoalProgress(def.id,g,updatedUser.games,newStreakVal);
+      if(newProg.done&&!prevProg.done)completedGoalIds.push(def.id);
+    });
+    saveGoalsLocal(updatedGoals);
+    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds});
     setStage("result");
   }
 
@@ -1229,7 +1467,75 @@ export default function App(){
     setIsDailyGame(false);setSavedWords(new Set());
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});
+    setTutorChat([]);setTutorInput("");setTutorLoading(false);
+    setActiveChallengeIdx(null);setActiveChallengeFrom("");
+    setPronMode(false);setPronSentence("");setPronRecording(false);setPronResult(null);
+    setPersonalizedWords([]);setWriteFeedback(null);setWriteSummary("");setWriteLoading(false);setWriteError("");
+    setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcLoading(false);setEcError("");
     setStage("home");
+  }
+
+  function useShield(){
+    if(shields<=0||!currentUser)return;
+    var yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+    var yDate=yesterday.toLocaleDateString();
+    var newSDs=shieldDates.indexOf(yDate)===-1?shieldDates.concat([yDate]):shieldDates;
+    var newSh=shields-1;
+    setShields(newSh);setShieldDates(newSDs);
+    var sKey="rq-streak-data-v1-"+currentUser.name;
+    localStorage.setItem(sKey,JSON.stringify({shields:newSh,shieldDates:newSDs,longestStreak:longestStreak}));
+  }
+
+  function saveGoalsLocal(g){
+    if(!currentUser)return;
+    localStorage.setItem("rq-goals-v1-"+currentUser.name,JSON.stringify(g));
+    setGoals(g);
+  }
+  function setGoal(id,target){
+    var ng=Object.assign({},goals);
+    if(id==="avg_score")ng[id]={target:target,trackGames:[]};
+    else if(id==="weekly_games"||id==="weekly_xp")ng[id]={target:target,weekId:getWeekId()};
+    else ng[id]={target:target};
+    saveGoalsLocal(ng);
+  }
+  function removeGoal(id){
+    var ng=Object.assign({},goals);delete ng[id];saveGoalsLocal(ng);
+  }
+
+  async function sendTutorMessage(text){
+    if(!text||!text.trim()||tutorLoading)return;
+    var userMsg={role:"user",content:text.trim()};
+    var newChat=tutorChat.concat([userMsg]);
+    setTutorChat(newChat);setTutorInput("");setTutorLoading(true);
+    try{
+      var r=await fetch("/.netlify/functions/tutor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:passage,topic:topic,level:level,messages:newChat.map(function(m){return{role:m.role,content:m.content};})})});
+      var d=await r.json();
+      setTutorChat(newChat.concat([{role:"assistant",content:d.reply||d.error||"Sorry, I couldn't respond. Try again."}]));
+    }catch(e){
+      setTutorChat(newChat.concat([{role:"assistant",content:"Connection error — please try again."}]));
+    }
+    setTutorLoading(false);
+  }
+
+  function startPronCheck(sentence){
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setPronResult({error:"Speech recognition is not supported in this browser. Please use Chrome or Edge."});return;}
+    if(pronRecording&&pronRecRef.current){pronRecRef.current.stop();return;}
+    setPronResult(null);setPronRecording(true);
+    var rec=new SR();
+    rec.continuous=false;rec.interimResults=false;rec.lang="en-US";
+    rec.onresult=function(e){
+      var transcript=e.results[0][0].transcript;
+      setPronResult(comparePronunciation(sentence,transcript));
+      setPronRecording(false);
+    };
+    rec.onerror=function(e){
+      setPronResult({error:"Could not hear you — check mic permissions and try again. ("+e.error+")"});
+      setPronRecording(false);
+    };
+    rec.onend=function(){setPronRecording(false);};
+    pronRecRef.current=rec;
+    rec.start();
   }
 
   async function startDailyChallenge(){
@@ -1273,10 +1579,10 @@ export default function App(){
 
   // ── style helpers ─────────────────────────────────────────
   var BG="linear-gradient(160deg,#0d0d1a 0%,#111827 55%,#0d1f12 100%)";
-  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20};
-  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600};
-  var INP={width:"100%",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
-  function mkBtn(bg,fg){return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit"};}
+  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.07)"};
+  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.14)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600,transition:"all 0.18s ease"};
+  var INP={width:"100%",background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.18s,box-shadow 0.18s"};
+  function mkBtn(bg,fg){var glow=bg&&bg.startsWith("#")?bg+"55":"rgba(99,102,241,0.35)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
   function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
 
   if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",color:"#34d399",fontFamily:"sans-serif"}}>Loading...</div>;
@@ -1286,25 +1592,63 @@ export default function App(){
   myData=myData||{friends:[],requests:[],likes:0,challenges:[]};
   myData.friends=myData.friends||[];
   myData.requests=myData.requests||[];
-  var myStreak=currentUser?calcStreak(currentUser.games):0;
+  var myStreak=currentUser?calcStreakWithShields(currentUser.games,shieldDates):0;
   var myBestLevel=currentUser?getBestLevel(currentUser.games):"none";
-  var pendingChallenges=(myData.challenges||[]).filter(function(c){return c.status==="pending";});
+  var pendingChallenges=(myData.challenges||[]).filter(function(c){return c.status==="pending"&&(!c.expiresAt||c.expiresAt>Date.now());});
+  // at-risk: pure streak is 0 but last activity was exactly 2 days ago → shield can cover yesterday
+  var streakAtRisk=(function(){
+    if(!currentUser||shields<=0)return false;
+    var pureS=calcStreak(currentUser.games);
+    if(pureS>0)return false; // still active without shield
+    var allDts=(currentUser.games||[]).map(function(g){return g.date;}).concat(shieldDates);
+    allDts=allDts.filter(function(d,i,a){return a.indexOf(d)===i;});
+    if(!allDts.length)return false;
+    allDts.sort(function(a,b){return new Date(b)-new Date(a);});
+    var last=new Date(allDts[0]);last.setHours(0,0,0,0);
+    var tod=new Date();tod.setHours(0,0,0,0);
+    return Math.round((tod-last)/(864e5))===2;
+  })();
 
   return(
     <>
     <style>{`
-      @keyframes rqFloat{0%,100%{transform:translateY(0px)}50%{transform:translateY(-22px)}}
+      @keyframes rqOrbDrift{
+        0%,100%{transform:translate(0,0) scale(1)}
+        20%{transform:translate(45px,-70px) scale(1.06)}
+        45%{transform:translate(-35px,-28px) scale(0.94)}
+        70%{transform:translate(28px,55px) scale(1.03)}
+      }
+      @keyframes rqPulseGlow{
+        0%,100%{opacity:1}
+        50%{opacity:0.72}
+      }
+      @keyframes rqShimmer{
+        0%{background-position:200% center}
+        100%{background-position:-200% center}
+      }
+      @keyframes rqFadeIn{
+        from{opacity:0;transform:translateY(10px)}
+        to{opacity:1;transform:translateY(0)}
+      }
       *{box-sizing:border-box;margin:0;padding:0}
       html,body{margin:0;padding:0;overflow-x:hidden}
-      .rq-orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;animation:rqFloat var(--dur,12s) ease-in-out infinite;z-index:0}
-      .rq-card-3d{transition:transform 0.22s ease,box-shadow 0.22s ease}
-      .rq-card-3d:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 16px 48px rgba(0,0,0,0.55)}
-      .rq-lb-row{cursor:pointer;transition:background 0.15s,transform 0.15s}
-      .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(3px)}
-      .rq-wrap{width:100%;padding:16px 16px 64px}
+      .rq-orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;animation:rqOrbDrift var(--dur,25s) ease-in-out infinite;z-index:0;will-change:transform}
+      .rq-card-3d{transition:transform 0.25s ease,box-shadow 0.25s ease}
+      .rq-card-3d:hover{transform:translateY(-4px) scale(1.012);box-shadow:0 20px 56px rgba(0,0,0,0.55),0 0 30px rgba(99,102,241,0.15)}
+      .rq-lb-row{cursor:pointer;transition:background 0.18s,transform 0.18s,box-shadow 0.18s}
+      .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(4px);box-shadow:inset 3px 0 0 #6366f1}
+      .rq-wrap{width:100%;padding:16px 16px 64px;animation:rqFadeIn 0.4s ease both}
       .rq-home-hdr{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding-top:8px;margin-bottom:14px}
       .rq-home-nav{display:flex;gap:6px;flex-shrink:0}
       .rq-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+      .rq-wrap button{transition:transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease,opacity 0.15s ease}
+      .rq-wrap button:hover:not(:disabled){filter:brightness(1.14)}
+      .rq-wrap button:active:not(:disabled){transform:scale(0.95)!important}
+      .rq-wrap input:focus,.rq-wrap textarea:focus{border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,0.22)!important;outline:none!important}
+      .rq-glow-green{text-shadow:0 0 12px rgba(52,211,153,0.7)}
+      .rq-glow-amber{text-shadow:0 0 12px rgba(251,191,36,0.7)}
+      .rq-glow-red{text-shadow:0 0 12px rgba(248,113,113,0.7)}
+      .rq-shimmer{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);background-size:200% auto;animation:rqShimmer 2.5s linear infinite}
       @media(max-width:400px){.rq-home-nav button{padding:7px 10px!important;font-size:12px!important}}
       @media(min-width:480px){.rq-wrap{max-width:480px;margin:0 auto;padding:18px 20px 64px}}
       @media(min-width:640px){.rq-wrap{max-width:660px;padding:22px 28px 72px}.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
@@ -1312,9 +1656,13 @@ export default function App(){
       @media(min-width:1440px){.rq-wrap{max-width:1040px;padding:36px 80px 100px}}
     `}</style>
     <div style={{minHeight:"100vh",background:BG,fontFamily:"'Trebuchet MS',sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
-      <div className="rq-orb" style={{width:520,height:520,background:"rgba(99,102,241,0.11)",top:"-18%",left:"-13%","--dur":"13s"}}/>
-      <div className="rq-orb" style={{width:380,height:380,background:"rgba(52,211,153,0.08)",top:"38%",right:"-10%","--dur":"17s",animationDelay:"4s"}}/>
-      <div className="rq-orb" style={{width:300,height:300,background:"rgba(236,72,153,0.07)",bottom:"4%",left:"8%","--dur":"21s",animationDelay:"9s"}}/>
+      <div className="rq-orb" style={{width:680,height:680,background:"rgba(99,102,241,0.14)",top:"-22%",left:"-16%","--dur":"28s"}}/>
+      <div className="rq-orb" style={{width:500,height:500,background:"rgba(52,211,153,0.10)",top:"35%",right:"-14%","--dur":"34s",animationDelay:"6s"}}/>
+      <div className="rq-orb" style={{width:420,height:420,background:"rgba(236,72,153,0.09)",bottom:"2%",left:"5%","--dur":"38s",animationDelay:"14s"}}/>
+      {/* scanlines */}
+      <div style={{position:"fixed",inset:0,backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px)",pointerEvents:"none",zIndex:2}}/>
+      {/* vignette */}
+      <div style={{position:"fixed",inset:0,background:"radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.45) 100%)",pointerEvents:"none",zIndex:2}}/>
       <div className="rq-wrap" style={{position:"relative",zIndex:1}}>
 
         {/* ── AUTH ──────────────────────────────────────────── */}
@@ -1344,7 +1692,7 @@ export default function App(){
               <div>
                 <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#34d399"}}>Hey, {currentUser?currentUser.name:""}!</h2>
                 <div className="rq-pills">
-                  <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {myStreak} day streak</span>
+                  <span style={pill(streakAtRisk?"rgba(239,68,68,0.2)":"rgba(251,191,36,0.15)",streakAtRisk?"#f87171":"#fbbf24")}>{streakAtRisk?"⚠️":"🔥"} {myStreak} day streak{shields>0?" · "+"🛡️".repeat(shields):""}</span>
                   <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>Friends: {myData.friends.length}</span>
                   {myData.likes>0&&<span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes}</span>}
                   {pendingChallenges.length>0&&<span style={pill("rgba(239,68,68,0.2)","#f87171")}>!{pendingChallenges.length} challenge</span>}
@@ -1355,6 +1703,7 @@ export default function App(){
                 <button onClick={function(){setStage("analytics");}} style={GHOST}>Stats</button>
                 <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>Vocab</button>
                 <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
+                <button onClick={function(){setStage("goals");}} style={GHOST}>Goals</button>
                 <button onClick={function(){setStage("library");}} style={GHOST}>Library</button>
                 <button onClick={function(){setStage("weekly");}} style={GHOST}>Weekly</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
@@ -1362,20 +1711,115 @@ export default function App(){
               </div>
             </div>
 
-            {/* pending challenges */}
-            {pendingChallenges.length>0&&(
-              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(239,68,68,0.3)"}}>
-                <p style={{fontSize:11,color:"#f87171",fontWeight:700,marginBottom:8}}>GAME CHALLENGES</p>
-                {pendingChallenges.map(function(c,idx){
-                  var realIdx=myData.challenges.indexOf(c);
-                  return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                    <span style={{fontSize:12,color:"#f3f4f6",flex:1}}><strong>{c.from}</strong> challenged you to <strong>{c.level}</strong></span>
-                    <button onClick={function(){respondChallenge(realIdx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
-                    <button onClick={function(){respondChallenge(realIdx,"declined",null);}} style={{...mkBtn("#374151"),padding:"5px 10px",fontSize:11}}>Decline</button>
-                  </div>);
-                })}
+            {/* streak card */}
+            {currentUser&&(myStreak>1||streakAtRisk)&&(
+              <div style={{...CARD,marginBottom:12,padding:14,borderColor:streakAtRisk?"rgba(239,68,68,0.35)":"rgba(251,191,36,0.3)",background:streakAtRisk?"rgba(239,68,68,0.06)":"rgba(251,191,36,0.05)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{fontSize:36,lineHeight:1}}>{streakAtRisk?"🛡️":"🔥"}</div>
+                    <div>
+                      <div className={streakAtRisk?"rq-glow-red":"rq-glow-amber"} style={{fontSize:22,fontWeight:900,color:streakAtRisk?"#f87171":"#fbbf24",lineHeight:1}}>{myStreak} <span style={{fontSize:13,fontWeight:600}}>day streak</span></div>
+                      {longestStreak>0&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Best: {longestStreak} days</div>}
+                      {streakAtRisk&&<div style={{fontSize:11,color:"#f87171",marginTop:2,fontWeight:600}}>You missed yesterday — use a shield to save it!</div>}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    {shields>0&&<div style={{fontSize:13,color:"#a78bfa",fontWeight:700}}>{"🛡️".repeat(shields)}</div>}
+                    {streakAtRisk&&shields>0&&<button onClick={useShield} style={{...mkBtn("#6366f1"),padding:"8px 14px",fontSize:12}}>Use Shield</button>}
+                  </div>
+                </div>
+                {!streakAtRisk&&shields<3&&myStreak>0&&myStreak%7!==0&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Earn a shield at {Math.ceil(myStreak/7)*7}-day streak milestone</div>}
+                {!streakAtRisk&&shields===3&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Max shields (3) — keep going!</div>}
               </div>
             )}
+
+            {/* vocab SRS nudge */}
+            {currentUser&&(function(){
+              var due=vocab.filter(srsDueToday);
+              if(!due.length)return null;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(6,182,212,0.35)",background:"rgba(6,182,212,0.05)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:26}}>📚</span>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:"#06b6d4"}}>Vocab review due</div>
+                        <div style={{fontSize:11,color:"#6b7280"}}>{due.length} word{due.length!==1?"s":""} ready for review today</div>
+                      </div>
+                    </div>
+                    <button onClick={function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}} style={{...mkBtn("#06b6d4","#0d0d1a"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Review</button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* reading goals summary */}
+            {currentUser&&Object.keys(goals).length>0&&(function(){
+              var activeGoals=GOAL_DEFS.filter(function(d){return goals[d.id];});
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#818cf8",margin:0}}>🎯 READING GOALS</p>
+                    <button onClick={function(){setStage("goals");}} style={{background:"none",border:"none",color:"#6366f1",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>Manage →</button>
+                  </div>
+                  {activeGoals.map(function(def){
+                    var g=goals[def.id];
+                    var prog=getGoalProgress(def.id,g,currentUser.games,myStreak);
+                    return(
+                      <div key={def.id} style={{marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                          <span style={{color:"#9ca3af"}}>{def.icon} {def.label}</span>
+                          <span style={{color:prog.done?"#34d399":"#a78bfa",fontWeight:700}}>{prog.done?"✓ Done!":prog.current+(def.id==="avg_score"?" avg":"")+"/"+prog.target+" "+def.unit}</span>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:prog.pct+"%",background:prog.done?"#34d399":"#6366f1",borderRadius:999,transition:"width 0.4s ease"}}/>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* pending challenges */}
+            {currentUser&&(function(){
+              var live=pendingChallenges.filter(function(c){return!c.expiresAt||c.expiresAt>Date.now();});
+              var completedSent=(myData.sent||[]).filter(function(s){return s.status==="completed";});
+              if(!live.length&&!completedSent.length)return null;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(245,158,11,0.35)",background:"rgba(245,158,11,0.04)"}}>
+                  {live.length>0&&(
+                    <>
+                      <p style={{fontSize:11,color:"#f59e0b",fontWeight:700,marginBottom:8}}>⚔️ CHALLENGES RECEIVED</p>
+                      {live.map(function(c,idx){
+                        var realIdx=myData.challenges.indexOf(c);
+                        var tl=challengeTimeLeft(c.expiresAt);
+                        var lvC=getLv(c.level);
+                        return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid rgba(255,255,255,0.07)"}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,color:"#f3f4f6",fontWeight:600}}><strong>{c.from}</strong> → <span style={{color:lvC.color}}>{c.level}</span></div>
+                            {tl&&<div style={{fontSize:10,color:tl==="expired"?"#f87171":"#6b7280",marginTop:1}}>⏱ {tl}</div>}
+                          </div>
+                          <button onClick={function(){respondChallenge(realIdx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
+                          <button onClick={function(){respondChallenge(realIdx,"declined",null);}} style={{...mkBtn("#374151"),padding:"5px 10px",fontSize:11}}>✕</button>
+                        </div>);
+                      })}
+                    </>
+                  )}
+                  {completedSent.length>0&&(
+                    <>
+                      <p style={{fontSize:11,color:"#34d399",fontWeight:700,marginBottom:8,marginTop:live.length?10:0}}>✅ CHALLENGE RESULTS</p>
+                      {completedSent.map(function(s,i){
+                        return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,fontSize:12}}>
+                          <span style={{color:"#9ca3af",flex:1}}><strong style={{color:"#f3f4f6"}}>{s.to}</strong> scored <strong style={{color:pctColor(s.result.pct)}}>{s.result.pct}%</strong> on your {s.level} challenge</span>
+                          <span style={{color:"#fbbf24",fontWeight:700,fontSize:11}}>{s.result.xp} XP</span>
+                        </div>);
+                      })}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* daily challenge card */}
             {currentUser&&(function(){
@@ -1466,12 +1910,47 @@ export default function App(){
               </div>
             </div>
 
+            {/* custom topic input */}
+            <div style={{...CARD,marginBottom:12,padding:14}}>
+              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>TOPIC <span style={{color:"#4b5563",fontWeight:400,letterSpacing:0}}>(optional — leave blank for random)</span></p>
+              <div style={{display:"flex",gap:8}}>
+                <input
+                  style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid "+(customTopic.trim()?"#818cf8":"rgba(255,255,255,0.12)"),borderRadius:10,padding:"9px 12px",fontSize:13,color:"#f3f4f6",fontFamily:"inherit",outline:"none"}}
+                  placeholder="e.g. climate change, football, the Moon..."
+                  value={customTopic}
+                  onChange={function(e){setCustomTopic(e.target.value);}}
+                  onKeyDown={function(e){if(e.key==="Enter"&&level)generate();}}
+                  maxLength={80}
+                />
+                {customTopic.trim()&&<button onClick={function(){setCustomTopic("");}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>✕</button>}
+              </div>
+              {customTopic.trim()&&<p style={{fontSize:11,color:"#818cf8",margin:"6px 0 0"}}>AI will write a passage about: <strong>{customTopic.trim()}</strong></p>}
+              {/* personalised passage toggle */}
+              {(function(){
+                var activeVocab=vocab.filter(function(w){return w.status!=="known";});
+                activeVocab.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
+                var previewWords=activeVocab.slice(0,5).map(function(w){return w.word;});
+                return(<div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <button onClick={function(){setUseWeakVocab(function(v){return !v;});}} style={{background:useWeakVocab?"rgba(16,185,129,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(useWeakVocab?"#10b981":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:11,color:useWeakVocab?"#34d399":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all 0.15s"}}>
+                        {useWeakVocab?"✓ Vocab-Personalised":"📚 Personalise with my vocab"}
+                      </button>
+                      {activeVocab.length===0&&<span style={{fontSize:10,color:"#4b5563"}}>(add words to vocab first)</span>}
+                    </div>
+                    {useWeakVocab&&previewWords.length>0&&<p style={{fontSize:11,color:"#34d399",margin:"5px 0 0"}}>Passage will include: {previewWords.map(function(w,i){return<span key={w} style={{background:"rgba(16,185,129,0.15)",borderRadius:4,padding:"1px 5px",marginRight:4,display:"inline-block"}}>{w}</span>;})}</p>}
+                    {useWeakVocab&&previewWords.length===0&&<p style={{fontSize:11,color:"#6b7280",margin:"5px 0 0"}}>No active vocab words — add some from the Vocab screen.</p>}
+                  </div>
+                </div>);
+              })()}
+            </div>
+
             {/* level selector */}
             <p style={{fontWeight:700,color:"#d1fae5",fontSize:11,letterSpacing:0.8,marginBottom:8}}>CHOOSE LEVEL</p>
             <div className="rq-lvgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
               {LEVELS.map(function(l){
                 var active=level===l.key;
-                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 14px "+l.glow:"none"}}>
+                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 22px "+l.glow+",0 0 40px "+l.glow+"44,inset 0 1px 0 rgba(255,255,255,0.08)":"none"}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
                     <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
                     <span style={{background:active?l.color:"rgba(255,255,255,0.06)",color:active?"#0d0d1a":"#6b7280",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
@@ -1489,9 +1968,9 @@ export default function App(){
         {/* ── LOADING ───────────────────────────────────────── */}
         {stage==="loading"&&(
           <div style={{textAlign:"center",paddingTop:90}}>
-            <div style={{fontSize:44,marginBottom:14}}>...</div>
-            <h3 style={{color:lv?lv.color:"#34d399",fontWeight:800,fontSize:17,marginBottom:8}}>{loadMsg}</h3>
-            <p style={{color:"#6b7280",fontSize:13}}>Creating {selectedTypes.length} question type(s) for {level}...</p>
+            <div style={{fontSize:44,marginBottom:14,animation:"rqPulseGlow 1.4s ease-in-out infinite"}}>✦</div>
+            <h3 className="rq-shimmer" style={{color:lv?lv.color:"#34d399",fontWeight:800,fontSize:17,marginBottom:8,borderRadius:8,padding:"2px 0"}}>{loadMsg}</h3>
+            <p style={{color:"#6b7280",fontSize:13}}>Creating {selectedTypes.length} question type(s) for {level}…</p>
           </div>
         )}
 
@@ -1565,6 +2044,10 @@ export default function App(){
                 <div style={{display:"flex",gap:3}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.08)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"4px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
                 </div>
                 {savedWords.size>0&&<span style={{fontSize:11,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size}</span>}
+                <button onClick={function(){
+                  if(rsvpActive){setRsvpActive(false);setRsvpPaused(false);setRsvpIdx(0);setRsvpDone(false);}
+                  else{rsvpWordsRef.current=passage.split(/\s+/).filter(Boolean);setRsvpIdx(0);setRsvpPaused(false);setRsvpDone(false);setRsvpActive(true);}
+                }} style={{background:rsvpActive?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(rsvpActive?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpActive?"#a78bfa":"#9ca3af",borderRadius:8,padding:"6px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>⚡ RSVP</button>
                 <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"9px 18px",fontSize:13}}>Begin Quiz →</button>
               </div>
             </div>
@@ -1580,6 +2063,13 @@ export default function App(){
                   <button onClick={function(){setFocusMode(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>📖 Focus</button>
                 </div>
               </div>
+
+              {/* personalised vocab banner */}
+              {personalizedWords.length>0&&<div style={{background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.3)",borderRadius:10,padding:"8px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:12,color:"#34d399",fontWeight:700}}>📚 Personalised passage</span>
+                <span style={{fontSize:11,color:"#6b7280"}}>includes your vocab words:</span>
+                {personalizedWords.map(function(w){return<span key={w} style={{background:"rgba(16,185,129,0.2)",borderRadius:4,padding:"1px 6px",fontSize:11,color:"#34d399"}}>{w}</span>;})}
+              </div>}
 
               {/* difficulty analyzer card */}
               <div style={{...CARD,padding:"10px 14px",marginBottom:10,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
@@ -1600,13 +2090,66 @@ export default function App(){
                 </div>
               </div>
 
-              {/* passage — sentence TTS mode or word mode */}
-              <div style={{...CARD,marginBottom:12}}>
+              {/* RSVP speed reader */}
+              {rsvpActive&&(function(){
+                var words=rsvpWordsRef.current;
+                var pct=words.length>0?Math.round((rsvpIdx/(words.length-1))*100):0;
+                var cur=words[rsvpIdx]||"";
+                var prev=rsvpIdx>0?words[rsvpIdx-1]:"";
+                var nxt=rsvpIdx<words.length-1?words[rsvpIdx+1]:"";
+                // highlight the optimal recognition point (about 30% into word)
+                var midIdx=Math.max(0,Math.round(cur.replace(/[^a-zA-Z]/g,"").length*0.3)-1);
+                var pre=cur.slice(0,midIdx),highlight=cur.slice(midIdx,midIdx+1),post=cur.slice(midIdx+1);
+                return(
+                  <div style={{...CARD,marginBottom:12,padding:20}}>
+                    {/* wpm selector */}
+                    <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+                      <span style={{fontSize:11,color:"#6b7280",alignSelf:"center",marginRight:4}}>WPM:</span>
+                      {[150,200,250,300,400,500].map(function(w){return(
+                        <button key={w} onClick={function(){setRsvpWpm(w);}} style={{background:rsvpWpm===w?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(rsvpWpm===w?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpWpm===w?"#c4b5fd":"#6b7280",borderRadius:6,padding:"3px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:rsvpWpm===w?700:400}}>{w}</button>
+                      );})}
+                    </div>
+                    {/* progress */}
+                    <div style={{background:"rgba(255,255,255,0.07)",borderRadius:999,height:4,overflow:"hidden",marginBottom:20}}>
+                      <div style={{height:"100%",width:pct+"%",background:"#a78bfa",borderRadius:999,transition:"width 0.1s linear"}}/>
+                    </div>
+                    {/* word display */}
+                    {!rsvpDone?(
+                      <div style={{textAlign:"center",minHeight:120,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",gap:10}}>
+                        <div style={{fontSize:13,color:"#4b5563",minHeight:20}}>{prev}</div>
+                        <div style={{fontSize:42,fontWeight:900,letterSpacing:1,lineHeight:1,fontFamily:"monospace",userSelect:"none"}}>
+                          <span style={{color:"#9ca3af"}}>{pre}</span>
+                          <span style={{color:"#f9a8d4"}}>{highlight}</span>
+                          <span style={{color:"#f9fafb"}}>{post}</span>
+                        </div>
+                        <div style={{fontSize:13,color:"#4b5563",minHeight:20}}>{nxt}</div>
+                        <div style={{fontSize:11,color:"#6b7280",marginTop:4}}>{rsvpIdx+1} / {words.length}</div>
+                      </div>
+                    ):(
+                      <div style={{textAlign:"center",padding:"20px 0"}}>
+                        <div style={{fontSize:32,marginBottom:8}}>✓</div>
+                        <div style={{fontSize:16,fontWeight:700,color:"#a78bfa",marginBottom:4}}>Speed read complete!</div>
+                        <div style={{fontSize:12,color:"#9ca3af",marginBottom:16}}>{words.length} words at {rsvpWpm} WPM</div>
+                        <button onClick={startQuiz} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"10px 24px",fontSize:14}}>Take the Quiz →</button>
+                      </div>
+                    )}
+                    {/* controls */}
+                    {!rsvpDone&&<div style={{display:"flex",justifyContent:"center",gap:10,marginTop:16}}>
+                      <button onClick={function(){setRsvpIdx(function(i){return Math.max(0,i-10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>−10</button>
+                      <button onClick={function(){setRsvpPaused(function(p){return !p;});}} style={{background:rsvpPaused?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(rsvpPaused?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpPaused?"#c4b5fd":"#9ca3af",borderRadius:8,padding:"7px 20px",fontSize:14,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{rsvpPaused?"▶ Play":"⏸ Pause"}</button>
+                      <button onClick={function(){setRsvpIdx(function(i){return Math.min(Math.max(0,words.length-1),i+10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+10</button>
+                    </div>}
+                  </div>
+                );
+              })()}
+
+              {/* passage — sentence TTS mode or word mode (hidden during RSVP) */}
+              {!rsvpActive&&<div style={{...CARD,marginBottom:12}}>
                 <p style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb",margin:0}}>
                   {activeSentence!==null?<SentencePassage/>:<WordTokens/>}
                 </p>
                 <p style={{fontSize:11,color:"#4b5563",margin:"10px 0 0",textAlign:"center"}}>{activeSentence!==null?"Tap a sentence to listen":"Tap any word to look it up"}</p>
-              </div>
+              </div>}
 
               {/* active sentence panel (translation) */}
               {activeSentence&&(
@@ -1653,9 +2196,64 @@ export default function App(){
                 <button onClick={speakPassage} style={{background:isSpeaking&&!activeSentence?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:isSpeaking&&!activeSentence?"#818cf8":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking&&!activeSentence?"⏹ Stop":"🔊 Listen"}</button>
                 <button onClick={function(){setActiveSentence(activeSentence!==null?null:"");setTranslation(null);}} style={{background:activeSentence!==null?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(activeSentence!==null?"#818cf8":"rgba(255,255,255,0.1)"),color:activeSentence!==null?"#a78bfa":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🌐 {activeSentence!==null?"Exit Translate":"Translate"}</button>
                 <button onClick={function(){setHeatmapOn(function(h){return!h;});}} style={{background:heatmapOn?"rgba(245,158,11,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(heatmapOn?"#f59e0b":"rgba(255,255,255,0.1)"),color:heatmapOn?"#fbbf24":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>💡 Hard words</button>
+                <button onClick={function(){setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={{background:pronMode?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(pronMode?"#ec4899":"rgba(255,255,255,0.1)"),color:pronMode?"#f472b6":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🎤 {pronMode?"Exit":"Pronounce"}</button>
                 <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.06)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"3px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
                 </div>
               </div>
+
+              {/* pronunciation check panel */}
+              {pronMode&&(function(){
+                var sentences=splitSentences(passage);
+                return(
+                  <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(236,72,153,0.3)",background:"rgba(236,72,153,0.04)"}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#f472b6",marginBottom:10}}>🎤 PRONUNCIATION CHECK</p>
+                    {!pronSentence?(
+                      <>
+                        <p style={{fontSize:12,color:"#9ca3af",marginBottom:8}}>Tap a sentence to practise:</p>
+                        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                          {sentences.map(function(s,i){
+                            return<button key={i} onClick={function(){setPronSentence(s);setPronResult(null);}} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,padding:"8px 12px",color:"#d1d5db",fontSize:13,cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.6}}>{s}</button>;
+                          })}
+                        </div>
+                      </>
+                    ):(
+                      <>
+                        <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:14,color:"#e5e7eb",lineHeight:1.7,fontStyle:"italic"}}>"{pronSentence}"</div>
+                        <div style={{display:"flex",gap:8,marginBottom:10}}>
+                          <button onClick={function(){startPronCheck(pronSentence);}} disabled={pronRecording} style={{...mkBtn(pronRecording?"#ef4444":"#ec4899"),flex:1,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                            {pronRecording?<><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#fff",animation:"rqFloat 0.6s ease-in-out infinite"}}/>Recording…</>:"🎤 Record"}
+                          </button>
+                          {pronRecording&&<button onClick={function(){if(pronRecRef.current)pronRecRef.current.stop();}} style={{...mkBtn("#374151"),fontSize:13}}>⏹ Stop</button>}
+                          <button onClick={function(){setPronSentence("");setPronResult(null);}} style={{...GHOST,fontSize:12}}>← Back</button>
+                        </div>
+                        {pronResult&&pronResult.error&&<p style={{color:"#f87171",fontSize:12,margin:0}}>{pronResult.error}</p>}
+                        {pronResult&&!pronResult.error&&(
+                          <div>
+                            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                              <div style={{fontSize:26,fontWeight:900,color:pronResult.accuracy>=80?"#22c55e":pronResult.accuracy>=60?"#f59e0b":"#ef4444"}}>{pronResult.accuracy}%</div>
+                              <div>
+                                <div style={{fontSize:12,fontWeight:700,color:"#f3f4f6"}}>{pronResult.accuracy>=80?"Excellent!":pronResult.accuracy>=60?"Good effort!":"Keep practising!"}</div>
+                                <div style={{fontSize:11,color:"#6b7280"}}>Heard: "{pronResult.transcript}"</div>
+                              </div>
+                            </div>
+                            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
+                              {pronResult.words.map(function(w,i){
+                                var bg=w.status==="correct"?"rgba(34,197,94,0.2)":w.status==="close"?"rgba(245,158,11,0.2)":"rgba(239,68,68,0.2)";
+                                var col=w.status==="correct"?"#4ade80":w.status==="close"?"#fbbf24":"#f87171";
+                                return<span key={i} title={w.heard?("heard: "+w.heard):""} style={{background:bg,color:col,borderRadius:6,padding:"3px 8px",fontSize:13,fontWeight:600,cursor:w.heard?"help":"default"}}>{w.word}</span>;
+                              })}
+                            </div>
+                            <div style={{display:"flex",gap:6,fontSize:10,color:"#6b7280",flexWrap:"wrap",marginBottom:8}}>
+                              {[["rgba(34,197,94,0.2)","#4ade80","Correct"],["rgba(245,158,11,0.2)","#fbbf24","Close (hover to see)"],["rgba(239,68,68,0.2)","#f87171","Missed"]].map(function(p){return<span key={p[2]} style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:10,height:10,borderRadius:3,background:p[0],border:"1px solid "+p[1],display:"inline-block"}}/>{p[2]}</span>;})}
+                            </div>
+                            <button onClick={function(){setPronResult(null);}} style={{...mkBtn("#374151"),fontSize:12,width:"100%"}}>Try again</button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
 
               <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>Begin Quiz →</button>
             </div>
@@ -1706,7 +2304,7 @@ export default function App(){
             <h2 style={{fontSize:22,fontWeight:900,margin:"0 0 4px",color:lv?lv.color:"#34d399"}}>{result.pct>=80?"Excellent!":result.pct>=60?"Good job!":"Keep going!"}</h2>
             <p style={{color:"#9ca3af",marginBottom:14,fontSize:13}}>{level} - {topic}</p>
             <div style={{...CARD,marginBottom:10}}>
-              <div style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
+              <div className="rq-glow-green" style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
               <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
               <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
                 {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
@@ -1726,6 +2324,32 @@ export default function App(){
                     </div>);
                   })}
                 </div>
+              </div>
+            )}
+            {result.earnedShield&&(
+              <div style={{...CARD,marginBottom:10,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.4)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:28}}>🛡️</span>
+                  <div style={{textAlign:"left"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>STREAK SHIELD EARNED!</div>
+                    <div style={{fontSize:11,color:"#9ca3af"}}>{result.newStreakVal}-day milestone — you now have {shields} shield{shields!==1?"s":""}. It will save your streak if you miss a day.</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {result.completedGoals&&result.completedGoals.length>0&&(
+              <div style={{...CARD,marginBottom:10,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.4)"}}>
+                <p style={{fontWeight:700,fontSize:12,color:"#818cf8",marginBottom:8,textAlign:"left"}}>🎯 GOAL{result.completedGoals.length>1?"S":""} ACHIEVED!</p>
+                {result.completedGoals.map(function(id){
+                  var def=GOAL_DEFS.find(function(d){return d.id===id;});
+                  return def?(
+                    <div key={id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                      <span style={{fontSize:16}}>{def.icon}</span>
+                      <span style={{fontSize:13,color:"#c7d2fe",fontWeight:600}}>{def.label}</span>
+                      <span style={{marginLeft:"auto",fontSize:12,color:"#34d399",fontWeight:700}}>✓</span>
+                    </div>
+                  ):null;
+                })}
               </div>
             )}
             {result.newQuests&&result.newQuests.length>0&&(
@@ -1775,9 +2399,61 @@ export default function App(){
                 })}
               </div>
             )}
+            {(function(){
+              var sug=currentUser?getAdaptiveSuggestion(currentUser.games,level):null;
+              if(!sug)return null;
+              var sugLv=getLv(sug.level);
+              var isUp=sug.direction==="up";
+              return(
+                <div style={{...CARD,marginBottom:10,padding:14,borderColor:isUp?"rgba(52,211,153,0.4)":"rgba(251,191,36,0.4)",background:isUp?"rgba(52,211,153,0.06)":"rgba(251,191,36,0.06)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{fontSize:28}}>{isUp?"🚀":"💡"}</div>
+                    <div style={{flex:1,textAlign:"left"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:isUp?"#34d399":"#fbbf24",marginBottom:2}}>
+                        {isUp?"Level up?":"Slow down a bit?"}
+                      </div>
+                      <div style={{fontSize:11,color:"#9ca3af"}}>
+                        {isUp
+                          ?"You're averaging "+sug.avg+"% on "+level+" — ready for "+sug.level+"?"
+                          :"Averaging "+sug.avg+"% on "+level+" — try "+sug.level+" to build confidence."}
+                      </div>
+                    </div>
+                    <button onClick={function(){doRestart();setLevel(sug.level);}} style={{...mkBtn(sugLv.color,"#0d0d1a"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Try {sug.level}</button>
+                  </div>
+                </div>
+              );
+            })()}
+            <div style={{...CARD,marginBottom:10,padding:14,background:"rgba(245,158,11,0.06)",borderColor:"rgba(245,158,11,0.3)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fbbf24",marginBottom:2}}>✍️ Writing Challenge</div>
+                  <div style={{fontSize:11,color:"#9ca3af"}}>Write a short summary of the passage and get AI feedback on your writing.</div>
+                </div>
+                <button onClick={function(){setWriteSummary("");setWriteFeedback(null);setWriteError("");setStage("writefeedback");}} style={{...mkBtn("#f59e0b","#0d0d1a"),padding:"8px 16px",fontSize:12,flexShrink:0}}>Start →</button>
+              </div>
+            </div>
+            <div style={{...CARD,marginBottom:10,padding:14,background:"rgba(239,68,68,0.06)",borderColor:"rgba(239,68,68,0.3)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#f87171",marginBottom:2}}>🔍 Error Hunt</div>
+                  <div style={{fontSize:11,color:"#9ca3af"}}>Find 5 deliberate errors hidden in the passage. Can you spot them all?</div>
+                </div>
+                <button onClick={async function(){
+                  setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcError("");setEcLoading(true);setStage("errorcorrect");
+                  try{
+                    var r=await fetch("/.netlify/functions/errorcorrect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level})});
+                    var d=await r.json();
+                    if(d.error)throw new Error(d.error);
+                    setEcData(d);
+                  }catch(e){setEcError(e.message||"Failed — try again.");setStage("result");}
+                  setEcLoading(false);
+                }} style={{...mkBtn("#ef4444","#fff0f0"),padding:"8px 16px",fontSize:12,flexShrink:0}}>Start →</button>
+              </div>
+            </div>
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
+              <button onClick={function(){setTutorChat([]);setStage("tutor");}} style={{...mkBtn("#0891b2"),flex:1,fontSize:12}}>🤖 Tutor</button>
               <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
               <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
@@ -1787,18 +2463,27 @@ export default function App(){
         {/* ── VOCAB NOTEBOOK ────────────────────────────────── */}
         {stage==="vocab"&&currentUser&&(function(){
           var words=vocab.slice().reverse();
+          var dueWords=words.filter(srsDueToday);
           var reviewWords=words.filter(function(w){return w.status!=="known";});
-          var display=vocabFilter==="review"?reviewWords:words;
+          var display=vocabFilter==="due"?dueWords:vocabFilter==="review"?reviewWords:words;
           var safeIdx=display.length>0?vocabCard%display.length:0;
           var curWord=display.length>0?display[safeIdx]:null;
-          function markKnown(){
-            var nv=vocab.map(function(v){return v.word===curWord.word?{word:v.word,level:v.level,topic:v.topic,date:v.date,status:"known"}:v;});
-            setVocab(nv);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;setAllVocab(nAll);saveVocab(nAll);
+          function saveVocabUpdate(nv){setVocab(nv);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;setAllVocab(nAll);saveVocab(nAll);}
+          function advanceSRS(word,hard){
+            var cur=word.srInterval||0;
+            var next=hard?0:Math.min(cur+1,SRS_INTERVALS.length);
+            var done=!hard&&next>=SRS_INTERVALS.length;
+            var nv=vocab.map(function(v){
+              if(v.word!==word.word)return v;
+              return Object.assign({},v,{status:done?"known":v.status,srInterval:next,nextReview:done?null:srsNextDate(SRS_INTERVALS[next]||14)});
+            });
+            saveVocabUpdate(nv);
             setVocabFlipped(false);
             setVocabCard(function(c){return display.length<=1?0:(c>=display.length-1?0:c+1);});
           }
           function next(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c+1)%display.length;});}
           function prev(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c>0?c-1:display.length-1);});}
+          var tabs=[["due","Due ("+dueWords.length+")"],["review","All active ("+reviewWords.length+")"],["all","All ("+words.length+")"]];
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
@@ -1808,8 +2493,8 @@ export default function App(){
                   <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
                 </div>
               </div>
-              <div style={{display:"flex",gap:5,marginBottom:12}}>
-                {[["all","All ("+words.length+")"],["review","Review ("+reviewWords.length+")"]].map(function(t){
+              <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
+                {tabs.map(function(t){
                   return<button key={t[0]} onClick={function(){setVocabFilter(t[0]);setVocabCard(0);setVocabFlipped(false);}} style={{background:vocabFilter===t[0]?"#06b6d4":"rgba(255,255,255,0.05)",color:vocabFilter===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
                 })}
               </div>
@@ -1817,15 +2502,26 @@ export default function App(){
                 <div>
                   <div onClick={function(){setVocabFlipped(function(f){return!f;});}} style={{...CARD,cursor:"pointer",textAlign:"center",minHeight:150,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:10,background:"rgba(6,182,212,0.06)",borderColor:"rgba(6,182,212,0.25)"}}>
                     {!vocabFlipped?(
-                      <div><div style={{fontSize:28,fontWeight:900,color:"#06b6d4",marginBottom:6}}>{curWord.word}</div><div style={{fontSize:12,color:"#4b5563"}}>Tap to reveal context</div></div>
+                      <div>
+                        <div style={{fontSize:28,fontWeight:900,color:"#06b6d4",marginBottom:6}}>{curWord.word}</div>
+                        {curWord.def&&<div style={{fontSize:13,color:"#9ca3af",marginBottom:4,maxWidth:280}}>{curWord.def}</div>}
+                        <div style={{fontSize:12,color:"#4b5563"}}>Tap to see details</div>
+                      </div>
                     ):(
-                      <div><div style={{fontSize:22,fontWeight:900,color:"#06b6d4",marginBottom:8}}>{curWord.word}</div><div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>From: <span style={{color:"#f3f4f6",fontWeight:600}}>{curWord.topic}</span></div><div style={{fontSize:12,color:"#6b7280"}}>{curWord.level} · {curWord.date}</div></div>
+                      <div>
+                        <div style={{fontSize:22,fontWeight:900,color:"#06b6d4",marginBottom:8}}>{curWord.word}</div>
+                        {curWord.def&&<div style={{fontSize:13,color:"#d1d5db",marginBottom:6,maxWidth:280}}>{curWord.def}</div>}
+                        {curWord.example&&<div style={{fontSize:12,color:"#9ca3af",fontStyle:"italic",marginBottom:6,maxWidth:280}}>{curWord.example}</div>}
+                        <div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>From: <span style={{color:"#f3f4f6",fontWeight:600}}>{curWord.topic}</span></div>
+                        <div style={{fontSize:12,color:"#6b7280"}}>{curWord.level} · {curWord.date}</div>
+                        {curWord.nextReview&&<div style={{fontSize:11,color:"#4b5563",marginTop:4}}>Next review: {curWord.nextReview}</div>}
+                      </div>
                     )}
                   </div>
                   {vocabFlipped&&(
                     <div style={{display:"flex",gap:7,marginBottom:10}}>
-                      <button onClick={markKnown} style={{...mkBtn("#22c55e","#0d0d1a"),flex:1,fontSize:13}}>Know it</button>
-                      <button onClick={next} style={{...mkBtn("#374151"),flex:1,fontSize:13}}>Study more</button>
+                      <button onClick={function(){advanceSRS(curWord,true);}} style={{...mkBtn("#ef4444"),flex:1,fontSize:13}}>✗ Hard — repeat soon</button>
+                      <button onClick={function(){advanceSRS(curWord,false);}} style={{...mkBtn("#22c55e","#0d0d1a"),flex:1,fontSize:13}}>{(curWord.srInterval||0)>=SRS_INTERVALS.length-1?"✓ Mastered!":"✓ Easy — "+SRS_INTERVALS[Math.min((curWord.srInterval||0)+1,SRS_INTERVALS.length-1)]+"d"}</button>
                     </div>
                   )}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1837,7 +2533,7 @@ export default function App(){
                     <div style={{...CARD,marginTop:14}}>
                       <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>ALL WORDS ({words.length})</p>
                       <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                        {words.map(function(w,i){return<span key={i} onClick={function(){var idx=display.findIndex(function(d){return d.word===w.word;});if(idx!==-1){setVocabCard(idx);setVocabFlipped(false);}}} style={{background:w.status==="known"?"rgba(34,197,94,0.15)":"rgba(6,182,212,0.1)",color:w.status==="known"?"#22c55e":"#06b6d4",borderRadius:999,padding:"4px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{w.word}</span>;})}
+                        {words.map(function(w,i){return<span key={i} onClick={function(){var idx=display.findIndex(function(d){return d.word===w.word;});if(idx!==-1){setVocabCard(idx);setVocabFlipped(false);}}} style={{background:w.status==="known"?"rgba(34,197,94,0.15)":srsDueToday(w)?"rgba(251,191,36,0.15)":"rgba(6,182,212,0.1)",color:w.status==="known"?"#22c55e":srsDueToday(w)?"#fbbf24":"#06b6d4",borderRadius:999,padding:"4px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{w.word}</span>;})}
                       </div>
                     </div>
                   )}
@@ -1845,7 +2541,9 @@ export default function App(){
               ):(
                 <div style={{...CARD,textAlign:"center",padding:40}}>
                   <div style={{fontSize:36,marginBottom:10}}>📚</div>
-                  <p style={{color:"#6b7280",fontSize:14}}>{vocabFilter==="review"?"All caught up! No words left to review.":"No saved words yet — tap words in the reading passage to save them."}</p>
+                  <p style={{color:"#6b7280",fontSize:14}}>
+                    {vocabFilter==="due"?"All caught up! No words due today — check back tomorrow.":vocabFilter==="review"?"No active words. Keep saving as you read!":"No saved words yet — tap words in the reading passage to save them."}
+                  </p>
                   <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Start Reading</button>
                 </div>
               )}
@@ -2091,6 +2789,32 @@ export default function App(){
                 })}
               </div>
             )}
+
+            {/* sent challenges tracker */}
+            {(myData.sent||[]).length>0&&(
+              <div style={{...CARD,marginTop:12,padding:14}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>⚔️ SENT CHALLENGES</p>
+                {(myData.sent||[]).slice().reverse().map(function(s,i){
+                  var tl=challengeTimeLeft(s.expiresAt);
+                  var expired=tl==="expired";
+                  var done=s.status==="completed";
+                  return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid rgba(255,255,255,0.07)",opacity:expired&&!done?0.5:1}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,color:"#f3f4f6",fontWeight:600}}>→ <strong>{s.to}</strong> · <span style={{color:getLv(s.level).color}}>{s.level}</span></div>
+                      <div style={{fontSize:10,color:"#6b7280",marginTop:1}}>{s.date}{!done&&tl?" · ⏱ "+tl:""}</div>
+                    </div>
+                    {done?(
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:pctColor(s.result.pct)}}>{s.result.pct}%</div>
+                        <div style={{fontSize:10,color:"#fbbf24"}}>{s.result.xp} XP</div>
+                      </div>
+                    ):(
+                      <span style={{fontSize:10,color:expired?"#f87171":"#6b7280",fontWeight:600}}>{expired?"expired":"pending"}</span>
+                    )}
+                  </div>);
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -2307,6 +3031,70 @@ export default function App(){
           </div>);
         })()}
 
+        {/* ── READING GOALS ─────────────────────────────────── */}
+        {stage==="goals"&&currentUser&&(function(){
+          var games=currentUser.games||[];
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#818cf8"}}>🎯 Reading Goals</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+
+              {/* active goals */}
+              {GOAL_DEFS.filter(function(d){return goals[d.id];}).length>0&&(
+                <div style={{...CARD,marginBottom:14,padding:16}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>ACTIVE GOALS</p>
+                  {GOAL_DEFS.filter(function(d){return goals[d.id];}).map(function(def){
+                    var g=goals[def.id];
+                    var prog=getGoalProgress(def.id,g,games,myStreak);
+                    var detail="";
+                    if(def.id==="avg_score")detail=(g.trackGames||[]).length+"/5 games tracked";
+                    else if(def.id==="weekly_games"||def.id==="weekly_xp")detail="resets each week";
+                    return(
+                      <div key={def.id} style={{marginBottom:14,padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:12,border:"1px solid "+(prog.done?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.07)")}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                          <div>
+                            <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{def.icon} {def.label}</div>
+                            {detail&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{detail}</div>}
+                          </div>
+                          <div style={{textAlign:"right",flexShrink:0,marginLeft:10}}>
+                            <div style={{fontSize:15,fontWeight:900,color:prog.done?"#34d399":"#a78bfa"}}>{prog.done?"✓ Done!":prog.current+(def.id==="avg_score"?" avg%":"")+"/"+prog.target+" "+def.unit}</div>
+                          </div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:7,overflow:"hidden",marginBottom:8}}>
+                          <div style={{height:"100%",width:prog.pct+"%",background:prog.done?"#34d399":"linear-gradient(90deg,#6366f1,#a78bfa)",borderRadius:999,transition:"width 0.4s ease"}}/>
+                        </div>
+                        <button onClick={function(){removeGoal(def.id);}} style={{background:"none",border:"1px solid rgba(239,68,68,0.25)",color:"#f87171",borderRadius:8,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Remove</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* add new goals */}
+              <div style={{...CARD,padding:16}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>SET A GOAL</p>
+                {GOAL_DEFS.filter(function(d){return!goals[d.id];}).map(function(def){
+                  return(
+                    <div key={def.id} style={{marginBottom:14}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",marginBottom:7}}>{def.icon} {def.label}</div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {def.opts.map(function(opt){
+                          return<button key={opt} onClick={function(){setGoal(def.id,opt);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",color:"#c7d2fe",borderRadius:999,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{opt} {def.unit}</button>;
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                {GOAL_DEFS.every(function(d){return goals[d.id];})&&(
+                  <p style={{color:"#6b7280",fontSize:13,textAlign:"center"}}>All goal types are active!</p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── ANALYTICS ─────────────────────────────────────── */}
         {stage==="analytics"&&currentUser&&(function(){
           var games=currentUser.games||[];
@@ -2318,10 +3106,10 @@ export default function App(){
 
           // weekly activity (last 7 days)
           var week=[];
-          for(var d=6;d>=0;d--){
-            var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toLocaleDateString();
-            var dayGames=games.filter(function(g){return g.date===ds;});
-            week.push({label:dt.toLocaleDateString("en",{weekday:"short"}),date:ds,count:dayGames.length,xp:dayGames.reduce(function(s,g){return s+g.xp;},0),isToday:ds===today});
+          for(var wd=6;wd>=0;wd--){
+            var wdt=new Date();wdt.setDate(wdt.getDate()-wd);var wds=wdt.toLocaleDateString();
+            var dayGames=games.filter(function(g){return g.date===wds;});
+            week.push({label:wdt.toLocaleDateString("en",{weekday:"short"}),date:wds,count:dayGames.length,xp:dayGames.reduce(function(s,g){return s+g.xp;},0),isToday:wds===today});
           }
           var maxDayXp=Math.max(1,Math.max.apply(null,week.map(function(w){return w.xp;})));
 
@@ -2335,6 +3123,51 @@ export default function App(){
 
           var earnedBadges=checkBadges(currentUser,vocab,myStreak);
           var badgeCount=BADGES.filter(function(b){return earnedBadges[b.id];}).length;
+
+          // score trend — last 20 games
+          var scoreTrend=games.slice(-20);
+          // wpm trend — last 15 games with wpm
+          var wpmTrend=games.filter(function(g){return g.wpm>0;}).slice(-15);
+          // cumulative XP over last 30 days
+          var xpByDay={};
+          games.forEach(function(g){xpByDay[g.date]=(xpByDay[g.date]||0)+g.xp;});
+          var xpDays=[];
+          for(var xi=29;xi>=0;xi--){var xd=new Date();xd.setDate(xd.getDate()-xi);var xds=xd.toLocaleDateString();xpDays.push({date:xds,xp:xpByDay[xds]||0});}
+          var cumXp=0;var cumXpDays=xpDays.map(function(d){cumXp+=d.xp;return{date:d.date,cum:cumXp};});
+          var maxCumXp=Math.max(1,cumXpDays[cumXpDays.length-1].cum);
+
+          // weak types — sorted ascending by accuracy
+          var typeList=Object.keys(typeAgg).map(function(t){var ts=typeAgg[t];return{t:t,pct:ts.max>0?Math.round(ts.earned/ts.max*100):0};}).sort(function(a,b){return a.pct-b.pct;});
+          var weakTypes=typeList.slice(0,2).filter(function(x){return x.pct<70;});
+
+          // 30-day activity calendar
+          var cal30=[];
+          for(var ci=29;ci>=0;ci--){var cd=new Date();cd.setDate(cd.getDate()-ci);var cds=cd.toLocaleDateString();var cg=games.filter(function(g){return g.date===cds;});cal30.push({date:cds,count:cg.length,avg:cg.length?Math.round(cg.reduce(function(s,g){return s+g.pct;},0)/cg.length):0});}
+
+          // SVG sparkline helper
+          function mkSparkline(vals,W,H,col,fill){
+            if(vals.length<2)return null;
+            var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+            var rng=mx-mn||1;
+            var pts=vals.map(function(v,i){
+              var x=i/(vals.length-1)*(W-4)+2;
+              var y=H-4-((v-mn)/rng)*(H-12);
+              return x+","+y;
+            });
+            var pStr=pts.join(" ");
+            var areaD="M "+pts[0]+" L "+pts.slice(1).join(" L ")+" L "+(W-2)+","+(H-2)+" L 2,"+  (H-2)+" Z";
+            return(
+              <svg width={W} height={H} style={{overflow:"visible"}}>
+                {fill&&<path d={areaD} fill={fill} opacity={0.15}/>}
+                <polyline points={pStr} fill="none" stroke={col} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"/>
+                {vals.map(function(v,i){
+                  var x=i/(vals.length-1)*(W-4)+2;
+                  var y=H-4-((v-mn)/rng)*(H-12);
+                  return<circle key={i} cx={x} cy={y} r={3} fill={col}/>;
+                })}
+              </svg>
+            );
+          }
 
           return(
             <div>
@@ -2371,20 +3204,92 @@ export default function App(){
                 </div>
               </div>
 
-              {/* weekly activity bar chart */}
+              {/* score accuracy trend */}
+              {scoreTrend.length>=2&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>SCORE TREND (LAST {scoreTrend.length} GAMES)</p>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:pctColor(avgPct)}}>{avgPct}%</div>
+                      <div style={{fontSize:10,color:"#6b7280"}}>avg</div>
+                    </div>
+                  </div>
+                  <div style={{position:"relative"}}>
+                    {mkSparkline(scoreTrend.map(function(g){return g.pct;}),320,72,pctColor(avgPct),"#6366f1")}
+                    <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:9,color:"#4b5563"}}>
+                      <span>oldest</span><span>newest</span>
+                    </div>
+                    <div style={{position:"absolute",top:0,right:0,display:"flex",flexDirection:"column",justifyContent:"space-between",height:72,fontSize:9,color:"#4b5563",textAlign:"right"}}>
+                      <span>100%</span><span>50%</span><span>0%</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* WPM trend */}
+              {wpmTrend.length>=2&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>READING SPEED TREND (WPM)</p>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>{Math.round(wpmTrend.reduce(function(s,g){return s+g.wpm;},0)/wpmTrend.length)} WPM</div>
+                      <div style={{fontSize:10,color:"#6b7280"}}>avg</div>
+                    </div>
+                  </div>
+                  {mkSparkline(wpmTrend.map(function(g){return g.wpm;}),320,72,"#a78bfa","#7c3aed")}
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:9,color:"#4b5563"}}>
+                    <span>oldest</span><span style={{color:"#a78bfa"}}>{getWpmLabel(Math.round(wpmTrend.reduce(function(s,g){return s+g.wpm;},0)/wpmTrend.length))}</span><span>newest</span>
+                  </div>
+                </div>
+              )}
+
+              {/* cumulative XP graph */}
+              {totalXp>0&&(
+                <div style={{...CARD,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>XP GROWTH (30 DAYS)</p>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{totalXp.toLocaleString()} XP</div>
+                      <div style={{fontSize:10,color:"#6b7280"}}>total</div>
+                    </div>
+                  </div>
+                  {mkSparkline(cumXpDays.map(function(d){return d.cum;}),320,72,"#fbbf24","#f59e0b")}
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:9,color:"#4b5563"}}>
+                    <span>30 days ago</span><span>today</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 30-day activity calendar */}
               <div style={{...CARD,marginBottom:12}}>
-                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>WEEKLY ACTIVITY</p>
-                <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
-                  {week.map(function(w){
-                    var h=w.xp>0?Math.max(8,Math.round((w.xp/maxDayXp)*68)):4;
-                    return(<div key={w.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                      <div style={{width:"100%",height:h,background:w.isToday?"#06b6d4":w.xp>0?"#6366f1":"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0",transition:"height 0.3s ease"}}/>
-                      <span style={{fontSize:9,color:w.isToday?"#06b6d4":"#6b7280",fontWeight:w.isToday?700:400}}>{w.label}</span>
-                      {w.count>0&&<span style={{fontSize:9,color:"#4b5563"}}>{w.count}</span>}
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>ACTIVITY — LAST 30 DAYS</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                  {cal30.map(function(day,i){
+                    var bg=day.count===0?"rgba(255,255,255,0.05)":day.avg>=80?"#22c55e":day.avg>=60?"#f59e0b":"#6366f1";
+                    return<div key={i} title={day.date+(day.count?" · "+day.count+" game"+(day.count>1?"s":"")+" · avg "+day.avg+"%":"")} style={{width:14,height:14,borderRadius:3,background:bg,flexShrink:0,cursor:day.count>0?"default":"default"}}/>;
+                  })}
+                </div>
+                <div style={{display:"flex",gap:8,marginTop:8,fontSize:9,color:"#4b5563",flexWrap:"wrap"}}>
+                  {[["#22c55e","≥80%"],["#f59e0b","60–79%"],["#6366f1","<60%"],["rgba(255,255,255,0.05)","no activity"]].map(function(p){return<span key={p[1]} style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:10,height:10,borderRadius:2,background:p[0],display:"inline-block"}}/>{p[1]}</span>;})}
+                </div>
+              </div>
+
+              {/* weak question type highlight */}
+              {weakTypes.length>0&&(
+                <div style={{...CARD,marginBottom:12,borderColor:"rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.04)"}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#f87171",marginBottom:10}}>⚠️ FOCUS AREAS</p>
+                  {weakTypes.map(function(w){
+                    var tips={matching:"Try matching pairs step-by-step — eliminate confident ones first.",heading:"Read paragraph topic sentences carefully before matching headings.",qa:"Write 1-2 key words from the passage in your answer.",mcq:"Re-read the relevant sentence before choosing.",gap_word:"Think about grammar (noun/verb/adj) before guessing.",gap_sentence:"Check the sentence before and after the gap for context.",tfnm:"For 'Not Mentioned' — only choose if the passage has zero reference.",ynng:"'Not Given' means the passage doesn't confirm OR deny."};
+                    return(<div key={w.t} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8,padding:"10px 12px",background:"rgba(239,68,68,0.07)",borderRadius:10}}>
+                      <div style={{width:36,height:36,borderRadius:8,background:"rgba(239,68,68,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:900,color:"#f87171"}}>{w.pct}%</div>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#f3f4f6",marginBottom:2}}>{Q_LABELS[w.t]||w.t}</div>
+                        <div style={{fontSize:11,color:"#9ca3af"}}>{tips[w.t]||"Practice this type more!"}</div>
+                      </div>
                     </div>);
                   })}
                 </div>
-              </div>
+              )}
 
               {/* per-level breakdown */}
               {Object.keys(byLevel).length>0&&(
@@ -2411,20 +3316,34 @@ export default function App(){
               {Object.keys(typeAgg).length>0&&(
                 <div style={{...CARD,marginBottom:12}}>
                   <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>ACCURACY BY TYPE</p>
-                  {Object.keys(typeAgg).map(function(t){
-                    var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
-                    return(<div key={t} style={{marginBottom:8}}>
+                  {typeList.map(function(item){
+                    return(<div key={item.t} style={{marginBottom:8}}>
                       <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                        <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
-                        <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                        <span style={{color:"#9ca3af"}}>{Q_LABELS[item.t]||item.t}</span>
+                        <span style={{color:pctColor(item.pct),fontWeight:700}}>{item.pct}%</span>
                       </div>
                       <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999}}/>
+                        <div style={{height:"100%",width:item.pct+"%",background:pctColor(item.pct),borderRadius:999}}/>
                       </div>
                     </div>);
                   })}
                 </div>
               )}
+
+              {/* weekly activity bar chart */}
+              <div style={{...CARD,marginBottom:12}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>THIS WEEK</p>
+                <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
+                  {week.map(function(w){
+                    var h=w.xp>0?Math.max(8,Math.round((w.xp/maxDayXp)*68)):4;
+                    return(<div key={w.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                      <div style={{width:"100%",height:h,background:w.isToday?"#06b6d4":w.xp>0?"#6366f1":"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0",transition:"height 0.3s ease"}}/>
+                      <span style={{fontSize:9,color:w.isToday?"#06b6d4":"#6b7280",fontWeight:w.isToday?700:400}}>{w.label}</span>
+                      {w.count>0&&<span style={{fontSize:9,color:"#4b5563"}}>{w.count}</span>}
+                    </div>);
+                  })}
+                </div>
+              </div>
 
               {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No data yet — complete your first quiz!</p></div>}
               <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>Start Reading</button>
@@ -2702,6 +3621,335 @@ export default function App(){
             </div>
           );
         })()}
+
+        {/* ── AI TUTOR ──────────────────────────────────────── */}
+        {stage==="tutor"&&currentUser&&(
+          <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 80px)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10,flexShrink:0}}>
+              <div>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#0891b2"}}>🤖 AI Tutor</h2>
+                <p style={{margin:0,fontSize:11,color:"#6b7280"}}>{level} · {topic}</p>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={function(){setStage("result");}} style={GHOST}>Back</button>
+                <button onClick={doRestart} style={{...GHOST,color:"#34d399",borderColor:"rgba(52,211,153,0.3)"}}>Home</button>
+              </div>
+            </div>
+
+            {/* passage peek */}
+            {passage&&(function(){
+              var [open,setOpen]=useState(false);
+              return(
+                <div style={{...CARD,padding:"10px 14px",marginBottom:10,flexShrink:0}}>
+                  <button onClick={function(){setOpen(function(o){return!o;});}} style={{background:"none",border:"none",color:"#9ca3af",fontFamily:"inherit",fontSize:12,cursor:"pointer",fontWeight:600,padding:0,width:"100%",textAlign:"left"}}>
+                    {open?"▲ Hide passage":"▼ Show passage"}
+                  </button>
+                  {open&&<p style={{margin:"8px 0 0",fontSize:13,color:"#d1d5db",lineHeight:1.8}}>{passage}</p>}
+                </div>
+              );
+            })()}
+
+            {/* starter prompts */}
+            {tutorChat.length===0&&(
+              <div style={{marginBottom:10,flexShrink:0}}>
+                <p style={{fontSize:11,color:"#6b7280",marginBottom:6}}>Try asking:</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {["What is the main idea?","Explain a difficult word","Why did I get a question wrong?","Give me a grammar tip from the passage","Summarise in simple English"].map(function(s){
+                    return<button key={s} onClick={function(){sendTutorMessage(s);}} style={{background:"rgba(8,145,178,0.12)",border:"1px solid rgba(8,145,178,0.25)",color:"#67e8f9",borderRadius:999,padding:"5px 12px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>{s}</button>;
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* chat messages */}
+            <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+              {tutorChat.map(function(m,i){
+                var isUser=m.role==="user";
+                return(
+                  <div key={i} style={{display:"flex",justifyContent:isUser?"flex-end":"flex-start"}}>
+                    <div style={{maxWidth:"82%",padding:"10px 14px",borderRadius:isUser?"16px 16px 4px 16px":"16px 16px 16px 4px",background:isUser?"rgba(8,145,178,0.25)":"rgba(255,255,255,0.06)",border:"1px solid "+(isUser?"rgba(8,145,178,0.4)":"rgba(255,255,255,0.1)"),fontSize:13,color:"#f3f4f6",lineHeight:1.7,whiteSpace:"pre-wrap"}}>
+                      {!isUser&&<div style={{fontSize:10,color:"#0891b2",fontWeight:700,marginBottom:4}}>🤖 TUTOR</div>}
+                      {m.content}
+                    </div>
+                  </div>
+                );
+              })}
+              {tutorLoading&&(
+                <div style={{display:"flex",justifyContent:"flex-start"}}>
+                  <div style={{padding:"10px 14px",borderRadius:"16px 16px 16px 4px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",fontSize:13,color:"#6b7280"}}>
+                    <span style={{display:"inline-block",animation:"rqFloat 1s ease-in-out infinite"}}>●</span> Thinking…
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* input */}
+            <div style={{display:"flex",gap:8,flexShrink:0}}>
+              <input
+                style={{...INP,flex:1,padding:"11px 14px",fontSize:14}}
+                placeholder="Ask about the passage, vocabulary, grammar…"
+                value={tutorInput}
+                onChange={function(e){setTutorInput(e.target.value);}}
+                onKeyDown={function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendTutorMessage(tutorInput);}}}
+                disabled={tutorLoading}
+              />
+              <button onClick={function(){sendTutorMessage(tutorInput);}} disabled={tutorLoading||!tutorInput.trim()} style={{...mkBtn(tutorLoading||!tutorInput.trim()?"#374151":"#0891b2"),padding:"11px 18px",fontSize:14,flexShrink:0}}>Send</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── WRITING FEEDBACK ──────────────────────────────── */}
+        {stage==="writefeedback"&&(
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:6}}>
+              <button onClick={function(){if(!writeLoading)setStage("result");}} disabled={writeLoading} style={GHOST}>← Back</button>
+              <h2 style={{fontSize:18,fontWeight:900,color:"#fbbf24",margin:0}}>✍️ Writing Challenge</h2>
+            </div>
+
+            {!writeFeedback&&(
+              <div>
+                <div style={{...CARD,marginBottom:12,padding:14,background:"rgba(245,158,11,0.06)",borderColor:"rgba(245,158,11,0.25)"}}>
+                  <p style={{fontSize:12,color:"#9ca3af",margin:"0 0 6px",fontWeight:700}}>PASSAGE TOPIC</p>
+                  <p style={{fontSize:13,color:"#fbbf24",margin:0,fontWeight:600}}>{topic}</p>
+                </div>
+                <div style={{...CARD,marginBottom:12,padding:14}}>
+                  <p style={{fontSize:12,color:"#9ca3af",margin:"0 0 10px",fontWeight:700}}>YOUR SUMMARY</p>
+                  <p style={{fontSize:11,color:"#6b7280",margin:"0 0 10px"}}>Write 3–6 sentences summarising the main ideas of the passage in your own words.</p>
+                  <textarea
+                    style={{width:"100%",minHeight:130,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",fontSize:14,color:"#f3f4f6",fontFamily:"inherit",outline:"none",resize:"vertical",boxSizing:"border-box",lineHeight:1.6}}
+                    placeholder="The passage is about…"
+                    value={writeSummary}
+                    onChange={function(e){setWriteSummary(e.target.value);}}
+                  />
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
+                    {(function(){var wc=writeSummary.trim().split(/\s+/).filter(Boolean).length;return(
+                      <span style={{fontSize:11,color:wc>=20?"#34d399":"#6b7280"}}>{wc} words {wc<20?"(aim for 20+)":"✓"}</span>
+                    );})()}
+                    <button
+                      onClick={async function(){
+                        if(!writeSummary.trim()||writeLoading)return;
+                        setWriteLoading(true);setWriteError("");
+                        try{
+                          var r=await fetch("/.netlify/functions/writefeedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level,summary:writeSummary})});
+                          var d=await r.json();
+                          if(d.error)throw new Error(d.error);
+                          setWriteFeedback(d);
+                        }catch(e){setWriteError(e.message||"Failed — try again.");}
+                        setWriteLoading(false);
+                      }}
+                      disabled={writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20}
+                      style={{...mkBtn(writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
+                    >{writeLoading?"Grading…":"Get Feedback →"}</button>
+                  </div>
+                  {writeError&&<p style={{fontSize:12,color:"#ef4444",margin:"8px 0 0"}}>{writeError}</p>}
+                </div>
+              </div>
+            )}
+
+            {writeFeedback&&(function(){
+              var scoreColor=function(s){return s>=80?"#34d399":s>=60?"#fbbf24":"#ef4444";};
+              var dims=[{k:"content",label:"Content Accuracy",icon:"📖"},{k:"vocabulary",label:"Vocabulary",icon:"📝"},{k:"grammar",label:"Grammar",icon:"✔️"},{k:"structure",label:"Structure",icon:"🔗"}];
+              return(
+                <div>
+                  {/* overall score */}
+                  <div style={{...CARD,marginBottom:12,textAlign:"center",padding:20,background:"rgba(245,158,11,0.07)",borderColor:"rgba(245,158,11,0.35)"}}>
+                    <div className="rq-glow-green" style={{fontSize:48,fontWeight:900,color:scoreColor(writeFeedback.overall||0),marginBottom:4}}>{writeFeedback.overall||0}%</div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#fbbf24",marginBottom:8}}>Overall Writing Score</div>
+                    {writeFeedback.strengths&&<p style={{fontSize:13,color:"#34d399",margin:"0 0 4px"}}>💪 {writeFeedback.strengths}</p>}
+                    {writeFeedback.improvements&&<p style={{fontSize:13,color:"#9ca3af",margin:0}}>💡 {writeFeedback.improvements}</p>}
+                  </div>
+                  {/* dimension scores */}
+                  <div style={{...CARD,marginBottom:12,padding:14}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:"0 0 12px",letterSpacing:0.6}}>DETAILED SCORES</p>
+                    {dims.map(function(d){
+                      var sc=(writeFeedback.scores&&writeFeedback.scores[d.k])||0;
+                      var fb=(writeFeedback.feedback&&writeFeedback.feedback[d.k])||"";
+                      return(
+                        <div key={d.k} style={{marginBottom:14}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                            <span style={{fontSize:12,color:"#d1d5db",fontWeight:600}}>{d.icon} {d.label}</span>
+                            <span style={{fontSize:13,fontWeight:900,color:scoreColor(sc)}}>{sc}%</span>
+                          </div>
+                          <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:6,overflow:"hidden",marginBottom:5}}>
+                            <div style={{height:"100%",width:sc+"%",background:scoreColor(sc),borderRadius:999,transition:"width 0.6s ease"}}/>
+                          </div>
+                          {fb&&<p style={{fontSize:11,color:"#9ca3af",margin:0,lineHeight:1.5}}>{fb}</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* your summary */}
+                  <div style={{...CARD,marginBottom:12,padding:14}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:"0 0 8px",letterSpacing:0.6}}>YOUR SUMMARY</p>
+                    <p style={{fontSize:13,color:"#d1d5db",margin:0,lineHeight:1.7,fontStyle:"italic"}}>"{writeSummary}"</p>
+                  </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={function(){setWriteFeedback(null);setWriteSummary("");setWriteError("");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>Try Again</button>
+                    <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Back to Results</button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ── ERROR CORRECTION CHALLENGE ────────────────────── */}
+        {stage==="errorcorrect"&&(
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:6}}>
+              <button onClick={function(){setStage("result");}} style={GHOST}>← Back</button>
+              <h2 style={{fontSize:18,fontWeight:900,color:"#f87171",margin:0}}>🔍 Error Hunt</h2>
+              {!ecRevealed&&ecData&&<span style={{marginLeft:"auto",fontSize:12,color:"#9ca3af"}}>{ecSelected.size}/5 selected</span>}
+            </div>
+
+            {/* loading */}
+            {ecLoading&&(
+              <div style={{...CARD,padding:40,textAlign:"center"}}>
+                <div style={{fontSize:28,marginBottom:12}}>🔍</div>
+                <div style={{fontSize:14,color:"#9ca3af"}}>Planting errors in the passage…</div>
+              </div>
+            )}
+
+            {/* error state */}
+            {ecError&&!ecLoading&&(
+              <div style={{...CARD,padding:20,textAlign:"center"}}>
+                <div style={{fontSize:13,color:"#ef4444",marginBottom:12}}>{ecError}</div>
+                <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),padding:"8px 20px",fontSize:13}}>Back</button>
+              </div>
+            )}
+
+            {/* game */}
+            {ecData&&!ecLoading&&(function(){
+              // tokenise corrupted passage into words keeping punctuation attached
+              var tokens=ecData.passage.match(/\S+/g)||[];
+              // build a lookup: stripped token → error index
+              function strip(t){return t.replace(/[^a-zA-Z']/g,"").toLowerCase();}
+              var errorMap={};
+              (ecData.errors||[]).forEach(function(err,i){
+                errorMap[strip(err.corrupted)]=i;
+              });
+
+              function toggleToken(idx){
+                if(ecRevealed)return;
+                setEcSelected(function(prev){
+                  var next=new Set(prev);
+                  if(next.has(idx))next.delete(idx);
+                  else if(next.size<5)next.add(idx);
+                  return next;
+                });
+              }
+
+              // scoring after reveal
+              var correctFinds=0,falsePositives=0;
+              var tokenResults={};
+              if(ecRevealed){
+                ecSelected.forEach(function(idx){
+                  var t=strip(tokens[idx]);
+                  if(errorMap[t]!==undefined){tokenResults[idx]="correct";correctFinds++;}
+                  else{tokenResults[idx]="false";falsePositives++;}
+                });
+                // find missed errors
+                (ecData.errors||[]).forEach(function(err){
+                  var found=false;
+                  ecSelected.forEach(function(idx){if(strip(tokens[idx])===strip(err.corrupted))found=true;});
+                  if(!found){
+                    tokens.forEach(function(t,idx){if(strip(t)===strip(err.corrupted))tokenResults[idx]="missed";});
+                  }
+                });
+              }
+
+              var typeColor={spelling:"#f87171",grammar:"#fb923c",vocabulary:"#a78bfa",tense:"#38bdf8"};
+
+              return(
+                <div>
+                  {/* instructions */}
+                  {!ecRevealed&&<div style={{...CARD,marginBottom:12,padding:"10px 14px",background:"rgba(239,68,68,0.06)",borderColor:"rgba(239,68,68,0.2)"}}>
+                    <p style={{fontSize:12,color:"#fca5a5",margin:0}}>Tap up to 5 words you think are errors. Then press <strong>Check Answers</strong>.</p>
+                  </div>}
+
+                  {/* passage */}
+                  <div style={{...CARD,marginBottom:12,padding:"16px 14px",lineHeight:2.2,fontSize:16,color:"#e5e7eb"}}>
+                    {tokens.map(function(tok,idx){
+                      var sel=ecSelected.has(idx);
+                      var res=tokenResults[idx];
+                      var bg=res==="correct"?"rgba(52,211,153,0.25)":res==="false"?"rgba(251,191,36,0.25)":res==="missed"?"rgba(239,68,68,0.25)":sel?"rgba(239,68,68,0.2)":"transparent";
+                      var border=res==="correct"?"2px solid #34d399":res==="false"?"2px solid #fbbf24":res==="missed"?"2px dashed #ef4444":sel?"2px solid #f87171":"2px solid transparent";
+                      var col=res==="correct"?"#34d399":res==="false"?"#fbbf24":res==="missed"?"#f87171":sel?"#fca5a5":"inherit";
+                      return(
+                        <span key={idx}>
+                          <span
+                            onClick={function(){toggleToken(idx);}}
+                            style={{background:bg,border:border,borderRadius:4,padding:"1px 3px",color:col,cursor:ecRevealed?"default":"pointer",transition:"all 0.12s",display:"inline-block",userSelect:"none"}}
+                          >{tok}</span>
+                          {" "}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  {/* legend after reveal */}
+                  {ecRevealed&&<div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:12,fontSize:11}}>
+                    <span><span style={{color:"#34d399"}}>■</span> Correct find</span>
+                    <span><span style={{color:"#fbbf24"}}>■</span> False positive</span>
+                    <span><span style={{color:"#f87171"}}>■</span> Missed error</span>
+                  </div>}
+
+                  {/* score card after reveal */}
+                  {ecRevealed&&(
+                    <div style={{...CARD,marginBottom:12,padding:16,textAlign:"center",background:"rgba(239,68,68,0.07)",borderColor:"rgba(239,68,68,0.3)"}}>
+                      <div className={correctFinds>=4?"rq-glow-green":correctFinds>=2?"rq-glow-amber":"rq-glow-red"} style={{fontSize:40,fontWeight:900,color:correctFinds>=4?"#34d399":correctFinds>=2?"#fbbf24":"#f87171",marginBottom:4}}>{correctFinds}/5</div>
+                      <div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>{correctFinds===5?"Perfect! All errors found!":correctFinds>=3?"Good detective work!":"Keep practising — try again!"}</div>
+                      {falsePositives>0&&<div style={{fontSize:12,color:"#fbbf24"}}>{falsePositives} false positive{falsePositives>1?"s":""}</div>}
+                    </div>
+                  )}
+
+                  {/* error explanations after reveal */}
+                  {ecRevealed&&(
+                    <div style={{...CARD,marginBottom:12,padding:14}}>
+                      <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:"0 0 12px",letterSpacing:0.6}}>ALL 5 ERRORS</p>
+                      {(ecData.errors||[]).map(function(err,i){
+                        var tc=typeColor[err.type]||"#9ca3af";
+                        var wasFound=Array.from(ecSelected).some(function(idx){return strip(tokens[idx])===strip(err.corrupted);});
+                        return(
+                          <div key={i} style={{marginBottom:12,paddingBottom:12,borderBottom:i<ecData.errors.length-1?"1px solid rgba(255,255,255,0.06)":"none"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                              <span style={{background:"rgba(255,255,255,0.06)",borderRadius:4,padding:"2px 7px",fontSize:10,color:tc,fontWeight:700,textTransform:"uppercase"}}>{err.type}</span>
+                              <span style={{fontSize:13,color:"#ef4444",fontFamily:"monospace",fontWeight:700}}>{err.corrupted}</span>
+                              <span style={{fontSize:11,color:"#6b7280"}}>→</span>
+                              <span style={{fontSize:13,color:"#34d399",fontFamily:"monospace",fontWeight:700}}>{err.original}</span>
+                              <span style={{marginLeft:"auto",fontSize:12}}>{wasFound?"✓":"✗"}</span>
+                            </div>
+                            <p style={{fontSize:12,color:"#9ca3af",margin:0,lineHeight:1.5}}>{err.explanation}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* action buttons */}
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {!ecRevealed&&<button
+                      onClick={function(){setEcRevealed(true);}}
+                      disabled={ecSelected.size===0}
+                      style={{...mkBtn(ecSelected.size===0?"#374151":"#ef4444","#fff0f0"),flex:1,fontSize:13,padding:"11px 0"}}
+                    >Check Answers ({ecSelected.size}/5)</button>}
+                    {ecRevealed&&<button onClick={async function(){
+                      setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcError("");setEcLoading(true);
+                      try{
+                        var r=await fetch("/.netlify/functions/errorcorrect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level})});
+                        var d=await r.json();
+                        if(d.error)throw new Error(d.error);
+                        setEcData(d);
+                      }catch(e){setEcError(e.message||"Failed — try again.");}
+                      setEcLoading(false);
+                    }} style={{...mkBtn("#ef4444","#fff0f0"),flex:1,fontSize:13}}>Try Again</button>}
+                    <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:13}}>Back to Results</button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* ── STORY DISCUSSION ──────────────────────────────── */}
         {stage==="discuss"&&currentUser&&(function(){
