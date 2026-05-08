@@ -1,7 +1,27 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-// mockCreate is the vi.fn() injected by tests/setup.js
-const mockCreate = globalThis.__mockAnthropicCreate;
+let mockGenerateContent;
+
+vi.mock("@google/generative-ai", () => {
+  mockGenerateContent = vi.fn().mockResolvedValue({
+    response: {
+      text: () => "Generated content"
+    }
+  });
+
+  return {
+    GoogleGenerativeAI: class {
+      constructor(apiKey) {
+        this.apiKey = apiKey;
+      }
+      getGenerativeModel(config) {
+        return {
+          generateContent: mockGenerateContent
+        };
+      }
+    }
+  };
+});
 
 const { handler } = await import("../netlify/functions/generate.js");
 
@@ -17,8 +37,8 @@ describe("generate.js", () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    process.env = { ...OLD_ENV, ANTHROPIC_API_KEY: "test-key" };
-    mockCreate.mockReset();
+    process.env = { ...OLD_ENV, GOOGLE_API_KEY: "test-key" };
+    mockGenerateContent.mockClear();
   });
 
   afterEach(() => {
@@ -30,11 +50,11 @@ describe("generate.js", () => {
     expect(res.statusCode).toBe(405);
   });
 
-  it("returns 500 when ANTHROPIC_API_KEY is missing", async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+  it("returns 500 when GOOGLE_API_KEY is missing", async () => {
+    delete process.env.GOOGLE_API_KEY;
     const res = await handler(makeEvent());
     expect(res.statusCode).toBe(500);
-    expect(JSON.parse(res.body).error).toMatch(/ANTHROPIC_API_KEY/);
+    expect(JSON.parse(res.body).error).toMatch(/GOOGLE_API_KEY/);
   });
 
   it("returns 400 for invalid JSON body", async () => {
@@ -43,34 +63,46 @@ describe("generate.js", () => {
     expect(JSON.parse(res.body).error).toMatch(/Invalid JSON/);
   });
 
-  it("returns 200 with the Anthropic response on success", async () => {
-    const fakeMessage = { id: "msg_1", content: [{ text: "Hello" }] };
-    mockCreate.mockResolvedValue(fakeMessage);
+  it("returns 200 with the Gemini response on success", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => "Hello from Gemini"
+      }
+    });
     const res = await handler(makeEvent());
     expect(res.statusCode).toBe(200);
-    expect(JSON.parse(res.body)).toEqual(fakeMessage);
+    const body = JSON.parse(res.body);
+    expect(body.content).toBeDefined();
+    expect(body.content[0].text).toBe("Hello from Gemini");
   });
 
-  it("returns 500 when the Anthropic SDK throws", async () => {
-    mockCreate.mockRejectedValue(new Error("rate limited"));
+  it("returns 500 when the Gemini API throws", async () => {
+    mockGenerateContent.mockRejectedValueOnce(new Error("rate limited"));
     const res = await handler(makeEvent());
     expect(res.statusCode).toBe(500);
-    expect(JSON.parse(res.body).error).toBe("rate limited");
+    expect(JSON.parse(res.body).error).toMatch(/rate limited/);
   });
 
   it("passes custom model and max_tokens from body", async () => {
-    mockCreate.mockResolvedValue({ id: "msg_2" });
-    await handler(
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () => "Response"
+      }
+    });
+    const res = await handler(
       makeEvent({
         body: JSON.stringify({
-          model: "claude-opus-4-7",
+          model: "gemini-1.5-pro",
           max_tokens: 4000,
           messages: [{ role: "user", content: "hi" }],
         }),
       })
     );
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "claude-opus-4-7", max_tokens: 4000 })
+    expect(res.statusCode).toBe(200);
+    expect(mockGenerateContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generationConfig: expect.objectContaining({ maxOutputTokens: 4000 })
+      })
     );
   });
 });

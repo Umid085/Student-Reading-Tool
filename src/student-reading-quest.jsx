@@ -524,10 +524,10 @@ function doSendChallenge(social,from,to,level,types){
   var expiresAt=Date.now()+48*60*60*1000;
   if(!n[to])n[to]={friends:[],requests:[],likes:0,challenges:[]};
   if(!n[to].challenges)n[to].challenges=[];
-  n[to].challenges.push({id:id,from:from,level:level,types:types,date:new Date().toLocaleDateString(),status:"pending",expiresAt:expiresAt});
+  n[to].challenges.push({id:id,from:from,level:level,types:types,date:new Date().toISOString().split('T')[0],status:"pending",expiresAt:expiresAt});
   if(!n[from])n[from]={friends:[],requests:[],likes:0,challenges:[],sent:[]};
   if(!n[from].sent)n[from].sent=[];
-  n[from].sent.push({id:id,to:to,level:level,date:new Date().toLocaleDateString(),status:"pending",expiresAt:expiresAt});
+  n[from].sent.push({id:id,to:to,level:level,date:new Date().toISOString().split('T')[0],status:"pending",expiresAt:expiresAt});
   return n;
 }
 
@@ -1283,9 +1283,12 @@ export default function App(){
       var topicInstr=customTopic.trim()?"Write about this specific topic: \""+customTopic.trim()+"\". Keep it relevant and appropriate for the level.":"Pick a RANDOM varied topic.";
       if(weakWords.length>0){topicInstr+="\n\nIMPORTANT: Naturally incorporate these vocabulary words into the passage (the student is practising them): "+weakWords.join(", ")+". Use each word at least once in context.";}
       var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\n"+topicInstr+"\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
-      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:pt}]})});
+      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gemini-2.0-flash",max_tokens:2000,messages:[{role:"user",content:pt}]})});
       var data=await res.json();
+      if(data.error){throw new Error(data.error);}
+      if(!res.ok){throw new Error("API error: "+res.status);}
       var raw="";if(data.content){for(var i=0;i<data.content.length;i++){if(data.content[i].text)raw+=data.content[i].text;}}
+      if(!raw||raw.trim().length===0){throw new Error("No response from AI generation API");}
       var json=JSON.parse(raw.replace(/```json/g,"").replace(/```/g,"").trim());
       setPassage(json.passage);setTopic(json.topic||"Reading");setQuestions(json.questions);
       var mq=null;for(var j=0;j<json.questions.length;j++){if(json.questions[j].type==="matching"){mq=json.questions[j];break;}}
@@ -1296,7 +1299,16 @@ export default function App(){
       setCurrentStoryId(aiId);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
       setPersonalizedWords(weakWords);
       setStage("reading");
-    }catch(e){console.log("generate err",e);setError("Generation failed - please try again.");setStage("home");}
+    }catch(e){
+      console.log("generate err",e);
+      var isQuotaError=e.message&&(e.message.includes("quota")||e.message.includes("rate limit")||e.message.includes("429"));
+      if(isQuotaError){
+        setError("Daily AI quota reached — use Library stories instead! 📚 (18 stories available at all levels)");
+      }else{
+        setError("Generation failed: "+(e.message||"Unknown error. Please try again."));
+      }
+      setStage("home");
+    }
     clearInterval(iv);
   }
 
@@ -2026,6 +2038,7 @@ export default function App(){
               })}
             </div>
             {error&&<p style={{color:"#f87171",fontSize:13,marginBottom:10}}>{error}</p>}
+            {error&&error.includes("Daily AI quota")&&<button onClick={function(){setStage("library");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",fontSize:14,marginBottom:10}}>📚 Browse Library Stories</button>}
             <button onClick={generate} disabled={!level} style={{...mkBtn(level?lv.color:"#374151",level?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>{level?"Start "+level+" Quest!":"Select a level to begin"}</button>
           </div>
         )}
@@ -2896,7 +2909,7 @@ export default function App(){
           var fStreak=calcStreak(fuGames);
           var fBest=getBestLevel(fuGames);
           var totalXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
-          var avgPct=fuGames.length?Math.round(fuGames.reduce(function(s,g){return s+(g.pct);},0)/fuGames.length):0;
+          var avgPct=fuGames.length?Math.round(fuGames.reduce(function(s,g){return s+(g.pct||0);},0)/fuGames.length):0;
           var fLvlInfo=getLevelProgress(totalXp);
           // comparison with current user
           var curGames=currentUser&&currentUser.games?currentUser.games:[];

@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -18,8 +18,8 @@ export const handler = async function (event) {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method Not Allowed" }) };
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "ANTHROPIC_API_KEY is not set" }) };
+  if (!process.env.GOOGLE_API_KEY) {
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "GOOGLE_API_KEY is not set" }) };
   }
 
   let body;
@@ -30,20 +30,31 @@ export const handler = async function (event) {
   }
 
   const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("Claude API timeout — try again")), TIMEOUT_MS)
+    setTimeout(() => reject(new Error("Gemini API timeout — try again")), TIMEOUT_MS)
   );
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const message = await Promise.race([
-      client.messages.create({
-        model: body.model || "claude-sonnet-4-6",
-        max_tokens: body.max_tokens || 2000,
-        messages: body.messages,
+    const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = client.getGenerativeModel({ model: body.model || "gemini-2.0-flash" });
+
+    const userMessage = body.messages?.[body.messages.length - 1]?.content || "";
+
+    const result = await Promise.race([
+      model.generateContent({
+        contents: [{ role: "user", parts: [{ text: userMessage }] }],
+        generationConfig: { maxOutputTokens: body.max_tokens || 2000 },
       }),
       timeout,
     ]);
-    return { statusCode: 200, headers: CORS, body: JSON.stringify(message) };
+
+    const text = result.response.text();
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({
+        content: [{ type: "text", text: text }]
+      })
+    };
   } catch (e) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }
