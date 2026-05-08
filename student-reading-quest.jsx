@@ -1278,12 +1278,12 @@ export default function App(){
       var topicInstr=customTopic.trim()?"Write about this specific topic: \""+customTopic.trim()+"\". Keep it relevant and appropriate for the level.":"Pick a RANDOM varied topic.";
       if(weakWords.length>0){topicInstr+="\n\nIMPORTANT: Naturally incorporate these vocabulary words into the passage (the student is practising them): "+weakWords.join(", ")+". Use each word at least once in context.";}
       var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\n"+topicInstr+"\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
-      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:pt}]})});
+      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gemini-1.5-flash",max_tokens:2000,messages:[{role:"user",content:pt}]})});
       var data=await res.json();
       if(data.error){throw new Error(data.error);}
       if(!res.ok){throw new Error("API error: "+res.status);}
       var raw="";if(data.content){for(var i=0;i<data.content.length;i++){if(data.content[i].text)raw+=data.content[i].text;}}
-      if(!raw||raw.trim().length===0){throw new Error("No response from Claude API");}
+      if(!raw||raw.trim().length===0){throw new Error("No response from AI generation API");}
       var json=JSON.parse(raw.replace(/```json/g,"").replace(/```/g,"").trim());
       setPassage(json.passage);setTopic(json.topic||"Reading");setQuestions(json.questions);
       var mq=null;for(var j=0;j<json.questions.length;j++){if(json.questions[j].type==="matching"){mq=json.questions[j];break;}}
