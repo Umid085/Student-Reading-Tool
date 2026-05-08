@@ -12,6 +12,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@anthropic-ai/sdk@0.39",
+        "npm:@google/generative-ai@~0.24.1",
         "npm:@vitejs/plugin-react@^4.3.1",
         "npm:react-dom@^18.3.1",
         "npm:react@^18.3.1",
