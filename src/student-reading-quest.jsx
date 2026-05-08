@@ -2747,7 +2747,7 @@ export default function App(){
                 {bd.map(function(e,i){
                   var isMe=currentUser&&e.name===currentUser.name;
                   return(<div key={i} className="rq-lb-row" onClick={function(){if(currentUser&&e.name===currentUser.name){setStage("profile");}else{setViewingUser(e.name);setStage("friendProfile");}}} style={{display:"flex",alignItems:"center",padding:"8px "+(isMe?"5px":"0"),borderBottom:i<bd.length-1?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(52,211,153,0.06)":"transparent",borderRadius:7,marginBottom:2,cursor:"pointer",userSelect:"none"}}>
-                    <span style={{width:28,fontSize:i<3?13:11,color:i<3?"#fbbf24":"#6b7280",fontWeight:700}}>{i===0?"1st":i===1?"2nd":i===2?"3rd":(i+1)}</span>
+                    {i<3?(<img src={"/assets/icons/medal-"+(i+1)+".svg"} alt={"Rank "+(i+1)} style={{width:28,height:28,flexShrink:0}} onError={function(e){e.target.style.display="none";e.target.parentElement.insertBefore(document.createElement("span"),e.target.nextSibling).textContent=i===0?"1st":i===1?"2nd":"3rd";}}/>):(<span style={{width:28,fontSize:11,color:"#6b7280",fontWeight:700}}>{i+1}</span>)}
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:13,fontWeight:700,color:isMe?lvd.color:"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</div>
                       <div style={{fontSize:10,color:"#4b5563",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.topic}</div>
