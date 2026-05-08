@@ -1294,7 +1294,16 @@ export default function App(){
       setCurrentStoryId(aiId);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
       setPersonalizedWords(weakWords);
       setStage("reading");
-    }catch(e){console.log("generate err",e);setError("Generation failed: "+(e.message||"Unknown error. Please try again."));setStage("home");}
+    }catch(e){
+      console.log("generate err",e);
+      var isQuotaError=e.message&&(e.message.includes("quota")||e.message.includes("rate limit")||e.message.includes("429"));
+      if(isQuotaError){
+        setError("Daily AI quota reached — use Library stories instead! 📚 (18 stories available at all levels)");
+      }else{
+        setError("Generation failed: "+(e.message||"Unknown error. Please try again."));
+      }
+      setStage("home");
+    }
     clearInterval(iv);
   }
 
@@ -1964,6 +1973,7 @@ export default function App(){
               })}
             </div>
             {error&&<p style={{color:"#f87171",fontSize:13,marginBottom:10}}>{error}</p>}
+            {error&&error.includes("Daily AI quota")&&<button onClick={function(){setStage("library");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",fontSize:14,marginBottom:10}}>📚 Browse Library Stories</button>}
             <button onClick={generate} disabled={!level} style={{...mkBtn(level?lv.color:"#374151",level?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>{level?"Start "+level+" Quest!":"Select a level to begin"}</button>
           </div>
         )}
