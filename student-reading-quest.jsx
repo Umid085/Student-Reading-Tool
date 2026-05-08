@@ -1278,7 +1278,7 @@ export default function App(){
       var topicInstr=customTopic.trim()?"Write about this specific topic: \""+customTopic.trim()+"\". Keep it relevant and appropriate for the level.":"Pick a RANDOM varied topic.";
       if(weakWords.length>0){topicInstr+="\n\nIMPORTANT: Naturally incorporate these vocabulary words into the passage (the student is practising them): "+weakWords.join(", ")+". Use each word at least once in context.";}
       var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\n"+topicInstr+"\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
-      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gemini-1.5-flash",max_tokens:2000,messages:[{role:"user",content:pt}]})});
+      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gemini-2.0-flash",max_tokens:2000,messages:[{role:"user",content:pt}]})});
       var data=await res.json();
       if(data.error){throw new Error(data.error);}
       if(!res.ok){throw new Error("API error: "+res.status);}
