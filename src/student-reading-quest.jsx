@@ -3479,14 +3479,18 @@ export default function App(){
                       {stories.map(function(story){
                         var isUnlocked=!!unlockedMap[story.id];
                         return(
-                          <div key={story.id} style={{...CARD,padding:14,display:"flex",alignItems:"center",gap:12,opacity:isUnlocked?1:0.45,border:"1px solid "+(isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
-                            <div style={{fontSize:28,flexShrink:0}}>{isUnlocked?({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"}[lk]||"📖"):"🔒"}</div>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{fontSize:14,fontWeight:700,color:isUnlocked?"#f3f4f6":"#6b7280",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
-                              <div style={{fontSize:11,color:"#6b7280"}}>{story.topic} · {story.questions.length} questions</div>
-                              {!isUnlocked&&<div style={{fontSize:10,color:"#4b5563",marginTop:2}}>Complete more {lk} quizzes to unlock</div>}
+                          <div key={story.id} style={{...CARD,padding:0,display:"flex",alignItems:"stretch",gap:0,opacity:isUnlocked?1:0.45,border:"1px solid "+(isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",overflow:"hidden"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
+                            <div style={{width:120,height:80,flexShrink:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+                              <img src={"/assets/covers/"+story.id+".svg"} alt={story.title} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={function(e){e.target.style.display="none";e.target.parentElement.style.fontSize="28px";e.target.parentElement.textContent=isUnlocked?({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"}[lk]||"📖"):"🔒";}}/>
                             </div>
-                            {isUnlocked&&<div style={{fontSize:11,fontWeight:700,color:lObj.color,flexShrink:0}}>Play →</div>}
+                            <div style={{flex:1,minWidth:0,padding:12,display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
+                              <div>
+                                <div style={{fontSize:13,fontWeight:700,color:isUnlocked?"#f3f4f6":"#6b7280",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
+                                <div style={{fontSize:11,color:"#6b7280"}}>{story.topic} · {story.questions.length} Qs</div>
+                              </div>
+                              {!isUnlocked&&<div style={{fontSize:10,color:"#4b5563"}}>Unlock by completing {lk} quizzes</div>}
+                            </div>
+                            {isUnlocked&&<div style={{padding:12,display:"flex",alignItems:"center",fontSize:11,fontWeight:700,color:lObj.color,flexShrink:0}}>→</div>}
                           </div>
                         );
                       })}

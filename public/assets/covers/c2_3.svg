@@ -1,0 +1,33 @@
+<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg-c2_3" cx="60%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#ec489920;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0e27;stop-opacity:1" />
+    </radialGradient>
+    <filter id="glow-c2_3">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background gradient -->
+  <rect width="320" height="180" fill="url(#bg-c2_3)"/>
+  
+  <!-- Top accent bar -->
+  <rect width="320" height="4" fill="#ec4899" opacity="0.8"/>
+  
+  <!-- Icon -->
+  <text x="160" y="70" font-size="56" text-anchor="middle" dominant-baseline="middle" filter="url(#glow-c2_3)">⚖️</text>
+  
+  <!-- Title -->
+  <text x="160" y="130" font-size="16" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif" fill="#f3f4f6" filter="url(#glow-c2_3)" text-anchor="middle">Epistemic Injustice</text>
+  
+  <!-- Topic label -->
+  <text x="160" y="155" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" fill="#ec4899" opacity="0.8">Philosophy</text>
+  
+  <!-- Border -->
+  <rect width="320" height="180" fill="none" stroke="#ec4899" stroke-width="1" opacity="0.5"/>
+</svg>
