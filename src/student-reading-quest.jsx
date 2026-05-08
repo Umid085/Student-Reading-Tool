@@ -1962,13 +1962,17 @@ export default function App(){
             <div className="rq-lvgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
               {LEVELS.map(function(l){
                 var active=level===l.key;
-                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 22px "+l.glow+",0 0 40px "+l.glow+"44,inset 0 1px 0 rgba(255,255,255,0.08)":"none"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                    <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
-                    <span style={{background:active?l.color:"rgba(255,255,255,0.06)",color:active?"#0d0d1a":"#6b7280",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
+                var badgeId=l.key.toLowerCase();
+                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 22px "+l.glow+",0 0 40px "+l.glow+"44,inset 0 1px 0 rgba(255,255,255,0.08)":"none",display:"flex",alignItems:"center",gap:10}}>
+                  <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48,flexShrink:0}} onError={function(e){e.target.style.display="none";}}/>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                      <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
+                      <span style={{background:active?l.color:"rgba(255,255,255,0.06)",color:active?"#0d0d1a":"#6b7280",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
+                    </div>
+                    <div style={{fontSize:11,color:"#6b7280"}}>{l.desc}</div>
+                    <div style={{fontSize:10,color:"#4b5563",marginTop:2}}>{formatTime(l.timeLimit)} limit</div>
                   </div>
-                  <div style={{fontSize:11,color:"#6b7280"}}>{l.desc}</div>
-                  <div style={{fontSize:10,color:"#4b5563",marginTop:2}}>{formatTime(l.timeLimit)} limit</div>
                 </button>);
               })}
             </div>
@@ -3017,7 +3021,7 @@ export default function App(){
               {games.slice().reverse().slice(0,8).map(function(g,i){
                 var glv=getLv(g.level);
                 return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:i<7?"1px solid rgba(255,255,255,0.05)":"none"}}>
-                  <span style={{fontSize:11,fontWeight:900,color:glv.color,width:20}}>{g.level}</span>
+                  <img src={"/assets/badges/badge-"+g.level.toLowerCase()+".svg"} alt={g.level} style={{width:28,height:28,flexShrink:0}} onError={function(e){e.target.style.display="none";}}/>
                   <div style={{flex:1}}><div style={{fontSize:12,color:"#f3f4f6"}}>{g.topic}</div><div style={{fontSize:10,color:"#6b7280"}}>{g.date} - {formatTime(g.timeSecs)}</div></div>
                   <div style={{textAlign:"right"}}><div style={{fontSize:12,fontWeight:800,color:"#fbbf24"}}>{g.xp} XP</div><div style={{fontSize:10,color:pctColor(g.pct)}}>{g.pct}%</div></div>
                 </div>);
@@ -3402,6 +3406,7 @@ export default function App(){
                 return(
                   <div key={lk} style={{marginBottom:20}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <img src={"/assets/badges/badge-"+lk.toLowerCase()+".svg"} alt={lk} style={{width:32,height:32}} onError={function(e){e.target.style.display="none";}}/>
                       <span style={{fontSize:13,fontWeight:900,color:lObj.color}}>{lk}</span>
                       <span style={{fontSize:11,color:"#4b5563"}}>{lObj.desc}</span>
                     </div>
