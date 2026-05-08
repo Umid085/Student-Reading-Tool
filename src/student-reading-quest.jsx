@@ -2049,8 +2049,10 @@ export default function App(){
 
         {/* ── LOADING ───────────────────────────────────────── */}
         {stage==="loading"&&(
-          <div style={{textAlign:"center",paddingTop:90}}>
-            <div style={{fontSize:44,marginBottom:14,animation:"rqPulseGlow 1.4s ease-in-out infinite"}}>✦</div>
+          <div style={{textAlign:"center",paddingTop:40,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+            <div style={{width:280,height:200,marginBottom:20}}>
+              <img src="/assets/loading.svg" alt="Loading" style={{width:"100%",height:"100%",objectFit:"contain"}} onError={function(e){e.target.style.display="none";}}/>
+            </div>
             <h3 className="rq-shimmer" style={{color:lv?lv.color:"#34d399",fontWeight:800,fontSize:17,marginBottom:8,borderRadius:8,padding:"2px 0"}}>{loadMsg}</h3>
             <p style={{color:"#6b7280",fontSize:13}}>Creating {selectedTypes.length} question type(s) for {level}…</p>
           </div>

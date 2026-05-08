@@ -1,0 +1,76 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="bg" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" style="stop-color:#1a1f3a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0e27;stop-opacity:1" />
+    </radialGradient>
+    <style>
+      @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+      @keyframes sparkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+      .book { animation: float 3s ease-in-out infinite; }
+      .sparkle1 { animation: sparkle 1.5s ease-in-out infinite; }
+      .sparkle2 { animation: sparkle 2s ease-in-out infinite 0.3s; }
+      .sparkle3 { animation: sparkle 1.8s ease-in-out infinite 0.6s; }
+      .sparkle4 { animation: sparkle 1.6s ease-in-out infinite 0.9s; }
+      .glow-text { animation: float 2.5s ease-in-out infinite 0.5s; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg)"/>
+  
+  <!-- Glow orbs in background -->
+  <circle cx="100" cy="80" r="80" fill="#34d399" opacity="0.08" filter="url(#glow)"/>
+  <circle cx="300" cy="200" r="100" fill="#6366f1" opacity="0.06" filter="url(#glow)"/>
+  
+  <!-- Open Book (floating) -->
+  <g class="book" filter="url(#glow)">
+    <!-- Left page -->
+    <path d="M 150 80 L 190 80 L 200 140 L 140 140 Z" fill="#34d399" opacity="0.9" stroke="#34d399" stroke-width="2"/>
+    <!-- Right page -->
+    <path d="M 210 80 L 250 80 L 260 140 L 200 140 Z" fill="#34d399" opacity="0.7" stroke="#34d399" stroke-width="2"/>
+    <!-- Spine -->
+    <rect x="198" y="80" width="4" height="60" fill="#22c55e"/>
+    <!-- Glow around book -->
+    <circle cx="200" cy="110" r="70" fill="none" stroke="#34d399" stroke-width="2" opacity="0.4"/>
+  </g>
+  
+  <!-- Sparkles around book -->
+  <g class="sparkle1">
+    <circle cx="280" cy="60" r="4" fill="#fbbf24" filter="url(#glow)"/>
+    <circle cx="280" cy="60" r="6" fill="none" stroke="#fbbf24" stroke-width="1" opacity="0.5"/>
+  </g>
+  <g class="sparkle2">
+    <circle cx="120" cy="70" r="3" fill="#ec4899" filter="url(#glow)"/>
+    <circle cx="120" cy="70" r="5" fill="none" stroke="#ec4899" stroke-width="1" opacity="0.5"/>
+  </g>
+  <g class="sparkle3">
+    <circle cx="300" cy="120" r="3.5" fill="#06b6d4" filter="url(#glow)"/>
+    <circle cx="300" cy="120" r="6" fill="none" stroke="#06b6d4" stroke-width="1" opacity="0.5"/>
+  </g>
+  <g class="sparkle4">
+    <circle cx="100" cy="130" r="4" fill="#a78bfa" filter="url(#glow)"/>
+    <circle cx="100" cy="130" r="7" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  </g>
+  
+  <!-- Text lines on left page -->
+  <line x1="155" y1="95" x2="185" y2="95" stroke="#f3f4f6" stroke-width="1" opacity="0.6"/>
+  <line x1="155" y1="105" x2="185" y2="105" stroke="#f3f4f6" stroke-width="1" opacity="0.6"/>
+  <line x1="155" y1="115" x2="175" y2="115" stroke="#f3f4f6" stroke-width="1" opacity="0.4"/>
+  
+  <!-- Text lines on right page -->
+  <line x1="215" y1="95" x2="245" y2="95" stroke="#f3f4f6" stroke-width="1" opacity="0.4"/>
+  <line x1="215" y1="105" x2="245" y2="105" stroke="#f3f4f6" stroke-width="1" opacity="0.5"/>
+  <line x1="215" y1="115" x2="235" y2="115" stroke="#f3f4f6" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Decorative lines below -->
+  <line x1="150" y1="170" x2="250" y2="170" stroke="#34d399" stroke-width="2" opacity="0.3"/>
+  <circle cx="200" cy="170" r="3" fill="#34d399" opacity="0.5"/>
+</svg>
