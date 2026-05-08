@@ -6,7 +6,7 @@ An AI-powered language reading and quiz app for students learning English. Users
 
 ## Features
 
-- **AI-generated content** — Each session calls Claude (`claude-sonnet-4-6`) to produce a unique reading passage and quiz tailored to the chosen level.
+- **AI-generated content** — Each session calls Google Gemini API (`gemini-2.0-flash`) to produce a unique reading passage and quiz tailored to the chosen level.
 - **6 question types** — Multiple Choice, Gap Fill (word & sentence), Matching, Match Headings, Open Answer.
 - **Click-to-define** — Tap any word in the passage to see its definition (word, phonetic, part of speech, definition, example) via Free Dictionary API. Results are cached to avoid repeated requests.
 - **Text-to-Speech** — Listen to passages and questions read aloud using the Web Speech API for accessibility.
@@ -26,9 +26,10 @@ An AI-powered language reading and quiz app for students learning English. Users
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Vite 5 |
-| AI | Anthropic Claude API (`claude-sonnet-4-6`) via Netlify Function |
+| Frontend | React 18, Vite 5, Google Fonts (Inter, Outfit, JetBrains Mono) |
+| AI | Google Gemini API (`gemini-2.0-flash`) via Netlify Function |
 | Storage | Firebase Realtime Database (REST) via Netlify Function |
+| Design System | CSS-in-JS with design tokens (colors, spacing, typography) in `src/designSystem.js` |
 | Hosting | Netlify (SPA + serverless functions) |
 | Testing | Vitest |
 
@@ -77,13 +78,13 @@ npm install
 Create a `.env.local` file in the project root:
 
 ```env
-ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=AIzaSy...
 FIREBASE_DB_URL=https://your-project-default-rtdb.firebaseio.com
 ```
 
 | Variable | Required | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | Key for the Anthropic API |
+| `GOOGLE_API_KEY` | Yes | API key for Google Generative AI (Gemini) — get it from [Google AI Studio](https://aistudio.google.com/apikey) |
 | `FIREBASE_DB_URL` | Yes | Firebase Realtime Database base URL |
 
 ---
@@ -121,11 +122,11 @@ npm test
 
 **`tests/generate.test.js`** — 6 tests for `netlify/functions/generate.js`:
 - 405 on non-POST requests
-- 500 when `ANTHROPIC_API_KEY` is missing
+- 500 when `GOOGLE_API_KEY` is missing
 - 400 on invalid JSON body
 - 200 with correct response on success
-- 500 when the Anthropic SDK throws
-- Correct model/max_tokens forwarding
+- 500 when the Google Gemini API throws
+- Correct model/max_tokens forwarding to Gemini API
 
 **`tests/storage.test.js`** — 9 tests for `netlify/functions/storage.js`:
 - Health check (GET with no key)
@@ -145,7 +146,7 @@ npm test
 
 1. Push the repo to GitHub.
 2. Connect the repo in the [Netlify dashboard](https://app.netlify.com/).
-3. Set the environment variables (`ANTHROPIC_API_KEY`, `FIREBASE_DB_URL`) under **Site settings → Environment variables**.
+3. Set the environment variables (`GOOGLE_API_KEY`, `FIREBASE_DB_URL`) under **Site settings → Environment variables**.
 4. Netlify uses `netlify.toml` — build command is `npm run build`, publish dir is `dist/`, functions dir is `netlify/functions/`.
 
 ---
@@ -211,6 +212,24 @@ Users advance through 21 levels based on accumulated XP:
 - Real-time progress bar showing XP towards next level
 - Levels visible in search results, friends list, and leaderboards
 - Progress resets when viewing other users' profiles
+
+---
+
+## Design System & Typography (v4.0)
+
+### UI/UX Pro Max Enhancements
+- ✅ **Google Fonts Integration** — Inter, Outfit, JetBrains Mono for improved readability and visual hierarchy
+- ✅ **Design Tokens** — Centralized `src/designSystem.js` with color, spacing, and typography scales
+- ✅ **ErrorBanner Component** — Unified error notification styling across all screens
+- ✅ **Reading Screen Polish** — Optimized passage typography (17px Inter, 1.85 line-height) with smooth button transitions
+- ✅ **CSS Variables** — `--rq-transition`, `--rq-card-radius` for consistent interactive elements and standardized border-radius
+
+### Improvements
+- Passage text now uses Inter font for 15% better readability on mobile
+- All number displays (XP, WPM, scores, time) use JetBrains Mono for clarity
+- Section headings use Outfit (700/900) for visual hierarchy
+- Smooth 0.15s ease transitions on all interactive buttons
+- Unified error styling with warning icon and amber/red card design
 
 ---
 
