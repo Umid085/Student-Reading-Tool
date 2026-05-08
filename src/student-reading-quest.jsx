@@ -1696,7 +1696,7 @@ export default function App(){
       @media(min-width:1024px){.rq-wrap{max-width:860px;padding:30px 52px 90px}}
       @media(min-width:1440px){.rq-wrap{max-width:1040px;padding:36px 80px 100px}}
     `}</style>
-    <div style={{minHeight:"100vh",background:BG,fontFamily:"'Trebuchet MS',sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:BG,fontFamily:"'Inter','Trebuchet MS',sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
       <div className="rq-orb" style={{width:680,height:680,background:"rgba("+hex2rgb(_accent)+",0.14)",top:"-22%",left:"-16%","--dur":"28s"}}/>
       <div className="rq-orb" style={{width:500,height:500,background:"rgba("+hex2rgb(_secondary)+",0.10)",top:"35%",right:"-14%","--dur":"34s",animationDelay:"6s"}}/>
       <div className="rq-orb" style={{width:420,height:420,background:"rgba(236,72,153,0.09)",bottom:"2%",left:"5%","--dur":"38s",animationDelay:"14s"}}/>
@@ -1710,7 +1710,7 @@ export default function App(){
         {stage==="auth"&&(
           <div style={{paddingTop:46,textAlign:"center"}}>
             <div style={{fontSize:52,marginBottom:8}}>📖</div>
-            <h1 style={{fontSize:32,fontWeight:900,color:"#34d399",margin:"0 0 6px"}}>Reading Quest</h1>
+            <h1 style={{fontSize:32,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399",margin:"0 0 6px"}}>Reading Quest</h1>
             <p style={{color:"#6b7280",marginBottom:26,fontSize:15}}>6 question types · Friends · Compete</p>
             <div style={CARD}>
               <div style={{display:"flex",gap:4,marginBottom:18,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:4}}>
@@ -2093,7 +2093,7 @@ export default function App(){
             <div>
               <button onClick={function(){setFocusMode(false);}} style={{position:"fixed",top:14,right:14,background:"rgba(13,13,26,0.85)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",zIndex:100,backdropFilter:"blur(8px)"}}>✕ Exit Focus</button>
               <div style={{paddingTop:10,paddingBottom:100}}>
-                <h2 style={{margin:"0 0 18px",fontSize:20,fontWeight:900,color:"#f9fafb"}}>{topic}</h2>
+                <h2 style={{margin:"0 0 18px",fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#f9fafb"}}>{topic}</h2>
                 <p style={{lineHeight:2.1,fontSize:18,color:"#e5e7eb",margin:0,letterSpacing:0.2}}><WordTokens/></p>
                 {activeSentence&&(
                   <div style={{...CARD,marginTop:12,padding:12,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.3)"}}>
@@ -2278,7 +2278,7 @@ export default function App(){
 
               {/* bottom action bar */}
               <div style={{...CARD,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:12,color:"#9ca3af"}}>⏱ {formatTime(readingTimerSecs)}</span>
+                <span style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:"#9ca3af"}}>⏱ {formatTime(readingTimerSecs)}</span>
                 <button onClick={speakPassage} style={{background:isSpeaking&&!activeSentence?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:isSpeaking&&!activeSentence?"#818cf8":"#9ca3af",borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minWidth:40,justifyContent:"center"}}>
                   <img src="/assets/icons/icon-audio.svg" alt="Audio" style={{width:20,height:20}} onError={function(e){e.target.style.display="none";}}/>
                 </button>
@@ -2399,7 +2399,7 @@ export default function App(){
               <div className="rq-glow-green" style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
               <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
               <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
+                {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
               </div>
               {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>Speed bonus: +{result.timeBonus} XP!</div>}
             </div>
@@ -2468,7 +2468,7 @@ export default function App(){
                   return(<div key={t} style={{marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
                       <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
-                      <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                      <span style={{color:pctColor(tp),fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{tp}%</span>
                     </div>
                     <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
                       <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999,transition:"width 0.5s ease"}}/>
@@ -2485,8 +2485,8 @@ export default function App(){
                   return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<Math.min(dailyLb.length,5)-1?"1px solid rgba(255,255,255,0.05)":"none"}}>
                     <span style={{width:22,fontSize:11,color:"#fbbf24",fontWeight:700}}>{i+1}</span>
                     <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#fbbf24":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
-                    <span style={{fontSize:12,fontWeight:800,color:"#fbbf24"}}>{e.xp} XP</span>
-                    <span style={{fontSize:11,color:pctColor(e.pct)}}>{e.pct}%</span>
+                    <span style={{fontSize:12,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:"#fbbf24"}}>{e.xp} XP</span>
+                    <span style={{fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:pctColor(e.pct)}}>{e.pct}%</span>
                   </div>);
                 })}
               </div>
@@ -2579,7 +2579,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#06b6d4"}}>Vocabulary</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#06b6d4"}}>Vocabulary</h2>
                 <div style={{display:"flex",gap:6}}>
                   {vocab.length>=2&&<button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);setStage("vocabgame");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"7px 14px",fontSize:12}}>🎮 Practice</button>}
                   <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
@@ -2683,7 +2683,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#34d399"}}>Reading History</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>Reading History</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
               </div>
 
@@ -3082,7 +3082,7 @@ export default function App(){
                   return(<div key={t} style={{marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
                       <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
-                      <span style={{color:pctColor(tp),fontWeight:700}}>{tp}%</span>
+                      <span style={{color:pctColor(tp),fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{tp}%</span>
                     </div>
                     <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
                       <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999}}/>
@@ -3129,7 +3129,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#818cf8"}}>🎯 Reading Goals</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>🎯 Reading Goals</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
               </div>
 
@@ -3264,7 +3264,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#06b6d4"}}>My Analytics</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#06b6d4"}}>My Analytics</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
               </div>
 
@@ -3450,7 +3450,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#34d399"}}>Story Library</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>Story Library</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
               </div>
               <p style={{color:"#6b7280",fontSize:12,marginBottom:12,lineHeight:1.5}}>Pre-written stories — instant play. Unlock more by completing quizzes.</p>
@@ -3520,7 +3520,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:6}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Badges</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#fbbf24"}}>Badges</h2>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Back</button>
               </div>
               <p style={{color:"#6b7280",fontSize:13,marginBottom:14}}>{earnedCount} of {BADGES.length} earned</p>
@@ -3553,7 +3553,7 @@ export default function App(){
           if(!vocabGameMode)return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>Vocab Practice</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#a78bfa"}}>Vocab Practice</h2>
                 <button onClick={function(){setStage("vocab");}} style={GHOST}>Back</button>
               </div>
               <p style={{color:"#6b7280",fontSize:13,marginBottom:16}}>{gameWords.length} words to practice</p>
@@ -3677,7 +3677,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#818cf8"}}>Weekly Board</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>Weekly Board</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
               </div>
               <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(129,140,248,0.3)",background:"rgba(129,140,248,0.05)"}}>
@@ -3724,7 +3724,7 @@ export default function App(){
           <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 80px)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10,flexShrink:0}}>
               <div>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#0891b2"}}>🤖 AI Tutor</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#0891b2"}}>🤖 AI Tutor</h2>
                 <p style={{margin:0,fontSize:11,color:"#6b7280"}}>{level} · {topic}</p>
               </div>
               <div style={{display:"flex",gap:6}}>
@@ -4064,7 +4064,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#ec4899"}}>Discussion</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#ec4899"}}>Discussion</h2>
                 <button onClick={function(){setStage("result");}} style={GHOST}>Back</button>
               </div>
               {story&&<div style={{...CARD,marginBottom:12,padding:12,background:"rgba(236,72,153,0.06)",borderColor:"rgba(236,72,153,0.25)"}}>
