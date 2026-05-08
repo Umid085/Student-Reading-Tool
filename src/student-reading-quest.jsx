@@ -1603,6 +1603,10 @@ export default function App(){
   var INP={width:"100%",background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.18s,box-shadow 0.18s"};
   function mkBtn(bg,fg){var glow=bg&&bg.startsWith("#")?bg+"55":"var(--rq-accent-glow)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
   function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
+  function ErrorBanner(props){var msg=props.message||props.children;if(!msg)return null;return(<div style={{...CARD,background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.3)",padding:14,display:"flex",alignItems:"flex-start",gap:10,marginBottom:props.marginBottom||12}}>
+    <span style={{fontSize:18,flexShrink:0}}>⚠️</span>
+    <p style={{fontSize:13,color:"#fecaca",margin:0,lineHeight:1.5}}>{msg}</p>
+  </div>);}
   function hex2rgb(h){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+","+g+","+b;}
   function applyTheme(t){setAppTheme(t);localStorage.setItem("rq-theme",JSON.stringify(t));}
   function resetTheme(){setAppTheme(null);localStorage.removeItem("rq-theme");}
@@ -1720,7 +1724,7 @@ export default function App(){
                 <input style={INP} placeholder="Username" value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
                 <input style={INP} type="password" placeholder="Password (min 4 chars)" value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
               </div>
-              {authErr&&<p style={{color:"#f87171",fontSize:14,marginTop:10}}>{authErr}</p>}
+              {authErr&&<ErrorBanner message={authErr} marginBottom={10}/>}
               <button onClick={authMode==="login"?doLogin:doRegister} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?"Log In":"Create Account"}</button>
             </div>
           </div>
@@ -2019,7 +2023,7 @@ export default function App(){
                 <input style={{...INP,fontSize:13,padding:"9px 12px"}} placeholder="Describe a vibe… e.g. arctic aurora" value={themePrompt} onChange={function(e){setThemePrompt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&!themeLoading)generateTheme();}} disabled={themeLoading}/>
                 <button onClick={generateTheme} disabled={themeLoading||!themePrompt.trim()} style={{...mkBtn(_accent),padding:"9px 16px",fontSize:13,flexShrink:0,opacity:themeLoading||!themePrompt.trim()?0.5:1}}>{themeLoading?"…":"Apply"}</button>
               </div>
-              {themeError&&<p style={{color:"#f87171",fontSize:12,marginTop:6}}>{themeError}</p>}
+              {themeError&&<ErrorBanner message={themeError} marginBottom={6}/>}
             </div>
 
             {/* level selector */}
@@ -2041,7 +2045,7 @@ export default function App(){
                 </button>);
               })}
             </div>
-            {error&&<p style={{color:"#f87171",fontSize:13,marginBottom:10}}>{error}</p>}
+            {error&&<ErrorBanner message={error}/>}
             {error&&error.includes("Daily AI quota")&&<button onClick={function(){setStage("library");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",fontSize:14,marginBottom:10}}>📚 Browse Library Stories</button>}
             <button onClick={generate} disabled={!level} style={{...mkBtn(level?lv.color:"#374151",level?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>{level?"Start "+level+" Quest!":"Select a level to begin"}</button>
           </div>
@@ -2318,7 +2322,7 @@ export default function App(){
                           {pronRecording&&<button onClick={function(){if(pronRecRef.current)pronRecRef.current.stop();}} style={{...mkBtn("#374151"),fontSize:13}}>⏹ Stop</button>}
                           <button onClick={function(){setPronSentence("");setPronResult(null);}} style={{...GHOST,fontSize:12}}>← Back</button>
                         </div>
-                        {pronResult&&pronResult.error&&<p style={{color:"#f87171",fontSize:12,margin:0}}>{pronResult.error}</p>}
+                        {pronResult&&pronResult.error&&<ErrorBanner message={pronResult.error} marginBottom={8}/>}
                         {pronResult&&!pronResult.error&&(
                           <div>
                             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
@@ -3838,7 +3842,7 @@ export default function App(){
                       style={{...mkBtn(writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
                     >{writeLoading?"Grading…":"Get Feedback →"}</button>
                   </div>
-                  {writeError&&<p style={{fontSize:12,color:"#ef4444",margin:"8px 0 0"}}>{writeError}</p>}
+                  {writeError&&<ErrorBanner message={writeError} marginBottom={8}/>}
                 </div>
               </div>
             )}
@@ -3909,9 +3913,9 @@ export default function App(){
 
             {/* error state */}
             {ecError&&!ecLoading&&(
-              <div style={{...CARD,padding:20,textAlign:"center"}}>
-                <div style={{fontSize:13,color:"#ef4444",marginBottom:12}}>{ecError}</div>
-                <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),padding:"8px 20px",fontSize:13}}>Back</button>
+              <div style={{...CARD,padding:20}}>
+                <ErrorBanner message={ecError}/>
+                <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),padding:"8px 20px",fontSize:13,width:"100%"}}>Back</button>
               </div>
             )}
 
