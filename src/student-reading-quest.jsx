@@ -1598,10 +1598,10 @@ export default function App(){
   var _accent=appTheme?appTheme.accent:"#6366f1";
   var _secondary=appTheme?appTheme.secondary:"#34d399";
   var BG="linear-gradient(160deg,#0d0d1a 0%,#111827 55%,#0d1f12 100%)";
-  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid var(--rq-accent-border)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.07)"};
-  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.14)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600,transition:"all 0.18s ease"};
+  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid var(--rq-accent-border)",borderRadius:"var(--rq-card-radius)",padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.07)"};
+  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.14)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600,transition:"var(--rq-transition)"};
   var INP={width:"100%",background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.18s,box-shadow 0.18s"};
-  function mkBtn(bg,fg){var glow=bg&&bg.startsWith("#")?bg+"55":"var(--rq-accent-glow)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
+  function mkBtn(bg,fg){var glow=bg&&bg.startsWith("#")?bg+"55":"var(--rq-accent-glow)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"var(--rq-transition),box-shadow 0.15s ease,filter 0.15s ease"};}
   function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
   function ErrorBanner(props){var msg=props.message||props.children;if(!msg)return null;return(<div style={{...CARD,background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.3)",padding:14,display:"flex",alignItems:"flex-start",gap:10,marginBottom:props.marginBottom||12}}>
     <span style={{fontSize:18,flexShrink:0}}>⚠️</span>
@@ -1656,6 +1656,8 @@ export default function App(){
         --rq-secondary-rgb:${appTheme?hex2rgb(_secondary):"52,211,153"};
         --rq-accent-border:rgba(${appTheme?hex2rgb(_accent):"99,102,241"},0.22);
         --rq-accent-glow:rgba(${appTheme?hex2rgb(_accent):"99,102,241"},0.35);
+        --rq-transition:all 0.15s ease;
+        --rq-card-radius:18px;
       }
       @keyframes rqOrbDrift{
         0%,100%{transform:translate(0,0) scale(1)}
