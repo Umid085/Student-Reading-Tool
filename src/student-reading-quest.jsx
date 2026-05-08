@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 var API        = "/.netlify/functions/generate";
 var AUTH       = "/.netlify/functions/auth";
 var REGISTER   = "/.netlify/functions/register";
+var DESIGN_API = "/.netlify/functions/design";
 var USERS_API  = "/.netlify/functions/users";
 var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
@@ -874,6 +875,10 @@ export default function App(){
   // game
   var [level,setLevel]=useState("");
   var [selectedTypes,setSelectedTypes]=useState(["mcq","gap_word","gap_sentence","matching","heading","qa"]);
+  var [appTheme,setAppTheme]=useState(function(){try{return JSON.parse(localStorage.getItem("rq-theme")||"null")||null;}catch{return null;}});
+  var [themePrompt,setThemePrompt]=useState("");
+  var [themeLoading,setThemeLoading]=useState(false);
+  var [themeError,setThemeError]=useState("");
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
   var [customTopic,setCustomTopic]=useState("");
@@ -1590,12 +1595,28 @@ export default function App(){
   }
 
   // ── style helpers ─────────────────────────────────────────
+  var _accent=appTheme?appTheme.accent:"#6366f1";
+  var _secondary=appTheme?appTheme.secondary:"#34d399";
   var BG="linear-gradient(160deg,#0d0d1a 0%,#111827 55%,#0d1f12 100%)";
-  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.07)"};
+  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid var(--rq-accent-border)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.07)"};
   var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.14)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600,transition:"all 0.18s ease"};
   var INP={width:"100%",background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.18s,box-shadow 0.18s"};
-  function mkBtn(bg,fg){var glow=bg&&bg.startsWith("#")?bg+"55":"rgba(99,102,241,0.35)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
+  function mkBtn(bg,fg){var glow=bg&&bg.startsWith("#")?bg+"55":"var(--rq-accent-glow)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
   function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
+  function hex2rgb(h){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+","+g+","+b;}
+  function applyTheme(t){setAppTheme(t);localStorage.setItem("rq-theme",JSON.stringify(t));}
+  function resetTheme(){setAppTheme(null);localStorage.removeItem("rq-theme");}
+  async function generateTheme(){
+    if(!themePrompt.trim())return;
+    setThemeLoading(true);setThemeError("");
+    try{
+      var r=await fetch(DESIGN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({description:themePrompt})});
+      var d=await r.json();
+      if(!r.ok)throw new Error(d.error||"Failed");
+      applyTheme(d);setThemePrompt("");
+    }catch(e){setThemeError(e.message);}
+    setThemeLoading(false);
+  }
 
   if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",color:"#34d399",fontFamily:"sans-serif"}}>Loading...</div>;
 
@@ -1624,6 +1645,14 @@ export default function App(){
   return(
     <>
     <style>{`
+      :root{
+        --rq-accent:${_accent};
+        --rq-secondary:${_secondary};
+        --rq-accent-rgb:${appTheme?hex2rgb(_accent):"99,102,241"};
+        --rq-secondary-rgb:${appTheme?hex2rgb(_secondary):"52,211,153"};
+        --rq-accent-border:rgba(${appTheme?hex2rgb(_accent):"99,102,241"},0.22);
+        --rq-accent-glow:rgba(${appTheme?hex2rgb(_accent):"99,102,241"},0.35);
+      }
       @keyframes rqOrbDrift{
         0%,100%{transform:translate(0,0) scale(1)}
         20%{transform:translate(45px,-70px) scale(1.06)}
@@ -1646,9 +1675,9 @@ export default function App(){
       html,body{margin:0;padding:0;overflow-x:hidden}
       .rq-orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;animation:rqOrbDrift var(--dur,25s) ease-in-out infinite;z-index:0;will-change:transform}
       .rq-card-3d{transition:transform 0.25s ease,box-shadow 0.25s ease}
-      .rq-card-3d:hover{transform:translateY(-4px) scale(1.012);box-shadow:0 20px 56px rgba(0,0,0,0.55),0 0 30px rgba(99,102,241,0.15)}
+      .rq-card-3d:hover{transform:translateY(-4px) scale(1.012);box-shadow:0 20px 56px rgba(0,0,0,0.55),0 0 30px var(--rq-accent-glow)}
       .rq-lb-row{cursor:pointer;transition:background 0.18s,transform 0.18s,box-shadow 0.18s}
-      .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(4px);box-shadow:inset 3px 0 0 #6366f1}
+      .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(4px);box-shadow:inset 3px 0 0 var(--rq-accent)}
       .rq-wrap{width:100%;padding:16px 16px 64px;animation:rqFadeIn 0.4s ease both}
       .rq-home-hdr{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding-top:8px;margin-bottom:14px}
       .rq-home-nav{display:flex;gap:6px;flex-shrink:0}
@@ -1656,7 +1685,7 @@ export default function App(){
       .rq-wrap button{transition:transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease,opacity 0.15s ease}
       .rq-wrap button:hover:not(:disabled){filter:brightness(1.14)}
       .rq-wrap button:active:not(:disabled){transform:scale(0.95)!important}
-      .rq-wrap input:focus,.rq-wrap textarea:focus{border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,0.22)!important;outline:none!important}
+      .rq-wrap input:focus,.rq-wrap textarea:focus{border-color:var(--rq-accent)!important;box-shadow:0 0 0 3px var(--rq-accent-glow)!important;outline:none!important}
       .rq-glow-green{text-shadow:0 0 12px rgba(52,211,153,0.7)}
       .rq-glow-amber{text-shadow:0 0 12px rgba(251,191,36,0.7)}
       .rq-glow-red{text-shadow:0 0 12px rgba(248,113,113,0.7)}
@@ -1668,8 +1697,8 @@ export default function App(){
       @media(min-width:1440px){.rq-wrap{max-width:1040px;padding:36px 80px 100px}}
     `}</style>
     <div style={{minHeight:"100vh",background:BG,fontFamily:"'Trebuchet MS',sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
-      <div className="rq-orb" style={{width:680,height:680,background:"rgba(99,102,241,0.14)",top:"-22%",left:"-16%","--dur":"28s"}}/>
-      <div className="rq-orb" style={{width:500,height:500,background:"rgba(52,211,153,0.10)",top:"35%",right:"-14%","--dur":"34s",animationDelay:"6s"}}/>
+      <div className="rq-orb" style={{width:680,height:680,background:"rgba("+hex2rgb(_accent)+",0.14)",top:"-22%",left:"-16%","--dur":"28s"}}/>
+      <div className="rq-orb" style={{width:500,height:500,background:"rgba("+hex2rgb(_secondary)+",0.10)",top:"35%",right:"-14%","--dur":"34s",animationDelay:"6s"}}/>
       <div className="rq-orb" style={{width:420,height:420,background:"rgba(236,72,153,0.09)",bottom:"2%",left:"5%","--dur":"38s",animationDelay:"14s"}}/>
       {/* scanlines */}
       <div style={{position:"fixed",inset:0,backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px)",pointerEvents:"none",zIndex:2}}/>
@@ -1955,6 +1984,42 @@ export default function App(){
                   </div>
                 </div>);
               })()}
+            </div>
+
+            {/* theme generator */}
+            <div style={{...CARD,marginBottom:14,padding:16,borderColor:"rgba("+hex2rgb(_accent)+",0.28)",background:"rgba("+hex2rgb(_accent)+",0.04)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>{appTheme?appTheme.emoji:"🎨"}</span>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:800,color:_accent,letterSpacing:0.6}}>AI THEME</div>
+                    {appTheme&&<div style={{fontSize:11,color:"#9ca3af"}}>{appTheme.name}</div>}
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  {appTheme&&(
+                    <>
+                      <div style={{display:"flex",gap:4}}>
+                        <div style={{width:14,height:14,borderRadius:"50%",background:appTheme.accent,boxShadow:"0 0 6px "+appTheme.accent}}/>
+                        <div style={{width:14,height:14,borderRadius:"50%",background:appTheme.secondary,boxShadow:"0 0 6px "+appTheme.secondary}}/>
+                      </div>
+                      <button onClick={resetTheme} style={{...GHOST,padding:"5px 10px",fontSize:11}}>Reset</button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+                {["Ocean Neon","Cyberpunk Sunset","Toxic Forest","Void Purple","Rose Gold"].map(function(preset){
+                  return(
+                    <button key={preset} onClick={function(){setThemePrompt(preset);}} style={{...GHOST,padding:"4px 10px",fontSize:11,borderColor:themePrompt===preset?"var(--rq-accent)":"rgba(255,255,255,0.14)",color:themePrompt===preset?_accent:"#9ca3af"}}>{preset}</button>
+                  );
+                })}
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <input style={{...INP,fontSize:13,padding:"9px 12px"}} placeholder="Describe a vibe… e.g. arctic aurora" value={themePrompt} onChange={function(e){setThemePrompt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&!themeLoading)generateTheme();}} disabled={themeLoading}/>
+                <button onClick={generateTheme} disabled={themeLoading||!themePrompt.trim()} style={{...mkBtn(_accent),padding:"9px 16px",fontSize:13,flexShrink:0,opacity:themeLoading||!themePrompt.trim()?0.5:1}}>{themeLoading?"…":"Apply"}</button>
+              </div>
+              {themeError&&<p style={{color:"#f87171",fontSize:12,marginTop:6}}>{themeError}</p>}
             </div>
 
             {/* level selector */}
