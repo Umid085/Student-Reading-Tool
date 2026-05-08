@@ -523,10 +523,10 @@ function doSendChallenge(social,from,to,level,types){
   var expiresAt=Date.now()+48*60*60*1000;
   if(!n[to])n[to]={friends:[],requests:[],likes:0,challenges:[]};
   if(!n[to].challenges)n[to].challenges=[];
-  n[to].challenges.push({id:id,from:from,level:level,types:types,date:new Date().toLocaleDateString(),status:"pending",expiresAt:expiresAt});
+  n[to].challenges.push({id:id,from:from,level:level,types:types,date:new Date().toISOString().split('T')[0],status:"pending",expiresAt:expiresAt});
   if(!n[from])n[from]={friends:[],requests:[],likes:0,challenges:[],sent:[]};
   if(!n[from].sent)n[from].sent=[];
-  n[from].sent.push({id:id,to:to,level:level,date:new Date().toLocaleDateString(),status:"pending",expiresAt:expiresAt});
+  n[from].sent.push({id:id,to:to,level:level,date:new Date().toISOString().split('T')[0],status:"pending",expiresAt:expiresAt});
   return n;
 }
 
@@ -2834,7 +2834,7 @@ export default function App(){
           var fStreak=calcStreak(fuGames);
           var fBest=getBestLevel(fuGames);
           var totalXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
-          var avgPct=fuGames.length?Math.round(fuGames.reduce(function(s,g){return s+(g.pct);},0)/fuGames.length):0;
+          var avgPct=fuGames.length?Math.round(fuGames.reduce(function(s,g){return s+(g.pct||0);},0)/fuGames.length):0;
           var fLvlInfo=getLevelProgress(totalXp);
           // comparison with current user
           var curGames=currentUser&&currentUser.games?currentUser.games:[];
