@@ -2447,7 +2447,7 @@ export default function App(){
             <div style={{fontSize:50,marginBottom:5}}>{result.pct>=80?"★":"○"}</div>
             <h2 style={{fontSize:22,fontWeight:900,margin:"0 0 4px",color:lv?lv.color:"#34d399"}}>{result.pct>=80?"Excellent!":result.pct>=60?"Good job!":"Keep going!"}</h2>
             <p style={{color:"#9ca3af",marginBottom:14,fontSize:13}}>{level} - {topic}</p>
-            <div style={{...CARD,marginBottom:10}}>
+            <div className="rq-floating" style={{...CARD,marginBottom:10}}>
               <div className="rq-glow-green" style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
               <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
               <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
@@ -2853,7 +2853,7 @@ export default function App(){
                   var uData=getSocial(social,u.name);
                   var uTotalXp=u.games?u.games.reduce(function(s,g){return s+g.xp;},0):0;
                   var uLevel=getUserLevel(uTotalXp);
-                  return(<div key={u.name} style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
+                  return(<div key={u.name} className="rq-raised" style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
                     <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#fff",flexShrink:0}}>{u.name[0].toUpperCase()}</div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{u.name}</div>
@@ -3541,7 +3541,7 @@ export default function App(){
                       {stories.map(function(story){
                         var isUnlocked=!!unlockedMap[story.id];
                         return(
-                          <div key={story.id} style={{...CARD,padding:0,display:"flex",alignItems:"stretch",gap:0,opacity:isUnlocked?1:0.45,border:"1px solid "+(isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",overflow:"hidden"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
+                          <div key={story.id} className="rq-raised" style={{...CARD,padding:0,display:"flex",alignItems:"stretch",gap:0,opacity:isUnlocked?1:0.45,border:"1px solid "+(isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",overflow:"hidden"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
                             <div style={{width:120,height:80,flexShrink:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
                               <img src={"/assets/covers/"+story.id+".svg"} alt={story.title} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={function(e){e.target.style.display="none";e.target.parentElement.style.fontSize="28px";e.target.parentElement.textContent=isUnlocked?({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"}[lk]||"📖"):"🔒";}}/>
                             </div>
