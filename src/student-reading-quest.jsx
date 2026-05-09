@@ -26,6 +26,13 @@ var LEVELS = [
   {key:"C2",color:"#ec4899",glow:"rgba(236,72,153,0.25)", mult:4,  timeLimit:210,timeBonus:400,desc:"Mastery"}
 ];
 
+var PRESET_THEMES = [
+  {id:"indigo", name:"Indigo", emoji:"💜", accent:"#6366f1", secondary:"#34d399"},
+  {id:"ocean", name:"Ocean", emoji:"🌊", accent:"#06b6d4", secondary:"#818cf8"},
+  {id:"forest", name:"Forest", emoji:"🌿", accent:"#22c55e", secondary:"#f59e0b"},
+  {id:"magenta", name:"Magenta", emoji:"🌸", accent:"#ec4899", secondary:"#a78bfa"}
+];
+
 var Q_LABELS = {mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"};
 var Q_XP = {mcq:1,gap_word:1,gap_sentence:1,matching:3,heading:3,qa:2,tfnm:1,ynng:1};
 
@@ -879,6 +886,7 @@ export default function App(){
   var [themePrompt,setThemePrompt]=useState("");
   var [themeLoading,setThemeLoading]=useState(false);
   var [themeError,setThemeError]=useState("");
+  var [aiThemeOpen,setAiThemeOpen]=useState(false);
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
   var [customTopic,setCustomTopic]=useState("");
@@ -1598,15 +1606,17 @@ export default function App(){
   var _accent=appTheme?appTheme.accent:"#6366f1";
   var _secondary=appTheme?appTheme.secondary:"#34d399";
   var BG="linear-gradient(160deg,#0d0d1a 0%,#111827 55%,#0d1f12 100%)";
-  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid var(--rq-accent-border)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.07)"};
+  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid var(--rq-accent-border)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.07),0 0 0 1px rgba(255,255,255,0.03)"};
   var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.14)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600,transition:"all 0.15s ease"};
   var INP={width:"100%",background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.18s,box-shadow 0.18s"};
-  function mkBtn(bg,fg){var glow=bg&&bg.startsWith("#")?bg+"55":"var(--rq-accent-glow)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:"13px 22px",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"all 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
+  function mkBtn(bg,fg,size){var pad=size==="sm"?"7px 14px":size==="lg"?"15px 28px":"13px 22px";var fs=size==="sm"?12:size==="lg"?17:15;var glow=bg&&bg.startsWith("#")?bg+"55":"var(--rq-accent-glow)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:pad,fontWeight:700,fontSize:fs,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"all 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
   function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
   function ErrorBanner(props){var msg=props.message||props.children;if(!msg)return null;return(<div style={{...CARD,background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.3)",padding:14,display:"flex",alignItems:"flex-start",gap:10,marginBottom:props.marginBottom||12}}>
     <span style={{fontSize:18,flexShrink:0}}>⚠️</span>
     <p style={{fontSize:13,color:"#fecaca",margin:0,lineHeight:1.5}}>{msg}</p>
   </div>);}
+  function Skeleton(props){return(<div className="rq-skeleton" style={{height:props.h||14,width:props.w||"100%",borderRadius:props.r||8,marginBottom:props.mb||0}}/>);}
+  function ThemeTile(props){var t=props.t,active=props.active,onClick=props.onClick;return(<button onClick={onClick} style={{background:"rgba(255,255,255,0.04)",border:"2px solid "+(active?t.accent:"rgba(255,255,255,0.1)"),borderRadius:12,padding:"10px 8px",cursor:"pointer",textAlign:"center",boxShadow:active?"0 0 16px "+t.accent+"55":"none",transition:"all 0.15s ease",flex:1}}><div style={{width:36,height:36,borderRadius:"50%",margin:"0 auto 6px",background:"linear-gradient(135deg,"+t.accent+" 50%,"+t.secondary+" 50%)"}}></div><div style={{fontSize:11,fontWeight:700,color:active?t.accent:"#9ca3af"}}>{t.emoji} {t.name}</div></button>);}
   function hex2rgb(h){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+","+g+","+b;}
   function applyTheme(t){setAppTheme(t);localStorage.setItem("rq-theme",JSON.stringify(t));}
   function resetTheme(){setAppTheme(null);localStorage.removeItem("rq-theme");}
@@ -1622,7 +1632,7 @@ export default function App(){
     setThemeLoading(false);
   }
 
-  if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",color:"#34d399",fontFamily:"sans-serif"}}>Loading...</div>;
+  if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"sans-serif",padding:20}}><div style={{width:"100%",maxWidth:300}}><div className="rq-skeleton" style={{width:48,height:48,borderRadius:"50%",margin:"0 auto 20px"}}/><Skeleton h={16} mb={8}/><Skeleton h={14} mb={6}/><Skeleton h={14} w="70%"/></div></div>;
 
   // ── current user's social data ─────────────────────────────
   var myData=currentUser?getSocial(social,currentUser.name):{friends:[],requests:[],likes:0,challenges:[]};
@@ -1677,6 +1687,27 @@ export default function App(){
         from{opacity:0;transform:translateY(10px)}
         to{opacity:1;transform:translateY(0)}
       }
+      @keyframes rqSkeleton{
+        0%{background-position:-400px 0}
+        100%{background-position:400px 0}
+      }
+      @keyframes rqSpinner{
+        to{transform:rotate(360deg)}
+      }
+      @keyframes rqPop{
+        0%{transform:scale(0.7);opacity:0}
+        70%{transform:scale(1.15)}
+        100%{transform:scale(1);opacity:1}
+      }
+      @keyframes rqBounce{
+        0%,100%{transform:translateY(0)}
+        40%{transform:translateY(-8px)}
+        60%{transform:translateY(-4px)}
+      }
+      @keyframes rqFloatUp{
+        0%{transform:translateY(0);opacity:1}
+        100%{transform:translateY(-48px);opacity:0}
+      }
       *{box-sizing:border-box;margin:0;padding:0}
       html,body{margin:0;padding:0;overflow-x:hidden}
       .rq-orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;animation:rqOrbDrift var(--dur,25s) ease-in-out infinite;z-index:0;will-change:transform}
@@ -1696,6 +1727,15 @@ export default function App(){
       .rq-glow-amber{text-shadow:0 0 12px rgba(251,191,36,0.7)}
       .rq-glow-red{text-shadow:0 0 12px rgba(248,113,113,0.7)}
       .rq-shimmer{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);background-size:200% auto;animation:rqShimmer 2.5s linear infinite}
+      .rq-skeleton{background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.10) 50%,rgba(255,255,255,0.04) 75%);background-size:400px 100%;animation:rqSkeleton 1.4s ease infinite;border-radius:8px}
+      .rq-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.12);border-top-color:var(--rq-accent);border-radius:50%;animation:rqSpinner 0.7s linear infinite;display:inline-block;vertical-align:middle;flex-shrink:0}
+      .rq-pop{animation:rqPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both}
+      .rq-bounce{animation:rqBounce 0.5s ease}
+      .rq-float-up{animation:rqFloatUp 1s ease-out forwards;pointer-events:none;position:absolute}
+      .rq-card-3d:hover img{animation:rqBounce 0.5s ease}
+      .rq-raised{box-shadow:0 4px 16px rgba(0,0,0,0.3),0 1px 4px rgba(0,0,0,0.2);transition:box-shadow 0.2s ease,transform 0.2s ease}
+      .rq-raised:hover{box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 20px var(--rq-accent-glow);transform:translateY(-2px)}
+      .rq-floating{box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 30px var(--rq-accent-glow)}
       @media(max-width:400px){.rq-home-nav button{padding:7px 10px!important;font-size:12px!important}}
       @media(min-width:480px){.rq-wrap{max-width:480px;margin:0 auto;padding:18px 20px 64px}}
       @media(min-width:640px){.rq-wrap{max-width:660px;padding:22px 28px 72px}.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
@@ -2023,7 +2063,7 @@ export default function App(){
               </div>
               <div style={{display:"flex",gap:8}}>
                 <input style={{...INP,fontSize:13,padding:"9px 12px"}} placeholder="Describe a vibe… e.g. arctic aurora" value={themePrompt} onChange={function(e){setThemePrompt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&!themeLoading)generateTheme();}} disabled={themeLoading}/>
-                <button onClick={generateTheme} disabled={themeLoading||!themePrompt.trim()} style={{...mkBtn(_accent),padding:"9px 16px",fontSize:13,flexShrink:0,opacity:themeLoading||!themePrompt.trim()?0.5:1}}>{themeLoading?"…":"Apply"}</button>
+                <button onClick={generateTheme} disabled={themeLoading||!themePrompt.trim()} style={{...mkBtn(_accent),padding:"9px 16px",fontSize:13,flexShrink:0,opacity:themeLoading||!themePrompt.trim()?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{themeLoading?<span className="rq-spinner"/>:"Apply"}</button>
               </div>
               {themeError&&<ErrorBanner message={themeError} marginBottom={6}/>}
             </div>
@@ -2060,7 +2100,13 @@ export default function App(){
               <img src="/assets/loading.svg" alt="Loading" style={{width:"100%",height:"100%",objectFit:"contain"}} onError={function(e){e.target.style.display="none";}}/>
             </div>
             <h3 className="rq-shimmer" style={{color:lv?lv.color:"#34d399",fontWeight:800,fontSize:17,marginBottom:8,borderRadius:8,padding:"2px 0"}}>{loadMsg}</h3>
-            <p style={{color:"#6b7280",fontSize:13}}>Creating {selectedTypes.length} question type(s) for {level}…</p>
+            <p style={{color:"#6b7280",fontSize:13,marginBottom:20}}>Creating {selectedTypes.length} question type(s) for {level}…</p>
+            <div style={{width:"100%",maxWidth:400,marginTop:20}}>
+              <Skeleton h={13} mb={8}/>
+              <Skeleton h={13} mb={8} w="95%"/>
+              <Skeleton h={13} mb={8} w="90%"/>
+              <Skeleton h={13} w="75%"/>
+            </div>
           </div>
         )}
 
@@ -2123,7 +2169,7 @@ export default function App(){
                         <button onClick={function(){setSelectedWord(null);setWordDef(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:18,cursor:"pointer",lineHeight:1}}>×</button>
                       </div>
                     </div>
-                    {wordDefLoading&&<p style={{fontSize:13,color:"#6b7280",margin:0}}>Looking up...</p>}
+                    {wordDefLoading&&<><Skeleton h={12} mb={6}/><Skeleton h={12} w="70%"/></>}
                     {wordDef&&!wordDefLoading&&<><p style={{fontSize:13,color:"#d1d5db",margin:0,lineHeight:1.6}}>{wordDef.def}</p>{wordDef.example&&<p style={{fontSize:12,color:"#6b7280",margin:"4px 0 0",fontStyle:"italic"}}>"{wordDef.example}"</p>}</>}
                   </div>
                 )}
@@ -2272,7 +2318,7 @@ export default function App(){
                       <button onClick={function(){setSelectedWord(null);setWordDef(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:20,cursor:"pointer",lineHeight:1,padding:"0 2px"}}>×</button>
                     </div>
                   </div>
-                  {wordDefLoading&&<p style={{fontSize:13,color:"#6b7280",margin:0}}>Looking up definition...</p>}
+                  {wordDefLoading&&<><Skeleton h={12} mb={6}/><Skeleton h={12} w="70%"/></>}
                   {wordDef&&!wordDefLoading&&(
                     <>
                       <p style={{fontSize:14,color:"#d1d5db",margin:0,lineHeight:1.7}}>{wordDef.def}</p>
@@ -3842,7 +3888,7 @@ export default function App(){
                       }}
                       disabled={writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20}
                       style={{...mkBtn(writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
-                    >{writeLoading?"Grading…":"Get Feedback →"}</button>
+                    >{writeLoading?<span className="rq-spinner"/>:"Get Feedback →"}</button>
                   </div>
                   {writeError&&<ErrorBanner message={writeError} marginBottom={8}/>}
                 </div>
