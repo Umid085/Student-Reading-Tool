@@ -2032,41 +2032,59 @@ export default function App(){
               })()}
             </div>
 
-            {/* theme generator */}
-            <div style={{...CARD,marginBottom:14,padding:16,borderColor:"rgba("+hex2rgb(_accent)+",0.28)",background:"rgba("+hex2rgb(_accent)+",0.04)"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:18}}>{appTheme?appTheme.emoji:"🎨"}</span>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:800,color:_accent,letterSpacing:0.6}}>AI THEME</div>
-                    {appTheme&&<div style={{fontSize:11,color:"#9ca3af"}}>{appTheme.name}</div>}
-                  </div>
-                </div>
-                <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  {appTheme&&(
-                    <>
-                      <div style={{display:"flex",gap:4}}>
-                        <div style={{width:14,height:14,borderRadius:"50%",background:appTheme.accent,boxShadow:"0 0 6px "+appTheme.accent}}/>
-                        <div style={{width:14,height:14,borderRadius:"50%",background:appTheme.secondary,boxShadow:"0 0 6px "+appTheme.secondary}}/>
-                      </div>
-                      <button onClick={resetTheme} style={{...GHOST,padding:"5px 10px",fontSize:11}}>Reset</button>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-                {["Ocean Neon","Cyberpunk Sunset","Toxic Forest","Void Purple","Rose Gold"].map(function(preset){
+            {/* theme presets */}
+            <div style={{marginBottom:14}}>
+              <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>THEME</p>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:8,marginBottom:10}}>
+                {PRESET_THEMES.map(function(t){
                   return(
-                    <button key={preset} onClick={function(){setThemePrompt(preset);}} style={{...GHOST,padding:"4px 10px",fontSize:11,borderColor:themePrompt===preset?"var(--rq-accent)":"rgba(255,255,255,0.14)",color:themePrompt===preset?_accent:"#9ca3af"}}>{preset}</button>
+                    <button key={t.id} onClick={function(){applyTheme(t);}} style={{background:appTheme&&appTheme.id===t.id?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.04)",border:"2px solid "+(appTheme&&appTheme.id===t.id?t.accent:"rgba(255,255,255,0.1)"),borderRadius:12,padding:"10px 8px",cursor:"pointer",textAlign:"center",boxShadow:appTheme&&appTheme.id===t.id?"0 0 16px "+t.accent+"55":"none",transition:"all 0.15s ease",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+                      <div style={{width:36,height:36,borderRadius:"50%",margin:0,background:"linear-gradient(135deg,"+t.accent+" 50%,"+t.secondary+" 50%)"}}/>
+                      <div style={{fontSize:11,fontWeight:700,color:appTheme&&appTheme.id===t.id?t.accent:"#9ca3af"}}>{t.emoji} {t.name}</div>
+                    </button>
                   );
                 })}
               </div>
-              <div style={{display:"flex",gap:8}}>
-                <input style={{...INP,fontSize:13,padding:"9px 12px"}} placeholder="Describe a vibe… e.g. arctic aurora" value={themePrompt} onChange={function(e){setThemePrompt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&!themeLoading)generateTheme();}} disabled={themeLoading}/>
-                <button onClick={generateTheme} disabled={themeLoading||!themePrompt.trim()} style={{...mkBtn(_accent),padding:"9px 16px",fontSize:13,flexShrink:0,opacity:themeLoading||!themePrompt.trim()?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{themeLoading?<span className="rq-spinner"/>:"Apply"}</button>
-              </div>
-              {themeError&&<ErrorBanner message={themeError} marginBottom={6}/>}
+              <button onClick={function(){setAiThemeOpen(!aiThemeOpen);}} style={{...GHOST,fontSize:11,padding:"6px 10px",width:"100%",textAlign:"center"}}>✨ AI Theme {aiThemeOpen?"▼":"▶"}</button>
             </div>
+
+            {/* AI theme generator (collapsible) */}
+            {aiThemeOpen&&(
+              <div style={{...CARD,marginBottom:14,padding:16,borderColor:"rgba("+hex2rgb(_accent)+",0.28)",background:"rgba("+hex2rgb(_accent)+",0.04)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:18}}>{appTheme?appTheme.emoji:"🎨"}</span>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:800,color:_accent,letterSpacing:0.6}}>AI THEME</div>
+                      {appTheme&&<div style={{fontSize:11,color:"#9ca3af"}}>{appTheme.name}</div>}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    {appTheme&&(
+                      <>
+                        <div style={{display:"flex",gap:4}}>
+                          <div style={{width:14,height:14,borderRadius:"50%",background:appTheme.accent,boxShadow:"0 0 6px "+appTheme.accent}}/>
+                          <div style={{width:14,height:14,borderRadius:"50%",background:appTheme.secondary,boxShadow:"0 0 6px "+appTheme.secondary}}/>
+                        </div>
+                        <button onClick={resetTheme} style={{...GHOST,padding:"5px 10px",fontSize:11}}>Reset</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+                  {["Ocean Neon","Cyberpunk Sunset","Toxic Forest","Void Purple","Rose Gold"].map(function(preset){
+                    return(
+                      <button key={preset} onClick={function(){setThemePrompt(preset);}} style={{...GHOST,padding:"4px 10px",fontSize:11,borderColor:themePrompt===preset?_accent:"rgba(255,255,255,0.14)",color:themePrompt===preset?_accent:"#9ca3af"}}>{preset}</button>
+                    );
+                  })}
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <input style={{...INP,fontSize:13,padding:"9px 12px"}} placeholder="Describe a vibe… e.g. arctic aurora" value={themePrompt} onChange={function(e){setThemePrompt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&!themeLoading)generateTheme();}} disabled={themeLoading}/>
+                  <button onClick={generateTheme} disabled={themeLoading||!themePrompt.trim()} style={{...mkBtn(_accent),padding:"9px 16px",fontSize:13,flexShrink:0,opacity:themeLoading||!themePrompt.trim()?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{themeLoading?<span className="rq-spinner"/>:"Apply"}</button>
+                </div>
+                {themeError&&<ErrorBanner message={themeError} marginBottom={6}/>}
+              </div>
+            )}
 
             {/* level selector */}
             <p style={{fontWeight:700,color:"#d1fae5",fontSize:11,letterSpacing:0.8,marginBottom:8}}>CHOOSE LEVEL</p>
