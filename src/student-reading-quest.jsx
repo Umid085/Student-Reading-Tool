@@ -2818,7 +2818,7 @@ export default function App(){
             </div>
             {(function(){
               var bd=boards[lbLevel]||[];var lvd=getLv(lbLevel);
-              if(!bd.length)return<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No scores yet for {lbLevel}!</p></div>;
+              if(!bd.length)return<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>🏆</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No scores yet</div><div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Be the first to complete a {lbLevel} quiz!</div><button onClick={function(){setLevel(lbLevel);doRestart();}} style={{...mkBtn(lvd?lvd.color:"#34d399","#0d0d1a"),marginTop:8}}>Play {lbLevel} Quiz</button></div>;
               return(<div style={CARD}>
                 <div style={{display:"flex",padding:"0 0 7px",borderBottom:"1px solid rgba(255,255,255,0.06)",marginBottom:5}}>
                   {["#","PLAYER","XP","%","TIME"].map(function(h,i){return<span key={h} style={{fontSize:10,color:"#4b5563",width:i===0?28:i===1?"1fr":i===2?55:i===3?36:46,flex:i===1?1:0,textAlign:i>1?"right":"left"}}>{h}</span>;})}
@@ -2893,7 +2893,7 @@ export default function App(){
             {/* REQUESTS */}
             {friendStage==="requests"&&(
               <div>
-                {myData.requests.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No pending friend requests.</p></div>}
+                {myData.requests.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>📬</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No pending requests</div><div style={{fontSize:13,color:"#6b7280"}}>Your friend requests are all set!</div></div>}
                 {myData.requests.map(function(from){
                   return(<div key={from} style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
                     <div style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#fff",flexShrink:0}}>{from[0].toUpperCase()}</div>
@@ -2908,7 +2908,7 @@ export default function App(){
             {/* FRIENDS LIST */}
             {friendStage==="list"&&(
               <div>
-                {myData.friends.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No friends yet. Search to add some!</p></div>}
+                {myData.friends.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>👋</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No friends yet</div><div style={{fontSize:13,color:"#6b7280"}}>Search to connect with other learners</div></div>}
                 {myData.friends.map(function(fname){
                   var fu=null;for(var i=0;i<allUsers.length;i++){if(allUsers[i].name===fname){fu=allUsers[i];break;}}
                   var fuGames=fu&&fu.games?fu.games:[];
@@ -3173,7 +3173,7 @@ export default function App(){
                 </div>);
               })}
             </div>)}
-            {games.length===0&&<div style={{...CARD,textAlign:"center",padding:30}}><p style={{color:"#6b7280"}}>No games yet - start playing!</p></div>}
+            {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>🎮</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No games yet</div><div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Start your learning journey</div><button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:8}}>Play Now</button></div>}
             {(function(){
               var myBadges=checkBadges(currentUser,vocab,myStreak);
               var earnedCount=BADGES.filter(function(b){return myBadges[b.id];}).length;
@@ -3508,7 +3508,7 @@ export default function App(){
                 </div>
               </div>
 
-              {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No data yet — complete your first quiz!</p></div>}
+              {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>📊</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No data yet</div><div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Complete quizzes to see your stats</div><button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:8}}>Start Playing</button></div>}
               <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>Start Reading</button>
             </div>
           );
