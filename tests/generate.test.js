@@ -76,11 +76,13 @@ describe("generate.js", () => {
     expect(body.content[0].text).toBe("Hello from Gemini");
   });
 
-  it("returns 500 when the Gemini API throws", async () => {
-    mockGenerateContent.mockRejectedValueOnce(new Error("rate limited"));
+  it("returns 500 when the Gemini API throws on all models", async () => {
+    mockGenerateContent.mockRejectedValue(new Error("rate limited"));
     const res = await handler(makeEvent());
     expect(res.statusCode).toBe(500);
     expect(JSON.parse(res.body).error).toMatch(/rate limited/);
+    mockGenerateContent.mockReset();
+    mockGenerateContent.mockResolvedValue({ response: { text: () => "Generated content" } });
   });
 
   it("passes custom model and max_tokens from body", async () => {

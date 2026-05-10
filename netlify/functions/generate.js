@@ -35,6 +35,7 @@ export const handler = async function (event) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "No message provided" }) };
   }
 
+  const maxOutputTokens = body.max_tokens || 4096;
   const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
   let lastError = "";
 
@@ -48,7 +49,7 @@ export const handler = async function (event) {
       const result = await Promise.race([
         model.generateContent({
           contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generationConfig: { maxOutputTokens: 4096 },
+          generationConfig: { maxOutputTokens },
         }),
         timeout,
       ]);
