@@ -7,7 +7,7 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
-const TIMEOUT_MS = 9000;
+const TIMEOUT_MS = 25000;
 
 export const handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -42,7 +42,7 @@ export const handler = async function (event) {
     const result = await Promise.race([
       model.generateContent({
         contents: [{ role: "user", parts: [{ text: userMessage }] }],
-        generationConfig: { maxOutputTokens: body.max_tokens || 2000 },
+        generationConfig: { maxOutputTokens: 4096 },
       }),
       timeout,
     ]);
