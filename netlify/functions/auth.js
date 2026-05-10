@@ -21,7 +21,7 @@ export const handler = async function (event) {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const secret = process.env.SESSION_SECRET || "";
+  const secret = process.env.SESSION_SECRET || process.env.FIREBASE_DB_SECRET || "";
   if (!secret) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "Auth not configured" }) };
 
   const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
@@ -58,7 +58,7 @@ export const handler = async function (event) {
     }
 
     // Fall back to old profile list (users registered before the auth separation)
-    const pr = await fetch(`${DB}/rq/rq-users-v6.json`);
+    const pr = await fetch(`${DB}/rq/rq-users-v6.json${fbAuth}`);
     const profiles = await pr.json();
     if (!Array.isArray(profiles)) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Invalid credentials" }) };

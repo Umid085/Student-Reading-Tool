@@ -23,7 +23,7 @@ export const handler = async function (event) {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const secret = process.env.SESSION_SECRET || "";
+  const secret = process.env.SESSION_SECRET || process.env.FIREBASE_DB_SECRET || "";
   const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
   if (!secret) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "Auth not configured" }) };
   if (!DB) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "DB not configured" }) };

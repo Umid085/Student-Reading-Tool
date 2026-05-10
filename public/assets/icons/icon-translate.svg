@@ -1,0 +1,30 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow-translate">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="bg-translate" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#06b6d415;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0e27;stop-opacity:0.5" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="64" height="64" fill="url(#bg-translate)" rx="12"/>
+  
+  <!-- Border -->
+  <rect width="64" height="64" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.6" rx="12"/>
+  
+  <!-- Inner glow circle -->
+  <circle cx="32" cy="32" r="24" fill="none" stroke="#06b6d4" stroke-width="1" opacity="0.3" filter="url(#glow-translate)"/>
+  
+  <!-- Icon emoji -->
+  <text x="32" y="36" font-size="28" text-anchor="middle" dominant-baseline="middle" filter="url(#glow-translate)">🌐</text>
+  
+  <!-- Label (optional - smaller size) -->
+  <text x="32" y="56" font-size="8" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif" fill="#06b6d4" opacity="0.7">Translate</text>
+</svg>

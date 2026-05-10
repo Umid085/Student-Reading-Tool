@@ -51,6 +51,7 @@ describe("auth.js", () => {
 
   it("returns 503 when SESSION_SECRET is not set", async () => {
     delete process.env.SESSION_SECRET;
+    delete process.env.FIREBASE_DB_SECRET;
     const handler = await loadHandler();
     const res = await handler(makeEvent({ body: JSON.stringify({ name: "Alice", hash: "abc" }) }));
     expect(res.statusCode).toBe(503);
