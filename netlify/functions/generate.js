@@ -35,7 +35,7 @@ export const handler = async function (event) {
 
   try {
     const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = client.getGenerativeModel({ model: body.model || "gemini-2.0-flash" });
+    const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const userMessage = body.messages?.[body.messages.length - 1]?.content || "";
 
