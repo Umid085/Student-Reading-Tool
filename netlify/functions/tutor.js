@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -31,8 +31,8 @@ export const handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method Not Allowed" }) };
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "ANTHROPIC_API_KEY not set" }) };
+  if (!process.env.GOOGLE_API_KEY) {
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "GOOGLE_API_KEY not set" }) };
   }
 
   let body;
@@ -46,17 +46,25 @@ export const handler = async function (event) {
   }
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const msg = await Promise.race([
-      client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 512,
-        system: SYSTEM(passage, topic || "General", level || "B1"),
-        messages,
-      }),
+    const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = client.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      systemInstruction: SYSTEM(passage, topic || "General", level || "B1"),
+    });
+
+    // Convert Anthropic-style messages to Gemini format; roles: user → user, assistant → model
+    const history = messages.slice(0, -1).map(function (m) {
+      return { role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] };
+    });
+    const lastMessage = messages[messages.length - 1].content;
+
+    const chat = model.startChat({ history });
+    const result = await Promise.race([
+      chat.sendMessage(lastMessage),
       new Promise((_, rej) => setTimeout(() => rej(new Error("Tutor timeout")), 10000)),
     ]);
-    const reply = msg.content[0]?.text || "";
+
+    const reply = result.response.text();
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ reply }) };
   } catch (e) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
