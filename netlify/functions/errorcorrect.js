@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -47,8 +47,8 @@ export const handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method Not Allowed" }) };
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "ANTHROPIC_API_KEY not set" }) };
+  if (!process.env.GOOGLE_API_KEY) {
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "GOOGLE_API_KEY not set" }) };
   }
 
   let body;
@@ -62,16 +62,16 @@ export const handler = async function (event) {
   }
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const msg = await Promise.race([
-      client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 1200,
-        messages: [{ role: "user", content: PROMPT(passage, topic || "General", level || "B1") }],
+    const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const result = await Promise.race([
+      model.generateContent({
+        contents: [{ role: "user", parts: [{ text: PROMPT(passage, topic || "General", level || "B1") }] }],
+        generationConfig: { maxOutputTokens: 1200 },
       }),
       new Promise((_, rej) => setTimeout(() => rej(new Error("Error correction timeout")), 12000)),
     ]);
-    const raw = msg.content[0]?.text || "";
+    const raw = result.response.text();
     const parsed = JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
     return { statusCode: 200, headers: CORS, body: JSON.stringify(parsed) };
   } catch (e) {
