@@ -78,21 +78,20 @@ function srsDueToday(word){
 }
 
 // ── pure helpers ─────────────────────────────────────────────
+function escapeHtml(text){if(!text)return"";return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#x27;");}
 function getLv(k){for(var i=0;i<LEVELS.length;i++){if(LEVELS[i].key===k)return LEVELS[i];}return LEVELS[0];}
 function formatTime(s){if(s<=0)return"0:00";var m=Math.floor(s/60),sec=s%60;return m+":"+(sec<10?"0":"")+sec;}
 function pctColor(p){return p>=80?"#22c55e":p>=60?"#f59e0b":"#ef4444";}
 async function enc(p){
-  try{
-    var buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(p));
-    return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,"0");}).join("");
-  }catch(e){return btoa(p);}
+  var buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(p));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,"0");}).join("");
 }
 
 function calcStreak(games) {
   if (!games||games.length===0) return 0;
-  var dates=[];
-  for(var i=0;i<games.length;i++){var d=games[i].date;if(dates.indexOf(d)===-1)dates.push(d);}
-  dates.sort(function(a,b){return new Date(b)-new Date(a);});
+  var dateSet=new Set();
+  for(var i=0;i<games.length;i++){dateSet.add(games[i].date);}
+  var dates=Array.from(dateSet).sort(function(a,b){return new Date(b)-new Date(a);});
   var today=new Date();today.setHours(0,0,0,0);
   var first=new Date(dates[0]);first.setHours(0,0,0,0);
   if(Math.round((today-first)/(864e5))>1)return 0;
@@ -107,11 +106,11 @@ function calcStreak(games) {
 }
 
 function calcStreakWithShields(games,shieldDates){
-  var dates=[];
-  for(var i=0;i<(games||[]).length;i++){var d=games[i].date;if(dates.indexOf(d)===-1)dates.push(d);}
-  for(var j=0;j<(shieldDates||[]).length;j++){if(dates.indexOf(shieldDates[j])===-1)dates.push(shieldDates[j]);}
-  if(!dates.length)return 0;
-  dates.sort(function(a,b){return new Date(b)-new Date(a);});
+  var dateSet=new Set();
+  for(var i=0;i<(games||[]).length;i++){dateSet.add(games[i].date);}
+  for(var j=0;j<(shieldDates||[]).length;j++){dateSet.add(shieldDates[j]);}
+  if(!dateSet.size)return 0;
+  var dates=Array.from(dateSet).sort(function(a,b){return new Date(b)-new Date(a);});
   var today=new Date();today.setHours(0,0,0,0);
   var first=new Date(dates[0]);first.setHours(0,0,0,0);
   if(Math.round((today-first)/(864e5))>1)return 0;
@@ -144,10 +143,10 @@ function getBestLevel(games){
 }
 
 function scoreQuestion(q,ans){
-  if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence"||q.type==="tfnm"||q.type==="ynng")return ans===q.answer?Q_XP[q.type]:0;
-  if(q.type==="matching"){var s=0;for(var i=0;i<q.correctPairs.length;i++){if(ans&&ans[i]===q.correctPairs[i])s++;}return s;}
-  if(q.type==="heading"){var h=0;for(var j=0;j<q.correctMap.length;j++){if(ans&&ans[j]===q.correctMap[j])h++;}return h;}
-  if(q.type==="qa"){if(!ans||ans.trim().length<3)return 0;var lo=ans.toLowerCase(),hits=0;for(var k=0;k<q.keywords.length;k++){if(lo.includes(q.keywords[k].toLowerCase()))hits++;}return hits>=Math.ceil(q.keywords.length/2)?Q_XP.qa:0;}
+  if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence"||q.type==="tfnm"||q.type==="ynng")return Number(ans)===Number(q.answer)?Q_XP[q.type]:0;
+  if(q.type==="matching"){var s=0;for(var i=0;i<q.correctPairs.length;i++){if(ans&&Number(ans[i])===Number(q.correctPairs[i]))s++;}return s;}
+  if(q.type==="heading"){if(!q.correctMap)return 0;var h=0;for(var j=0;j<q.correctMap.length;j++){if(ans&&Number(ans[j])===Number(q.correctMap[j]))h++;}return h;}
+  if(q.type==="qa"){if(!ans||ans.trim().length<3)return 0;var lo=ans.toLowerCase(),hits=0;for(var k=0;k<q.keywords.length;k++){if(lo.includes(q.keywords[k].toLowerCase()))hits++;} var threshold=Math.ceil(q.keywords.length/2);return hits>=threshold?Q_XP.qa:0;}
   return 0;
 }
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
@@ -373,8 +372,8 @@ var QUEST_POOL=[
 ];
 function getDayQuests(date){
   var seed=0;for(var i=0;i<date.length;i++)seed=seed*31+date.charCodeAt(i);
-  seed=Math.abs(seed);var n=QUEST_POOL.length,picked=[];
-  while(picked.length<3){var idx=seed%n;if(picked.indexOf(idx)===-1)picked.push(idx);seed=Math.abs(Math.floor(seed/n+seed*7+13))%99991;}
+  seed=Math.abs(seed);var n=QUEST_POOL.length,pickedSet=new Set(),picked=[];
+  while(picked.length<3){var idx=seed%n;if(!pickedSet.has(idx)){pickedSet.add(idx);picked.push(idx);}seed=Math.abs(Math.floor(seed/n+seed*7+13))%99991;}
   return picked.map(function(i){return QUEST_POOL[i];});
 }
 function checkQuest(id,todayGames,vocabCount,extras){
@@ -412,8 +411,10 @@ async function apiGet(key){
     if(!r.ok)throw new Error("not ok");
     var d=await r.json();
     if(d.value){
-      try{localStorage.setItem(key,d.value);}catch(e){}  // keep local cache in sync
-      return JSON.parse(d.value);
+      var parsed=null;
+      try{parsed=JSON.parse(d.value);}catch(parseErr){console.warn("Invalid JSON from Firebase for key "+key,parseErr);throw parseErr;}
+      if(parsed){try{localStorage.setItem(key,d.value);}catch(e){}}
+      return parsed;
     }
     return null;
   }catch(e){
@@ -433,18 +434,19 @@ async function apiSet(key,val){
     var hdrs={"Content-Type":"application/json"};
     if(_sessionToken)hdrs["Authorization"]="Bearer "+_sessionToken;
     var r=await fetch("/.netlify/functions/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
+    if(!r.ok&&r.status!==401){console.warn("Firebase write failed for key "+key+": status "+r.status);}
     if(r.status===401&&_sessionToken){
-      // Token expired — refresh silently and retry once
       var creds=null;try{creds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e2){}
       if(creds&&creds.name&&creds.hash){
         await getSessionToken(creds.name,creds.hash);
         if(_sessionToken){
           hdrs["Authorization"]="Bearer "+_sessionToken;
-          await fetch("/.netlify/functions/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
-        }
+          var r2=await fetch("/.netlify/functions/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
+          if(!r2.ok){console.warn("Firebase write retry failed for key "+key+": status "+r2.status);}
+        }else{console.warn("Token refresh failed for key "+key);}
       }
     }
-  }catch(e){}  // local already saved, silent fail on remote
+  }catch(e){console.warn("Firebase write error for key "+key+": "+e.message);}
 }
 async function loadUsers(){
   try{
@@ -453,10 +455,20 @@ async function loadUsers(){
   }catch(e){}
   try{var v=localStorage.getItem(USERS_KEY);return v?JSON.parse(v):[];}catch(e2){return [];}
 }
+function trimOldGames(users,maxGamesPerUser){
+  return users.map(function(usr){
+    if(!usr.games||usr.games.length<=maxGamesPerUser)return usr;
+    return Object.assign({},usr,{games:usr.games.slice(-maxGamesPerUser)});
+  });
+}
 async function saveUsers(u){
-  // Strip hash — credentials live in rq-auth-v6, not the public profile list
-  var profiles=u.map(function(usr){return {name:usr.name,games:usr.games,joined:usr.joined};});
-  await apiSet(USERS_KEY,profiles);
+  var trimmed=trimOldGames(u,150);
+  var profiles=trimmed.map(function(usr){return {name:usr.name,games:usr.games,joined:usr.joined};});
+  try{
+    await apiSet(USERS_KEY,profiles);
+  }catch(e){
+    console.warn("Failed to save users to Firebase, local save only",e);
+  }
 }
 async function loadBoards(){var v=await apiGet(BOARDS_KEY);return v||{};}
 async function saveBoards(b){await apiSet(BOARDS_KEY,b);}
@@ -1027,11 +1039,13 @@ export default function App(){
       if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}
       if(window.speechSynthesis){window.speechSynthesis.cancel();}
       setIsSpeaking(false);
-      // reset rsvp when leaving reading screen
       if(rsvpRef.current){clearInterval(rsvpRef.current);rsvpRef.current=null;}
       setRsvpActive(false);setRsvpIdx(0);setRsvpPaused(false);setRsvpDone(false);
     }
-    return function(){if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}};
+    return function(){
+      if(readingTimerRef.current){clearInterval(readingTimerRef.current);readingTimerRef.current=null;}
+      if(rsvpRef.current){clearInterval(rsvpRef.current);rsvpRef.current=null;}
+    };
   },[stage]);
 
   // rsvp ticker
@@ -1080,17 +1094,12 @@ export default function App(){
     setGoals(gd||{});
   },[currentUser]);
 
-  // always pull fresh users when entering friends page or typing a search
+  // pull fresh users when entering friends page or typing a search
   useEffect(function(){
     if(stage==="friends"&&currentUser){
       loadUsers().then(function(u){setAllUsers(u);});
     }
-  },[stage]);
-  useEffect(function(){
-    if(stage==="friends"&&currentUser&&searchQuery.trim().length>=2){
-      loadUsers().then(function(u){setAllUsers(u);});
-    }
-  },[searchQuery]);
+  },[stage,searchQuery,currentUser]);
 
   var lv=getLv(level);
   var q=questions&&questions.length>current?questions[current]:null;
@@ -1104,6 +1113,7 @@ export default function App(){
     var hash=await enc(passInput);
     var r=await fetch(REGISTER,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:hash})});
     var d=await r.json();
+    if(!d){setAuthErr("Server error: invalid response.");return;}
     if(r.status===429){setAuthErr("Too many attempts. Please wait 15 minutes.");return;}
     if(!r.ok){setAuthErr(d.error==="Username taken"?"Username taken.":(d.error||"Registration failed. Try again."));return;}
     _sessionToken=d.token;
@@ -1118,9 +1128,9 @@ export default function App(){
     setAuthErr("");
     if(!nameInput.trim()||!passInput.trim()){setAuthErr("Please enter name and password.");return;}
     var sha256=await enc(passInput);
-    var legacy=btoa(passInput);
-    var r=await fetch(AUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:sha256,legacy:legacy})});
+    var r=await fetch(AUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:sha256})});
     var d=await r.json();
+    if(!d){setAuthErr("Server error: invalid response.");return;}
     if(r.status===429){setAuthErr("Too many login attempts. Please wait 15 minutes.");return;}
     if(!r.ok){setAuthErr("User not found or wrong password.");return;}
     _sessionToken=d.token;
@@ -1375,12 +1385,15 @@ export default function App(){
   }
 
   async function doFinish(){
+    if(!currentUser){setStage("home");return;}
+    var currentMatchState=Object.assign({},matchState);
+    var currentHeadingState=Object.assign({},headingState);
     var timeSecs=startTimeRef.current?Math.round((Date.now()-startTimeRef.current)/1000):(lv?lv.timeLimit:180);
     var totalEarned=0,totalMax=0,ansArr=[],typeStats={};
     for(var i=0;i<questions.length;i++){
       var qs=questions[i],ans=null;
-      if(qs.type==="matching")ans=matchState;
-      else if(qs.type==="heading")ans=headingState;
+      if(qs.type==="matching")ans=currentMatchState;
+      else if(qs.type==="heading")ans=currentHeadingState;
       else ans=userAnswers[i]!==undefined?userAnswers[i]:null;
       var pts=scoreQuestion(qs,ans),mx=maxPoints(qs);
       ansArr.push(pts>=Math.ceil(mx/2));
@@ -1396,21 +1409,21 @@ export default function App(){
     var today=new Date().toLocaleDateString();
 
     var badgesBefore=checkBadges(currentUser,vocab,calcStreakWithShields(currentUser.games,shieldDates));
-    // quest bonus: check which quests complete with this game
     var tempTodayGames=currentUser.games.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
     var newQuestItems=[];
-    dailyQuests.forEach(function(qt){
-      if(questsDone[qt.id])return;
+    for(var qi=0;qi<dailyQuests.length;qi++){
+      var qt=dailyQuests[qi];
+      if(questsDone[qt.id])continue;
       if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreakWithShields(currentUser.games.concat([{date:today}]),shieldDates)})){
         newQuestItems.push(qt);finalXp+=qt.xp;
       }
-    });
+    }
     var wpm=getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs);
     var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
     var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
     var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
     await saveUsers(newUsers);setAllUsers(newUsers);setCurrentUser(updatedUser);
-    var prevStreakVal=calcStreakWithShields(currentUser.games,shieldDates);
+    var prevStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
     var newStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
     var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
     var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
@@ -1422,8 +1435,8 @@ export default function App(){
     localStorage.setItem(sKey2,JSON.stringify({shields:newShields,shieldDates:shieldDates,longestStreak:newLongest}));
 
     var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
-    var nb={};for(var k in boards){nb[k]=boards[k];}
-    var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,20);
+    var nb=Object.assign({},boards);
+    var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,100);
     await saveBoards(nb);setBoards(nb);
 
     // write challenge result back so challenger sees it
@@ -1585,7 +1598,7 @@ export default function App(){
       var dTypeEx={mcq:'{"type":"mcq","q":"?","options":["A","B","C","D"],"answer":0,"explanation":"Why."}',gap_word:'{"type":"gap_word","sentence":"The ___ rose.","options":["w1","w2","w3","w4"],"answer":1,"explanation":"Why."}',gap_sentence:'{"type":"gap_sentence","paragraph":"Start. ___ End.","options":["S1.","S2.","S3.","S4."],"answer":2,"explanation":"Why."}',matching:'{"type":"matching","instruction":"Match.","lefts":["T1","T2","T3"],"rights":["D1","D2","D3"],"correctPairs":[0,1,2],"explanation":"Why."}',heading:'{"type":"heading","instruction":"Match headings.","paragraphs":["P1...","P2..."],"headings":["H A","H B","H C"],"correctMap":[0,1],"explanation":"Why."}',qa:'{"type":"qa","q":"Explain X.","keywords":["k1","k2","k3"],"explanation":"Should mention..."}'};
       var dTL="",dEL="";for(var dti=0;dti<dTypes.length;dti++){dTL+=(dti+1)+". "+dTypeDescs[dTypes[dti]]+"\n";dEL+="    "+dTypeEx[dTypes[dti]]+(dti<dTypes.length-1?",":"")+"\\n";}
       var dPt="You are an expert language teacher. Level: B1.\nPassage: 140-160 words, moderate vocabulary, interesting topic for "+today+".\nPick a RANDOM varied topic.\n\nCreate EXACTLY "+dTypes.length+" question(s):\n"+dTL+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+dEL+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level B1 appropriate.";
-      var dRes=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2000,messages:[{role:"user",content:dPt}]})});
+      var dRes=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gemini-2.0-flash",max_tokens:2000,messages:[{role:"user",content:dPt}]})});
       var dData=await dRes.json();
       var dRaw="";if(dData.content){for(var di=0;di<dData.content.length;di++){if(dData.content[di].text)dRaw+=dData.content[di].text;}}
       var dJson=JSON.parse(dRaw.replace(/```json/g,"").replace(/```/g,"").trim());
