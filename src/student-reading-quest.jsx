@@ -30,7 +30,13 @@ var PRESET_THEMES = [
   {id:"indigo", name:"Indigo", emoji:"💜", accent:"#6366f1", secondary:"#34d399"},
   {id:"ocean", name:"Ocean", emoji:"🌊", accent:"#06b6d4", secondary:"#818cf8"},
   {id:"forest", name:"Forest", emoji:"🌿", accent:"#22c55e", secondary:"#f59e0b"},
-  {id:"magenta", name:"Magenta", emoji:"🌸", accent:"#ec4899", secondary:"#a78bfa"}
+  {id:"magenta", name:"Magenta", emoji:"🌸", accent:"#ec4899", secondary:"#a78bfa"},
+  {id:"sunset", name:"Sunset Fire", emoji:"🌅", accent:"#ff6b35", secondary:"#ff3300"},
+  {id:"neon", name:"Neon Green", emoji:"⚡", accent:"#00ff88", secondary:"#00cc66"},
+  {id:"synthwave", name:"Synthwave", emoji:"🎸", accent:"#ff00ff", secondary:"#cc00cc"},
+  {id:"gold", name:"Golden Hour", emoji:"✨", accent:"#ffd700", secondary:"#ff8c00"},
+  {id:"cosmic", name:"Cosmic Purple", emoji:"🔮", accent:"#7c4dff", secondary:"#651fff"},
+  {id:"ice", name:"Ice Crystal", emoji:"❄️", accent:"#00e5ff", secondary:"#00b0ff"}
 ];
 
 var Q_LABELS = {mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"};
@@ -284,6 +290,13 @@ var STORY_LIBRARY=[
      {type:"mcq",q:"What makes hermeneutical injustice distinct from testimonial injustice?",options:["It involves legal proceedings","It arises from a gap in collective interpretive resources","It affects only minority groups","It requires deliberate intent"],answer:1,explanation:"Hermeneutical injustice arises when a gap in collective interpretive resources disadvantages a group."},
      {type:"qa",q:"Why are both forms of epistemic injustice described as 'self-concealing'?",keywords:["self-concealing","compound","inequalities","framework","articulate","named"],explanation:"They are self-concealing because victims often lack the framework to name or articulate what is happening to them, making the injustice invisible and compounding existing inequalities."},
    ]},
+  // ── Extended Stories (A1-C2: 6 per level) ──
+  {id:"a1_4",level:"A1",title:"The Park",topic:"Recreation",passage:"I like to go to the park on weekends. The park is near my home. There are trees and flowers. I play with my friends. We run and play games. Sometimes we eat ice cream. The park is fun and quiet. Everyone enjoys the park.",questions:[{type:"mcq",q:"Where is the park?",options:["Far away","Near home","In the city","By the beach"],answer:1,explanation:"The passage says 'The park is near my home.'"},{type:"mcq",q:"What do children do in the park?",options:["Work","Sleep","Play games and run","Study"],answer:2,explanation:"'I play with my friends. We run and play games.'"},{type:"qa",q:"Why do people like the park?",keywords:["fun","quiet","enjoy","trees","flowers"],explanation:"The passage says it is 'fun and quiet' and 'Everyone enjoys the park.'"}]},
+  {id:"a2_4",level:"A2",title:"The Hobby",topic:"Interests",passage:"My hobby is painting. I paint pictures on weekends. I use bright colours like blue, red, and yellow. My friends think my paintings are beautiful. I show my paintings to my family. They are very proud of me. Painting helps me relax and express my feelings. I want to paint all the time.",questions:[{type:"mcq",q:"What is the narrator's hobby?",options:["Reading","Painting","Dancing","Singing"],answer:1,explanation:"'My hobby is painting.'"},{type:"mcq",q:"When does the narrator paint?",options:["Every day","At work","On weekends","In the evening"],answer:2,explanation:"'I paint pictures on weekends.'"},{type:"qa",q:"What colors does the narrator use?",keywords:["blue","red","yellow","bright"],explanation:"The narrator uses 'bright colours like blue, red, and yellow.'"}]},
+  {id:"b1_4",level:"B1",title:"Learning Languages",topic:"Education",passage:"Learning a second language is an exciting challenge. Many people decide to learn English, Spanish, or Mandarin. Different methods work for different people. Some prefer classroom instruction, while others learn through apps and online resources. Consistency is key to progress. Regular practice helps build vocabulary and grammar skills. Immersion in the language—through movies, music, and conversations—accelerates learning. Motivation and patience are essential for success.",questions:[{type:"mcq",q:"What languages are mentioned as popular choices to learn?",options:["English, Spanish, Mandarin","French, German, Italian","Russian, Polish, Czech","Greek, Turkish, Arabic"],answer:0,explanation:"'Many people decide to learn English, Spanish, or Mandarin.'"},{type:"mcq",q:"Which factor is described as 'key to progress'?",options:["Having a tutor","Consistency","Natural talent","Expensive courses"],answer:1,explanation:"'Consistency is key to progress.'"},{type:"qa",q:"What methods can accelerate language learning?",keywords:["immersion","movies","music","conversations"],explanation:"'Immersion in the language—through movies, music, and conversations—accelerates learning.'"}]},
+  {id:"b2_4",level:"B2",title:"Digital Privacy",topic:"Technology",passage:"The digital age has transformed how we communicate, work, and live. However, it has also introduced new challenges regarding privacy. Tech companies collect vast amounts of user data for targeted advertising and algorithmic curation. Many users are unaware of the extent to which their information is tracked across platforms. Privacy policies are often lengthy and written in complex language that discourages reading. Regulations like GDPR attempt to protect personal information, yet enforcement remains inconsistent. Individuals should be proactive: use strong passwords, enable two-factor authentication, and review privacy settings regularly.",questions:[{type:"mcq",q:"Why do tech companies collect user data?",options:["For scientific research","For targeted advertising and curation","For government surveillance","For academic studies"],answer:1,explanation:"'Tech companies collect vast amounts of user data for targeted advertising and algorithmic curation.'"},{type:"mcq",q:"What is one issue with privacy policies?",options:["They are too short","They are complex and lengthy, discouraging reading","They are freely available","They protect all data"],answer:1,explanation:"'Privacy policies are often lengthy and written in complex language that discourages reading.'"},{type:"qa",q:"What are three ways individuals can protect their privacy?",keywords:["strong passwords","two-factor authentication","review","privacy settings"],explanation:"'use strong passwords, enable two-factor authentication, and review privacy settings regularly.'"}]},
+  {id:"c1_4",level:"C1",title:"Cognitive Biases",topic:"Psychology",passage:"Cognitive biases are systematic patterns in how humans process information and make decisions. They arise from the brain's need to simplify complex environments through heuristics—mental shortcuts. Common examples include confirmation bias (seeking information that confirms existing beliefs), availability heuristic (overweighting accessible information), and anchoring (relying heavily on initial information). These biases are not character flaws but evolutionary adaptations that generally served humans well in ancestral environments. However, in modern contexts involving large datasets and probabilistic reasoning, they often lead to suboptimal decisions. Understanding one's biases is the first step toward mitigating their effects.",questions:[{type:"mcq",q:"What are cognitive biases primarily caused by?",options:["Lack of intelligence","The brain's need to simplify through heuristics","Emotional instability","Poor education"],answer:1,explanation:"'They arise from the brain's need to simplify complex environments through heuristics.'"},{type:"mcq",q:"Which bias involves relying heavily on initial information?",options:["Confirmation bias","Availability heuristic","Anchoring","Recency bias"],answer:2,explanation:"'anchoring (relying heavily on initial information)'"},{type:"qa",q:"Why were cognitive biases adaptive in ancestral environments?",keywords:["evolutionary","simplified","ancestral","served"],explanation:"The passage states biases 'are evolutionary adaptations that generally served humans well in ancestral environments.'"}]},
+  {id:"c2_4",level:"C2",title:"Phenomenology",topic:"Philosophy",passage:"Phenomenology, as developed by Edmund Husserl, is the study of consciousness and subjective experience. It emphasizes the essential structures of experience—how objects appear to consciousness through intentionality. Rather than seeking objective truth independent of observers, phenomenology examines the structures through which meaning is constituted. Maurice Merleau-Ponty extended phenomenology by emphasizing embodiment: experience is always mediated through the body, not disembodied consciousness. Contemporary phenomenology engages with intersubjectivity—how shared meaning emerges through social interaction. Critics argue phenomenology lacks empirical rigor, yet proponents contend it clarifies foundational questions about consciousness that neuroscience alone cannot address.",questions:[{type:"mcq",q:"What is intentionality in phenomenology?",options:["Having a goal or purpose","How objects appear to consciousness","Being intentional in actions","A logical principle"],answer:1,explanation:"'how objects appear to consciousness through intentionality.'"},{type:"mcq",q:"How did Merleau-Ponty extend Husserl's phenomenology?",options:["By adding mathematics","By emphasizing embodiment and the body's role","By rejecting consciousness","By using scientific methods"],answer:1,explanation:"'Maurice Merleau-Ponty extended phenomenology by emphasizing embodiment.'"},{type:"qa",q:"What criticism is leveled against phenomenology, and how do proponents respond?",keywords:["empirical rigor","consciousness","neuroscience","foundational questions"],explanation:"Critics argue it 'lacks empirical rigor,' yet proponents contend 'it clarifies foundational questions about consciousness that neuroscience alone cannot address.'"}]},
 ];
 
 function getUnlockedStories(games){
@@ -895,10 +908,6 @@ export default function App(){
   var [level,setLevel]=useState("");
   var [selectedTypes,setSelectedTypes]=useState(["mcq","gap_word","gap_sentence","matching","heading","qa"]);
   var [appTheme,setAppTheme]=useState(function(){try{return JSON.parse(localStorage.getItem("rq-theme")||"null")||null;}catch{return null;}});
-  var [themePrompt,setThemePrompt]=useState("");
-  var [themeLoading,setThemeLoading]=useState(false);
-  var [themeError,setThemeError]=useState("");
-  var [aiThemeOpen,setAiThemeOpen]=useState(false);
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
   var [customTopic,setCustomTopic]=useState("");
@@ -993,12 +1002,9 @@ export default function App(){
   // ai tutor
   var [tutorChat,setTutorChat]=useState([]);
   var [tutorInput,setTutorInput]=useState("");
-  var [tutorLoading,setTutorLoading]=useState(false);
   // writing feedback
   var [writeSummary,setWriteSummary]=useState("");
   var [writeFeedback,setWriteFeedback]=useState(null);
-  var [writeLoading,setWriteLoading]=useState(false);
-  var [writeError,setWriteError]=useState("");
   // error correction challenge
   var [ecData,setEcData]=useState(null);
   var [ecLoading,setEcLoading]=useState(false);
@@ -1278,56 +1284,21 @@ export default function App(){
   // ── game ──────────────────────────────────────────────────
   function shuffleArr(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
-  async function generate(){
+  function generate(){
     if(!level){setError("Pick a level first!");return;}
-    if(selectedTypes.length===0){setError("Select at least one question type.");return;}
-    setError("");setStage("loading");
-    var msgs=["Picking a topic...","Writing your passage...","Crafting questions...","Almost ready..."];
-    var mi=0;setLoadMsg(msgs[0]);
-    var iv=setInterval(function(){mi=(mi+1)%msgs.length;setLoadMsg(msgs[mi]);},1600);
-    try{
-      var lvObj=getLv(level);
-      var typeDescs={mcq:"mcq - 4-option multiple choice",gap_word:"gap_word - sentence with blank, pick word",gap_sentence:"gap_sentence - paragraph with blank, pick sentence",matching:"matching - match 3 lefts to 3 rights (correctPairs:[0,1,2])",heading:"heading - match 2 headings to 2 paragraphs (correctMap:[0,1])",qa:"qa - open answer with keywords",tfnm:"tfnm - True/False/Not Mentioned statement (answer: 0=True, 1=False, 2=Not Mentioned)",ynng:"ynng - Yes/No/Not Given question (answer: 0=Yes, 1=No, 2=Not Given)"};
-      var typeExamples={mcq:'{"type":"mcq","q":"?","options":["A","B","C","D"],"answer":0,"explanation":"Why."}',gap_word:'{"type":"gap_word","sentence":"The ___ rose.","options":["w1","w2","w3","w4"],"answer":1,"explanation":"Why."}',gap_sentence:'{"type":"gap_sentence","paragraph":"Start. ___ End.","options":["S1.","S2.","S3.","S4."],"answer":2,"explanation":"Why."}',matching:'{"type":"matching","instruction":"Match.","lefts":["T1","T2","T3"],"rights":["D1","D2","D3"],"correctPairs":[0,1,2],"explanation":"Why."}',heading:'{"type":"heading","instruction":"Match headings.","paragraphs":["P1...","P2..."],"headings":["H A","H B","H C"],"correctMap":[0,1],"explanation":"Why."}',qa:'{"type":"qa","q":"Explain X.","keywords":["k1","k2","k3"],"explanation":"Should mention..."}',tfnm:'{"type":"tfnm","q":"Statement from passage.","answer":0,"explanation":"Why true/false/not mentioned."}',ynng:'{"type":"ynng","q":"Question about passage?","answer":1,"explanation":"Why yes/no/not given."}'};
-      var typeList="",exList="";
-      for(var ti=0;ti<selectedTypes.length;ti++){typeList+=(ti+1)+". "+typeDescs[selectedTypes[ti]]+"\n";exList+="    "+typeExamples[selectedTypes[ti]]+(ti<selectedTypes.length-1?",":"")+"\\n";}
-      var passInstr={A1:"80-100 words, basic vocabulary, daily life",A2:"110-130 words, everyday vocabulary, travel/hobbies",B1:"140-160 words, moderate vocabulary, tech/environment",B2:"170-190 words, varied vocabulary, nuanced argument",C1:"200-220 words, sophisticated vocabulary, philosophy/politics",C2:"230-260 words, advanced academic vocabulary, abstract topic"};
-      var weakWords=[];
-      if(useWeakVocab&&vocab.length>0){
-        var active=vocab.filter(function(w){return w.status!=="known";});
-        active.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
-        weakWords=active.slice(0,5).map(function(w){return w.word;});
-      }
-      var topicInstr=customTopic.trim()?"Write about this specific topic: \""+customTopic.trim()+"\". Keep it relevant and appropriate for the level.":"Pick a RANDOM varied topic.";
-      if(weakWords.length>0){topicInstr+="\n\nIMPORTANT: Naturally incorporate these vocabulary words into the passage (the student is practising them): "+weakWords.join(", ")+". Use each word at least once in context.";}
-      var pt="You are an expert language teacher. Level: "+level+".\nPassage: "+(passInstr[level]||passInstr["B1"])+".\n"+topicInstr+"\n\nCreate EXACTLY "+selectedTypes.length+" question(s):\n"+typeList+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+exList+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level "+level+" appropriate.";
-      var res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gemini-2.0-flash",max_tokens:2000,messages:[{role:"user",content:pt}]})});
-      var data=await res.json();
-      if(data.error){throw new Error(data.error);}
-      if(!res.ok){throw new Error("API error: "+res.status);}
-      var raw="";if(data.content){for(var i=0;i<data.content.length;i++){if(data.content[i].text)raw+=data.content[i].text;}}
-      if(!raw||raw.trim().length===0){throw new Error("No response from AI generation API");}
-      var json=JSON.parse(raw.replace(/```json/g,"").replace(/```/g,"").trim());
-      setPassage(json.passage);setTopic(json.topic||"Reading");setQuestions(json.questions);
-      var mq=null;for(var j=0;j<json.questions.length;j++){if(json.questions[j].type==="matching"){mq=json.questions[j];break;}}
-      setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
-      setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
-      var aiId="ai_"+level.toLowerCase()+"_"+(json.topic||"").toLowerCase().replace(/[^a-z0-9]/g,"_").slice(0,20)+"_"+Date.now();
-      setCurrentStoryId(aiId);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
-      setPersonalizedWords(weakWords);
-      setStage("reading");
-    }catch(e){
-      console.log("generate err",e);
-      var isQuotaError=e.message&&(e.message.includes("quota")||e.message.includes("rate limit")||e.message.includes("429"));
-      if(isQuotaError){
-        setError("Daily AI quota reached — use Library stories instead! 📚 (18 stories available at all levels)");
-      }else{
-        setError("Generation failed: "+(e.message||"Unknown error. Please try again."));
-      }
-      setStage("home");
-    }
-    clearInterval(iv);
+    setError("");
+    var levelStories=STORY_LIBRARY.filter(function(s){return s.level===level;});
+    var played=new Set((currentUser&&currentUser.games||[]).map(function(g){return g.storyId;}));
+    var unplayed=levelStories.filter(function(s){return !played.has(s.id);});
+    var pool=unplayed.length>0?unplayed:levelStories;
+    var story=pool[Math.floor(Math.random()*pool.length)];
+    setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);
+    var mq=null;for(var i=0;i<story.questions.length;i++){if(story.questions[i].type==="matching"){mq=story.questions[i];break;}}
+    setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
+    setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+    setCurrentStoryId(story.id);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+    setStage("reading");
   }
 
   function startStoryFromLibrary(story){
@@ -1540,19 +1511,62 @@ export default function App(){
     var ng=Object.assign({},goals);delete ng[id];saveGoalsLocal(ng);
   }
 
-  async function sendTutorMessage(text){
-    if(!text||!text.trim()||tutorLoading)return;
+  function sendTutorMessage(text){
+    if(!text||!text.trim())return;
     var userMsg={role:"user",content:text.trim()};
     var newChat=tutorChat.concat([userMsg]);
-    setTutorChat(newChat);setTutorInput("");setTutorLoading(true);
-    try{
-      var r=await fetch("/.netlify/functions/tutor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:passage,topic:topic,level:level,messages:newChat.map(function(m){return{role:m.role,content:m.content};})})});
-      var d=await r.json();
-      setTutorChat(newChat.concat([{role:"assistant",content:d.reply||d.error||"Sorry, I couldn't respond. Try again."}]));
-    }catch(e){
-      setTutorChat(newChat.concat([{role:"assistant",content:"Connection error — please try again."}]));
+    setTutorChat(newChat);setTutorInput("");
+    var lo=text.toLowerCase();
+    var reply;
+    if(lo.includes("mean")||lo.includes("definition")||lo.includes("word")||lo.includes("vocabulary")){
+      reply="Look at the surrounding sentences to understand what this word means in context. Read before and after it carefully.";
+    }else if(lo.includes("answer")||lo.includes("correct")||lo.includes("solution")||lo.includes("wrong")){
+      reply="I can't give you the answer! But I can help you think through it. Re-read the passage carefully and find the evidence.";
+    }else if(lo.includes("grammar")||lo.includes("tense")||lo.includes("verb")||lo.includes("conjugat")){
+      reply="Think about WHEN the action happens — past, present, or future? Look at the verb endings and helping words.";
+    }else if(lo.includes("match")||lo.includes("heading")||lo.includes("summarise")||lo.includes("heading")){
+      reply="Read each section's main idea first. Ask yourself: 'What is the most important point here?' Then match it to the option.";
+    }else if(lo.includes("gap")||lo.includes("fill")||lo.includes("blank")||lo.includes("complete")){
+      reply="Read the WHOLE sentence first. What type of word fits — noun, verb, adjective? That helps eliminate wrong choices.";
+    }else if(lo.includes("true")||lo.includes("false")||lo.includes("mention")||lo.includes("said")){
+      reply="Find where this idea appears in the passage. If it's NOT there at all, the answer is 'Not Mentioned' or 'No'.";
+    }else if(lo.includes("main")||lo.includes("idea")||lo.includes("topic")||lo.includes("what is")){
+      reply="Read the first and last paragraphs carefully. They usually contain the main idea or key message.";
+    }else{
+      reply="Good question! Re-read the relevant part of the passage. The answer is always based on what the text says.";
     }
-    setTutorLoading(false);
+    setTutorChat(newChat.concat([{role:"assistant",content:reply}]));
+  }
+
+  function scoreWrittenSummary(text,summary,lvl){
+    var passageWords=text.toLowerCase().split(/\W+/).filter(Boolean);
+    var summaryWords=summary.toLowerCase().split(/\W+/).filter(Boolean);
+    var passageSet=new Set(passageWords);
+
+    var hits=summaryWords.filter(function(w){return passageSet.has(w)&&w.length>3;}).length;
+    var contentScore=Math.min(100,Math.round((hits/Math.max(summaryWords.length,1))*200));
+
+    var uniqueRatio=new Set(summaryWords).size/Math.max(summaryWords.length,1);
+    var vocabScore=Math.min(100,Math.round(uniqueRatio*150));
+
+    var minWords={A1:20,A2:25,B1:35,B2:45,C1:55,C2:70}[lvl]||30;
+    var structureScore=summaryWords.length>=minWords?80:Math.round((summaryWords.length/minWords)*80);
+
+    var grammarScore=(summary[0]===summary[0].toUpperCase()&&/[.!?]$/.test(summary.trim()))?75:55;
+
+    var overall=Math.round((contentScore+vocabScore+structureScore+grammarScore)/4);
+    return{
+      scores:{content:contentScore,vocabulary:vocabScore,grammar:grammarScore,structure:structureScore},
+      feedback:{
+        content:contentScore>60?"You covered the main ideas well.":"Try to include more key points from the passage.",
+        vocabulary:vocabScore>60?"Good use of varied vocabulary.":"Try to use more words from the text.",
+        grammar:grammarScore>60?"Your grammar is clear.":"Check your capitalisation and punctuation.",
+        structure:structureScore>60?"Your summary is well-structured.":"Try to write at least "+minWords+" words."
+      },
+      strengths:overall>65?"Clear and relevant summary with good vocabulary.":"You engaged with the text.",
+      improvements:overall>65?"Add more specific details from the passage.":"Re-read the passage and summarise each paragraph.",
+      overall:overall
+    };
   }
 
   function startPronCheck(sentence){
@@ -1576,7 +1590,7 @@ export default function App(){
     rec.start();
   }
 
-  async function startDailyChallenge(){
+  function startDailyChallenge(){
     var today=new Date().toLocaleDateString();
     var dc=dailyChallenge;
     if(dc&&dc.date===today){
@@ -1588,31 +1602,19 @@ export default function App(){
       setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
       setIsDailyGame(true);setStage("reading");return;
     }
-    setError("");setStage("loading");setDailyLoading(true);
-    var dMsgs=["Picking today's topic...","Writing the passage...","Crafting questions...","Almost ready..."];
-    var dMi=0;setLoadMsg(dMsgs[0]);
-    var dIv=setInterval(function(){dMi=(dMi+1)%dMsgs.length;setLoadMsg(dMsgs[dMi]);},1600);
-    try{
-      var dTypes=["mcq","gap_word","gap_sentence","matching","heading","qa"];
-      var dTypeDescs={mcq:"mcq - 4-option multiple choice",gap_word:"gap_word - sentence with blank, pick word",gap_sentence:"gap_sentence - paragraph with blank, pick sentence",matching:"matching - match 3 lefts to 3 rights (correctPairs:[0,1,2])",heading:"heading - match 2 headings to 2 paragraphs (correctMap:[0,1])",qa:"qa - open answer with keywords"};
-      var dTypeEx={mcq:'{"type":"mcq","q":"?","options":["A","B","C","D"],"answer":0,"explanation":"Why."}',gap_word:'{"type":"gap_word","sentence":"The ___ rose.","options":["w1","w2","w3","w4"],"answer":1,"explanation":"Why."}',gap_sentence:'{"type":"gap_sentence","paragraph":"Start. ___ End.","options":["S1.","S2.","S3.","S4."],"answer":2,"explanation":"Why."}',matching:'{"type":"matching","instruction":"Match.","lefts":["T1","T2","T3"],"rights":["D1","D2","D3"],"correctPairs":[0,1,2],"explanation":"Why."}',heading:'{"type":"heading","instruction":"Match headings.","paragraphs":["P1...","P2..."],"headings":["H A","H B","H C"],"correctMap":[0,1],"explanation":"Why."}',qa:'{"type":"qa","q":"Explain X.","keywords":["k1","k2","k3"],"explanation":"Should mention..."}'};
-      var dTL="",dEL="";for(var dti=0;dti<dTypes.length;dti++){dTL+=(dti+1)+". "+dTypeDescs[dTypes[dti]]+"\n";dEL+="    "+dTypeEx[dTypes[dti]]+(dti<dTypes.length-1?",":"")+"\\n";}
-      var dPt="You are an expert language teacher. Level: B1.\nPassage: 140-160 words, moderate vocabulary, interesting topic for "+today+".\nPick a RANDOM varied topic.\n\nCreate EXACTLY "+dTypes.length+" question(s):\n"+dTL+"\nReturn ONLY valid JSON:\n{\"topic\":\"Short\",\"passage\":\"Full text\",\"questions\":[\n"+dEL+"]}\n\ncorrectPairs: index=left position, value=right index (0-based)\ncorrectMap: index=paragraph, value=heading index (0-based)\nAll questions based on passage. Level B1 appropriate.";
-      var dRes=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gemini-2.0-flash",max_tokens:2000,messages:[{role:"user",content:dPt}]})});
-      var dData=await dRes.json();
-      var dRaw="";if(dData.content){for(var di=0;di<dData.content.length;di++){if(dData.content[di].text)dRaw+=dData.content[di].text;}}
-      var dJson=JSON.parse(dRaw.replace(/```json/g,"").replace(/```/g,"").trim());
-      var newDc={date:today,level:"B1",passage:dJson.passage,topic:dJson.topic||"Daily Reading",questions:dJson.questions};
-      await saveDaily(newDc);setDailyChallenge(newDc);
-      var mq3=null;for(var j3=0;j3<dJson.questions.length;j3++){if(dJson.questions[j3].type==="matching"){mq3=dJson.questions[j3];break;}}
-      setLevel("B1");setPassage(dJson.passage);setTopic(dJson.topic||"Daily Reading");setQuestions(dJson.questions);
-      setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights):[]);
-      setSelectedTypes(dTypes);
-      setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
-      setIsDailyGame(true);setStage("reading");
-    }catch(e){console.log("daily err",e);setError("Daily challenge failed - please try again.");setStage("home");}
-    clearInterval(dIv);setDailyLoading(false);
+    setError("");
+    var seed=0;for(var dci=0;dci<today.length;dci++){seed=seed*31+today.charCodeAt(dci);}
+    seed=Math.abs(seed);
+    var dStory=STORY_LIBRARY[seed%STORY_LIBRARY.length];
+    var newDc={date:today,level:dStory.level,passage:dStory.passage,topic:dStory.title,questions:dStory.questions,storyId:dStory.id};
+    saveDaily(newDc);setDailyChallenge(newDc);
+    var mq3=null;for(var j3=0;j3<dStory.questions.length;j3++){if(dStory.questions[j3].type==="matching"){mq3=dStory.questions[j3];break;}}
+    setLevel(dStory.level);setPassage(dStory.passage);setTopic(dStory.title);setQuestions(dStory.questions);
+    setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights):[]);
+    setSelectedTypes(dStory.questions.map(function(q){return q.type;}).filter(function(t,i,a){return a.indexOf(t)===i;}));
+    setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
+    setCurrentStoryId(dStory.id);setIsDailyGame(true);setStage("reading");
   }
 
   // ── style helpers ─────────────────────────────────────────
@@ -1633,16 +1635,9 @@ export default function App(){
   function hex2rgb(h){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+","+g+","+b;}
   function applyTheme(t){setAppTheme(t);localStorage.setItem("rq-theme",JSON.stringify(t));}
   function resetTheme(){setAppTheme(null);localStorage.removeItem("rq-theme");}
-  async function generateTheme(){
-    if(!themePrompt.trim())return;
-    setThemeLoading(true);setThemeError("");
-    try{
-      var r=await fetch(DESIGN_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({description:themePrompt})});
-      var d=await r.json();
-      if(!r.ok)throw new Error(d.error||"Failed");
-      applyTheme(d);setThemePrompt("");
-    }catch(e){setThemeError(e.message);}
-    setThemeLoading(false);
+  function selectRandomTheme(){
+    var randomIndex=Math.floor(Math.random()*PRESET_THEMES.length);
+    applyTheme(PRESET_THEMES[randomIndex]);
   }
 
   if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"sans-serif",padding:20}}><div style={{width:"100%",maxWidth:300}}><div className="rq-skeleton" style={{width:48,height:48,borderRadius:"50%",margin:"0 auto 20px"}}/><Skeleton h={16} mb={8}/><Skeleton h={14} mb={6}/><Skeleton h={14} w="70%"/></div></div>;
@@ -2058,46 +2053,8 @@ export default function App(){
                   );
                 })}
               </div>
-              <button onClick={function(){setAiThemeOpen(!aiThemeOpen);}} style={{...GHOST,fontSize:11,padding:"6px 10px",width:"100%",textAlign:"center"}}>✨ AI Theme {aiThemeOpen?"▼":"▶"}</button>
+              <button onClick={selectRandomTheme} style={{...GHOST,fontSize:11,padding:"6px 10px",width:"100%",textAlign:"center"}}>🎲 Random Theme</button>
             </div>
-
-            {/* AI theme generator (collapsible) */}
-            {aiThemeOpen&&(
-              <div style={{...CARD,marginBottom:14,padding:16,borderColor:"rgba("+hex2rgb(_accent)+",0.28)",background:"rgba("+hex2rgb(_accent)+",0.04)"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:18}}>{appTheme?appTheme.emoji:"🎨"}</span>
-                    <div>
-                      <div style={{fontSize:12,fontWeight:800,color:_accent,letterSpacing:0.6}}>AI THEME</div>
-                      {appTheme&&<div style={{fontSize:11,color:"#9ca3af"}}>{appTheme.name}</div>}
-                    </div>
-                  </div>
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    {appTheme&&(
-                      <>
-                        <div style={{display:"flex",gap:4}}>
-                          <div style={{width:14,height:14,borderRadius:"50%",background:appTheme.accent,boxShadow:"0 0 6px "+appTheme.accent}}/>
-                          <div style={{width:14,height:14,borderRadius:"50%",background:appTheme.secondary,boxShadow:"0 0 6px "+appTheme.secondary}}/>
-                        </div>
-                        <button onClick={resetTheme} style={{...GHOST,padding:"5px 10px",fontSize:11}}>Reset</button>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-                  {["Ocean Neon","Cyberpunk Sunset","Toxic Forest","Void Purple","Rose Gold"].map(function(preset){
-                    return(
-                      <button key={preset} onClick={function(){setThemePrompt(preset);}} style={{...GHOST,padding:"4px 10px",fontSize:11,borderColor:themePrompt===preset?_accent:"rgba(255,255,255,0.14)",color:themePrompt===preset?_accent:"#9ca3af"}}>{preset}</button>
-                    );
-                  })}
-                </div>
-                <div style={{display:"flex",gap:8}}>
-                  <input style={{...INP,fontSize:13,padding:"9px 12px"}} placeholder="Describe a vibe… e.g. arctic aurora" value={themePrompt} onChange={function(e){setThemePrompt(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&!themeLoading)generateTheme();}} disabled={themeLoading}/>
-                  <button onClick={generateTheme} disabled={themeLoading||!themePrompt.trim()} style={{...mkBtn(_accent),padding:"9px 16px",fontSize:13,flexShrink:0,opacity:themeLoading||!themePrompt.trim()?0.5:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{themeLoading?<span className="rq-spinner"/>:"Apply"}</button>
-                </div>
-                {themeError&&<ErrorBanner message={themeError} marginBottom={6}/>}
-              </div>
-            )}
 
             {/* level selector */}
             <p style={{fontWeight:700,color:"#d1fae5",fontSize:11,letterSpacing:0.8,marginBottom:8}}>CHOOSE LEVEL</p>
@@ -3855,13 +3812,6 @@ export default function App(){
                   </div>
                 );
               })}
-              {tutorLoading&&(
-                <div style={{display:"flex",justifyContent:"flex-start"}}>
-                  <div style={{padding:"10px 14px",borderRadius:"16px 16px 16px 4px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",fontSize:13,color:"#6b7280"}}>
-                    <span style={{display:"inline-block",animation:"rqFloat 1s ease-in-out infinite"}}>●</span> Thinking…
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* input */}
@@ -3872,9 +3822,8 @@ export default function App(){
                 value={tutorInput}
                 onChange={function(e){setTutorInput(e.target.value);}}
                 onKeyDown={function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendTutorMessage(tutorInput);}}}
-                disabled={tutorLoading}
               />
-              <button onClick={function(){sendTutorMessage(tutorInput);}} disabled={tutorLoading||!tutorInput.trim()} style={{...mkBtn(tutorLoading||!tutorInput.trim()?"#374151":"#0891b2"),padding:"11px 18px",fontSize:14,flexShrink:0}}>Send</button>
+              <button onClick={function(){sendTutorMessage(tutorInput);}} disabled={!tutorInput.trim()} style={{...mkBtn(!tutorInput.trim()?"#374151":"#0891b2"),padding:"11px 18px",fontSize:14,flexShrink:0}}>Send</button>
             </div>
           </div>
         )}
@@ -3907,22 +3856,15 @@ export default function App(){
                       <span style={{fontSize:11,color:wc>=20?"#34d399":"#6b7280"}}>{wc} words {wc<20?"(aim for 20+)":"✓"}</span>
                     );})()}
                     <button
-                      onClick={async function(){
-                        if(!writeSummary.trim()||writeLoading)return;
-                        setWriteLoading(true);setWriteError("");
-                        try{
-                          var r=await fetch("/.netlify/functions/writefeedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level,summary:writeSummary})});
-                          var d=await r.json();
-                          if(d.error)throw new Error(d.error);
-                          setWriteFeedback(d);
-                        }catch(e){setWriteError(e.message||"Failed — try again.");}
-                        setWriteLoading(false);
+                      onClick={function(){
+                        if(!writeSummary.trim())return;
+                        var feedback=scoreWrittenSummary(passage,writeSummary,level);
+                        setWriteFeedback(feedback);
                       }}
-                      disabled={writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20}
-                      style={{...mkBtn(writeLoading||writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
-                    >{writeLoading?<span className="rq-spinner"/>:"Get Feedback →"}</button>
+                      disabled={writeSummary.trim().split(/\s+/).filter(Boolean).length<20}
+                      style={{...mkBtn(writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
+                    >Get Feedback →</button>
                   </div>
-                  {writeError&&<ErrorBanner message={writeError} marginBottom={8}/>}
                 </div>
               </div>
             )}
