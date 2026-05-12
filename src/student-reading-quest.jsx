@@ -1997,9 +1997,13 @@ export default function App(){
       var r=await fetch("/.netlify/functions/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:customText.trim(),level:level||"B1",types:selectedTypes.slice(0,3)})});
       var d=await r.json();
       if(!r.ok||d.error)throw new Error(d.error||"Failed to generate quiz");
+      // reset all quiz state before launching
       setPassage(customText.trim());setTopic(d.topic||"Custom Passage");
-      setQuestions(d.questions||[]);setCustomTextOpen(false);setCustomText("");
-      setCustomTextLoading(false);
+      setQuestions(d.questions||[]);setCurrentStoryId(null);setShuffledRights([]);
+      setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setTimeExpired(false);setResult(null);
+      setCustomTextOpen(false);setCustomText("");setCustomTextLoading(false);
+      setAutoVocabWords([]);setAutoVocabDismissed(false);
       startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");
     }catch(e){
       setCustomTextError(e.message||"Failed — try again.");setCustomTextLoading(false);
@@ -3476,9 +3480,9 @@ export default function App(){
                     </div>
                     <div style={{display:"flex",gap:5}}>
                       <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>View</button>
-                      {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>Add</button>}
-                      {requested&&<span style={{fontSize:11,color:"#6b7280",padding:"5px 0"}}>Pending</span>}
-                      {isFriend&&<span style={{fontSize:11,color:"#34d399",padding:"5px 0"}}>Friends</span>}
+                      {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>+ Add</button>}
+                      {requested&&<span style={{background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.5)",color:"#a78bfa",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>📨 Sent</span>}
+                      {isFriend&&<span style={{background:"rgba(52,211,153,0.15)",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>✓ Friends</span>}
                     </div>
                   </div>);
                 })}
@@ -3631,8 +3635,8 @@ export default function App(){
 
             {/* actions */}
             <div style={{display:"flex",gap:7,marginBottom:12,flexWrap:"wrap"}}>
-              {!isFriend&&!requested&&<button onClick={function(){sendRequest(viewingUser);}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12,minWidth:100}}>Add Friend</button>}
-              {requested&&<button disabled style={{...mkBtn("#374151"),flex:1,fontSize:12,minWidth:100}}>Request Sent</button>}
+              {!isFriend&&!requested&&<button onClick={function(){sendRequest(viewingUser);}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12,minWidth:100}}>+ Add Friend</button>}
+              {requested&&<div style={{flex:1,minWidth:100,background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.5)",borderRadius:12,padding:"10px 12px",textAlign:"center",fontSize:12,fontWeight:700,color:"#a78bfa"}}>📨 Request Sent</div>}
               {isFriend&&<button onClick={function(){removeFriend(viewingUser);setStage("friends");}} style={{...mkBtn("#374151"),flex:1,fontSize:12,minWidth:100}}>Remove Friend</button>}
               <button onClick={function(){likeProfile(viewingUser);}} disabled={alreadyLiked||viewingUser===currentUser.name} style={{...mkBtn(alreadyLiked?"#374151":"#ec4899"),flex:1,fontSize:12,minWidth:90,transition:"all 0.2s ease",transform:alreadyLiked?"scale(0.98)":"scale(1)"}}>{alreadyLiked?"❤️ Liked":"❤️ Like"}</button>
               {isFriend&&<button onClick={function(){setChallengeTarget(viewingUser);setStage("friends");setFriendStage("list");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12,minWidth:100}}>Challenge</button>}
@@ -3664,18 +3668,18 @@ export default function App(){
             )}
 
             {/* game history chart */}
-            {fu.games.length>0&&(
+            {fuGames.length>0&&(
               <div style={{marginBottom:12}}>
                 <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>XP HISTORY</p>
-                <GameChart games={fu.games}/>
+                <GameChart games={fuGames}/>
               </div>
             )}
 
             {/* recent games */}
-            {fu.games.length>0&&(
+            {fuGames.length>0&&(
               <div style={{...CARD,marginBottom:12}}>
                 <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>RECENT GAMES</p>
-                {fu.games.slice().reverse().slice(0,6).map(function(g,i){
+                {fuGames.slice().reverse().slice(0,6).map(function(g,i){
                   var glv=getLv(g.level);
                   return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:i<5?"1px solid rgba(255,255,255,0.05)":"none"}}>
                     <span style={{fontSize:11,fontWeight:900,color:glv.color,width:20}}>{g.level}</span>
@@ -3685,7 +3689,7 @@ export default function App(){
                 })}
               </div>
             )}
-            {fu.games.length===0&&<div style={{...CARD,textAlign:"center",padding:28}}><p style={{color:"#6b7280"}}>No games played yet.</p></div>}
+            {fuGames.length===0&&<div style={{...CARD,textAlign:"center",padding:28}}><p style={{color:"#6b7280"}}>No games played yet.</p></div>}
           </div>);
         })()}
 
