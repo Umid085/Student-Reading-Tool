@@ -478,25 +478,28 @@ async function saveUsers(u){
   var trimmed=trimOldGames(u,150);
   var profiles=trimmed.map(function(usr){return {name:usr.name,games:usr.games,joined:usr.joined};});
   try{
+    localStorage.setItem(USERS_KEY,JSON.stringify(profiles));
+  }catch(e){}
+  try{
     await apiSet(USERS_KEY,profiles);
   }catch(e){
     console.warn("Failed to save users to Firebase, local save only",e);
   }
 }
-async function loadBoards(){var v=await apiGet(BOARDS_KEY);return v||{};}
-async function saveBoards(b){await apiSet(BOARDS_KEY,b);}
+async function loadBoards(){try{var v=await apiGet(BOARDS_KEY);if(v)return v;}catch(e){}try{var lv=localStorage.getItem(BOARDS_KEY);return lv?JSON.parse(lv):{};}catch(e2){return {};}}
+async function saveBoards(b){try{localStorage.setItem(BOARDS_KEY,JSON.stringify(b));}catch(e){}try{await apiSet(BOARDS_KEY,b);}catch(e){console.warn("saveBoards failed:",e);}}
 async function loadSocial(){var v=await apiGet(SOCIAL_KEY);return v||{};}
-async function saveSocial(s){await apiSet(SOCIAL_KEY,s);}
+async function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}try{await apiSet(SOCIAL_KEY,s);}catch(e){console.warn("saveSocial failed:",e);}}
 async function loadVocab(){var v=await apiGet(VOCAB_KEY);return v||{};}
 async function saveVocab(v){await apiSet(VOCAB_KEY,v);}
 async function loadDaily(){var v=await apiGet(DAILY_KEY);return v||null;}
-async function saveDaily(d){await apiSet(DAILY_KEY,d);}
-async function loadDailyLb(){var v=await apiGet(DAILY_LB_KEY);return v||{};}
-async function saveDailyLb(d){await apiSet(DAILY_LB_KEY,d);}
+async function saveDaily(d){try{localStorage.setItem(DAILY_KEY,JSON.stringify(d));}catch(e){}try{await apiSet(DAILY_KEY,d);}catch(e){console.warn("saveDaily failed:",e);}}
+async function loadDailyLb(){try{var v=await apiGet(DAILY_LB_KEY);if(v)return v;}catch(e){}try{var lv=localStorage.getItem(DAILY_LB_KEY);return lv?JSON.parse(lv):{};}catch(e2){return {};}}
+async function saveDailyLb(d){try{localStorage.setItem(DAILY_LB_KEY,JSON.stringify(d));}catch(e){}try{await apiSet(DAILY_LB_KEY,d);}catch(e){console.warn("saveDailyLb failed:",e);}}
 async function loadFavs(){var v=await apiGet(FAVS_KEY);return v||{};}
 async function saveFavs(v){await apiSet(FAVS_KEY,v);}
-async function loadWeeklyLb(){var v=await apiGet(WEEKLY_KEY);return v||{};}
-async function saveWeeklyLb(v){await apiSet(WEEKLY_KEY,v);}
+async function loadWeeklyLb(){try{var v=await apiGet(WEEKLY_KEY);if(v)return v;}catch(e){}try{var lv=localStorage.getItem(WEEKLY_KEY);return lv?JSON.parse(lv):{};}catch(e2){return {};}}
+async function saveWeeklyLb(v){try{localStorage.setItem(WEEKLY_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(WEEKLY_KEY,v);}catch(e){console.warn("saveWeeklyLb failed:",e);}}
 async function loadDiscuss(){var v=await apiGet(DISCUSS_KEY);return v||{};}
 async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
 
