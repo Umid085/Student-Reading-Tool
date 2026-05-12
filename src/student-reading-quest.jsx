@@ -16,6 +16,7 @@ var DAILY_LB_KEY = "rq-daily-lb-v1";
 var FAVS_KEY     = "rq-favs-v1";
 var WEEKLY_KEY   = "rq-weekly-v1";
 var DISCUSS_KEY  = "rq-discuss-v1";
+var QUOTES_KEY   = "rq-quotes-v1";
 
 var LEVELS = [
   {key:"A1",color:"#22c55e",glow:"rgba(34,197,94,0.25)",  mult:1,  timeLimit:150,timeBonus:200,desc:"Elementary"},
@@ -84,6 +85,19 @@ var WORD_OF_DAY=[
   {word:"Verbose",phonetic:"/vɜːˈbəʊs/",type:"adj",def:"Using more words than necessary; long-winded.",ex:"The report was so verbose that key findings were buried on page forty."},
   {word:"Wistful",phonetic:"/ˈwɪstfəl/",type:"adj",def:"Having a feeling of vague longing or regret.",ex:"She gave a wistful smile when she found her old childhood photos."},
   {word:"Zealous",phonetic:"/ˈzeləs/",type:"adj",def:"Having or showing great energy in pursuit of a cause.",ex:"The zealous volunteers arrived two hours early to set up the event."}
+];
+
+var PLACEMENT_QUESTIONS=[
+  {q:"My name ___ Tom.",options:["am","is","are","be"],answer:1,level:"A1"},
+  {q:"She ___ to school every day.",options:["go","goes","going","gone"],answer:1,level:"A1"},
+  {q:"There are many ___ in the park.",options:["child","childs","children","childrens"],answer:2,level:"A2"},
+  {q:"By the time she arrived, the train ___.",options:["already left","has already left","had already left","will leave"],answer:2,level:"B1"},
+  {q:"The report must be ___ before Friday.",options:["finish","finishing","finished","to finish"],answer:2,level:"B1"},
+  {q:"Despite ___ tired, she continued working.",options:["being","to be","been","be"],answer:0,level:"B2"},
+  {q:"The policy is intended to ___ unemployment.",options:["tackle","tackling","tackled","be tackled"],answer:0,level:"B2"},
+  {q:"___ he had been warned about the risks, he proceeded with the investment.",options:["Although","Despite","Even","However"],answer:0,level:"C1"},
+  {q:"The committee's findings were ___; they neither confirmed nor refuted the hypothesis.",options:["conclusive","inconclusive","exclusive","illusory"],answer:1,level:"C1"},
+  {q:"The author's irony serves to ___ the contradiction between characters' stated beliefs and their actions.",options:["exacerbate","illuminate","corroborate","obfuscate"],answer:1,level:"C1"},
 ];
 
 var COMMON_WORDS=new Set(("a about above across add after again age ago agree air all allow almost alone along already also although always am among an and another any are area around as ask at away back bad be became because been before behind being below best better between big black body both break bring but buy by call came can care carry cause change cheap check child clear close come common complete could course cut dark day deep did different do does done down draw drive during each early eat end enough even ever every example face fact far feel few fill find first follow for found four from gave get give go good got great grow had hand hard has have he help her here high him his home hot how however hundred if important in increase into is it its just keep kind know large last later learn left less let life light like little live long look made make man many may me mean meet might money more most move much must my myself need never new next night no not now number of off often old on once only open or other our out own part people per place plan play point possible power put read real right room run said same say school see she show since small so some something soon stay stop such system take tell than that the their them then there these they think this those three through time to today together too took toward try turn under up us use very walk want was way we went were what when where which while who why will with work world would write year yes yet you young your able accept according account achieve act action actually address almost already also among area back based become begin behind best better black blue body build call car carry center chance change check clear close color come consider continue control country course create cut deal decide design develop different door down draw drive early earth east effect either element end enough enter establish even example experience eye face fact fall family far feel figure find fire five floor follow found four free full function game give given good group grow hand happen hard head high history hold home hour house however human hundred idea increase indeed information interest kind know language law lead learn leave left let level light line list look mean message mind mode money month most move much must national near night notice number object off offer old once open order organization other outside page paper past pay period person pick place plan point poor position press process product program public put question range rate reach read ready record require result right role round run school second seem seen series set side simple since sit six situation small social some sort sound state still stop study subject sure surface system table talk ten term thing thought time today together town try turn type unit until use usually various view visit voice walk want watch way week well whether white wide within without word world write yet").split(" "));
@@ -546,6 +560,8 @@ async function loadWeeklyLb(){try{var v=await apiGet(WEEKLY_KEY);if(v)return v;}
 async function saveWeeklyLb(v){try{localStorage.setItem(WEEKLY_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(WEEKLY_KEY,v);}catch(e){console.warn("saveWeeklyLb failed:",e);}}
 async function loadDiscuss(){var v=await apiGet(DISCUSS_KEY);return v||{};}
 async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
+function loadQuotes(){try{var v=localStorage.getItem(QUOTES_KEY);return v?JSON.parse(v):[];}catch(e){return[];}}
+function saveQuotesLocal(v){try{localStorage.setItem(QUOTES_KEY,JSON.stringify(v));}catch(e){}}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
@@ -1083,6 +1099,26 @@ export default function App(){
   var [shields,setShields]=useState(0);
   var [shieldDates,setShieldDates]=useState([]);
   var [longestStreak,setLongestStreak]=useState(0);
+  // Feature 2 - Placement Test
+  var [showPlacement,setShowPlacement]=useState(false);
+  var [placementAnswers,setPlacementAnswers]=useState({});
+  var [placementResult,setPlacementResult]=useState(null);
+  // Feature 3 - Sentence Saver / Quote Book
+  var [quotes,setQuotes]=useState(function(){return loadQuotes();});
+  var [quotesSaved,setQuotesSaved]=useState(false);
+  // Feature 4 - Notifications
+  var [notifPermission,setNotifPermission]=useState(typeof Notification!=="undefined"?Notification.permission:"denied");
+  // Feature 1 - Auto Vocab
+  var [autoVocabWords,setAutoVocabWords]=useState([]);
+  var [autoVocabDismissed,setAutoVocabDismissed]=useState(false);
+  // Feature 7 - Custom Text Quiz
+  var [customText,setCustomText]=useState("");
+  var [customTextOpen,setCustomTextOpen]=useState(false);
+  var [customTextLoading,setCustomTextLoading]=useState(false);
+  var [customTextError,setCustomTextError]=useState("");
+  // Feature 8 - PWA
+  var [isOnline,setIsOnline]=useState(navigator.onLine!==false);
+  var [installPrompt,setInstallPrompt]=useState(null);
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -1172,6 +1208,30 @@ export default function App(){
     else{stopMusic();}
     return function(){stopMusic();};
   },[stage,musicOn,musicGenre]);
+
+  // PWA: online/offline + install prompt
+  useEffect(function(){
+    function handleOnline(){setIsOnline(true);}
+    function handleOffline(){setIsOnline(false);}
+    function handleInstall(e){e.preventDefault();setInstallPrompt(e);}
+    window.addEventListener("online",handleOnline);
+    window.addEventListener("offline",handleOffline);
+    window.addEventListener("beforeinstallprompt",handleInstall);
+    return function(){
+      window.removeEventListener("online",handleOnline);
+      window.removeEventListener("offline",handleOffline);
+      window.removeEventListener("beforeinstallprompt",handleInstall);
+    };
+  },[]);
+
+  // Placement test: show once for new users with no games
+  useEffect(function(){
+    if(!currentUser)return;
+    var done=false;try{done=!!localStorage.getItem("rq-placement-done-"+currentUser.name);}catch(e){}
+    if(!done&&(!currentUser.games||currentUser.games.length===0)){
+      setShowPlacement(true);
+    }
+  },[currentUser]);
 
   var lv=getLv(level);
   var q=questions&&questions.length>current?questions[current]:null;
@@ -1393,6 +1453,9 @@ export default function App(){
         setVocab(nv);setAllVocab(nAll);saveVocab(nAll);
       }
     }
+    // Feature 1: extract auto-vocab from passage
+    var extracted=extractAutoVocab(passage);
+    if(extracted.length>0){setAutoVocabWords(extracted);setAutoVocabDismissed(false);}
     startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");
   }
   function handleExpire(){setTimerRunning(false);setTimeExpired(true);doFinish();}
@@ -1539,6 +1602,7 @@ export default function App(){
     setPronMode(false);setPronSentence("");setPronRecording(false);setPronResult(null);
     setPersonalizedWords([]);setWriteFeedback(null);setWriteSummary("");setWriteLoading(false);setWriteError("");
     setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcLoading(false);setEcError("");setPassagePeekOpen(false);
+    setAutoVocabWords([]);setAutoVocabDismissed(false);
     setStage("home");
   }
 
@@ -1837,6 +1901,115 @@ export default function App(){
     applyTheme(PRESET_THEMES[randomIndex]);
   }
 
+  // ── Feature 5: Vocab Export ───────────────────────────────────
+  function doExportVocab(format){
+    if(!vocab||!vocab.length)return;
+    var rows,filename,mime;
+    if(format==="anki"){
+      rows=vocab.map(function(w){
+        var front=w.word+(w.level?" ["+w.level+"]":"");
+        var back=(w.def||"")+(w.example?"\n"+w.example:"");
+        return front+"\t"+back;
+      });
+      filename="vocab-anki.txt";mime="text/plain";
+    } else {
+      rows=["word,definition,example,level,date,status"];
+      vocab.forEach(function(w){
+        rows.push(['"'+(w.word||"")+'"','"'+(w.def||"").replace(/"/g,"'")+'"','"'+(w.example||"").replace(/"/g,"'")+'"',w.level||"",w.date||"",w.status||"learning"].join(","));
+      });
+      filename="vocab-export.csv";mime="text/csv";
+    }
+    var blob=new Blob([rows.join("\n")],{type:mime});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");a.href=url;a.download=filename;a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);},2000);
+  }
+
+  // ── Feature 2: Placement Test ─────────────────────────────────
+  function calcPlacementLevel(answers){
+    var score=0;
+    PLACEMENT_QUESTIONS.forEach(function(q,i){
+      if(Number(answers[i])===q.answer)score++;
+    });
+    if(score<=2)return"A1";
+    if(score<=4)return"A2";
+    if(score<=6)return"B1";
+    if(score<=8)return"B2";
+    return"C1";
+  }
+  function finishPlacement(){
+    var recommended=calcPlacementLevel(placementAnswers);
+    setPlacementResult(recommended);
+    try{localStorage.setItem("rq-placement-done-"+(currentUser?currentUser.name:""),Date.now().toString());}catch(e){}
+  }
+  function dismissPlacement(){
+    setShowPlacement(false);setPlacementAnswers({});setPlacementResult(null);
+    try{localStorage.setItem("rq-placement-done-"+(currentUser?currentUser.name:""),Date.now().toString());}catch(e){}
+  }
+
+  // ── Feature 3: Sentence Saver ─────────────────────────────────
+  function saveSentenceQuote(sentence){
+    var entry={text:sentence.trim(),topic:topic||"",level:level||"",date:new Date().toLocaleDateString(),storyId:currentStoryId||null};
+    var updated=[entry].concat(quotes).slice(0,100);
+    setQuotes(updated);saveQuotesLocal(updated);setQuotesSaved(true);
+    setTimeout(function(){setQuotesSaved(false);},1500);
+  }
+  function deleteQuote(idx){
+    var updated=quotes.filter(function(_,i){return i!==idx;});
+    setQuotes(updated);saveQuotesLocal(updated);
+  }
+
+  // ── Feature 4: Notifications ──────────────────────────────────
+  async function requestNotifPermission(){
+    if(typeof Notification==="undefined")return;
+    var perm=await Notification.requestPermission();
+    setNotifPermission(perm);
+  }
+  function sendTestNotification(){
+    if(typeof Notification==="undefined"||Notification.permission!=="granted")return;
+    new Notification("Reading Quest 📖",{body:"Keep your streak alive — read something today!",icon:"/favicon.svg"});
+  }
+
+  // ── Feature 1: Auto Vocab ─────────────────────────────────────
+  function extractAutoVocab(text){
+    if(!text)return[];
+    var words=text.split(/\s+/);
+    var seen=new Set();
+    var result=[];
+    for(var i=0;i<words.length;i++){
+      var clean=words[i].replace(/[^a-zA-Z'-]/g,"").toLowerCase();
+      if(!clean||clean.length<4)continue;
+      if(COMMON_WORDS.has(clean))continue;
+      if(seen.has(clean))continue;
+      if(vocab.some(function(v){return v.word.toLowerCase()===clean;}))continue;
+      seen.add(clean);
+      result.push(clean);
+      if(result.length>=8)break;
+    }
+    return result;
+  }
+
+  // ── Feature 7: Custom Text Quiz ───────────────────────────────
+  async function doCustomTextQuiz(){
+    if(!customText.trim()||customText.trim().length<30){setCustomTextError("Please paste at least 30 characters of text.");return;}
+    setCustomTextError("");setCustomTextLoading(true);
+    try{
+      var r=await fetch("/.netlify/functions/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:customText.trim(),level:level||"B1",types:selectedTypes.slice(0,3)})});
+      var d=await r.json();
+      if(!r.ok||d.error)throw new Error(d.error||"Failed to generate quiz");
+      // reset all quiz state before launching
+      setPassage(customText.trim());setTopic(d.topic||"Custom Passage");
+      setQuestions(d.questions||[]);setCurrentStoryId(null);setShuffledRights([]);
+      setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setTimeExpired(false);setResult(null);
+      setCustomTextOpen(false);setCustomText("");setCustomTextLoading(false);
+      setAutoVocabWords([]);setAutoVocabDismissed(false);
+      startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");
+    }catch(e){
+      setCustomTextError(e.message||"Failed — try again.");setCustomTextLoading(false);
+    }
+  }
+
   if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"sans-serif",padding:20}}><div style={{width:"100%",maxWidth:300}}><div className="rq-skeleton" style={{width:48,height:48,borderRadius:"50%",margin:"0 auto 20px"}}/><Skeleton h={16} mb={8}/><Skeleton h={14} mb={6}/><Skeleton h={14} w="70%"/></div></div>;
 
   // ── current user's social data ─────────────────────────────
@@ -1998,6 +2171,60 @@ export default function App(){
       <div style={{position:"fixed",inset:0,background:"radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.45) 100%)",pointerEvents:"none",zIndex:2}}/>
       <div className="rq-wrap" style={{position:"relative",zIndex:1}}>
 
+        {/* ── OFFLINE BANNER ───────────────────────────────── */}
+        {!isOnline&&<div style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"9px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#f87171",fontWeight:600}}>📡 You're offline — reading the library still works!</div>}
+
+        {/* ── PWA INSTALL BANNER ───────────────────────────── */}
+        {installPrompt&&<div style={{background:"rgba(99,102,241,0.12)",border:"1px solid rgba(99,102,241,0.35)",borderRadius:10,padding:"9px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}}>
+          <span style={{fontSize:12,color:"#a78bfa",fontWeight:600}}>📲 Install Reading Quest as an app</span>
+          <div style={{display:"flex",gap:6,flexShrink:0}}>
+            <button onClick={async function(){var r=await installPrompt.prompt();if(r&&r.outcome==="accepted")setInstallPrompt(null);}} style={{...mkBtn("#6366f1"),padding:"5px 12px",fontSize:11}}>Install</button>
+            <button onClick={function(){setInstallPrompt(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:14,cursor:"pointer"}}>✕</button>
+          </div>
+        </div>}
+
+        {/* ── PLACEMENT TEST MODAL ─────────────────────────── */}
+        {showPlacement&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(6px)"}}>
+            <div style={{...CARD,maxWidth:500,width:"100%",maxHeight:"85vh",overflow:"auto"}}>
+              {!placementResult?(
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>🎯 Quick Placement Test</h2>
+                    <button onClick={dismissPlacement} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
+                  </div>
+                  <p style={{fontSize:13,color:"#9ca3af",marginBottom:16}}>10 grammar questions — we'll suggest your starting level. Takes about 3 minutes.</p>
+                  {PLACEMENT_QUESTIONS.map(function(pq,pi){
+                    return(
+                      <div key={pi} style={{...CARD,marginBottom:8,padding:12}}>
+                        <p style={{fontSize:13,color:"#e5e7eb",fontWeight:600,marginBottom:8}}>{pi+1}. {pq.q}</p>
+                        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                          {pq.options.map(function(op,oi){
+                            var sel=placementAnswers[pi]===oi;
+                            return<button key={oi} onClick={function(){setPlacementAnswers(function(a){var n=Object.assign({},a);n[pi]=oi;return n;});}} style={{background:sel?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(sel?"#a78bfa":"rgba(255,255,255,0.1)"),color:sel?"#e9d5ff":"#d1d5db",borderRadius:8,padding:"7px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.12s"}}>{op}</button>;
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button onClick={finishPlacement} disabled={Object.keys(placementAnswers).length<PLACEMENT_QUESTIONS.length} style={{...mkBtn(Object.keys(placementAnswers).length>=PLACEMENT_QUESTIONS.length?"#a78bfa":"#374151","#0d0d1a"),width:"100%",marginTop:8}}>See My Level →</button>
+                </div>
+              ):(
+                <div style={{textAlign:"center",padding:24}}>
+                  <div style={{fontSize:48,marginBottom:8}}>🎓</div>
+                  <h3 style={{fontSize:20,fontWeight:900,color:"#a78bfa",marginBottom:4}}>Your suggested level:</h3>
+                  <div style={{fontSize:52,fontWeight:900,color:getLv(placementResult).color,marginBottom:8}}>{placementResult}</div>
+                  <p style={{fontSize:14,color:"#9ca3af",marginBottom:20}}>{getLv(placementResult).desc} — a good starting point! You can always change it.</p>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={function(){setLevel(placementResult);dismissPlacement();}} style={{...mkBtn(getLv(placementResult).color,"#0d0d1a"),flex:1}}>Start at {placementResult}</button>
+                    <button onClick={dismissPlacement} style={{...GHOST,flex:1}}>Choose Manually</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── AUTH ──────────────────────────────────────────── */}
         {stage==="auth"&&(
           <div style={{paddingTop:46,textAlign:"center"}}>
@@ -2049,6 +2276,7 @@ export default function App(){
                 <button onClick={function(){setStage("weekly");}} style={GHOST}>Weekly</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
+                {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={GHOST}>Quotes</button>}
               </div>
             </div>
 
@@ -2365,6 +2593,34 @@ export default function App(){
             {error&&<ErrorBanner message={error}/>}
             {error&&error.includes("Daily AI quota")&&<button onClick={function(){setStage("library");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",fontSize:14,marginBottom:10}}>📚 Browse Library Stories</button>}
             <button onClick={generate} disabled={!level} style={{...mkBtn(level?lv.color:"#374151",level?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>{level?"Start "+level+" Quest!":"Select a level to begin"}</button>
+
+            {/* Custom Text Quiz */}
+            <div style={{marginTop:10}}>
+              {!customTextOpen?(
+                <button onClick={function(){setCustomTextOpen(true);setCustomTextError("");}} style={{...GHOST,width:"100%",fontSize:13}}>✍️ Quiz me on my own text</button>
+              ):(
+                <div style={{...CARD,padding:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <span style={{fontSize:13,fontWeight:700,color:"#f3f4f6"}}>✍️ Custom Text Quiz</span>
+                    <button onClick={function(){setCustomTextOpen(false);setCustomText("");setCustomTextError("");}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:16,cursor:"pointer"}}>×</button>
+                  </div>
+                  <p style={{fontSize:11,color:"#6b7280",marginBottom:8}}>Paste any English text (30–3000 chars) and we'll generate questions about it.</p>
+                  <textarea value={customText} onChange={function(e){setCustomText(e.target.value.slice(0,3000));}} placeholder="Paste your text here..." style={{width:"100%",minHeight:80,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:12,padding:"8px 10px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
+                    <span style={{fontSize:10,color:"#6b7280"}}>{customText.length}/3000</span>
+                    <button onClick={doCustomTextQuiz} disabled={customTextLoading||customText.trim().length<30} style={{...mkBtn(customText.trim().length>=30?"#f59e0b":"#374151","#0d0d1a"),padding:"7px 16px",fontSize:12}}>{customTextLoading?"Generating...":"Generate Quiz"}</button>
+                  </div>
+                  {customTextError&&<p style={{color:"#f87171",fontSize:12,marginTop:6}}>{customTextError}</p>}
+                </div>
+              )}
+            </div>
+
+            {/* Notifications + Quotes quick links */}
+            <div style={{display:"flex",gap:7,marginTop:8,flexWrap:"wrap"}}>
+              {notifPermission!=="granted"&&<button onClick={requestNotifPermission} style={{...GHOST,flex:1,fontSize:12}}>🔔 Enable Reminders</button>}
+              {notifPermission==="granted"&&<button onClick={sendTestNotification} style={{...GHOST,flex:1,fontSize:12}}>🔔 Test Notification</button>}
+              {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={{...GHOST,flex:1,fontSize:12}}>🔖 Quote Book ({quotes.length})</button>}
+            </div>
           </div>
         )}
 
@@ -2575,6 +2831,7 @@ export default function App(){
                   <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:6}}>
                     <span style={{fontSize:12,color:"#c7d2fe",flex:1,lineHeight:1.5}}>{activeSentence}</span>
                     <button onClick={function(){translateSentence(activeSentence);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid #818cf8",color:"#a78bfa",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{translating?"...":"🌐 Translate"}</button>
+                    <button onClick={function(){saveSentenceQuote(activeSentence);}} title="Save to Quote Book" style={{background:quotesSaved?"rgba(251,191,36,0.25)":"rgba(255,255,255,0.06)",border:"1px solid "+(quotesSaved?"#fbbf24":"rgba(255,255,255,0.12)"),color:quotesSaved?"#fbbf24":"#9ca3af",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{quotesSaved?"✓ Saved":"🔖 Save"}</button>
                     <select value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:6,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}>
                       <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
                     </select>
@@ -2887,11 +3144,35 @@ export default function App(){
                 }} style={{...mkBtn("#ef4444","#fff0f0"),padding:"8px 16px",fontSize:12,flexShrink:0}}>Start →</button>
               </div>
             </div>
+            {/* Feature 1: Auto Vocab Prompt */}
+            {autoVocabWords.length>0&&!autoVocabDismissed&&currentUser&&(
+              <div style={{...CARD,marginBottom:10,padding:14,borderColor:"rgba(6,182,212,0.4)",background:"rgba(6,182,212,0.06)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#06b6d4"}}>📚 New words found</div>
+                  <button onClick={function(){setAutoVocabDismissed(true);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:16,cursor:"pointer",lineHeight:1}}>×</button>
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
+                  {autoVocabWords.map(function(w){
+                    var already=vocab.some(function(v){return v.word===w;});
+                    return<span key={w} style={{background:already?"rgba(34,197,94,0.15)":"rgba(6,182,212,0.15)",color:already?"#22c55e":"#06b6d4",borderRadius:999,padding:"3px 10px",fontSize:12,fontWeight:600}}>{w}{already?" ✓":""}</span>;
+                  })}
+                </div>
+                <button onClick={function(){
+                  var today=new Date().toLocaleDateString();
+                  var toAdd=autoVocabWords.filter(function(w){return!vocab.some(function(v){return v.word===w;});});
+                  if(!toAdd.length){setAutoVocabDismissed(true);return;}
+                  var newEntries=toAdd.map(function(w){return{word:w,level:level,topic:topic,date:today,status:"new",def:"",example:"",srInterval:0,nextReview:srsNextDate(SRS_INTERVALS[0])};});
+                  var nv=vocab.concat(newEntries);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;
+                  setVocab(nv);setAllVocab(nAll);saveVocab(nAll);setAutoVocabDismissed(true);
+                }} style={{...mkBtn("#06b6d4","#0d0d1a"),fontSize:12,padding:"7px 14px"}}>+ Add {autoVocabWords.filter(function(w){return!vocab.some(function(v){return v.word===w;});}).length} to Vocab</button>
+              </div>
+            )}
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
               <button onClick={function(){setTutorChat([]);setStage("tutor");}} style={{...mkBtn("#0891b2"),flex:1,fontSize:12}}>🤖 Tutor</button>
               <button onClick={doShare} style={{...mkBtn("#a78bfa"),flex:1,fontSize:12}} title="Share your result">📤 Share</button>
+              {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>🔖 Quotes</button>}
               <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
               <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
@@ -2926,8 +3207,10 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#06b6d4"}}>Vocabulary</h2>
-                <div style={{display:"flex",gap:6}}>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                   {vocab.length>=2&&<button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);setStage("vocabgame");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"7px 14px",fontSize:12}}>🎮 Practice</button>}
+                  {vocab.length>0&&<button onClick={function(){doExportVocab("csv");}} style={{...GHOST,padding:"7px 12px",fontSize:12}} title="Export as CSV">⬇ CSV</button>}
+                  {vocab.length>0&&<button onClick={function(){doExportVocab("anki");}} style={{...GHOST,padding:"7px 12px",fontSize:12}} title="Export for Anki">🃏 Anki</button>}
                   <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
                 </div>
               </div>
@@ -3022,10 +3305,25 @@ export default function App(){
 
         {/* ── HISTORY ───────────────────────────────────────── */}
         {stage==="history"&&currentUser&&(function(){
-          var games=(currentUser.games||[]).slice().reverse();
+          var allGames=(currentUser.games||[]).slice();
+          var games=allGames.slice().reverse();
           var filtered=historyLevel?games.filter(function(g){return g.level===historyLevel;}):games;
           var totalXp=filtered.reduce(function(s,g){return s+g.xp;},0);
           var avgPct=filtered.length?Math.round(filtered.reduce(function(s,g){return s+g.pct;},0)/filtered.length):0;
+
+          // Group by week for bar chart
+          function getWeekKey(dateStr){
+            var d=new Date(dateStr);if(isNaN(d))return"?";
+            var dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/(864e5));
+            return d.getFullYear()+"-W"+Math.ceil(dayOfYear/7);
+          }
+          var weeklyMap={};
+          filtered.forEach(function(g){var wk=getWeekKey(g.date);if(!weeklyMap[wk])weeklyMap[wk]={xp:0,count:0,avgPct:[]};weeklyMap[wk].xp+=g.xp;weeklyMap[wk].count++;weeklyMap[wk].avgPct.push(g.pct);});
+          var weekKeys=Object.keys(weeklyMap).sort().slice(-8); // last 8 weeks
+          var maxXp=weekKeys.reduce(function(m,k){return Math.max(m,weeklyMap[k].xp);},1);
+          var chartH=90,chartW=280;
+          var barW=Math.floor((chartW-weekKeys.length*4)/Math.max(weekKeys.length,1));
+
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
@@ -3048,6 +3346,30 @@ export default function App(){
                 </div>
               )}
 
+              {/* SVG weekly XP bar chart */}
+              {weekKeys.length>=2&&(
+                <div style={{...CARD,marginBottom:12,padding:14}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>WEEKLY XP (last {weekKeys.length} weeks)</p>
+                  <svg viewBox={"0 0 "+chartW+" "+(chartH+22)} style={{width:"100%",overflow:"visible"}}>
+                    {weekKeys.map(function(wk,i){
+                      var xp=weeklyMap[wk].xp;
+                      var h=Math.max(4,Math.round((xp/maxXp)*chartH));
+                      var x=i*(barW+4);
+                      var avgP=Math.round(weeklyMap[wk].avgPct.reduce(function(s,v){return s+v;},0)/weeklyMap[wk].avgPct.length);
+                      var col=avgP>=80?"#22c55e":avgP>=60?"#f59e0b":"#6366f1";
+                      return(
+                        <g key={wk}>
+                          <rect x={x} y={chartH-h} width={barW} height={h} rx={3} fill={col} opacity={0.8}/>
+                          <text x={x+barW/2} y={chartH+14} textAnchor="middle" fontSize={8} fill="#6b7280">{wk.slice(-2)}</text>
+                          <text x={x+barW/2} y={chartH-h-4} textAnchor="middle" fontSize={8} fill={col}>{xp>=1000?(xp/1000).toFixed(1)+"k":xp}</text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                  <p style={{fontSize:10,color:"#4b5563",marginTop:4,textAlign:"center"}}>Bar colour: green≥80% · amber≥60% · indigo below</p>
+                </div>
+              )}
+
               {/* entries */}
               {filtered.length===0&&(
                 <div style={{...CARD,textAlign:"center",padding:40}}>
@@ -3067,9 +3389,12 @@ export default function App(){
                           <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.topic}</div>
                           <div style={{fontSize:10,color:"#6b7280",marginTop:1}}>{g.date} · {formatTime(g.timeSecs)}</div>
                         </div>
-                        <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{fontSize:13,fontWeight:900,color:"#fbbf24"}}>{g.xp} XP</div>
-                          <div style={{fontSize:11,color:pctColor(g.pct),marginTop:1}}>{g.pct}%</div>
+                        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{fontSize:13,fontWeight:900,color:"#fbbf24"}}>{g.xp} XP</div>
+                            <div style={{fontSize:11,color:pctColor(g.pct),marginTop:1}}>{g.pct}%</div>
+                          </div>
+                          {g.topic&&g.level&&<button onClick={function(){setLevel(g.level);setCustomTopic(g.topic);doRestart();}} title="Retry this topic" style={{background:"rgba(52,211,153,0.12)",border:"1px solid rgba(52,211,153,0.25)",color:"#34d399",borderRadius:7,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>↩ Retry</button>}
                         </div>
                       </div>
                     );
@@ -3155,9 +3480,9 @@ export default function App(){
                     </div>
                     <div style={{display:"flex",gap:5}}>
                       <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>View</button>
-                      {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>Add</button>}
-                      {requested&&<span style={{fontSize:11,color:"#6b7280",padding:"5px 0"}}>Pending</span>}
-                      {isFriend&&<span style={{fontSize:11,color:"#34d399",padding:"5px 0"}}>Friends</span>}
+                      {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>+ Add</button>}
+                      {requested&&<span style={{background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.5)",color:"#a78bfa",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>📨 Sent</span>}
+                      {isFriend&&<span style={{background:"rgba(52,211,153,0.15)",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>✓ Friends</span>}
                     </div>
                   </div>);
                 })}
@@ -3310,8 +3635,8 @@ export default function App(){
 
             {/* actions */}
             <div style={{display:"flex",gap:7,marginBottom:12,flexWrap:"wrap"}}>
-              {!isFriend&&!requested&&<button onClick={function(){sendRequest(viewingUser);}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12,minWidth:100}}>Add Friend</button>}
-              {requested&&<button disabled style={{...mkBtn("#374151"),flex:1,fontSize:12,minWidth:100}}>Request Sent</button>}
+              {!isFriend&&!requested&&<button onClick={function(){sendRequest(viewingUser);}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12,minWidth:100}}>+ Add Friend</button>}
+              {requested&&<div style={{flex:1,minWidth:100,background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.5)",borderRadius:12,padding:"10px 12px",textAlign:"center",fontSize:12,fontWeight:700,color:"#a78bfa"}}>📨 Request Sent</div>}
               {isFriend&&<button onClick={function(){removeFriend(viewingUser);setStage("friends");}} style={{...mkBtn("#374151"),flex:1,fontSize:12,minWidth:100}}>Remove Friend</button>}
               <button onClick={function(){likeProfile(viewingUser);}} disabled={alreadyLiked||viewingUser===currentUser.name} style={{...mkBtn(alreadyLiked?"#374151":"#ec4899"),flex:1,fontSize:12,minWidth:90,transition:"all 0.2s ease",transform:alreadyLiked?"scale(0.98)":"scale(1)"}}>{alreadyLiked?"❤️ Liked":"❤️ Like"}</button>
               {isFriend&&<button onClick={function(){setChallengeTarget(viewingUser);setStage("friends");setFriendStage("list");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12,minWidth:100}}>Challenge</button>}
@@ -3343,18 +3668,18 @@ export default function App(){
             )}
 
             {/* game history chart */}
-            {fu.games.length>0&&(
+            {fuGames.length>0&&(
               <div style={{marginBottom:12}}>
                 <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>XP HISTORY</p>
-                <GameChart games={fu.games}/>
+                <GameChart games={fuGames}/>
               </div>
             )}
 
             {/* recent games */}
-            {fu.games.length>0&&(
+            {fuGames.length>0&&(
               <div style={{...CARD,marginBottom:12}}>
                 <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>RECENT GAMES</p>
-                {fu.games.slice().reverse().slice(0,6).map(function(g,i){
+                {fuGames.slice().reverse().slice(0,6).map(function(g,i){
                   var glv=getLv(g.level);
                   return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:i<5?"1px solid rgba(255,255,255,0.05)":"none"}}>
                     <span style={{fontSize:11,fontWeight:900,color:glv.color,width:20}}>{g.level}</span>
@@ -3364,7 +3689,7 @@ export default function App(){
                 })}
               </div>
             )}
-            {fu.games.length===0&&<div style={{...CARD,textAlign:"center",padding:28}}><p style={{color:"#6b7280"}}>No games played yet.</p></div>}
+            {fuGames.length===0&&<div style={{...CARD,textAlign:"center",padding:28}}><p style={{color:"#6b7280"}}>No games played yet.</p></div>}
           </div>);
         })()}
 
@@ -4428,6 +4753,43 @@ export default function App(){
             </div>
           );
         })()}
+
+        {/* ── QUOTE BOOK ────────────────────────────────────── */}
+        {stage==="quotes"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
+              <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#f59e0b"}}>🔖 Quote Book</h2>
+              <button onClick={function(){setStage(result?"result":"home");}} style={GHOST}>Back</button>
+            </div>
+            {quotes.length===0?(
+              <div style={{...CARD,textAlign:"center",padding:40}}>
+                <div style={{fontSize:36,marginBottom:10}}>🔖</div>
+                <p style={{color:"#6b7280",fontSize:14}}>No saved sentences yet. In the reading screen, tap a sentence then click "🔖 Save" to add it here.</p>
+                <button onClick={function(){setStage("home");}} style={{...mkBtn("#f59e0b","#0d0d1a"),marginTop:14}}>Start Reading</button>
+              </div>
+            ):(
+              <div>
+                <p style={{fontSize:12,color:"#6b7280",marginBottom:10}}>{quotes.length} saved sentence{quotes.length!==1?"s":""}</p>
+                {quotes.map(function(q,i){
+                  var glv=getLv(q.level);
+                  return(
+                    <div key={i} style={{...CARD,marginBottom:8,padding:14,background:"rgba(245,158,11,0.05)",borderColor:"rgba(245,158,11,0.2)"}}>
+                      <p style={{fontSize:14,color:"#f3f4f6",lineHeight:1.7,margin:"0 0 8px",fontStyle:"italic"}}>"{q.text}"</p>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                          {q.level&&<span style={{background:glv.glow,color:glv.color,borderRadius:999,padding:"2px 8px",fontSize:10,fontWeight:700}}>{q.level}</span>}
+                          {q.topic&&<span style={{fontSize:11,color:"#6b7280"}}>{q.topic}</span>}
+                          <span style={{fontSize:10,color:"#4b5563"}}>{q.date}</span>
+                        </div>
+                        <button onClick={function(){deleteQuote(i);}} style={{background:"transparent",border:"none",color:"#ef4444",fontSize:13,cursor:"pointer",opacity:0.6}} title="Delete">✕</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
