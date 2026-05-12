@@ -1938,6 +1938,10 @@ export default function App(){
     return"C1";
   }
   function finishPlacement(){
+    if(Object.keys(placementAnswers).length<PLACEMENT_QUESTIONS.length){
+      alert("Please answer all "+PLACEMENT_QUESTIONS.length+" questions");
+      return;
+    }
     var recommended=calcPlacementLevel(placementAnswers);
     setPlacementResult(recommended);
     try{localStorage.setItem("rq-placement-done-"+(currentUser?currentUser.name:""),Date.now().toString());}catch(e){}
@@ -2207,7 +2211,7 @@ export default function App(){
                       </div>
                     );
                   })}
-                  <button onClick={finishPlacement} disabled={Object.keys(placementAnswers).length<PLACEMENT_QUESTIONS.length} style={{...mkBtn(Object.keys(placementAnswers).length>=PLACEMENT_QUESTIONS.length?"#a78bfa":"#374151","#0d0d1a"),width:"100%",marginTop:8}}>See My Level →</button>
+                  <button onClick={finishPlacement} style={{...mkBtn(Object.keys(placementAnswers).length>=PLACEMENT_QUESTIONS.length?"#a78bfa":"#374151","#0d0d1a"),width:"100%",marginTop:8,opacity:Object.keys(placementAnswers).length>=PLACEMENT_QUESTIONS.length?1:0.6}}>See My Level →</button>
                 </div>
               ):(
                 <div style={{textAlign:"center",padding:24}}>
