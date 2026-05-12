@@ -1588,7 +1588,6 @@ export default function App(){
       var mq2=null;for(var j2=0;j2<dc.questions.length;j2++){if(dc.questions[j2].type==="matching"){mq2=dc.questions[j2];break;}}
       setLevel(dc.level||"B1");setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
       setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights):[]);
-      setSelectedTypes(dc.questions.map(function(q){return q.type;}).filter(function(t,i,a){return a.indexOf(t)===i;}));
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
       setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
       setIsDailyGame(true);setStage("reading");return;
@@ -1602,7 +1601,6 @@ export default function App(){
     var mq3=null;for(var j3=0;j3<dStory.questions.length;j3++){if(dStory.questions[j3].type==="matching"){mq3=dStory.questions[j3];break;}}
     setLevel(dStory.level);setPassage(dStory.passage);setTopic(dStory.title);setQuestions(dStory.questions);
     setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights):[]);
-    setSelectedTypes(dStory.questions.map(function(q){return q.type;}).filter(function(t,i,a){return a.indexOf(t)===i;}));
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
     setCurrentStoryId(dStory.id);setIsDailyGame(true);setStage("reading");
