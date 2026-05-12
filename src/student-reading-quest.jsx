@@ -1011,6 +1011,7 @@ export default function App(){
   var [ecError,setEcError]=useState("");
   var [ecSelected,setEcSelected]=useState(new Set());
   var [ecRevealed,setEcRevealed]=useState(false);
+  var [passagePeekOpen,setPassagePeekOpen]=useState(false);
   // rsvp speed reader
   var [rsvpActive,setRsvpActive]=useState(false);
   var [rsvpWpm,setRsvpWpm]=useState(250);
@@ -1480,7 +1481,7 @@ export default function App(){
     setActiveChallengeIdx(null);setActiveChallengeFrom("");
     setPronMode(false);setPronSentence("");setPronRecording(false);setPronResult(null);
     setPersonalizedWords([]);setWriteFeedback(null);setWriteSummary("");setWriteLoading(false);setWriteError("");
-    setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcLoading(false);setEcError("");
+    setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcLoading(false);setEcError("");setPassagePeekOpen(false);
     setStage("home");
   }
 
@@ -3775,17 +3776,14 @@ export default function App(){
             </div>
 
             {/* passage peek */}
-            {passage&&(function(){
-              var [open,setOpen]=useState(false);
-              return(
-                <div style={{...CARD,padding:"10px 14px",marginBottom:10,flexShrink:0}}>
-                  <button onClick={function(){setOpen(function(o){return!o;});}} style={{background:"none",border:"none",color:"#9ca3af",fontFamily:"inherit",fontSize:12,cursor:"pointer",fontWeight:600,padding:0,width:"100%",textAlign:"left"}}>
-                    {open?"▲ Hide passage":"▼ Show passage"}
-                  </button>
-                  {open&&<p style={{margin:"8px 0 0",fontSize:13,color:"#d1d5db",lineHeight:1.8}}>{passage}</p>}
-                </div>
-              );
-            })()}
+            {passage&&(
+              <div style={{...CARD,padding:"10px 14px",marginBottom:10,flexShrink:0}}>
+                <button onClick={function(){setPassagePeekOpen(function(o){return!o;});}} style={{background:"none",border:"none",color:"#9ca3af",fontFamily:"inherit",fontSize:12,cursor:"pointer",fontWeight:600,padding:0,width:"100%",textAlign:"left"}}>
+                  {passagePeekOpen?"▲ Hide passage":"▼ Show passage"}
+                </button>
+                {passagePeekOpen&&<p style={{margin:"8px 0 0",fontSize:13,color:"#d1d5db",lineHeight:1.8}}>{passage}</p>}
+              </div>
+            )}
 
             {/* starter prompts */}
             {tutorChat.length===0&&(

@@ -7,7 +7,8 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
-const TIMEOUT_MS = 9000;
+const TIMEOUT_MS = 25000;
+const MODELS = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
 
 export const handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
@@ -29,33 +30,46 @@ export const handler = async function (event) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid JSON body" }) };
   }
 
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("Gemini API timeout — try again")), TIMEOUT_MS)
-  );
-
-  try {
-    const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = client.getGenerativeModel({ model: body.model || "gemini-2.0-flash" });
-
-    const userMessage = body.messages?.[body.messages.length - 1]?.content || "";
-
-    const result = await Promise.race([
-      model.generateContent({
-        contents: [{ role: "user", parts: [{ text: userMessage }] }],
-        generationConfig: { maxOutputTokens: body.max_tokens || 2000 },
-      }),
-      timeout,
-    ]);
-
-    const text = result.response.text();
-    return {
-      statusCode: 200,
-      headers: CORS,
-      body: JSON.stringify({
-        content: [{ type: "text", text: text }]
-      })
-    };
-  } catch (e) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+  const userMessage = body.messages?.[body.messages.length - 1]?.content || "";
+  if (!userMessage) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "No message provided" }) };
   }
+
+  const maxOutputTokens = body.max_tokens || 4096;
+  const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+  let lastError = "";
+
+  for (const modelName of MODELS) {
+    try {
+      const model = client.getGenerativeModel({ model: modelName });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Timeout after 25s on ${modelName}`)), TIMEOUT_MS)
+      );
+
+      const result = await Promise.race([
+        model.generateContent({
+          contents: [{ role: "user", parts: [{ text: userMessage }] }],
+          generationConfig: { maxOutputTokens },
+        }),
+        timeout,
+      ]);
+
+      const text = result.response.text();
+      if (!text || !text.trim()) {
+        lastError = `${modelName} returned empty response`;
+        continue;
+      }
+
+      return {
+        statusCode: 200,
+        headers: CORS,
+        body: JSON.stringify({ content: [{ type: "text", text }] }),
+      };
+    } catch (e) {
+      lastError = `${modelName}: ${e.message}`;
+      continue;
+    }
+  }
+
+  return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: lastError }) };
 };
