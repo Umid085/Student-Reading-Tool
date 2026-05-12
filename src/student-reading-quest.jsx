@@ -1656,7 +1656,7 @@ export default function App(){
       setLevel(dc.level||"B1");setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
       setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights):[]);
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
+      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
       setIsDailyGame(true);setStage("reading");return;
     }
     setError("");
@@ -1669,7 +1669,7 @@ export default function App(){
     setLevel(dStory.level);setPassage(dStory.passage);setTopic(dStory.title);setQuestions(dStory.questions);
     setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());
+    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
     setCurrentStoryId(dStory.id);setIsDailyGame(true);setStage("reading");
   }
 
@@ -1734,9 +1734,9 @@ export default function App(){
     try{
       var ctx=getACtx();
       var SCALES={
-        classical:[[261.63,329.63,392,523.25],[0,0.5,1,1.5,2,2.5]],
-        lofi:[[220,277.18,329.63,440],[0,0.75,1.5,2.25,3]],
-        jazz:[[293.66,369.99,440,587.33],[0,0.4,0.8,1.4,2.0]],
+        classical:[[261.63,329.63,392,523.25],[0.5,1,1.5,2,2.5,3]],
+        lofi:[[220,277.18,329.63,440],[0.75,1.5,2.25,3,3.75]],
+        jazz:[[293.66,369.99,440,587.33],[0.4,0.8,1.4,2.0,0.6]],
         nature:null
       };
       var stopped=false;
@@ -1767,7 +1767,7 @@ export default function App(){
           ng.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.6);
           o.start(ctx.currentTime);o.stop(ctx.currentTime+0.65);
           noteIdx++;beatIdx++;
-          var delay=beats[beatIdx%beats.length]*1000||700;
+          var delay=Math.max(200,beats[beatIdx%beats.length]*1000);
           if(!stopped)setTimeout(playNext,delay);
         };
         playNext();
@@ -1801,12 +1801,14 @@ export default function App(){
       c.fillText(result.pct+"%",30,190);
       // sub stats
       c.font="700 20px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.7)";
+      var correctCount=result.answers?result.answers.filter(Boolean).length:result.score;
+      var totalCount=result.answers?result.answers.length:result.maxScore;
       c.fillText(result.xp+" XP earned",30,230);
-      c.fillText(result.score+" / "+result.maxScore+" correct",30,258);
+      c.fillText(correctCount+" / "+totalCount+" correct",30,258);
       // title
-      if(passage&&passage.title){
+      if(topic){
         c.font="400 16px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.4)";
-        c.fillText(passage.title.substring(0,60),30,295);
+        c.fillText(topic.substring(0,60),30,295);
       }
       // user
       if(currentUser){
