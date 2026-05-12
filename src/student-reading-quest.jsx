@@ -901,6 +901,7 @@ export default function App(){
   var [nameInput,setNameInput]=useState("");
   var [passInput,setPassInput]=useState("");
   var [authMode,setAuthMode]=useState("register");
+  var [showPass,setShowPass]=useState(false);
   var [authErr,setAuthErr]=useState("");
   var [currentUser,setCurrentUser]=useState(null);
   var [allUsers,setAllUsers]=useState([]);
@@ -1614,8 +1615,8 @@ export default function App(){
   var _secondary=appTheme?appTheme.secondary:"#34d399";
   var BG="linear-gradient(160deg,#0d0d1a 0%,#111827 55%,#0d1f12 100%)";
   var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid var(--rq-accent-border)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.07),0 0 0 1px rgba(255,255,255,0.03)"};
-  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.14)",color:"#9ca3af",borderRadius:10,padding:"9px 16px",fontFamily:"inherit",fontSize:14,cursor:"pointer",fontWeight:600,transition:"all 0.15s ease"};
-  var INP={width:"100%",background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:16,padding:"13px 15px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.18s,box-shadow 0.18s"};
+  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.10)",color:"#9ca3af",borderRadius:12,padding:"8px 16px",fontFamily:"inherit",fontSize:13,cursor:"pointer",fontWeight:700,transition:"all 0.15s ease"};
+  var INP={width:"100%",background:"rgba(0,0,0,0.30)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:14,padding:"12px 16px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",boxShadow:"inset 0 2px 4px rgba(0,0,0,0.2)",transition:"border-color 0.2s,box-shadow 0.2s"};
   function mkBtn(bg,fg,size){var pad=size==="sm"?"7px 14px":size==="lg"?"15px 28px":"13px 22px";var fs=size==="sm"?12:size==="lg"?17:15;var glow=bg&&bg.startsWith("#")?bg+"55":"var(--rq-accent-glow)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:pad,fontWeight:700,fontSize:fs,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"all 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
   function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
   function ErrorBanner(props){var msg=props.message||props.children;if(!msg)return null;return(<div style={{...CARD,background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.3)",padding:14,display:"flex",alignItems:"flex-start",gap:10,marginBottom:props.marginBottom||12}}>
@@ -1741,8 +1742,49 @@ export default function App(){
       @media(min-width:640px){.rq-wrap{max-width:660px;padding:22px 28px 72px}.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
       @media(min-width:1024px){.rq-wrap{max-width:860px;padding:30px 52px 90px}}
       @media(min-width:1440px){.rq-wrap{max-width:1040px;padding:36px 80px 100px}}
+      /* ── scrollbar ── */
+      ::-webkit-scrollbar{width:6px}
+      ::-webkit-scrollbar-track{background:transparent}
+      ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.10);border-radius:10px}
+      ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.20)}
+      /* ── selection ── */
+      ::selection{background:rgba(52,211,153,0.25);color:#34d399}
+      /* ── neon pulse keyframes ── */
+      @keyframes neonPulseGreen{
+        0%,100%{border-color:rgba(52,211,153,0.2);box-shadow:0 0 5px rgba(52,211,153,0.08)}
+        50%{border-color:rgba(52,211,153,0.65);box-shadow:0 0 16px rgba(52,211,153,0.28)}
+      }
+      @keyframes neonPulseIndigo{
+        0%,100%{border-color:rgba(99,102,241,0.2);box-shadow:0 0 5px rgba(99,102,241,0.08)}
+        50%{border-color:rgba(99,102,241,0.65);box-shadow:0 0 16px rgba(99,102,241,0.28)}
+      }
+      @keyframes neonPulseAmber{
+        0%,100%{border-color:rgba(251,191,36,0.2);box-shadow:0 0 5px rgba(251,191,36,0.08)}
+        50%{border-color:rgba(251,191,36,0.65);box-shadow:0 0 16px rgba(251,191,36,0.28)}
+      }
+      /* ── neon border classes ── */
+      .neon-border-green{animation:neonPulseGreen 4s ease-in-out infinite}
+      .neon-border-indigo{animation:neonPulseIndigo 4s ease-in-out infinite}
+      .neon-border-amber{animation:neonPulseAmber 4s ease-in-out infinite}
+      /* ── reusable component classes ── */
+      .rq-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:18px;padding:20px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.07);transition:all 0.3s ease}
+      .rq-ghost-btn{background:transparent;border:1px solid rgba(255,255,255,0.10);color:#9ca3af;border-radius:12px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.15s ease}
+      .rq-ghost-btn:hover{background:rgba(255,255,255,0.06);color:#fff}
+      .rq-ghost-btn:active{transform:scale(0.95)}
+      .rq-btn-primary{background:#22c55e;color:#0d0d1a;padding:12px 32px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;border:none;font-family:inherit;box-shadow:0 0 20px rgba(34,197,94,0.3);transition:all 0.15s ease}
+      .rq-btn-primary:hover{filter:brightness(1.1);box-shadow:0 0 30px rgba(34,197,94,0.5)}
+      .rq-btn-primary:active{transform:scale(0.95)}
+      .rq-btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+      .rq-input{width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.10);border-radius:12px;color:#f3f4f6;font-size:14px;padding:12px 16px;outline:none;font-family:inherit;box-shadow:inset 0 2px 4px rgba(0,0,0,0.2);transition:all 0.2s ease}
+      .rq-input:focus{border-color:var(--rq-accent);box-shadow:inset 0 2px 4px rgba(0,0,0,0.2),0 0 0 3px var(--rq-accent-glow)}
+      .text-label{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase}
+      /* ── eye toggle button inside input wrapper ── */
+      .rq-pass-wrap{position:relative}
+      .rq-pass-wrap input{padding-right:46px}
+      .rq-eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#6b7280;padding:0;line-height:1;display:flex;align-items:center;transition:color 0.15s}
+      .rq-eye-btn:hover{color:#f3f4f6}
     `}</style>
-    <div style={{minHeight:"100vh",background:BG,fontFamily:"'Inter','Trebuchet MS',sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:BG,fontFamily:"'Trebuchet MS','Inter',ui-sans-serif,system-ui,sans-serif",color:"#f3f4f6",overflow:"hidden"}}>
       <div className="rq-orb" style={{width:680,height:680,background:"rgba("+hex2rgb(_accent)+",0.14)",top:"-22%",left:"-16%","--dur":"28s"}}/>
       <div className="rq-orb" style={{width:500,height:500,background:"rgba("+hex2rgb(_secondary)+",0.10)",top:"35%",right:"-14%","--dur":"34s",animationDelay:"6s"}}/>
       <div className="rq-orb" style={{width:420,height:420,background:"rgba(236,72,153,0.09)",bottom:"2%",left:"5%","--dur":"38s",animationDelay:"14s"}}/>
@@ -1764,7 +1806,15 @@ export default function App(){
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 <input style={INP} placeholder="Username" value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
-                <input style={INP} type="password" placeholder="Password (min 4 chars)" value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
+                <div className="rq-pass-wrap">
+                  <input style={INP} type={showPass?"text":"password"} placeholder="Password (min 4 chars)" value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
+                  <button type="button" className="rq-eye-btn" onClick={function(){setShowPass(function(p){return!p;});}} title={showPass?"Hide password":"Show password"}>
+                    {showPass
+                      ? <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      : <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    }
+                  </button>
+                </div>
               </div>
               {authErr&&<ErrorBanner message={authErr} marginBottom={10}/>}
               <button onClick={authMode==="login"?doLogin:doRegister} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?"Log In":"Create Account"}</button>
