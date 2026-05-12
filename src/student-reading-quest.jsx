@@ -1292,13 +1292,14 @@ export default function App(){
     var played=new Set((currentUser&&currentUser.games||[]).map(function(g){return g.storyId;}));
     var unplayed=levelStories.filter(function(s){return !played.has(s.id);});
     var pool=unplayed.length>0?unplayed:levelStories;
-    var story=pool[Math.floor(Math.random()*pool.length)];
-    setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);
+    var randomIdx=Math.floor(Math.random()*pool.length);
+    var story=pool[randomIdx];
+    setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);setCurrentStoryId(story.id);
     var mq=null;for(var i=0;i<story.questions.length;i++){if(story.questions[i].type==="matching"){mq=story.questions[i];break;}}
     setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
-    setCurrentStoryId(story.id);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setIsDailyGame(false);
     setStage("reading");
   }
 
@@ -1358,115 +1359,104 @@ export default function App(){
 
   async function doFinish(){
     if(!currentUser){setStage("home");return;}
-    var currentMatchState=Object.assign({},matchState);
-    var currentHeadingState=Object.assign({},headingState);
-    var timeSecs=startTimeRef.current?Math.round((Date.now()-startTimeRef.current)/1000):(lv?lv.timeLimit:180);
-    var totalEarned=0,totalMax=0,ansArr=[],typeStats={};
-    for(var i=0;i<questions.length;i++){
-      var qs=questions[i],ans=null;
-      if(qs.type==="matching")ans=currentMatchState;
-      else if(qs.type==="heading")ans=currentHeadingState;
-      else ans=userAnswers[i]!==undefined?userAnswers[i]:null;
-      var pts=scoreQuestion(qs,ans),mx=maxPoints(qs);
-      ansArr.push(pts>=Math.ceil(mx/2));
-      totalEarned+=pts;totalMax+=mx;
-      if(!typeStats[qs.type])typeStats[qs.type]={earned:0,max:0};
-      typeStats[qs.type].earned+=pts;typeStats[qs.type].max+=mx;
-    }
-    var pct=totalMax>0?Math.round((totalEarned/totalMax)*100):0;
-    var stars=pct>=90?5:pct>=75?4:pct>=60?3:pct>=40?2:1;
-    var lvObj=lv||LEVELS[0];
-    var tb=Math.round(lvObj.timeBonus*Math.max(0,(lvObj.timeLimit-timeSecs)/lvObj.timeLimit));
-    var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
-    var today=new Date().toLocaleDateString();
-
-    var badgesBefore=checkBadges(currentUser,vocab,calcStreakWithShields(currentUser.games,shieldDates));
-    var tempTodayGames=currentUser.games.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
-    var newQuestItems=[];
-    for(var qi=0;qi<dailyQuests.length;qi++){
-      var qt=dailyQuests[qi];
-      if(questsDone[qt.id])continue;
-      if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreakWithShields(currentUser.games.concat([{date:today}]),shieldDates)})){
-        newQuestItems.push(qt);finalXp+=qt.xp;
+    try{
+      var currentMatchState=Object.assign({},matchState);
+      var currentHeadingState=Object.assign({},headingState);
+      var timeSecs=startTimeRef.current?Math.round((Date.now()-startTimeRef.current)/1000):(lv?lv.timeLimit:180);
+      var totalEarned=0,totalMax=0,ansArr=[],typeStats={};
+      for(var i=0;i<questions.length;i++){
+        var qs=questions[i],ans=null;
+        if(qs.type==="matching")ans=currentMatchState;
+        else if(qs.type==="heading")ans=currentHeadingState;
+        else ans=userAnswers[i]!==undefined?userAnswers[i]:null;
+        var pts=scoreQuestion(qs,ans),mx=maxPoints(qs);
+        ansArr.push(pts>=Math.ceil(mx/2));
+        totalEarned+=pts;totalMax+=mx;
+        if(!typeStats[qs.type])typeStats[qs.type]={earned:0,max:0};
+        typeStats[qs.type].earned+=pts;typeStats[qs.type].max+=mx;
       }
-    }
-    var wpm=getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs);
-    var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
-    var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
-    var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
-    await saveUsers(newUsers);setAllUsers(newUsers);setCurrentUser(updatedUser);
-    var prevStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
-    var newStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
-    var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
-    var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
-    var newLongest=Math.max(longestStreak,newStreakVal);
-    var newShields=shields;
-    if(newStreakVal>0&&newStreakVal%7===0&&prevStreakVal%7!==0&&newShields<3){newShields=Math.min(3,newShields+1);}
-    setLongestStreak(newLongest);setShields(newShields);
-    var sKey2="rq-streak-data-v1-"+updatedUser.name;
-    localStorage.setItem(sKey2,JSON.stringify({shields:newShields,shieldDates:shieldDates,longestStreak:newLongest}));
+      var pct=totalMax>0?Math.round((totalEarned/totalMax)*100):0;
+      var stars=pct>=90?5:pct>=75?4:pct>=60?3:pct>=40?2:1;
+      var lvObj=lv||LEVELS[0];
+      var tb=Math.round(lvObj.timeBonus*Math.max(0,(lvObj.timeLimit-timeSecs)/lvObj.timeLimit));
+      var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
+      var today=new Date().toLocaleDateString();
 
-    var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
-    var nb=Object.assign({},boards);
-    var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,100);
-    await saveBoards(nb);setBoards(nb);
+      var badgesBefore=checkBadges(currentUser,vocab,calcStreakWithShields(currentUser.games,shieldDates));
+      var tempTodayGames=currentUser.games.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
+      var newQuestItems=[];
+      for(var qi=0;qi<dailyQuests.length;qi++){
+        var qt=dailyQuests[qi];
+        if(questsDone[qt.id])continue;
+        if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreakWithShields(currentUser.games.concat([{date:today}]),shieldDates)})){
+          newQuestItems.push(qt);finalXp+=qt.xp;
+        }
+      }
+      var wpm=getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs);
+      var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
+      var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
+      var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
+      try{await saveUsers(newUsers);}catch(e){console.warn("saveUsers failed:",e);}
+      setAllUsers(newUsers);setCurrentUser(updatedUser);
+      var prevStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
+      var newStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
+      var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
+      var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
+      var newLongest=Math.max(longestStreak,newStreakVal);
+      var newShields=shields;
+      if(newStreakVal>0&&newStreakVal%7===0&&prevStreakVal%7!==0&&newShields<3){newShields=Math.min(3,newShields+1);}
+      setLongestStreak(newLongest);setShields(newShields);
+      var sKey2="rq-streak-data-v1-"+updatedUser.name;
+      localStorage.setItem(sKey2,JSON.stringify({shields:newShields,shieldDates:shieldDates,longestStreak:newLongest}));
 
-    // write challenge result back so challenger sees it
-    if(activeChallengeIdx!==null&&activeChallengeFrom&&currentUser){
-      var nc=doCompleteChallenge(social,currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});
-      await saveSocial(nc);setSocial(nc);
-      setActiveChallengeIdx(null);setActiveChallengeFrom("");
-    }
+      var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
+      var nb=Object.assign({},boards);
+      var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,100);
+      try{await saveBoards(nb);}catch(e){console.warn("saveBoards failed:",e);}
+      setBoards(nb);
 
-    var wasDaily=isDailyGame;
-    if(isDailyGame&&currentUser){
-      var done={date:today,xp:finalXp,pct:pct,timeSecs:timeSecs};
-      localStorage.setItem("rq-daily-done-"+currentUser.name,JSON.stringify(done));
-      setDailyDone(done);
-      var dlb=await loadDailyLb();
-      var todayDlb=(dlb&&dlb[today])||[];
-      var dfiltered=todayDlb.filter(function(e){return e.name!==currentUser.name;});
-      var dEntry={name:currentUser.name,xp:finalXp,pct:pct,timeSecs:timeSecs};
-      var dmerged=dfiltered.concat([dEntry]);dmerged.sort(function(a,b){return b.xp-a.xp;});
-      var ndlb={};for(var dk in dlb)ndlb[dk]=dlb[dk];ndlb[today]=dmerged;
-      saveDailyLb(ndlb);setDailyLb(dmerged);
-      setIsDailyGame(false);
-    }
+      if(activeChallengeIdx!==null&&activeChallengeFrom&&currentUser){
+        try{var nc=doCompleteChallenge(social,currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});await saveSocial(nc);setSocial(nc);}catch(e){console.warn("saveSocial failed:",e);}
+        setActiveChallengeIdx(null);setActiveChallengeFrom("");
+      }
 
-    var wk=getWeekId();
-    var wlb=await loadWeeklyLb();var wToday=(wlb&&wlb[wk])||[];
-    var wExisting=wToday.find(function(e){return e.name===currentUser.name;});
-    var wEntry=wExisting?{name:wExisting.name,xp:wExisting.xp+finalXp,games:(wExisting.games||0)+1}:{name:currentUser.name,xp:finalXp,games:1};
-    var wFiltered=wToday.filter(function(e){return e.name!==currentUser.name;});
-    var wMerged=wFiltered.concat([wEntry]);wMerged.sort(function(a,b){return b.xp-a.xp;});
-    var nwlb={};for(var wk2 in wlb)nwlb[wk2]=wlb[wk2];nwlb[wk]=wMerged.slice(0,30);
-    saveWeeklyLb(nwlb);setWeeklyLb(wMerged.slice(0,30));
+      var wasDaily=isDailyGame;
+      if(isDailyGame&&currentUser){
+        var done={date:today,xp:finalXp,pct:pct,timeSecs:timeSecs};
+        localStorage.setItem("rq-daily-done-"+currentUser.name,JSON.stringify(done));
+        setDailyDone(done);
+        try{var dlb=await loadDailyLb();var todayDlb=(dlb&&dlb[today])||[];var dfiltered=todayDlb.filter(function(e){return e.name!==currentUser.name;});var dEntry={name:currentUser.name,xp:finalXp,pct:pct,timeSecs:timeSecs};var dmerged=dfiltered.concat([dEntry]);dmerged.sort(function(a,b){return b.xp-a.xp;});var ndlb={};for(var dk in dlb)ndlb[dk]=dlb[dk];ndlb[today]=dmerged;saveDailyLb(ndlb);setDailyLb(dmerged);}catch(e){console.warn("dailyLb failed:",e);}
+        setIsDailyGame(false);
+      }
 
-    var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
-    if(newQuestItems.length>0){
-      var nqd={};for(var qk in questsDone)nqd[qk]=questsDone[qk];
-      newQuestItems.forEach(function(q){nqd[q.id]=true;});
-      localStorage.setItem("rq-quests-"+currentUser.name+"-"+today,JSON.stringify(nqd));
-      setQuestsDone(nqd);
-    }
-    var questBonus=newQuestItems.reduce(function(s,q){return s+q.xp;},0);
-    // update reading goals
-    var updatedGoals=Object.assign({},goals);
-    var completedGoalIds=[];
-    var wkId=getWeekId();
-    GOAL_DEFS.forEach(function(def){
-      var g=updatedGoals[def.id];if(!g)return;
-      var wasReset=false;
-      if((def.id==="weekly_games"||def.id==="weekly_xp")&&g.weekId!==wkId){g=Object.assign({},g,{weekId:wkId});wasReset=true;}
-      var prevProg=getGoalProgress(def.id,g,currentUser.games,newStreakVal);
-      if(def.id==="avg_score"){var tr=(g.trackGames||[]).concat([pct]);g=Object.assign({},g,{trackGames:tr.slice(-5)});}
-      updatedGoals[def.id]=g;
-      var newProg=getGoalProgress(def.id,g,updatedUser.games,newStreakVal);
-      if(newProg.done&&!prevProg.done)completedGoalIds.push(def.id);
-    });
-    saveGoalsLocal(updatedGoals);
-    setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds});
-    setStage("result");
+      var wk=getWeekId();
+      try{var wlb=await loadWeeklyLb();var wToday=(wlb&&wlb[wk])||[];var wExisting=wToday.find(function(e){return e.name===currentUser.name;});var wEntry=wExisting?{name:wExisting.name,xp:wExisting.xp+finalXp,games:(wExisting.games||0)+1}:{name:currentUser.name,xp:finalXp,games:1};var wFiltered=wToday.filter(function(e){return e.name!==currentUser.name;});var wMerged=wFiltered.concat([wEntry]);wMerged.sort(function(a,b){return b.xp-a.xp;});var nwlb={};for(var wk2 in wlb)nwlb[wk2]=wlb[wk2];nwlb[wk]=wMerged.slice(0,30);saveWeeklyLb(nwlb);setWeeklyLb(wMerged.slice(0,30));}catch(e){console.warn("weeklyLb failed:",e);}
+
+      var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
+      if(newQuestItems.length>0){
+        var nqd={};for(var qk in questsDone)nqd[qk]=questsDone[qk];
+        newQuestItems.forEach(function(q){nqd[q.id]=true;});
+        localStorage.setItem("rq-quests-"+currentUser.name+"-"+today,JSON.stringify(nqd));
+        setQuestsDone(nqd);
+      }
+      var questBonus=newQuestItems.reduce(function(s,q){return s+q.xp;},0);
+      var updatedGoals=Object.assign({},goals);
+      var completedGoalIds=[];
+      var wkId=getWeekId();
+      GOAL_DEFS.forEach(function(def){
+        var g=updatedGoals[def.id];if(!g)return;
+        var wasReset=false;
+        if((def.id==="weekly_games"||def.id==="weekly_xp")&&g.weekId!==wkId){g=Object.assign({},g,{weekId:wkId});wasReset=true;}
+        var prevProg=getGoalProgress(def.id,g,currentUser.games,newStreakVal);
+        if(def.id==="avg_score"){var tr=(g.trackGames||[]).concat([pct]);g=Object.assign({},g,{trackGames:tr.slice(-5)});}
+        updatedGoals[def.id]=g;
+        var newProg=getGoalProgress(def.id,g,updatedUser.games,newStreakVal);
+        if(newProg.done&&!prevProg.done)completedGoalIds.push(def.id);
+      });
+      saveGoalsLocal(updatedGoals);
+      setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds});
+      setStage("result");
+    }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");}
   }
 
   function doRestart(){
