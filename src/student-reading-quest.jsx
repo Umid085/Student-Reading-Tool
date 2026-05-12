@@ -42,6 +42,50 @@ var PRESET_THEMES = [
 var Q_LABELS = {mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"};
 var Q_XP = {mcq:1,gap_word:1,gap_sentence:1,matching:3,heading:3,qa:2,tfnm:1,ynng:1};
 
+var Q_HINTS = {
+  mcq:"Read all options before choosing. Eliminate clearly wrong answers first. Watch for absolute words like 'always' or 'never' — they're often traps.",
+  gap_word:"Think about grammar (noun/verb/adjective?) and meaning. Re-read the sentence with your choice to hear if it sounds natural.",
+  gap_sentence:"Look at the sentences before AND after the gap for clues. The inserted sentence must connect logically with both neighbours.",
+  matching:"Match the easiest pairs first to reduce your options. Look for synonyms and paraphrases — the wording will rarely be identical.",
+  heading:"Read the full paragraph, then choose a heading that covers the MAIN idea, not just a detail mentioned in one sentence.",
+  qa:"Answer in your own words using evidence from the passage. Aim for 1–2 complete sentences; avoid copying large chunks verbatim.",
+  tfnm:"TRUE = passage clearly states it. FALSE = passage directly contradicts it. NOT MENTIONED = the passage says nothing about it — don't guess.",
+  ynng:"YES = passage agrees with the statement. NO = passage disagrees. NOT GIVEN = the passage neither confirms nor denies it."
+};
+
+var WORD_OF_DAY=[
+  {word:"Ephemeral",phonetic:"/ɪˈfem(ə)rəl/",type:"adj",def:"Lasting for only a short time; transitory.",ex:"The ephemeral beauty of cherry blossoms is what makes them so precious."},
+  {word:"Eloquent",phonetic:"/ˈeləkwənt/",type:"adj",def:"Fluent and persuasive in speaking or writing.",ex:"Her eloquent speech moved the entire audience to tears."},
+  {word:"Pragmatic",phonetic:"/præɡˈmætɪk/",type:"adj",def:"Dealing with things sensibly and practically rather than theoretically.",ex:"A pragmatic approach to the problem saved the team weeks of effort."},
+  {word:"Tenacious",phonetic:"/tɪˈneɪʃəs/",type:"adj",def:"Not giving up easily; very determined.",ex:"His tenacious refusal to quit eventually led to his breakthrough."},
+  {word:"Ambiguous",phonetic:"/æmˈbɪɡjuəs/",type:"adj",def:"Open to more than one interpretation; not clear.",ex:"The contract's ambiguous wording caused disputes later on."},
+  {word:"Resilient",phonetic:"/rɪˈzɪlɪənt/",type:"adj",def:"Able to recover quickly from difficulties.",ex:"Communities that are resilient bounce back faster after natural disasters."},
+  {word:"Scrutinise",phonetic:"/ˈskruːtɪnaɪz/",type:"verb",def:"To examine or inspect closely and thoroughly.",ex:"The auditors scrutinised every line of the financial report."},
+  {word:"Candid",phonetic:"/ˈkændɪd/",type:"adj",def:"Truthful and straightforward; frank.",ex:"I appreciated her candid feedback, even though it stung a little."},
+  {word:"Innate",phonetic:"/ɪˈneɪt/",type:"adj",def:"Inborn; existing from birth; natural.",ex:"Some researchers argue that language ability is innate in humans."},
+  {word:"Proliferate",phonetic:"/prəˈlɪfəreɪt/",type:"verb",def:"To grow or multiply rapidly.",ex:"Social media platforms have proliferated over the past decade."},
+  {word:"Obsolete",phonetic:"/ˈɒbsəliːt/",type:"adj",def:"No longer produced or used; out of date.",ex:"Fax machines became obsolete with the rise of email."},
+  {word:"Disparity",phonetic:"/dɪˈspærɪti/",type:"noun",def:"A great difference between things.",ex:"The income disparity between urban and rural areas remains a challenge."},
+  {word:"Meticulous",phonetic:"/mɪˈtɪkjʊləs/",type:"adj",def:"Showing great attention to detail; very careful.",ex:"Her meticulous notes helped the whole class prepare for the exam."},
+  {word:"Altruistic",phonetic:"/ˌæltruˈɪstɪk/",type:"adj",def:"Showing selfless concern for the well-being of others.",ex:"Volunteering abroad is often driven by altruistic motives."},
+  {word:"Nuance",phonetic:"/ˈnjuːɑːns/",type:"noun",def:"A subtle difference in meaning, expression, or tone.",ex:"Learning a language means grasping its nuances, not just its rules."},
+  {word:"Elusive",phonetic:"/ɪˈluːsɪv/",type:"adj",def:"Difficult to find, catch, or achieve.",ex:"True happiness can feel elusive if we constantly chase material goals."},
+  {word:"Vindicate",phonetic:"/ˈvɪndɪkeɪt/",type:"verb",def:"To clear someone of blame or suspicion.",ex:"New evidence vindicated the suspect and he was released."},
+  {word:"Ambivalent",phonetic:"/æmˈbɪvələnt/",type:"adj",def:"Having mixed or contradictory feelings about something.",ex:"She was ambivalent about moving abroad — excited but also anxious."},
+  {word:"Catalyst",phonetic:"/ˈkætəlɪst/",type:"noun",def:"A person or event that causes important change.",ex:"The invention of the printing press was a catalyst for the Renaissance."},
+  {word:"Frugal",phonetic:"/ˈfruːɡəl/",type:"adj",def:"Sparing or economical with money or food.",ex:"By being frugal throughout his twenties, he retired at fifty."},
+  {word:"Inevitable",phonetic:"/ɪnˈevɪtəbəl/",type:"adj",def:"Certain to happen; unavoidable.",ex:"With rapid urbanisation, traffic congestion seems inevitable."},
+  {word:"Juxtapose",phonetic:"/ˌdʒʌkstəˈpəʊz/",type:"verb",def:"To place two things side by side to highlight a contrast.",ex:"The film juxtaposes wealth and poverty to make a powerful point."},
+  {word:"Lucid",phonetic:"/ˈluːsɪd/",type:"adj",def:"Expressed clearly; easy to understand.",ex:"Her lucid explanation helped even the beginners follow the concept."},
+  {word:"Paradox",phonetic:"/ˈpærədɒks/",type:"noun",def:"A statement that seems contradictory yet contains truth.",ex:"It is a paradox that the more choices we have, the less satisfied we feel."},
+  {word:"Rhetoric",phonetic:"/ˈretərɪk/",type:"noun",def:"Persuasive language used in speech or writing.",ex:"Politicians often rely on rhetoric rather than concrete policy details."},
+  {word:"Sceptical",phonetic:"/ˈskeptɪkəl/",type:"adj",def:"Not easily convinced; having doubts.",ex:"Scientists are naturally sceptical and demand strong evidence."},
+  {word:"Ubiquitous",phonetic:"/juːˈbɪkwɪtəs/",type:"adj",def:"Present, appearing, or found everywhere.",ex:"Smartphones have become ubiquitous in modern life."},
+  {word:"Verbose",phonetic:"/vɜːˈbəʊs/",type:"adj",def:"Using more words than necessary; long-winded.",ex:"The report was so verbose that key findings were buried on page forty."},
+  {word:"Wistful",phonetic:"/ˈwɪstfəl/",type:"adj",def:"Having a feeling of vague longing or regret.",ex:"She gave a wistful smile when she found her old childhood photos."},
+  {word:"Zealous",phonetic:"/ˈzeləs/",type:"adj",def:"Having or showing great energy in pursuit of a cause.",ex:"The zealous volunteers arrived two hours early to set up the event."}
+];
+
 var COMMON_WORDS=new Set(("a about above across add after again age ago agree air all allow almost alone along already also although always am among an and another any are area around as ask at away back bad be became because been before behind being below best better between big black body both break bring but buy by call came can care carry cause change cheap check child clear close come common complete could course cut dark day deep did different do does done down draw drive during each early eat end enough even ever every example face fact far feel few fill find first follow for found four from gave get give go good got great grow had hand hard has have he help her here high him his home hot how however hundred if important in increase into is it its just keep kind know large last later learn left less let life light like little live long look made make man many may me mean meet might money more most move much must my myself need never new next night no not now number of off often old on once only open or other our out own part people per place plan play point possible power put read real right room run said same say school see she show since small so some something soon stay stop such system take tell than that the their them then there these they think this those three through time to today together too took toward try turn under up us use very walk want was way we went were what when where which while who why will with work world would write year yes yet you young your able accept according account achieve act action actually address almost already also among area back based become begin behind best better black blue body build call car carry center chance change check clear close color come consider continue control country course create cut deal decide design develop different door down draw drive early earth east effect either element end enough enter establish even example experience eye face fact fall family far feel figure find fire five floor follow found four free full function game give given good group grow hand happen hard head high history hold home hour house however human hundred idea increase indeed information interest kind know language law lead learn leave left let level light line list look mean message mind mode money month most move much must national near night notice number object off offer old once open order organization other outside page paper past pay period person pick place plan point poor position press process product program public put question range rate reach read ready record require result right role round run school second seem seen series set side simple since sit six situation small social some sort sound state still stop study subject sure surface system table talk ten term thing thought time today together town try turn type unit until use usually various view visit voice walk want watch way week well whether white wide within without word world write yet").split(" "));
 
 function countSyllables(word){
@@ -902,6 +946,17 @@ export default function App(){
   var [passInput,setPassInput]=useState("");
   var [authMode,setAuthMode]=useState("register");
   var [showPass,setShowPass]=useState(false);
+  // quiz hints
+  var [dismissedHints,setDismissedHints]=useState(new Set());
+  // keyword highlight
+  var [hlMode,setHlMode]=useState(false);
+  var [hlWords,setHlWords]=useState(new Set());
+  // sound & music
+  var [sfxOn,setSfxOn]=useState(function(){try{return localStorage.getItem("rq-sfx")!=="off";}catch(e){return true;}});
+  var [musicOn,setMusicOn]=useState(false);
+  var [musicGenre,setMusicGenre]=useState(function(){try{return localStorage.getItem("rq-music-genre")||"classical";}catch(e){return"classical";}});
+  var audioCtxRef=useRef(null);
+  var musicStopRef=useRef(null);
   var [authErr,setAuthErr]=useState("");
   var [currentUser,setCurrentUser]=useState(null);
   var [allUsers,setAllUsers]=useState([]);
@@ -1111,6 +1166,12 @@ export default function App(){
       loadUsers().then(function(u){setAllUsers(u);});
     }
   },[stage,searchQuery,currentUser]);
+
+  useEffect(function(){
+    if(stage==="reading"&&musicOn){startMusic(musicGenre);}
+    else{stopMusic();}
+    return function(){stopMusic();};
+  },[stage,musicOn,musicGenre]);
 
   var lv=getLv(level);
   var q=questions&&questions.length>current?questions[current]:null;
@@ -1353,6 +1414,7 @@ export default function App(){
     var isGood=pts>=Math.ceil(mxp/2),ns=isGood?streak+1:0;
     setStreak(ns);
     setTotalXpSoFar(function(x){return x+Math.round(pts*(lv?lv.mult:1)*100)+(ns>=3?50:0);});
+    playSfx(isGood?"correct":"wrong");
     setConfirmed(true);
   }
 
@@ -1459,6 +1521,7 @@ export default function App(){
       });
       saveGoalsLocal(updatedGoals);
       setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds});
+      stopMusic();playSfx("complete");
       setStage("result");
     }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");}
   }
@@ -1468,7 +1531,7 @@ export default function App(){
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setTotalXpSoFar(0);
     setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");
-    setIsDailyGame(false);setSavedWords(new Set());
+    setIsDailyGame(false);setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});
     setTutorChat([]);setTutorInput("");setTutorLoading(false);
@@ -1628,6 +1691,145 @@ export default function App(){
   function hex2rgb(h){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+","+g+","+b;}
   function applyTheme(t){setAppTheme(t);localStorage.setItem("rq-theme",JSON.stringify(t));}
   function resetTheme(){setAppTheme(null);localStorage.removeItem("rq-theme");}
+
+  // ── sound & music helpers ─────────────────────────────────
+  function getACtx(){
+    if(!audioCtxRef.current){audioCtxRef.current=new(window.AudioContext||window.webkitAudioContext)();}
+    if(audioCtxRef.current.state==="suspended"){audioCtxRef.current.resume();}
+    return audioCtxRef.current;
+  }
+  function playSfx(type){
+    if(!sfxOn)return;
+    try{
+      var ctx=getACtx(),now=ctx.currentTime;
+      if(type==="correct"){
+        [[523.25,0],[659.25,0.08],[783.99,0.16]].forEach(function(p){
+          var o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+          o.type="sine";o.frequency.value=p[0];
+          var t=now+p[1];g.gain.setValueAtTime(0.28,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.35);
+          o.start(t);o.stop(t+0.35);
+        });
+      } else if(type==="wrong"){
+        var o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+        o.type="sawtooth";o.frequency.setValueAtTime(280,now);o.frequency.exponentialRampToValueAtTime(140,now+0.28);
+        g.gain.setValueAtTime(0.18,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.28);
+        o.start(now);o.stop(now+0.28);
+      } else if(type==="xp"){
+        var o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+        o.type="sine";o.frequency.setValueAtTime(880,now);o.frequency.exponentialRampToValueAtTime(1760,now+0.14);
+        g.gain.setValueAtTime(0.22,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.22);
+        o.start(now);o.stop(now+0.22);
+      } else if(type==="complete"){
+        [[523.25,0],[659.25,0.13],[783.99,0.26],[1046.5,0.4]].forEach(function(p){
+          var o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+          o.type="triangle";o.frequency.value=p[0];
+          var t=now+p[1];g.gain.setValueAtTime(0.28,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.45);
+          o.start(t);o.stop(t+0.45);
+        });
+      }
+    }catch(e){}
+  }
+  function startMusic(genre){
+    if(musicStopRef.current){musicStopRef.current();}
+    try{
+      var ctx=getACtx();
+      var SCALES={
+        classical:[[261.63,329.63,392,523.25],[0,0.5,1,1.5,2,2.5]],
+        lofi:[[220,277.18,329.63,440],[0,0.75,1.5,2.25,3]],
+        jazz:[[293.66,369.99,440,587.33],[0,0.4,0.8,1.4,2.0]],
+        nature:null
+      };
+      var stopped=false;
+      if(genre==="nature"){
+        var bufSize=ctx.sampleRate*2;
+        var buf=ctx.createBuffer(1,bufSize,ctx.sampleRate);
+        var data=buf.getChannelData(0);
+        for(var i=0;i<bufSize;i++)data[i]=(Math.random()*2-1)*0.06;
+        var src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+        var flt=ctx.createBiquadFilter();flt.type="lowpass";flt.frequency.value=600;
+        var g=ctx.createGain();g.gain.value=0.25;
+        src.connect(flt);flt.connect(g);g.connect(ctx.destination);
+        src.start();
+        musicStopRef.current=function(){stopped=true;try{src.stop();}catch(e){}};
+      } else {
+        var sc=SCALES[genre]||SCALES.classical;
+        var notes=sc[0],beats=sc[1];
+        var noteIdx=0,beatIdx=0;
+        var masterGain=ctx.createGain();masterGain.gain.value=0.18;masterGain.connect(ctx.destination);
+        var playNext=function(){
+          if(stopped)return;
+          var o=ctx.createOscillator(),ng=ctx.createGain();
+          o.connect(ng);ng.connect(masterGain);
+          o.type=genre==="jazz"?"triangle":"sine";
+          o.frequency.value=notes[noteIdx%notes.length];
+          ng.gain.setValueAtTime(0.001,ctx.currentTime);
+          ng.gain.linearRampToValueAtTime(0.7,ctx.currentTime+0.05);
+          ng.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.6);
+          o.start(ctx.currentTime);o.stop(ctx.currentTime+0.65);
+          noteIdx++;beatIdx++;
+          var delay=beats[beatIdx%beats.length]*1000||700;
+          if(!stopped)setTimeout(playNext,delay);
+        };
+        playNext();
+        musicStopRef.current=function(){stopped=true;try{masterGain.disconnect();}catch(e){}};
+      }
+    }catch(e){}
+  }
+  function stopMusic(){if(musicStopRef.current){musicStopRef.current();musicStopRef.current=null;}}
+
+  // ── social share ──────────────────────────────────────────
+  function doShare(){
+    try{
+      var canvas=document.createElement("canvas");
+      canvas.width=800;canvas.height=420;
+      var c=canvas.getContext("2d");
+      // bg gradient
+      var grd=c.createLinearGradient(0,0,800,420);grd.addColorStop(0,"#0d0d1a");grd.addColorStop(1,"#111827");
+      c.fillStyle=grd;c.fillRect(0,0,800,420);
+      // accent stripe
+      var lv=getLv(result.level||level);
+      c.fillStyle=lv?lv.color:"#34d399";c.fillRect(0,0,6,420);
+      // app name
+      c.font="700 15px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.4)";
+      c.fillText("READING QUEST",30,40);
+      // level badge
+      c.font="900 13px 'Trebuchet MS',sans-serif";c.fillStyle=lv?lv.color:"#34d399";
+      c.fillText((result.level||level)+" QUEST",30,68);
+      // big score
+      c.font="900 110px 'Trebuchet MS',sans-serif";
+      c.fillStyle=result.pct>=80?"#22c55e":result.pct>=60?"#f59e0b":"#ef4444";
+      c.fillText(result.pct+"%",30,190);
+      // sub stats
+      c.font="700 20px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.7)";
+      c.fillText(result.xp+" XP earned",30,230);
+      c.fillText(result.score+" / "+result.maxScore+" correct",30,258);
+      // title
+      if(passage&&passage.title){
+        c.font="400 16px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.4)";
+        c.fillText(passage.title.substring(0,60),30,295);
+      }
+      // user
+      if(currentUser){
+        c.font="700 18px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.55)";
+        c.fillText("@"+currentUser.name,30,380);
+      }
+      // verdict
+      var verdict=result.pct>=80?"Excellent!":result.pct>=60?"Good job!":"Keep going!";
+      c.font="900 52px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.08)";
+      c.textAlign="right";c.fillText(verdict,780,190);c.textAlign="left";
+      // share
+      canvas.toBlob(function(blob){
+        if(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([blob],"result.png",{type:"image/png"})]})){
+          navigator.share({title:"Reading Quest Result",text:"I scored "+result.pct+"% on a "+( result.level||level)+" quest! 📖",files:[new File([blob],"result.png",{type:"image/png"})]}).catch(function(){});
+        } else {
+          var url=URL.createObjectURL(blob);
+          var a=document.createElement("a");a.href=url;a.download="reading-quest-result.png";a.click();
+          setTimeout(function(){URL.revokeObjectURL(url);},2000);
+        }
+      },"image/png");
+    }catch(e){console.error("share failed",e);}
+  }
+
   function selectRandomTheme(){
     var randomIndex=Math.floor(Math.random()*PRESET_THEMES.length);
     applyTheme(PRESET_THEMES[randomIndex]);
@@ -1958,6 +2160,47 @@ export default function App(){
               );
             })()}
 
+            {/* word of the day card */}
+            {(function(){
+              var doy=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(864e5));
+              var wotd=WORD_OF_DAY[doy%WORD_OF_DAY.length];
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(167,139,250,0.3)",background:"rgba(167,139,250,0.05)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.6,margin:0}}>📖 WORD OF THE DAY</p>
+                    <span style={{fontSize:10,color:"#6b7280",background:"rgba(255,255,255,0.06)",borderRadius:999,padding:"2px 8px",fontWeight:700,textTransform:"uppercase"}}>{wotd.type}</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:4}}>
+                    <span style={{fontSize:20,fontWeight:900,color:"#e9d5ff"}}>{wotd.word}</span>
+                    <span style={{fontSize:12,color:"#7c3aed",fontFamily:"'JetBrains Mono',monospace"}}>{wotd.phonetic}</span>
+                  </div>
+                  <p style={{fontSize:13,color:"#d1d5db",margin:"0 0 4px",lineHeight:1.5}}>{wotd.def}</p>
+                  <p style={{fontSize:12,color:"#6b7280",margin:0,fontStyle:"italic"}}>"{wotd.ex}"</p>
+                </div>
+              );
+            })()}
+
+            {/* sound & music controls */}
+            <div style={{...CARD,marginBottom:12,padding:14}}>
+              <p style={{fontSize:11,color:"#06b6d4",fontWeight:700,letterSpacing:0.6,margin:"0 0 10px"}}>🎵 AUDIO SETTINGS</p>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                <button onClick={function(){setSfxOn(function(v){var n=!v;try{localStorage.setItem("rq-sfx",n?"on":"off");}catch(e){}return n;});}} style={{background:sfxOn?"rgba(52,211,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(sfxOn?"rgba(52,211,153,0.4)":"rgba(255,255,255,0.1)"),color:sfxOn?"#34d399":"#9ca3af",borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all 0.15s ease"}}>
+                  {sfxOn?"🔊 SFX On":"🔇 SFX Off"}
+                </button>
+                <button onClick={function(){setMusicOn(function(v){return!v;});}} style={{background:musicOn?"rgba(6,182,212,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(musicOn?"rgba(6,182,212,0.4)":"rgba(255,255,255,0.1)"),color:musicOn?"#22d3ee":"#9ca3af",borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all 0.15s ease"}}>
+                  {musicOn?"🎵 Music On":"🎵 Music Off"}
+                </button>
+                {musicOn&&(
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                    {[["classical","🎻 Classical"],["lofi","☕ Lo-fi"],["jazz","🎷 Jazz"],["nature","🌿 Nature"]].map(function(opt){
+                      var active=musicGenre===opt[0];
+                      return<button key={opt[0]} onClick={function(){setMusicGenre(opt[0]);try{localStorage.setItem("rq-music-genre",opt[0]);}catch(e){}}} style={{background:active?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"rgba(167,139,250,0.5)":"rgba(255,255,255,0.08)"),color:active?"#c4b5fd":"#6b7280",borderRadius:999,padding:"4px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,transition:"all 0.15s ease"}}>{opt[1]}</button>;
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* daily challenge card */}
             {currentUser&&(function(){
               var today=new Date().toLocaleDateString();
@@ -2158,9 +2401,14 @@ export default function App(){
               if(!word)return<span key={i}>{token}</span>;
               var saved=savedWords.has(word),isSelected=selectedWord===word;
               var isHard=heatmapOn&&word.length>2&&!COMMON_WORDS.has(word.replace(/[^a-z]/g,""));
-              var bg=isSelected?"rgba(251,191,36,0.3)":saved?"rgba(6,182,212,0.2)":isHard?"rgba(245,158,11,0.22)":"transparent";
-              var col=isSelected?"#fbbf24":saved?"#06b6d4":isHard?"#fbbf24":"inherit";
-              return<span key={i} onClick={function(){lookupWord(word);}} title={isHard?"Uncommon word":undefined} style={{cursor:"pointer",borderRadius:3,background:bg,color:col,padding:"0 2px",transition:"background 0.12s",textDecoration:isSelected?"underline":isHard?"underline dotted":"none",textDecorationColor:isSelected?"#fbbf24":"rgba(245,158,11,0.5)"}}>{token}</span>;
+              var isHl=hlWords.has(i);
+              var bg=isSelected?"rgba(251,191,36,0.3)":isHl?"rgba(251,191,36,0.35)":saved?"rgba(6,182,212,0.2)":isHard?"rgba(245,158,11,0.22)":"transparent";
+              var col=isSelected?"#fbbf24":isHl?"#fde68a":saved?"#06b6d4":isHard?"#fbbf24":"inherit";
+              function handleClick(){
+                if(hlMode){setHlWords(function(s){var n=new Set(s);if(n.has(i))n.delete(i);else n.add(i);return n;});}
+                else{lookupWord(word);}
+              }
+              return<span key={i} onClick={handleClick} title={hlMode?"Click to highlight":(isHard?"Uncommon word":undefined)} style={{cursor:hlMode?"crosshair":"pointer",borderRadius:3,background:bg,color:col,padding:"0 2px",transition:"background 0.12s",textDecoration:isSelected?"underline":isHl?"underline":isHard?"underline dotted":"none",textDecorationColor:isSelected?"#fbbf24":isHl?"rgba(251,191,36,0.6)":"rgba(245,158,11,0.5)"}}>{token}</span>;
             });
           }
 
@@ -2370,6 +2618,10 @@ export default function App(){
                 <button onClick={function(){setHeatmapOn(function(h){return!h;});}} style={{background:heatmapOn?"rgba(245,158,11,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(heatmapOn?"#f59e0b":"rgba(255,255,255,0.1)"),color:heatmapOn?"#fbbf24":"#9ca3af",borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minWidth:40,justifyContent:"center",transition:"all 0.15s ease"}}>
                   <img src="/assets/icons/icon-heatmap.svg" alt="Heatmap" style={{width:20,height:20}} onError={function(e){e.target.style.display="none";}}/>
                 </button>
+                <button onClick={function(){setHlMode(function(m){return!m;});}} title="Highlight mode: tap words to mark them" style={{background:hlMode?"rgba(251,191,36,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(hlMode?"#fbbf24":"rgba(255,255,255,0.1)"),color:hlMode?"#fde68a":"#9ca3af",borderRadius:8,padding:"5px 10px",fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s ease",display:"flex",alignItems:"center",gap:4}}>
+                  ✏️{hlMode?" On":" Off"}
+                  {hlWords.size>0&&<span style={{background:"rgba(251,191,36,0.3)",borderRadius:999,padding:"0 5px",fontSize:10,fontWeight:700,color:"#fde68a"}}>{hlWords.size}</span>}
+                </button>
                 <button onClick={function(){setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={{background:pronMode?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(pronMode?"#ec4899":"rgba(255,255,255,0.1)"),color:pronMode?"#f472b6":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s ease"}}>🎤 {pronMode?"Exit":"Pronounce"}</button>
                 <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.06)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"3px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s ease"}}>{r}×</button>;})}
                 </div>
@@ -2446,6 +2698,14 @@ export default function App(){
               <span style={{background:"rgba(255,255,255,0.07)",borderRadius:999,padding:"4px 11px",fontSize:12,color:lv?lv.color:"#34d399",fontWeight:700}}>{totalXpSoFar} XP</span>
             </div>
             <div style={{...CARD,padding:"11px 14px",marginBottom:9}}><Timer limit={lv?lv.timeLimit:180} running={timerRunning} onExpire={handleExpire}/></div>
+            {/* ── hint banner ── */}
+            {Q_HINTS[q.type]&&!dismissedHints.has(q.type)&&(
+              <div style={{marginBottom:9,background:"rgba(99,102,241,0.08)",border:"1px solid rgba(99,102,241,0.28)",borderRadius:10,padding:"9px 12px",display:"flex",alignItems:"flex-start",gap:9,animation:"rqFadeIn 0.3s ease both"}}>
+                <span style={{fontSize:16,flexShrink:0}}>💡</span>
+                <p style={{margin:0,fontSize:12,color:"#c7d2fe",lineHeight:1.55,flex:1}}>{Q_HINTS[q.type]}</p>
+                <button onClick={function(){setDismissedHints(function(s){var n=new Set(s);n.add(q.type);return n;});}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16,lineHeight:1,flexShrink:0,padding:0}} title="Got it">✕</button>
+              </div>
+            )}
             <div style={{marginBottom:9}}>
               <button onClick={function(){setShowPassage(function(p){return!p;});}} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?"Hide passage":"Show passage"}</button>
               {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px"}}><p style={{lineHeight:1.9,fontSize:15,color:"#d1d5db",margin:0}}>{passage}</p></div>)}
@@ -2629,6 +2889,7 @@ export default function App(){
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
               <button onClick={function(){setTutorChat([]);setStage("tutor");}} style={{...mkBtn("#0891b2"),flex:1,fontSize:12}}>🤖 Tutor</button>
+              <button onClick={doShare} style={{...mkBtn("#a78bfa"),flex:1,fontSize:12}} title="Share your result">📤 Share</button>
               <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
               <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
