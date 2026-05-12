@@ -3830,7 +3830,7 @@ export default function App(){
         {stage==="writefeedback"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:6}}>
-              <button onClick={function(){if(!writeLoading)setStage("result");}} disabled={writeLoading} style={GHOST}>← Back</button>
+              <button onClick={function(){setStage("result");}} style={GHOST}>← Back</button>
               <h2 style={{fontSize:18,fontWeight:900,color:"#fbbf24",margin:0}}>✍️ Writing Challenge</h2>
             </div>
 
