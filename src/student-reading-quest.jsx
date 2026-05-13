@@ -17,6 +17,7 @@ var FAVS_KEY     = "rq-favs-v1";
 var WEEKLY_KEY   = "rq-weekly-v1";
 var DISCUSS_KEY  = "rq-discuss-v1";
 var QUOTES_KEY   = "rq-quotes-v1";
+var CLASSES_KEY  = "rq-classes-v1";
 
 var LEVELS = [
   {key:"A1",color:"#22c55e",glow:"rgba(34,197,94,0.25)",  mult:1,  timeLimit:150,timeBonus:200,desc:"Elementary"},
@@ -610,6 +611,9 @@ async function loadDiscuss(){var v=await apiGet(DISCUSS_KEY);return v||{};}
 async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
 function loadQuotes(){try{var v=localStorage.getItem(QUOTES_KEY);return v?JSON.parse(v):[];}catch(e){return[];}}
 function saveQuotesLocal(v){try{localStorage.setItem(QUOTES_KEY,JSON.stringify(v));}catch(e){}}
+function generateClassCode(){var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",r="";for(var i=0;i<6;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
+async function loadClasses(){try{var v=await apiGet(CLASSES_KEY);if(v&&Array.isArray(v))return v;}catch(e){}try{var lv=localStorage.getItem(CLASSES_KEY);return lv?JSON.parse(lv):[];}catch(e){return[];}}
+async function saveClassesRemote(v){try{localStorage.setItem(CLASSES_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(CLASSES_KEY,v);}catch(e){}}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
@@ -1167,15 +1171,22 @@ export default function App(){
   // Feature 8 - PWA
   var [isOnline,setIsOnline]=useState(navigator.onLine!==false);
   var [installPrompt,setInstallPrompt]=useState(null);
+  // Teacher dashboard
+  var [classes,setClasses]=useState([]);
+  var [currentClass,setCurrentClass]=useState(null);
+  var [isTeacherReg,setIsTeacherReg]=useState(false);
+  var [newClassName,setNewClassName]=useState("");
+  var [joinClassCode,setJoinClassCode]=useState("");
+  var [joinClassMsg,setJoinClassMsg]=useState("");
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
-    Promise.all([loadUsers(),loadBoards(),loadSocial()]).then(function(v){
-      setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);
+    Promise.all([loadUsers(),loadBoards(),loadSocial(),loadClasses()]).then(function(v){
+      setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setClasses(v[3]||[]);
       var sessionName=saved||(savedCreds&&savedCreds.name);
-      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}setCurrentUser(found);setStage("home");}}
+      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);setStage(role==="teacher"?"teacherDashboard":"home");}}
       setAppReady(true);
     });
   },[]);
@@ -1301,7 +1312,8 @@ export default function App(){
     var fresh=await loadUsers();setAllUsers(fresh);
     localStorage.setItem("rq-session",user.name);
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,hash:hash}));
-    setCurrentUser(user);setStage("home");
+    if(isTeacherReg)localStorage.setItem("rq-role-"+user.name,"teacher");
+    setCurrentUser(user);setStage(isTeacherReg?"teacherDashboard":"home");
   }
 
   async function doLogin(){
@@ -1320,7 +1332,35 @@ export default function App(){
     found=Object.assign({},found,{hash:sha256});
     localStorage.setItem("rq-session",found.name);
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:sha256}));
-    setCurrentUser(found);setStage("home");
+    var role=localStorage.getItem("rq-role-"+found.name);
+    setCurrentUser(found);setStage(role==="teacher"?"teacherDashboard":"home");
+  }
+
+  // ── teacher class actions ───────────────────────────────────
+  async function doCreateClass(){
+    if(!currentUser||!newClassName.trim())return;
+    var code=generateClassCode();
+    var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:new Date().toLocaleDateString(),targetLevel:"B1"};
+    var updated=classes.concat([cls]);
+    setClasses(updated);
+    setNewClassName("");
+    await saveClassesRemote(updated);
+  }
+
+  async function doJoinClass(){
+    if(!currentUser||!joinClassCode.trim())return;
+    var code=joinClassCode.trim().toUpperCase();
+    var cls=classes.find(function(c){return c.id===code;});
+    if(!cls){setJoinClassMsg("Class not found. Check the code and try again.");return;}
+    if(cls.students.indexOf(currentUser.name)!==-1){setJoinClassMsg("You are already in "+cls.name+"!");return;}
+    var updated=classes.map(function(c){
+      if(c.id!==code)return c;
+      return Object.assign({},c,{students:c.students.concat([currentUser.name])});
+    });
+    setClasses(updated);
+    setJoinClassCode("");
+    setJoinClassMsg("✓ Joined "+cls.name+"!");
+    await saveClassesRemote(updated);
   }
 
   // ── social actions ─────────────────────────────────────────
@@ -2287,6 +2327,13 @@ export default function App(){
               <div style={{display:"flex",gap:4,marginBottom:18,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:4}}>
                 {["register","login"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} style={{...GHOST,flex:1,padding:"10px 0",borderRadius:8,fontSize:15,...(authMode===m?{background:"#34d399",color:"#0d0d1a",borderColor:"#34d399"}:{})}}>{m==="login"?"Log In":"Register"}</button>;})}
               </div>
+              {authMode==="register"&&(
+                <div style={{display:"flex",gap:6,marginBottom:4}}>
+                  {[{v:false,label:"👨‍🎓 Student"},{v:true,label:"👩‍🏫 Teacher"}].map(function(r){return(
+                    <button key={String(r.v)} onClick={function(){setIsTeacherReg(r.v);}} style={{flex:1,padding:"8px 0",borderRadius:10,border:"2px solid "+(isTeacherReg===r.v?"#6366f1":"rgba(255,255,255,0.1)"),background:isTeacherReg===r.v?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.03)",color:isTeacherReg===r.v?"#a78bfa":"#9ca3af",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{r.label}</button>
+                  );})}
+                </div>
+              )}
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 <input style={INP} placeholder="Username" value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
                 <div className="rq-pass-wrap">
@@ -2304,6 +2351,127 @@ export default function App(){
             </div>
           </div>
         )}
+
+        {/* ── TEACHER DASHBOARD ────────────────────────────── */}
+        {stage==="teacherDashboard"&&currentUser&&(function(){
+          var myClasses=classes.filter(function(c){return c.teacherName===currentUser.name;});
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+                <div>
+                  <h2 style={{margin:"0 0 4px",fontSize:22,fontWeight:900,color:"#a78bfa"}}>👩‍🏫 Teacher Dashboard</h2>
+                  <p style={{margin:0,fontSize:13,color:"#6b7280"}}>Welcome back, {currentUser.name}</p>
+                </div>
+                <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>Log Out</button>
+              </div>
+
+              <div style={{...CARD,marginBottom:14}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>CREATE NEW CLASS</p>
+                <div style={{display:"flex",gap:8}}>
+                  <input value={newClassName} onChange={function(e){setNewClassName(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doCreateClass();}} placeholder="Class name (e.g. B1 Morning Group)" style={{...INP,flex:1,margin:0}}/>
+                  <button onClick={doCreateClass} disabled={!newClassName.trim()} style={{...mkBtn("#6366f1"),padding:"10px 16px",fontSize:13,whiteSpace:"nowrap"}}>+ Create</button>
+                </div>
+              </div>
+
+              {myClasses.length===0?(
+                <div style={{textAlign:"center",padding:"40px 0",color:"#4b5563"}}>
+                  <div style={{fontSize:48,marginBottom:12}}>🏫</div>
+                  <p style={{fontSize:14}}>No classes yet. Create your first class above.</p>
+                </div>
+              ):myClasses.map(function(cls){
+                var stuData=cls.students.map(function(n){var u=allUsers.find(function(u){return u.name===n;});return u&&u.games?u.games:[];});
+                var allGames=stuData.reduce(function(a,g){return a.concat(g);},[]);
+                var avgPct=allGames.length?Math.round(allGames.reduce(function(s,g){return s+g.pct;},0)/allGames.length):0;
+                return(
+                  <button key={cls.id} onClick={function(){setCurrentClass(cls);setStage("classView");}} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",background:"rgba(255,255,255,0.04)",border:"2px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"14px 16px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",marginBottom:10,transition:"border-color 0.15s"}}
+                    onMouseEnter={function(e){e.currentTarget.style.borderColor="rgba(99,102,241,0.5)";}}
+                    onMouseLeave={function(e){e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";}}>
+                    <div>
+                      <div style={{fontSize:15,fontWeight:800,color:"#f3f4f6",marginBottom:3}}>{cls.name}</div>
+                      <div style={{fontSize:12,color:"#6b7280"}}>{cls.students.length} student{cls.students.length!==1?"s":""} · created {cls.created}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:18,fontWeight:900,color:"#a78bfa",marginBottom:2}}>{avgPct>0?avgPct+"%":"–"}</div>
+                      <div style={{fontSize:10,color:"#4b5563",fontFamily:"'JetBrains Mono',monospace",letterSpacing:2}}>{cls.id}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {/* ── CLASS VIEW ───────────────────────────────────── */}
+        {stage==="classView"&&currentClass&&(function(){
+          var cls=currentClass;
+          var stuData=cls.students.map(function(sName){
+            var u=allUsers.find(function(u){return u.name===sName;});
+            var games=u&&u.games?u.games:[];
+            var validGames=games.filter(function(g){return g.pct>=0;});
+            var avgPct=validGames.length?Math.round(validGames.reduce(function(s,g){return s+g.pct;},0)/validGames.length):0;
+            var wpmGames=games.filter(function(g){return g.wpm>0;});
+            var avgWpm=wpmGames.length?Math.round(wpmGames.reduce(function(s,g){return s+g.wpm;},0)/wpmGames.length):0;
+            var lvOrder=["A1","A2","B1","B2","C1","C2"];
+            var bestLv=getBestLevel(games);
+            var lastGame=games.length?games[games.length-1]:null;
+            return{name:sName,gameCount:games.length,avgPct:avgPct,avgWpm:avgWpm,bestLv:bestLv,lastDate:lastGame?lastGame.date:"Never"};
+          });
+          var activeStudents=stuData.filter(function(d){return d.gameCount>0;});
+          var classAvg=activeStudents.length?Math.round(activeStudents.reduce(function(s,d){return s+d.avgPct;},0)/activeStudents.length):0;
+          var classWpm=activeStudents.filter(function(d){return d.avgWpm>0;}).length?Math.round(activeStudents.filter(function(d){return d.avgWpm>0;}).reduce(function(s,d){return s+d.avgWpm;},0)/activeStudents.filter(function(d){return d.avgWpm>0;}).length):0;
+          var [copyMsg,setCopyMsg]=useState("");
+          return(
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+                <button onClick={function(){setStage("teacherDashboard");}} style={GHOST}>← Back</button>
+                <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#f3f4f6",flex:1}}>{cls.name}</h2>
+              </div>
+
+              <div style={{...CARD,textAlign:"center",marginBottom:12}}>
+                <p style={{fontSize:11,color:"#6b7280",margin:"0 0 6px",letterSpacing:0.6}}>SHARE THIS CODE WITH STUDENTS</p>
+                <div style={{fontSize:36,fontWeight:900,letterSpacing:10,color:"#34d399",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>{cls.id}</div>
+                <button onClick={function(){try{navigator.clipboard.writeText(cls.id);setCopyMsg("Copied!");}catch(e){setCopyMsg(cls.id);}setTimeout(function(){setCopyMsg("");},2000);}} style={{...GHOST,fontSize:12,padding:"5px 14px"}}>{copyMsg||"📋 Copy Code"}</button>
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+                {[{label:"Students",val:cls.students.length,color:"#a78bfa"},{label:"Class Avg",val:classAvg>0?classAvg+"%":"–",color:"#34d399"},{label:"Avg WPM",val:classWpm>0?classWpm:"–",color:"#f59e0b"}].map(function(s){return(
+                  <div key={s.label} style={{...CARD,textAlign:"center",padding:"12px 8px"}}>
+                    <div style={{fontSize:22,fontWeight:900,color:s.color}}>{s.val}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.label}</div>
+                  </div>
+                );})}
+              </div>
+
+              {cls.students.length===0?(
+                <div style={{textAlign:"center",padding:"32px 0",color:"#4b5563"}}>
+                  <p>No students yet. Share the code above!</p>
+                </div>
+              ):stuData.map(function(d){
+                var lvMeta=LEVELS.find(function(l){return l.key===d.bestLv;});
+                return(
+                  <div key={d.name} style={{...CARD,marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:800,color:"#f3f4f6"}}>{d.name}</div>
+                        <div style={{fontSize:11,color:"#6b7280"}}>{d.gameCount} game{d.gameCount!==1?"s":""} · last active {d.lastDate}</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:15,fontWeight:900,color:lvMeta?lvMeta.color:"#4b5563"}}>{d.bestLv!=="none"?d.bestLv:"–"}</div>
+                        <div style={{fontSize:12,color:"#9ca3af"}}>{d.gameCount>0?d.avgPct+"%":"No games"}</div>
+                      </div>
+                    </div>
+                    {d.gameCount>0&&(
+                      <div style={{display:"flex",gap:16,marginTop:8,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)"}}>
+                        <span style={{fontSize:11,color:"#6b7280"}}>Avg score: <b style={{color:"#f3f4f6"}}>{d.avgPct}%</b></span>
+                        {d.avgWpm>0&&<span style={{fontSize:11,color:"#6b7280"}}>Reading speed: <b style={{color:"#f3f4f6"}}>{d.avgWpm} WPM</b></span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* ── HOME ──────────────────────────────────────────── */}
         {stage==="home"&&(
@@ -2677,6 +2845,29 @@ export default function App(){
               {notifPermission==="granted"&&<button onClick={sendTestNotification} style={{...GHOST,flex:1,fontSize:12}}>🔔 Test Notification</button>}
               {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={{...GHOST,flex:1,fontSize:12}}>🔖 Quote Book ({quotes.length})</button>}
             </div>
+
+            {/* Join a Class */}
+            {(function(){
+              var myClass=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
+              return myClass?(
+                <div style={{...CARD,marginTop:10,display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{fontSize:28}}>🏫</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6"}}>{myClass.name}</div>
+                    <div style={{fontSize:11,color:"#6b7280"}}>Class by {myClass.teacherName}</div>
+                  </div>
+                </div>
+              ):(
+                <div style={{...CARD,marginTop:10}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>🏫 JOIN A CLASS</p>
+                  <div style={{display:"flex",gap:8}}>
+                    <input value={joinClassCode} onChange={function(e){setJoinClassCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""));}} onKeyDown={function(e){if(e.key==="Enter")doJoinClass();}} placeholder="Enter class code" maxLength={6} style={{...INP,flex:1,margin:0,letterSpacing:3,fontFamily:"'JetBrains Mono',monospace",fontSize:15,textTransform:"uppercase"}}/>
+                    <button onClick={doJoinClass} disabled={joinClassCode.length!==6} style={{...mkBtn(joinClassCode.length===6?"#6366f1":"#374151"),padding:"10px 16px",fontSize:13}}>Join</button>
+                  </div>
+                  {joinClassMsg&&<p style={{fontSize:12,color:joinClassMsg.startsWith("✓")?"#34d399":"#f87171",marginTop:8,marginBottom:0}}>{joinClassMsg}</p>}
+                </div>
+              );
+            })()}
           </div>
         )}
 
