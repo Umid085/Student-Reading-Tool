@@ -2609,13 +2609,17 @@ export default function App(){
 
             {/* theme presets */}
             <div style={{marginBottom:14}}>
-              <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>THEME</p>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:8,marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:0}}>THEME</p>
+                {appTheme&&<span style={{fontSize:12,fontWeight:700,color:appTheme.accent}}>{appTheme.emoji} {appTheme.name}</span>}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:6,marginBottom:10}}>
                 {PRESET_THEMES.map(function(t){
+                  var isActive=appTheme&&appTheme.id===t.id;
                   return(
-                    <button key={t.id} onClick={function(){applyTheme(t);}} style={{background:appTheme&&appTheme.id===t.id?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.04)",border:"2px solid "+(appTheme&&appTheme.id===t.id?t.accent:"rgba(255,255,255,0.1)"),borderRadius:12,padding:"10px 8px",cursor:"pointer",textAlign:"center",boxShadow:appTheme&&appTheme.id===t.id?"0 0 16px "+t.accent+"55":"none",transition:"all 0.15s ease",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-                      <div style={{width:36,height:36,borderRadius:"50%",margin:0,background:"linear-gradient(135deg,"+t.accent+" 50%,"+t.secondary+" 50%)"}}/>
-                      <div style={{fontSize:11,fontWeight:700,color:appTheme&&appTheme.id===t.id?t.accent:"#9ca3af"}}>{t.emoji} {t.name}</div>
+                    <button key={t.id} title={t.name} onClick={function(){applyTheme(t);}} style={{background:isActive?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.04)",border:"2px solid "+(isActive?t.accent:"rgba(255,255,255,0.1)"),borderRadius:12,padding:"8px 4px",cursor:"pointer",textAlign:"center",boxShadow:isActive?"0 0 14px "+t.accent+"55":"none",transition:"all 0.15s ease",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                      <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,"+t.accent+" 50%,"+t.secondary+" 50%)"}}/>
+                      <span style={{fontSize:13,lineHeight:1}}>{t.emoji}</span>
                     </button>
                   );
                 })}
@@ -2634,10 +2638,10 @@ export default function App(){
                   <div style={{flex:1}}>
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
                       <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
-                      <span style={{background:active?l.color:"rgba(255,255,255,0.06)",color:active?"#0d0d1a":"#6b7280",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
+                      <span style={{background:active?l.color:"rgba(255,255,255,0.12)",color:active?"#0d0d1a":"#d1d5db",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
                     </div>
-                    <div style={{fontSize:11,color:"#6b7280"}}>{l.desc}</div>
-                    <div style={{fontSize:10,color:"#4b5563",marginTop:2}}>{formatTime(l.timeLimit)} limit</div>
+                    <div style={{fontSize:11,color:"#9ca3af"}}>{l.desc}</div>
+                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{formatTime(l.timeLimit)} limit</div>
                   </div>
                 </button>);
               })}
