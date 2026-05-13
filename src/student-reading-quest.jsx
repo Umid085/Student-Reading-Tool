@@ -1194,6 +1194,7 @@ export default function App(){
   var [announcementMsg,setAnnouncementMsg]=useState("");
   var [printStudent,setPrintStudent]=useState(null);
   var [copyMsg,setCopyMsg]=useState("");
+  var [activeAssignmentId,setActiveAssignmentId]=useState(null);
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -1784,6 +1785,15 @@ export default function App(){
         if(newProg.done&&!prevProg.done)completedGoalIds.push(def.id);
       });
       saveGoalsLocal(updatedGoals);
+      var myAsgClass=classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;});
+      if(myAsgClass){
+        var matchingAsgn=assignments.find(function(a){
+          if(a.classId!==myAsgClass.id||a.completions[currentUser.name])return false;
+          if(activeAssignmentId)return a.id===activeAssignmentId;
+          return a.storyId&&a.storyId===currentStoryId;
+        });
+        if(matchingAsgn){doCompleteAssignment(matchingAsgn.id,pct,finalXp,timeSecs);setActiveAssignmentId(null);}
+      }
       setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds});
       stopMusic();playSfx("complete");
       setStage("result");
@@ -1797,7 +1807,7 @@ export default function App(){
     setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");
     setIsDailyGame(false);setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
-    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});
+    setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});setActiveAssignmentId(null);
     setTutorChat([]);setTutorInput("");setTutorLoading(false);
     setActiveChallengeIdx(null);setActiveChallengeFrom("");
     setPronMode(false);setPronSentence("");setPronRecording(false);setPronResult(null);
@@ -2944,15 +2954,32 @@ export default function App(){
                   </div>
                 )}
                 {pendingAssignments.length>0&&(
-                  <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(245,158,11,0.5)",background:"rgba(245,158,11,0.07)",cursor:"pointer"}} onClick={function(){setStage("library");}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <div style={{fontSize:24}}>📋</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:13,fontWeight:800,color:"#fcd34d"}}>You have {pendingAssignments.length} pending assignment{pendingAssignments.length!==1?"s":""}</div>
-                        <div style={{fontSize:11,color:"#9ca3af"}}>from {myClass3.teacherName} · tap to go to Library</div>
-                      </div>
-                      <div style={{color:"#fcd34d",fontSize:16}}>→</div>
-                    </div>
+                  <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(245,158,11,0.5)",background:"rgba(245,158,11,0.07)"}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#fcd34d",letterSpacing:0.6,margin:"0 0 10px"}}>📋 ASSIGNMENTS FROM {(myClass3.teacherName||"").toUpperCase()}</p>
+                    {pendingAssignments.map(function(asgn){
+                      var story=asgn.storyId?STORY_LIBRARY.find(function(s){return s.id===asgn.storyId;}):null;
+                      return(
+                        <div key={asgn.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid rgba(245,158,11,0.15)"}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{asgn.topic}</div>
+                            <div style={{fontSize:11,color:"#9ca3af"}}>{asgn.level}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
+                          </div>
+                          <button onClick={function(){
+                            setActiveAssignmentId(asgn.id);
+                            if(story){startStoryFromLibrary(story);}
+                            else if(asgn.passage&&asgn.questions){
+                              setLevel(asgn.level);setPassage(asgn.passage);setTopic(asgn.topic);setQuestions(asgn.questions);
+                              var mq2=null;for(var qi2=0;qi2<asgn.questions.length;qi2++){if(asgn.questions[qi2].type==="matching"){mq2=asgn.questions[qi2];break;}}
+                              setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights):[]);
+                              setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+                              setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+                              setIsDailyGame(false);setCurrentStoryId(null);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+                              setStage("reading");
+                            }
+                          }} style={{...mkBtn("#f59e0b","#0d0d1a"),fontSize:12,padding:"6px 14px",whiteSpace:"nowrap",flexShrink:0}}>Start →</button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(167,139,250,0.3)",background:"rgba(167,139,250,0.05)"}}>
