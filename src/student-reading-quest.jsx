@@ -1195,6 +1195,8 @@ export default function App(){
   var [printStudent,setPrintStudent]=useState(null);
   var [copyMsg,setCopyMsg]=useState("");
   var [activeAssignmentId,setActiveAssignmentId]=useState(null);
+  var [onboardStep,setOnboardStep]=useState(null);
+  var [onboardClassCode,setOnboardClassCode]=useState("");
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -1203,7 +1205,7 @@ export default function App(){
     Promise.all([loadUsers(),loadBoards(),loadSocial(),loadClasses(),loadAssignments()]).then(function(v){
       setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setClasses(v[3]||[]);setAssignments(v[4]||[]);
       var sessionName=saved||(savedCreds&&savedCreds.name);
-      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);setStage(role==="teacher"?"teacherDashboard":"home");}}
+      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");}}
       setAppReady(true);
     });
   },[]);
@@ -1331,6 +1333,7 @@ export default function App(){
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,hash:hash}));
     if(isTeacherReg)localStorage.setItem("rq-role-"+user.name,"teacher");
     setCurrentUser(user);setStage(isTeacherReg?"teacherDashboard":"home");
+    if(isTeacherReg)setOnboardStep(1);
   }
 
   async function doLogin(){
@@ -1475,6 +1478,20 @@ export default function App(){
     setClasses(updated);
     setCurrentClass(updated.find(function(c){return c.id===currentClass.id;}));
     await saveClassesRemote(updated);
+  }
+
+  function doFinishOnboarding(){
+    if(currentUser)localStorage.setItem("rq-onboarded-"+currentUser.name,"true");
+    setOnboardStep(null);setOnboardClassCode("");
+  }
+
+  function doOnboardCreateClass(){
+    if(!currentUser||!newClassName.trim())return;
+    var code=generateClassCode();
+    var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:new Date().toLocaleDateString(),announcement:null};
+    var updated=classes.concat([cls]);
+    setClasses(updated);setCurrentClass(cls);setNewClassName("");setOnboardClassCode(code);setOnboardStep(2);
+    saveClassesRemote(updated);
   }
 
   // ── social actions ─────────────────────────────────────────
@@ -1788,7 +1805,7 @@ export default function App(){
       var myAsgClass=classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;});
       if(myAsgClass){
         var matchingAsgn=assignments.find(function(a){
-          if(a.classId!==myAsgClass.id||a.completions[currentUser.name])return false;
+          if(a.classId!==myAsgClass.id||!a.completions||a.completions[currentUser.name])return false;
           if(activeAssignmentId)return a.id===activeAssignmentId;
           return a.storyId&&a.storyId===currentStoryId;
         });
@@ -2386,6 +2403,78 @@ export default function App(){
       <div style={{position:"fixed",inset:0,background:"radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.45) 100%)",pointerEvents:"none",zIndex:2}}/>
       <div className="rq-wrap" style={{position:"relative",zIndex:1}}>
 
+        {/* ── TEACHER ONBOARDING WIZARD ────────────────────── */}
+        {onboardStep!==null&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:10000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+            <div style={{background:"#13131f",border:"1px solid rgba(167,139,250,0.35)",borderRadius:20,padding:28,maxWidth:440,width:"100%",boxShadow:"0 24px 80px rgba(0,0,0,0.7)"}}>
+              {/* progress dots */}
+              <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:24}}>
+                {[1,2,3].map(function(n){return(
+                  <div key={n} style={{width:n===onboardStep?28:8,height:8,borderRadius:99,background:n===onboardStep?"#a78bfa":n<onboardStep?"#34d399":"rgba(255,255,255,0.12)",transition:"all 0.3s"}}/>
+                );})}
+              </div>
+
+              {onboardStep===1&&(
+                <div>
+                  <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>🏫</div>
+                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>Create your first class</h2>
+                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 20px",lineHeight:1.5}}>Give it a name your students will recognise — e.g. "B1 Morning Group"</p>
+                  <input value={newClassName} onChange={function(e){setNewClassName(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doOnboardCreateClass();}} placeholder="Class name…" style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:12,fontSize:15}}/>
+                  <button onClick={doOnboardCreateClass} disabled={!newClassName.trim()} style={{...mkBtn(newClassName.trim()?"#6366f1":"#374151"),width:"100%",padding:"12px",fontSize:15,fontWeight:800,marginBottom:10}}>Create Class →</button>
+                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>Skip setup for now</button>
+                </div>
+              )}
+
+              {onboardStep===2&&(
+                <div>
+                  <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>📢</div>
+                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>Share this code with students</h2>
+                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 20px",lineHeight:1.5}}>Students enter this code on their home screen to join your class instantly.</p>
+                  <div style={{background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",borderRadius:14,padding:"20px 16px",textAlign:"center",marginBottom:12}}>
+                    <div style={{fontSize:40,fontWeight:900,letterSpacing:10,color:"#34d399",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>{onboardClassCode}</div>
+                    <button onClick={function(){try{navigator.clipboard.writeText(onboardClassCode);setCopyMsg("Copied!");}catch(e){setCopyMsg(onboardClassCode);}setTimeout(function(){setCopyMsg("");},2000);}} style={{...GHOST,fontSize:12,padding:"5px 14px"}}>{copyMsg||"📋 Copy Code"}</button>
+                  </div>
+                  <button onClick={function(){setOnboardStep(3);}} style={{...mkBtn("#6366f1"),width:"100%",padding:"12px",fontSize:15,fontWeight:800,marginBottom:10}}>Next: Create an Assignment →</button>
+                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>Skip for now — I'll do this later</button>
+                </div>
+              )}
+
+              {onboardStep===3&&(
+                <div>
+                  <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>📋</div>
+                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>Create your first assignment</h2>
+                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 16px",lineHeight:1.5}}>Pick a story from the library or let AI generate one on any topic.</p>
+                  <div style={{display:"flex",gap:6,marginBottom:12}}>
+                    {[["library","📚 Library Story"],["ai_topic","🤖 AI Topic"]].map(function(opt){return(
+                      <button key={opt[0]} onClick={function(){setAssignType(opt[0]);}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"2px solid "+(assignType===opt[0]?"#6366f1":"rgba(255,255,255,0.1)"),background:assignType===opt[0]?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)",color:assignType===opt[0]?"#a78bfa":"#9ca3af",fontFamily:"inherit",fontWeight:700,fontSize:12,cursor:"pointer"}}>{opt[1]}</button>
+                    );})}
+                  </div>
+                  {assignType==="library"?(
+                    <select value={assignStoryId} onChange={function(e){setAssignStoryId(e.target.value);}} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:10}}>
+                      <option value="">— Select a story —</option>
+                      {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(
+                        <optgroup key={lv} label={lv}>{STORY_LIBRARY.filter(function(s){return s.level===lv;}).map(function(s){return(<option key={s.id} value={s.id}>{s.title}</option>);})}</optgroup>
+                      );})}
+                    </select>
+                  ):(
+                    <div>
+                      <input value={assignTopic} onChange={function(e){setAssignTopic(e.target.value);}} placeholder="Topic (e.g. Climate Change)" style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:8}}/>
+                      <select value={assignLevel} onChange={function(e){setAssignLevel(e.target.value);}} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:8}}>
+                        {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(<option key={lv} value={lv}>{lv}</option>);})}
+                      </select>
+                    </div>
+                  )}
+                  <input type="date" value={assignDue} onChange={function(e){setAssignDue(e.target.value);}} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:12,color:assignDue?"#f3f4f6":"#6b7280"}} placeholder="Due date (optional)"/>
+                  {assignMsg&&<p style={{fontSize:12,color:assignMsg.startsWith("✓")?"#34d399":"#f87171",margin:"0 0 10px",textAlign:"center"}}>{assignMsg}</p>}
+                  <button onClick={doCreateAssignment} disabled={assignLoading} style={{...mkBtn("#6366f1"),width:"100%",padding:"12px",fontSize:14,fontWeight:800,marginBottom:8}}>{assignLoading?"Generating…":"Create Assignment"}</button>
+                  {assignMsg.startsWith("✓")&&<button onClick={doFinishOnboarding} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800,marginBottom:8}}>✓ Finish Setup →</button>}
+                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>Skip — I'll add assignments later</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── OFFLINE BANNER ───────────────────────────────── */}
         {!isOnline&&<div style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"9px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#f87171",fontWeight:600}}>📡 You're offline — reading the library still works!</div>}
 
@@ -2939,7 +3028,7 @@ export default function App(){
               var doy=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(864e5));
               var wotd=WORD_OF_DAY[doy%WORD_OF_DAY.length];
               var myClass3=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
-              var pendingAssignments=myClass3?assignments.filter(function(a){return a.classId===myClass3.id&&!a.completions[currentUser.name]&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
+              var pendingAssignments=myClass3?assignments.filter(function(a){return a.classId===myClass3.id&&(!a.completions||!a.completions[currentUser.name])&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
               return(
                 <div>
                 {myClass3&&myClass3.announcement&&(
