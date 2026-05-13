@@ -1190,6 +1190,9 @@ export default function App(){
   var [assignLevel,setAssignLevel]=useState("B1");
   var [assignLoading,setAssignLoading]=useState(false);
   var [assignMsg,setAssignMsg]=useState("");
+  var [announcementText,setAnnouncementText]=useState("");
+  var [announcementMsg,setAnnouncementMsg]=useState("");
+  var [printStudent,setPrintStudent]=useState(null);
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -1446,6 +1449,30 @@ export default function App(){
     var url=URL.createObjectURL(blob);
     var a=document.createElement("a");a.href=url;a.download=currentClass.name.replace(/\s+/g,"_")+"_analytics.csv";a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function doPostAnnouncement(){
+    if(!currentClass||!announcementText.trim())return;
+    var updated=classes.map(function(c){
+      if(c.id!==currentClass.id)return c;
+      return Object.assign({},c,{announcement:{text:announcementText.trim(),date:new Date().toLocaleDateString(),teacherName:currentUser.name}});
+    });
+    setClasses(updated);
+    setCurrentClass(updated.find(function(c){return c.id===currentClass.id;}));
+    setAnnouncementText("");
+    setAnnouncementMsg("✓ Posted!");
+    setTimeout(function(){setAnnouncementMsg("");},3000);
+    await saveClassesRemote(updated);
+  }
+
+  async function doClearAnnouncement(){
+    var updated=classes.map(function(c){
+      if(c.id!==currentClass.id)return c;
+      var n=Object.assign({},c);delete n.announcement;return n;
+    });
+    setClasses(updated);
+    setCurrentClass(updated.find(function(c){return c.id===currentClass.id;}));
+    await saveClassesRemote(updated);
   }
 
   // ── social actions ─────────────────────────────────────────
@@ -2499,7 +2526,13 @@ export default function App(){
             var lvOrder=["A1","A2","B1","B2","C1","C2"];
             var bestLv=getBestLevel(games);
             var lastGame=games.length?games[games.length-1]:null;
-            return{name:sName,gameCount:games.length,avgPct:avgPct,avgWpm:avgWpm,bestLv:bestLv,lastDate:lastGame?lastGame.date:"Never"};
+            // trend: compare last 3 games avg vs previous 3
+            var recent3=validGames.slice(-3);var prev3=validGames.slice(-6,-3);
+            var recentAvg=recent3.length?recent3.reduce(function(s,g){return s+g.pct;},0)/recent3.length:null;
+            var prevAvg=prev3.length?prev3.reduce(function(s,g){return s+g.pct;},0)/prev3.length:null;
+            var trend=recentAvg===null?"new":prevAvg===null?"new":recentAvg-prevAvg>5?"up":recentAvg-prevAvg<-5?"down":"stable";
+            var isStruggling=recentAvg!==null&&recentAvg<50;
+            return{name:sName,gameCount:games.length,avgPct:avgPct,avgWpm:avgWpm,bestLv:bestLv,lastDate:lastGame?lastGame.date:"Never",trend:trend,isStruggling:isStruggling};
           });
           var activeStudents=stuData.filter(function(d){return d.gameCount>0;});
           var classAvg=activeStudents.length?Math.round(activeStudents.reduce(function(s,d){return s+d.avgPct;},0)/activeStudents.length):0;
@@ -2526,6 +2559,26 @@ export default function App(){
                     <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.label}</div>
                   </div>
                 );})}
+              </div>
+
+              {/* Announcement board */}
+              <div style={{...CARD,marginBottom:14}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>📢 ANNOUNCEMENT</p>
+                {cls.announcement?(
+                  <div>
+                    <div style={{background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:8}}>
+                      <p style={{margin:"0 0 4px",fontSize:13,color:"#e9d5ff",lineHeight:1.5}}>{cls.announcement.text}</p>
+                      <p style={{margin:0,fontSize:10,color:"#6b7280"}}>Posted {cls.announcement.date}</p>
+                    </div>
+                    <button onClick={doClearAnnouncement} style={{...GHOST,fontSize:11,padding:"4px 10px"}}>✕ Remove</button>
+                  </div>
+                ):(
+                  <div style={{display:"flex",gap:8}}>
+                    <input value={announcementText} onChange={function(e){setAnnouncementText(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doPostAnnouncement();}} placeholder="Post a message to your class…" style={{...INP,flex:1,margin:0}}/>
+                    <button onClick={doPostAnnouncement} disabled={!announcementText.trim()} style={{...mkBtn(announcementText.trim()?"#a78bfa":"#374151","#0d0d1a"),padding:"10px 14px",fontSize:12,whiteSpace:"nowrap"}}>Post</button>
+                  </div>
+                )}
+                {announcementMsg&&<p style={{fontSize:12,color:"#34d399",margin:"6px 0 0"}}>{announcementMsg}</p>}
               </div>
 
               {/* Question-type heatmap */}
@@ -2579,22 +2632,33 @@ export default function App(){
                 </div>
               ):stuData.map(function(d){
                 var lvMeta=LEVELS.find(function(l){return l.key===d.bestLv;});
+                var trendIcon=d.trend==="up"?"📈":d.trend==="down"?"📉":d.trend==="stable"?"➡️":"🆕";
+                var trendColor=d.trend==="up"?"#34d399":d.trend==="down"?"#f87171":"#9ca3af";
+                var cardBorder=d.isStruggling?"rgba(248,113,113,0.4)":"rgba(255,255,255,0.07)";
                 return(
-                  <div key={d.name} style={{...CARD,marginBottom:8}}>
+                  <div key={d.name} style={{...CARD,marginBottom:8,border:"1px solid "+cardBorder}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div>
-                        <div style={{fontSize:14,fontWeight:800,color:"#f3f4f6"}}>{d.name}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                          <span style={{fontSize:14,fontWeight:800,color:"#f3f4f6"}}>{d.name}</span>
+                          {d.isStruggling&&<span style={{fontSize:10,fontWeight:700,color:"#f87171",background:"rgba(248,113,113,0.15)",border:"1px solid rgba(248,113,113,0.3)",borderRadius:6,padding:"1px 6px"}}>⚠ Needs help</span>}
+                        </div>
                         <div style={{fontSize:11,color:"#6b7280"}}>{d.gameCount} game{d.gameCount!==1?"s":""} · last active {d.lastDate}</div>
                       </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:15,fontWeight:900,color:lvMeta?lvMeta.color:"#4b5563"}}>{d.bestLv!=="none"?d.bestLv:"–"}</div>
+                      <div style={{textAlign:"right",flexShrink:0,paddingLeft:8}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end",marginBottom:2}}>
+                          {d.gameCount>=3&&<span style={{fontSize:14}} title={d.trend==="up"?"Improving":d.trend==="down"?"Declining":"Stable"}>{trendIcon}</span>}
+                          <span style={{fontSize:15,fontWeight:900,color:lvMeta?lvMeta.color:"#4b5563"}}>{d.bestLv!=="none"?d.bestLv:"–"}</span>
+                        </div>
                         <div style={{fontSize:12,color:"#9ca3af"}}>{d.gameCount>0?d.avgPct+"%":"No games"}</div>
                       </div>
                     </div>
                     {d.gameCount>0&&(
-                      <div style={{display:"flex",gap:16,marginTop:8,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)"}}>
-                        <span style={{fontSize:11,color:"#6b7280"}}>Avg score: <b style={{color:"#f3f4f6"}}>{d.avgPct}%</b></span>
-                        {d.avgWpm>0&&<span style={{fontSize:11,color:"#6b7280"}}>Reading speed: <b style={{color:"#f3f4f6"}}>{d.avgWpm} WPM</b></span>}
+                      <div style={{display:"flex",gap:16,marginTop:8,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",alignItems:"center"}}>
+                        <span style={{fontSize:11,color:"#6b7280"}}>Avg: <b style={{color:d.isStruggling?"#f87171":"#f3f4f6"}}>{d.avgPct}%</b></span>
+                        {d.avgWpm>0&&<span style={{fontSize:11,color:"#6b7280"}}>WPM: <b style={{color:"#f3f4f6"}}>{d.avgWpm}</b></span>}
+                        {d.gameCount>=3&&<span style={{fontSize:11,color:trendColor,fontWeight:700}}>{trendIcon} {d.trend==="up"?"Improving":d.trend==="down"?"Declining":"Stable"}</span>}
+                        <button onClick={function(){setPrintStudent(d.name);}} style={{...GHOST,fontSize:10,padding:"3px 8px",marginLeft:"auto"}}>🖨 Report</button>
                       </div>
                     )}
                   </div>
@@ -2665,6 +2729,60 @@ export default function App(){
               {assignments.filter(function(a){return a.classId===cls.id;}).length===0&&(
                 <p style={{fontSize:12,color:"#4b5563",textAlign:"center",padding:"16px 0"}}>No assignments yet. Create one above.</p>
               )}
+
+              {/* Print report modal */}
+              {printStudent&&(function(){
+                var pu=allUsers.find(function(u){return u.name===printStudent;});
+                var pg=pu&&pu.games?pu.games:[];
+                var pavg=pg.length?Math.round(pg.reduce(function(s,g){return s+g.pct;},0)/pg.length):0;
+                var pwpm=pg.filter(function(g){return g.wpm>0;}).length?Math.round(pg.filter(function(g){return g.wpm>0;}).reduce(function(s,g){return s+g.wpm;},0)/pg.filter(function(g){return g.wpm>0;}).length):0;
+                var plv=getBestLevel(pg);
+                var Q_TYPES_PR=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
+                return(
+                  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={function(){setPrintStudent(null);}}>
+                    <div style={{background:"#1e1e2e",border:"1px solid rgba(255,255,255,0.15)",borderRadius:16,padding:24,maxWidth:420,width:"100%",maxHeight:"90vh",overflowY:"auto"}} onClick={function(e){e.stopPropagation();}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                        <div>
+                          <div style={{fontSize:18,fontWeight:900,color:"#f3f4f6"}}>{printStudent}</div>
+                          <div style={{fontSize:11,color:"#6b7280"}}>{cls.name} · report by {currentUser.name}</div>
+                        </div>
+                        <button onClick={function(){window.print();}} style={{...mkBtn("#6366f1"),fontSize:12,padding:"8px 14px"}}>🖨 Print</button>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
+                        {[{label:"Best Level",val:plv!=="none"?plv:"–",color:"#a78bfa"},{label:"Games",val:pg.length,color:"#34d399"},{label:"Avg Score",val:pg.length?pavg+"%":"–",color:"#f59e0b"}].map(function(s){return(
+                          <div key={s.label} style={{background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+                            <div style={{fontSize:20,fontWeight:900,color:s.color}}>{s.val}</div>
+                            <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.label}</div>
+                          </div>
+                        );})}
+                      </div>
+                      {pwpm>0&&<div style={{fontSize:12,color:"#9ca3af",marginBottom:12}}>Reading speed: <b style={{color:"#f3f4f6"}}>{pwpm} WPM</b></div>}
+                      <div style={{marginBottom:16}}>
+                        <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:8}}>QUESTION TYPE BREAKDOWN</p>
+                        {Q_TYPES_PR.map(function(t){
+                          var tg=pg.filter(function(g){return g.typeStats&&g.typeStats[t]!==undefined;});
+                          if(!tg.length)return null;
+                          var ta=Math.round(tg.reduce(function(s,g){return s+(g.typeStats[t]||0);},0)/tg.length*100);
+                          var col=ta<50?"#f87171":ta<70?"#f59e0b":"#34d399";
+                          return(
+                            <div key={t} style={{marginBottom:6}}>
+                              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:2}}>
+                                <span style={{color:"#d1d5db"}}>{Q_LABELS[t]}</span>
+                                <span style={{color:col,fontWeight:700}}>{ta}%</span>
+                              </div>
+                              <div style={{background:"rgba(0,0,0,0.3)",borderRadius:3,height:5}}>
+                                <div style={{height:"100%",width:ta+"%",background:col,borderRadius:3}}/>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p style={{fontSize:11,color:"#4b5563",textAlign:"center",margin:0}}>Generated {new Date().toLocaleDateString()}</p>
+                      <button onClick={function(){setPrintStudent(null);}} style={{...GHOST,width:"100%",marginTop:14,fontSize:12}}>Close</button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
@@ -2814,6 +2932,17 @@ export default function App(){
               var pendingAssignments=myClass3?assignments.filter(function(a){return a.classId===myClass3.id&&!a.completions[currentUser.name]&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
               return(
                 <div>
+                {myClass3&&myClass3.announcement&&(
+                  <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(167,139,250,0.4)",background:"rgba(99,102,241,0.07)"}}>
+                    <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                      <div style={{fontSize:20,flexShrink:0}}>📢</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:3}}>{myClass3.name} · {myClass3.announcement.teacherName}</div>
+                        <div style={{fontSize:13,color:"#e9d5ff",lineHeight:1.5}}>{myClass3.announcement.text}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {pendingAssignments.length>0&&(
                   <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(245,158,11,0.5)",background:"rgba(245,158,11,0.07)",cursor:"pointer"}} onClick={function(){setStage("library");}}>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
