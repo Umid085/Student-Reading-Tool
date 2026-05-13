@@ -1420,6 +1420,34 @@ export default function App(){
     });
   }
 
+  function doExportClassCSV(){
+    if(!currentClass)return;
+    var Q_TYPES=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
+    var headers=["Student","Best Level","Games","Avg Score %","Avg WPM"].concat(Q_TYPES.map(function(t){return Q_LABELS[t]+" %";})).concat(["Vocab Words","Last Active"]);
+    var rows=currentClass.students.map(function(sName){
+      var u=allUsers.find(function(u){return u.name===sName;});
+      var games=u&&u.games?u.games:[];
+      var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
+      var wpmGames=games.filter(function(g){return g.wpm>0;});
+      var avgWpm=wpmGames.length?Math.round(wpmGames.reduce(function(s,g){return s+g.wpm;},0)/wpmGames.length):0;
+      var bestLv=getBestLevel(games);
+      var lastDate=games.length?games[games.length-1].date:"Never";
+      var typeScores=Q_TYPES.map(function(t){
+        var relevant=games.filter(function(g){return g.typeStats&&g.typeStats[t]!==undefined;});
+        if(!relevant.length)return"";
+        var avg=Math.round(relevant.reduce(function(s,g){return s+(g.typeStats[t]||0);},0)/relevant.length);
+        return avg;
+      });
+      var vocabCount=0;try{var vd=JSON.parse(localStorage.getItem(VOCAB_KEY)||"[]");if(Array.isArray(vd))vocabCount=vd.length;}catch(e){}
+      return[sName,bestLv,games.length,avgPct,avgWpm].concat(typeScores).concat([vocabCount,lastDate]);
+    });
+    var csv=[headers].concat(rows).map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
+    var blob=new Blob([csv],{type:"text/csv"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");a.href=url;a.download=currentClass.name.replace(/\s+/g,"_")+"_analytics.csv";a.click();
+    URL.revokeObjectURL(url);
+  }
+
   // ── social actions ─────────────────────────────────────────
   async function sendRequest(to){
     if(!currentUser||to===currentUser.name)return;
@@ -2482,6 +2510,7 @@ export default function App(){
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
                 <button onClick={function(){setStage("teacherDashboard");}} style={GHOST}>← Back</button>
                 <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#f3f4f6",flex:1}}>{cls.name}</h2>
+                {cls.students.length>0&&<button onClick={doExportClassCSV} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>⬇ CSV</button>}
               </div>
 
               <div style={{...CARD,textAlign:"center",marginBottom:12}}>
@@ -2498,6 +2527,49 @@ export default function App(){
                   </div>
                 );})}
               </div>
+
+              {/* Question-type heatmap */}
+              {activeStudents.length>0&&(function(){
+                var Q_TYPES_HM=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
+                var typeAvgs=Q_TYPES_HM.map(function(t){
+                  var relevant=stuData.filter(function(d){
+                    var u=allUsers.find(function(u){return u.name===d.name;});
+                    var games=u&&u.games?u.games:[];
+                    return games.some(function(g){return g.typeStats&&g.typeStats[t]!==undefined;});
+                  });
+                  if(!relevant.length)return null;
+                  var avg=Math.round(relevant.reduce(function(s,d){
+                    var u=allUsers.find(function(u){return u.name===d.name;});
+                    var games=u&&u.games?u.games:[];
+                    var tGames=games.filter(function(g){return g.typeStats&&g.typeStats[t]!==undefined;});
+                    var tAvg=tGames.length?tGames.reduce(function(s2,g){return s2+(g.typeStats[t]||0);},0)/tGames.length:0;
+                    return s+tAvg;
+                  },0)/relevant.length);
+                  return{type:t,avg:avg,label:Q_LABELS[t]};
+                }).filter(function(x){return x!==null;});
+                if(!typeAvgs.length)return null;
+                typeAvgs.sort(function(a,b){return a.avg-b.avg;});
+                return(
+                  <div style={{...CARD,marginBottom:14}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>CLASS WEAK AREAS</p>
+                    {typeAvgs.map(function(t){
+                      var pct=Math.min(100,Math.max(0,t.avg*100));
+                      var col=pct<50?"#f87171":pct<70?"#f59e0b":"#34d399";
+                      return(
+                        <div key={t.type} style={{marginBottom:8}}>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                            <span style={{color:"#d1d5db"}}>{t.label}</span>
+                            <span style={{color:col,fontWeight:700}}>{Math.round(pct)}%</span>
+                          </div>
+                          <div style={{background:"rgba(0,0,0,0.3)",borderRadius:4,height:6,overflow:"hidden"}}>
+                            <div style={{height:"100%",width:pct+"%",background:col,borderRadius:4,transition:"width 0.4s"}}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Students */}
               <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:8}}>STUDENTS</p>
