@@ -1193,6 +1193,7 @@ export default function App(){
   var [announcementText,setAnnouncementText]=useState("");
   var [announcementMsg,setAnnouncementMsg]=useState("");
   var [printStudent,setPrintStudent]=useState(null);
+  var [copyMsg,setCopyMsg]=useState("");
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -1424,7 +1425,7 @@ export default function App(){
   }
 
   function doExportClassCSV(){
-    if(!currentClass)return;
+    if(!currentClass||!allUsers)return;
     var Q_TYPES=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
     var headers=["Student","Best Level","Games","Avg Score %","Avg WPM"].concat(Q_TYPES.map(function(t){return Q_LABELS[t]+" %";})).concat(["Vocab Words","Last Active"]);
     var rows=currentClass.students.map(function(sName){
@@ -1452,7 +1453,7 @@ export default function App(){
   }
 
   async function doPostAnnouncement(){
-    if(!currentClass||!announcementText.trim())return;
+    if(!currentClass||!currentUser||!announcementText.trim())return;
     var updated=classes.map(function(c){
       if(c.id!==currentClass.id)return c;
       return Object.assign({},c,{announcement:{text:announcementText.trim(),date:new Date().toLocaleDateString(),teacherName:currentUser.name}});
@@ -2514,7 +2515,7 @@ export default function App(){
         })()}
 
         {/* ── CLASS VIEW ───────────────────────────────────── */}
-        {stage==="classView"&&currentClass&&(function(){
+        {stage==="classView"&&currentClass&&currentUser&&(function(){
           var cls=currentClass;
           var stuData=cls.students.map(function(sName){
             var u=allUsers.find(function(u){return u.name===sName;});
@@ -2537,7 +2538,6 @@ export default function App(){
           var activeStudents=stuData.filter(function(d){return d.gameCount>0;});
           var classAvg=activeStudents.length?Math.round(activeStudents.reduce(function(s,d){return s+d.avgPct;},0)/activeStudents.length):0;
           var classWpm=activeStudents.filter(function(d){return d.avgWpm>0;}).length?Math.round(activeStudents.filter(function(d){return d.avgWpm>0;}).reduce(function(s,d){return s+d.avgWpm;},0)/activeStudents.filter(function(d){return d.avgWpm>0;}).length):0;
-          var [copyMsg,setCopyMsg]=useState("");
           return(
             <div>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
@@ -2744,7 +2744,7 @@ export default function App(){
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
                         <div>
                           <div style={{fontSize:18,fontWeight:900,color:"#f3f4f6"}}>{printStudent}</div>
-                          <div style={{fontSize:11,color:"#6b7280"}}>{cls.name} · report by {currentUser.name}</div>
+                          <div style={{fontSize:11,color:"#6b7280"}}>{currentClass.name} · report by {currentUser.name}</div>
                         </div>
                         <button onClick={function(){window.print();}} style={{...mkBtn("#6366f1"),fontSize:12,padding:"8px 14px"}}>🖨 Print</button>
                       </div>
