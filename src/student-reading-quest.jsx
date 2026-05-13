@@ -17,7 +17,8 @@ var FAVS_KEY     = "rq-favs-v1";
 var WEEKLY_KEY   = "rq-weekly-v1";
 var DISCUSS_KEY  = "rq-discuss-v1";
 var QUOTES_KEY   = "rq-quotes-v1";
-var CLASSES_KEY  = "rq-classes-v1";
+var CLASSES_KEY      = "rq-classes-v1";
+var ASSIGNMENTS_KEY  = "rq-assignments-v1";
 
 var LEVELS = [
   {key:"A1",color:"#22c55e",glow:"rgba(34,197,94,0.25)",  mult:1,  timeLimit:150,timeBonus:200,desc:"Elementary"},
@@ -614,6 +615,8 @@ function saveQuotesLocal(v){try{localStorage.setItem(QUOTES_KEY,JSON.stringify(v
 function generateClassCode(){var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",r="";for(var i=0;i<6;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
 async function loadClasses(){try{var v=await apiGet(CLASSES_KEY);if(v&&Array.isArray(v))return v;}catch(e){}try{var lv=localStorage.getItem(CLASSES_KEY);return lv?JSON.parse(lv):[];}catch(e){return[];}}
 async function saveClassesRemote(v){try{localStorage.setItem(CLASSES_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(CLASSES_KEY,v);}catch(e){}}
+async function loadAssignments(){try{var v=await apiGet(ASSIGNMENTS_KEY);if(v&&Array.isArray(v))return v;}catch(e){}try{var lv=localStorage.getItem(ASSIGNMENTS_KEY);return lv?JSON.parse(lv):[];}catch(e){return[];}}
+async function saveAssignmentsRemote(v){try{localStorage.setItem(ASSIGNMENTS_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(ASSIGNMENTS_KEY,v);}catch(e){}}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
@@ -1178,13 +1181,22 @@ export default function App(){
   var [newClassName,setNewClassName]=useState("");
   var [joinClassCode,setJoinClassCode]=useState("");
   var [joinClassMsg,setJoinClassMsg]=useState("");
+  // Assignments (Phase 2)
+  var [assignments,setAssignments]=useState([]);
+  var [assignStoryId,setAssignStoryId]=useState("");
+  var [assignTopic,setAssignTopic]=useState("");
+  var [assignType,setAssignType]=useState("library");
+  var [assignDue,setAssignDue]=useState("");
+  var [assignLevel,setAssignLevel]=useState("B1");
+  var [assignLoading,setAssignLoading]=useState(false);
+  var [assignMsg,setAssignMsg]=useState("");
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
-    Promise.all([loadUsers(),loadBoards(),loadSocial(),loadClasses()]).then(function(v){
-      setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setClasses(v[3]||[]);
+    Promise.all([loadUsers(),loadBoards(),loadSocial(),loadClasses(),loadAssignments()]).then(function(v){
+      setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setClasses(v[3]||[]);setAssignments(v[4]||[]);
       var sessionName=saved||(savedCreds&&savedCreds.name);
       if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);setStage(role==="teacher"?"teacherDashboard":"home");}}
       setAppReady(true);
@@ -1361,6 +1373,51 @@ export default function App(){
     setJoinClassCode("");
     setJoinClassMsg("✓ Joined "+cls.name+"!");
     await saveClassesRemote(updated);
+  }
+
+  // ── assignment actions ──────────────────────────────────────
+  async function doCreateAssignment(){
+    if(!currentUser||!currentClass)return;
+    setAssignMsg("");
+    if(assignType==="library"&&!assignStoryId){setAssignMsg("Select a story first.");return;}
+    if(assignType==="ai_topic"&&!assignTopic.trim()){setAssignMsg("Enter a topic first.");return;}
+    setAssignLoading(true);
+    var id="asgn-"+Date.now();
+    var base={id:id,classId:currentClass.id,teacherName:currentUser.name,type:assignType,dueDate:assignDue||null,createdAt:new Date().toISOString(),completions:{}};
+    var asgn;
+    if(assignType==="library"){
+      var story=STORY_LIBRARY.find(function(s){return s.id===assignStoryId;});
+      asgn=Object.assign({},base,{storyId:assignStoryId,topic:story?story.title:"Library Story",level:story?story.level:assignLevel,passage:null,questions:null});
+    } else {
+      try{
+        var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:assignLevel,topic:assignTopic.trim(),types:["mcq","gap_word","qa","tfnm"]})});
+        var d=await r.json();
+        if(!r.ok||d.error)throw new Error(d.error||"Generation failed");
+        asgn=Object.assign({},base,{storyId:null,topic:assignTopic.trim(),level:assignLevel,passage:d.passage,questions:d.questions});
+      }catch(e){setAssignMsg("AI generation failed: "+e.message);setAssignLoading(false);return;}
+    }
+    var updated=assignments.concat([asgn]);
+    setAssignments(updated);
+    setAssignStoryId("");setAssignTopic("");setAssignDue("");
+    setAssignMsg("✓ Assignment created!");
+    setAssignLoading(false);
+    // update currentClass ref so UI refreshes
+    setCurrentClass(Object.assign({},currentClass));
+    await saveAssignmentsRemote(updated);
+  }
+
+  function doCompleteAssignment(asgnId,pct,xp,timeSecs){
+    if(!currentUser)return;
+    setAssignments(function(prev){
+      var updated=prev.map(function(a){
+        if(a.id!==asgnId)return a;
+        var comps=Object.assign({},a.completions);
+        comps[currentUser.name]={pct:pct,xp:xp,timeSecs:timeSecs,completedAt:new Date().toISOString()};
+        return Object.assign({},a,{completions:comps});
+      });
+      saveAssignmentsRemote(updated);
+      return updated;
+    });
   }
 
   // ── social actions ─────────────────────────────────────────
@@ -2442,9 +2499,11 @@ export default function App(){
                 );})}
               </div>
 
+              {/* Students */}
+              <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:8}}>STUDENTS</p>
               {cls.students.length===0?(
-                <div style={{textAlign:"center",padding:"32px 0",color:"#4b5563"}}>
-                  <p>No students yet. Share the code above!</p>
+                <div style={{textAlign:"center",padding:"24px 0",color:"#4b5563",marginBottom:16}}>
+                  <p style={{margin:0}}>No students yet. Share the code above!</p>
                 </div>
               ):stuData.map(function(d){
                 var lvMeta=LEVELS.find(function(l){return l.key===d.bestLv;});
@@ -2469,6 +2528,71 @@ export default function App(){
                   </div>
                 );
               })}
+
+              {/* Assignments */}
+              <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"20px 0 10px"}}>ASSIGNMENTS</p>
+              <div style={{...CARD,marginBottom:14}}>
+                <div style={{display:"flex",gap:6,marginBottom:12}}>
+                  {[{v:"library",label:"📚 Library Story"},{v:"ai_topic",label:"🤖 AI Topic"}].map(function(t){return(
+                    <button key={t.v} onClick={function(){setAssignType(t.v);setAssignMsg("");}} style={{flex:1,padding:"7px 0",borderRadius:10,border:"2px solid "+(assignType===t.v?"#f59e0b":"rgba(255,255,255,0.1)"),background:assignType===t.v?"rgba(245,158,11,0.15)":"rgba(255,255,255,0.03)",color:assignType===t.v?"#fcd34d":"#6b7280",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>
+                  );})}
+                </div>
+
+                {assignType==="library"?(
+                  <select value={assignStoryId} onChange={function(e){setAssignStoryId(e.target.value);}} style={{...INP,margin:"0 0 8px",width:"100%",boxSizing:"border-box"}}>
+                    <option value="">— Select a story —</option>
+                    {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(
+                      <optgroup key={lv} label={lv+" — "+LEVELS.find(function(l){return l.key===lv;}).desc}>
+                        {STORY_LIBRARY.filter(function(s){return s.level===lv;}).map(function(s){return(
+                          <option key={s.id} value={s.id}>{s.title} ({s.topic})</option>
+                        );})}
+                      </optgroup>
+                    );})}
+                  </select>
+                ):(
+                  <div style={{display:"flex",gap:8,marginBottom:8}}>
+                    <input value={assignTopic} onChange={function(e){setAssignTopic(e.target.value);}} placeholder="Topic (e.g. Climate Change)" style={{...INP,flex:1,margin:0}}/>
+                    <select value={assignLevel} onChange={function(e){setAssignLevel(e.target.value);}} style={{...INP,margin:0,width:72}}>
+                      {LEVELS.map(function(l){return<option key={l.key} value={l.key}>{l.key}</option>;})}
+                    </select>
+                  </div>
+                )}
+
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <input type="date" value={assignDue} onChange={function(e){setAssignDue(e.target.value);}} style={{...INP,margin:0,flex:1,colorScheme:"dark"}} title="Due date (optional)"/>
+                  <button onClick={doCreateAssignment} disabled={assignLoading||(assignType==="library"&&!assignStoryId)||(assignType==="ai_topic"&&!assignTopic.trim())} style={{...mkBtn(assignLoading?"#374151":"#f59e0b","#0d0d1a"),padding:"10px 14px",fontSize:12,whiteSpace:"nowrap"}}>{assignLoading?"Generating…":"+ Assign"}</button>
+                </div>
+                {assignMsg&&<p style={{fontSize:12,color:assignMsg.startsWith("✓")?"#34d399":"#f87171",margin:"8px 0 0"}}>{assignMsg}</p>}
+              </div>
+
+              {/* Existing assignments for this class */}
+              {assignments.filter(function(a){return a.classId===cls.id;}).map(function(asgn){
+                var total=cls.students.length;
+                var done=Object.keys(asgn.completions||{}).length;
+                var pct=total>0?Math.round((done/total)*100):0;
+                var avgScore=done>0?Math.round(Object.values(asgn.completions).reduce(function(s,c){return s+c.pct;},0)/done):0;
+                return(
+                  <div key={asgn.id} style={{...CARD,marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                      <div style={{flex:1,paddingRight:8}}>
+                        <div style={{fontSize:13,fontWeight:800,color:"#f3f4f6"}}>{asgn.topic}</div>
+                        <div style={{fontSize:11,color:"#6b7280"}}>{asgn.level} · {asgn.type==="ai_topic"?"🤖 AI generated":"📚 Library"}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
+                      </div>
+                      <div style={{textAlign:"right",flexShrink:0}}>
+                        <div style={{fontSize:13,fontWeight:900,color:pct===100?"#34d399":"#f59e0b"}}>{done}/{total}</div>
+                        <div style={{fontSize:10,color:"#6b7280"}}>completed</div>
+                      </div>
+                    </div>
+                    <div style={{background:"rgba(0,0,0,0.3)",borderRadius:4,height:4,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:pct+"%",background:pct===100?"#34d399":"#f59e0b",transition:"width 0.3s"}}/>
+                    </div>
+                    {done>0&&<div style={{fontSize:11,color:"#6b7280",marginTop:6}}>Class avg: <b style={{color:"#f3f4f6"}}>{avgScore}%</b></div>}
+                  </div>
+                );
+              })}
+              {assignments.filter(function(a){return a.classId===cls.id;}).length===0&&(
+                <p style={{fontSize:12,color:"#4b5563",textAlign:"center",padding:"16px 0"}}>No assignments yet. Create one above.</p>
+              )}
             </div>
           );
         })()}
@@ -2614,7 +2738,22 @@ export default function App(){
             {(function(){
               var doy=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(864e5));
               var wotd=WORD_OF_DAY[doy%WORD_OF_DAY.length];
+              var myClass3=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
+              var pendingAssignments=myClass3?assignments.filter(function(a){return a.classId===myClass3.id&&!a.completions[currentUser.name]&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
               return(
+                <div>
+                {pendingAssignments.length>0&&(
+                  <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(245,158,11,0.5)",background:"rgba(245,158,11,0.07)",cursor:"pointer"}} onClick={function(){setStage("library");}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{fontSize:24}}>📋</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:13,fontWeight:800,color:"#fcd34d"}}>You have {pendingAssignments.length} pending assignment{pendingAssignments.length!==1?"s":""}</div>
+                        <div style={{fontSize:11,color:"#9ca3af"}}>from {myClass3.teacherName} · tap to go to Library</div>
+                      </div>
+                      <div style={{color:"#fcd34d",fontSize:16}}>→</div>
+                    </div>
+                  </div>
+                )}
                 <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(167,139,250,0.3)",background:"rgba(167,139,250,0.05)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                     <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.6,margin:0}}>📖 WORD OF THE DAY</p>
@@ -2626,6 +2765,7 @@ export default function App(){
                   </div>
                   <p style={{fontSize:13,color:"#d1d5db",margin:"0 0 4px",lineHeight:1.5}}>{wotd.def}</p>
                   <p style={{fontSize:12,color:"#6b7280",margin:0,fontStyle:"italic"}}>"{wotd.ex}"</p>
+                </div>
                 </div>
               );
             })()}
@@ -4406,8 +4546,10 @@ export default function App(){
                     <div style={{display:"flex",flexDirection:"column",gap:8}}>
                       {stories.map(function(story){
                         var isUnlocked=!!unlockedMap[story.id];
+                        var myClass2=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
+                        var isAssigned=myClass2?assignments.some(function(a){return a.classId===myClass2.id&&a.storyId===story.id&&!a.completions[currentUser.name];}):false;
                         return(
-                          <div key={story.id} className="rq-raised" style={{...CARD,padding:0,display:"flex",alignItems:"stretch",gap:0,opacity:isUnlocked?1:0.45,border:"1px solid "+(isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",overflow:"hidden"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
+                          <div key={story.id} className="rq-raised" style={{...CARD,padding:0,display:"flex",alignItems:"stretch",gap:0,opacity:isUnlocked?1:0.45,border:"1px solid "+(isAssigned?"rgba(245,158,11,0.6)":isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",overflow:"hidden"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
                             <div style={{width:120,height:80,flexShrink:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
                               <img src={"/assets/covers/"+story.id+".svg"} alt={story.title} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={function(e){e.target.style.display="none";e.target.parentElement.style.fontSize="28px";e.target.parentElement.textContent=isUnlocked?({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"}[lk]||"📖"):"🔒";}}/>
                             </div>
@@ -4415,10 +4557,11 @@ export default function App(){
                               <div>
                                 <div style={{fontSize:13,fontWeight:700,color:isUnlocked?"#f3f4f6":"#6b7280",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
                                 <div style={{fontSize:11,color:"#6b7280"}}>{story.topic} · {story.questions.length} Qs</div>
+                                {isAssigned&&<div style={{marginTop:4,display:"inline-block",fontSize:10,fontWeight:700,color:"#fcd34d",background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.4)",borderRadius:6,padding:"1px 7px"}}>📋 Assigned</div>}
                               </div>
                               {!isUnlocked&&<div style={{fontSize:10,color:"#4b5563"}}>Unlock by completing {lk} quizzes</div>}
                             </div>
-                            {isUnlocked&&<div style={{padding:12,display:"flex",alignItems:"center",fontSize:11,fontWeight:700,color:lObj.color,flexShrink:0}}>→</div>}
+                            {isUnlocked&&<div style={{padding:12,display:"flex",alignItems:"center",fontSize:11,fontWeight:700,color:isAssigned?"#fcd34d":lObj.color,flexShrink:0}}>{isAssigned?"📋":"→"}</div>}
                           </div>
                         );
                       })}
