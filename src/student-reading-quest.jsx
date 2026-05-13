@@ -1805,7 +1805,7 @@ export default function App(){
       var myAsgClass=classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;});
       if(myAsgClass){
         var matchingAsgn=assignments.find(function(a){
-          if(a.classId!==myAsgClass.id||a.completions[currentUser.name])return false;
+          if(a.classId!==myAsgClass.id||!a.completions||a.completions[currentUser.name])return false;
           if(activeAssignmentId)return a.id===activeAssignmentId;
           return a.storyId&&a.storyId===currentStoryId;
         });
@@ -3028,7 +3028,7 @@ export default function App(){
               var doy=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(864e5));
               var wotd=WORD_OF_DAY[doy%WORD_OF_DAY.length];
               var myClass3=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
-              var pendingAssignments=myClass3?assignments.filter(function(a){return a.classId===myClass3.id&&!a.completions[currentUser.name]&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
+              var pendingAssignments=myClass3?assignments.filter(function(a){return a.classId===myClass3.id&&(!a.completions||!a.completions[currentUser.name])&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
               return(
                 <div>
                 {myClass3&&myClass3.announcement&&(
