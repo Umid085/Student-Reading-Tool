@@ -1217,6 +1217,7 @@ export default function App(){
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
   var [customTopic,setCustomTopic]=useState("");
+  var [passageLang,setPassageLang]=useState("English");
   var [useWeakVocab,setUseWeakVocab]=useState(false);
   var [personalizedWords,setPersonalizedWords]=useState([]);
   var [questions,setQuestions]=useState([]);
@@ -1892,7 +1893,7 @@ export default function App(){
         var AI_TYPES=["mcq","gap_word","gap_sentence","qa","tfnm","ynng"];
         var types=selectedTypes.filter(function(t){return AI_TYPES.indexOf(t)!==-1;});
         if(!types.length)types=["mcq","gap_word","qa","tfnm"];
-        var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:level,topic:customTopic.trim(),types:types})});
+        var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:level,topic:customTopic.trim(),types:types,language:passageLang})});
         var d=await r.json();
         if(!r.ok||d.error)throw new Error(d.error||"Generation failed");
         if(!d.passage||!d.questions)throw new Error("Invalid response from AI");
@@ -4033,6 +4034,20 @@ export default function App(){
                 </div>);
               })()}
             </div>
+
+            {/* passage language selector — only shown when a custom topic is entered */}
+            {customTopic.trim()&&(function(){
+              var PASS_LANGS=[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}];
+              return(<div style={{...CARD,marginBottom:12,padding:14}}>
+                <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>PASSAGE LANGUAGE</p>
+                <div style={{display:"flex",overflowX:"auto",gap:6,paddingBottom:4}}>
+                  {PASS_LANGS.map(function(l){
+                    var active=passageLang===l.name;
+                    return(<button key={l.name} onClick={function(){setPassageLang(l.name);}} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,whiteSpace:"nowrap",flexShrink:0}}>{l.flag} {l.name}</button>);
+                  })}
+                </div>
+              </div>);
+            })()}
 
             {/* theme presets */}
             <div style={{marginBottom:14}}>
