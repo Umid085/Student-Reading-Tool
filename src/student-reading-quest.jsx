@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 
-var API        = "/.netlify/functions/generate";
-var AUTH       = "/.netlify/functions/auth";
-var REGISTER   = "/.netlify/functions/register";
-var USERS_API  = "/.netlify/functions/users";
+var API        = "/api/generate";
+var AUTH       = "/api/auth";
+var REGISTER   = "/api/register";
+var USERS_API  = "/api/users";
 var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
 var BOARDS_KEY   = "rq-boards-v6";
@@ -953,7 +953,7 @@ function getLevelProgress(totalXp){
 // ── storage ──────────────────────────────────────────────────
 async function apiGet(key){
   try{
-    var r=await fetch("/.netlify/functions/storage?key="+encodeURIComponent(key));
+    var r=await fetch("/api/storage?key="+encodeURIComponent(key));
     if(!r.ok)throw new Error("not ok");
     var d=await r.json();
     if(d.value){
@@ -979,7 +979,7 @@ async function apiSet(key,val){
   try{
     var hdrs={"Content-Type":"application/json"};
     if(_sessionToken)hdrs["Authorization"]="Bearer "+_sessionToken;
-    var r=await fetch("/.netlify/functions/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
+    var r=await fetch("/api/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
     if(!r.ok&&r.status!==401){console.warn("Firebase write failed for key "+key+": status "+r.status);}
     if(r.status===401&&_sessionToken){
       var creds=null;try{creds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e2){}
@@ -987,7 +987,7 @@ async function apiSet(key,val){
         await getSessionToken(creds.name,creds.hash);
         if(_sessionToken){
           hdrs["Authorization"]="Bearer "+_sessionToken;
-          var r2=await fetch("/.netlify/functions/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
+          var r2=await fetch("/api/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
           if(!r2.ok){console.warn("Firebase write retry failed for key "+key+": status "+r2.status);}
         }else{console.warn("Token refresh failed for key "+key);}
       }
@@ -1852,7 +1852,7 @@ export default function App(){
       asgn=Object.assign({},base,{storyId:assignStoryId,topic:story?story.title:"Library Story",level:story?story.level:assignLevel,passage:null,questions:null});
     } else if(assignType==="custom_text"){
       try{
-        var rc=await fetch("/.netlify/functions/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:assignCustomText.trim(),level:assignLevel,types:["mcq","gap_word","qa","tfnm"]})});
+        var rc=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:assignCustomText.trim(),level:assignLevel,types:["mcq","gap_word","qa","tfnm"]})});
         var dc=await rc.json();
         if(!rc.ok||dc.error)throw new Error(dc.error||"Generation failed");
         asgn=Object.assign({},base,{storyId:null,topic:dc.topic||"Custom Passage",level:assignLevel,passage:assignCustomText.trim(),questions:dc.questions});
@@ -2776,7 +2776,7 @@ export default function App(){
     if(!customText.trim()||customText.trim().length<30){setCustomTextError("Please paste at least 30 characters of text.");return;}
     setCustomTextError("");setCustomTextLoading(true);
     try{
-      var r=await fetch("/.netlify/functions/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:customText.trim(),level:level||"B1",types:selectedTypes.slice(0,3)})});
+      var r=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:customText.trim(),level:level||"B1",types:selectedTypes.slice(0,3)})});
       var d=await r.json();
       if(!r.ok||d.error)throw new Error(d.error||"Failed to generate quiz");
       // reset all quiz state before launching
