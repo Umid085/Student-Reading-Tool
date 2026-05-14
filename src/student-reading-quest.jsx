@@ -1216,6 +1216,7 @@ export default function App(){
   var [reportData,setReportData]=useState(null);
   var [shareLink,setShareLink]=useState("");
   var [shareLinkCopied,setShareLinkCopied]=useState(false);
+  var [milestoneSeen,setMilestoneSeen]=useState(false);
 
   useEffect(function(){
     try{var params=new URLSearchParams(window.location.search);var rep=params.get("report");if(rep){var rd=JSON.parse(decodeURIComponent(escape(atob(rep))));setReportData(rd);setStage("report");setAppReady(true);return;}}catch(e){}
@@ -2304,6 +2305,11 @@ export default function App(){
     var tod=new Date();tod.setHours(0,0,0,0);
     return Math.round((tod-last)/(864e5))===2;
   })();
+  var todayStr=new Date().toLocaleDateString();
+  var playedToday=currentUser?currentUser.games.some(function(g){return g.date===todayStr;}):false;
+  var weekDots=(function(){var dots=[];for(var di=6;di>=0;di--){var d=new Date();d.setDate(d.getDate()-di);d.setHours(0,0,0,0);var ds=d.toLocaleDateString();var dn=["S","M","T","W","T","F","S"][d.getDay()];dots.push({played:currentUser?currentUser.games.some(function(g){return g.date===ds;}):false,day:dn,today:di===0});}return dots;})();
+  var STREAK_MILESTONES={3:"Three days in a row! Keep going 💪",7:"One whole week! You're building a real habit 🔥",14:"Two weeks strong! Incredible consistency 🏆",30:"30-day legend! You're unstoppable 🌟"};
+  var milestoneToShow=currentUser&&[3,7,14,30].indexOf(myStreak)!==-1&&!milestoneSeen&&!localStorage.getItem("rq-ms-"+currentUser.name+"-"+myStreak)?STREAK_MILESTONES[myStreak]:null;
 
   return(
     <>
@@ -3066,6 +3072,41 @@ export default function App(){
                 </div>
                 {!streakAtRisk&&shields<3&&myStreak>0&&myStreak%7!==0&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Earn a shield at {Math.ceil(myStreak/7)*7}-day streak milestone</div>}
                 {!streakAtRisk&&shields===3&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Max shields (3) — keep going!</div>}
+                {/* weekly activity dots */}
+                <div style={{display:"flex",gap:4,marginTop:10,justifyContent:"space-between"}}>
+                  {weekDots.map(function(dot,i){return(
+                    <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                      <div style={{width:22,height:22,borderRadius:"50%",background:dot.played?"#fbbf24":dot.today?"rgba(251,191,36,0.2)":"rgba(255,255,255,0.07)",border:dot.today?"2px solid #fbbf24":"2px solid transparent",transition:"all 0.2s"}}/>
+                      <div style={{fontSize:9,color:dot.today?"#fbbf24":"#6b7280",fontWeight:dot.today?700:400}}>{dot.day}</div>
+                    </div>
+                  );})}
+                </div>
+              </div>
+            )}
+
+            {/* milestone celebration banner */}
+            {milestoneToShow&&(
+              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(251,191,36,0.5)",background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.04))",textAlign:"center",position:"relative"}}>
+                <button onClick={function(){localStorage.setItem("rq-ms-"+currentUser.name+"-"+myStreak,"1");setMilestoneSeen(true);}} style={{position:"absolute",top:8,right:8,background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>
+                <div style={{fontSize:32,marginBottom:4}}>🎉</div>
+                <div style={{fontSize:15,fontWeight:800,color:"#fbbf24",marginBottom:4}}>{myStreak}-Day Streak!</div>
+                <div style={{fontSize:12,color:"#d1d5db"}}>{milestoneToShow}</div>
+              </div>
+            )}
+
+            {/* play today nudge */}
+            {currentUser&&!playedToday&&(
+              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.05)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:28}}>📖</span>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#818cf8"}}>Play today!</div>
+                      <div style={{fontSize:11,color:"#6b7280"}}>{myStreak>0?"Keep your "+myStreak+"-day streak alive":"Start your streak today"}</div>
+                    </div>
+                  </div>
+                  <button onClick={function(){setStage("library");}} style={{...mkBtn("#6366f1"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Read Now</button>
+                </div>
               </div>
             )}
 
