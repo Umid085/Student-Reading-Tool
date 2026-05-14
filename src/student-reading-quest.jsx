@@ -1213,8 +1213,12 @@ export default function App(){
   var [onboardStep,setOnboardStep]=useState(null);
   var [onboardClassCode,setOnboardClassCode]=useState("");
   var [libSubjectFilter,setLibSubjectFilter]=useState("");
+  var [reportData,setReportData]=useState(null);
+  var [shareLink,setShareLink]=useState("");
+  var [shareLinkCopied,setShareLinkCopied]=useState(false);
 
   useEffect(function(){
+    try{var params=new URLSearchParams(window.location.search);var rep=params.get("report");if(rep){var rd=JSON.parse(decodeURIComponent(escape(atob(rep))));setReportData(rd);setStage("report");setAppReady(true);return;}}catch(e){}
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
@@ -1508,6 +1512,25 @@ export default function App(){
     var updated=classes.concat([cls]);
     setClasses(updated);setCurrentClass(cls);setNewClassName("");setOnboardClassCode(code);setOnboardStep(2);
     saveClassesRemote(updated);
+  }
+
+  function generateReportLink(sName){
+    var pu=allUsers.find(function(u){return u.name===sName;});
+    var pg=pu&&pu.games?pu.games:[];
+    var avgPct=pg.length?Math.round(pg.reduce(function(s,g){return s+g.pct;},0)/pg.length):0;
+    var wpmGames=pg.filter(function(g){return g.wpm>0;});
+    var avgWpm=wpmGames.length?Math.round(wpmGames.reduce(function(s,g){return s+g.wpm;},0)/wpmGames.length):0;
+    var validGames=pg.filter(function(g){return typeof g.pct==="number";});
+    var recent3=validGames.slice(-3);var prev3=validGames.slice(-6,-3);
+    var rAvg=recent3.length?recent3.reduce(function(s,g){return s+g.pct;},0)/recent3.length:null;
+    var pAvg=prev3.length?prev3.reduce(function(s,g){return s+g.pct;},0)/prev3.length:null;
+    var trend=rAvg===null?"new":pAvg===null?"new":rAvg-pAvg>5?"improving":rAvg-pAvg<-5?"declining":"stable";
+    var Q_TYPES_R=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
+    var qBreakdown={};
+    Q_TYPES_R.forEach(function(t){var relevant=pg.filter(function(g){return g.typeStats&&g.typeStats[t]!==undefined;});if(relevant.length)qBreakdown[t]=Math.round(relevant.reduce(function(s,g){return s+(g.typeStats[t]||0);},0)/relevant.length*100);});
+    var report={n:sName,t:currentClass?currentClass.teacherName:"",c:currentClass?currentClass.name:"",d:new Date().toLocaleDateString(),l:getBestLevel(pg),g:pg.length,s:avgPct,w:avgWpm,tr:trend,q:qBreakdown,r:pg.slice(-5).map(function(g){return{d:g.date,p:g.pct,l:g.level};})};
+    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(report))));
+    return window.location.origin+window.location.pathname+"?report="+encoded;
   }
 
   // ── social actions ─────────────────────────────────────────
@@ -2372,6 +2395,12 @@ export default function App(){
       ::-webkit-scrollbar-track{background:transparent}
       ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.10);border-radius:10px}
       ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.20)}
+      @media print{
+        body{background:#fff!important;color:#111!important;}
+        .rq-orb,.rq-wrap>div:not([class]){display:none!important;}
+        button:not([data-print-keep]){display:none!important;}
+        @page{margin:1.5cm;}
+      }
       /* ── selection ── */
       ::selection{background:rgba(52,211,153,0.25);color:#34d399}
       /* ── neon pulse keyframes ── */
@@ -2861,7 +2890,10 @@ export default function App(){
                           <div style={{fontSize:18,fontWeight:900,color:"#f3f4f6"}}>{printStudent}</div>
                           <div style={{fontSize:11,color:"#6b7280"}}>{currentClass.name} · report by {currentUser.name}</div>
                         </div>
-                        <button onClick={function(){window.print();}} style={{...mkBtn("#6366f1"),fontSize:12,padding:"8px 14px"}}>🖨 Print</button>
+                        <div style={{display:"flex",gap:6}}>
+                          <button onClick={function(){var link=generateReportLink(printStudent);setShareLink(link);setShareLinkCopied(false);}} style={{...mkBtn("#34d399","#0d0d1a"),fontSize:12,padding:"8px 12px"}}>📤 Share</button>
+                          <button onClick={function(){window.print();}} style={{...mkBtn("#6366f1"),fontSize:12,padding:"8px 12px"}}>🖨 Print</button>
+                        </div>
                       </div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
                         {[{label:"Best Level",val:plv!=="none"?plv:"–",color:"#a78bfa"},{label:"Games",val:pg.length,color:"#34d399"},{label:"Avg Score",val:pg.length?pavg+"%":"–",color:"#f59e0b"}].map(function(s){return(
@@ -2892,12 +2924,98 @@ export default function App(){
                           );
                         })}
                       </div>
+                      {shareLink&&(
+                        <div style={{background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:12}}>
+                          <p style={{fontSize:10,fontWeight:700,color:"#34d399",margin:"0 0 6px",letterSpacing:0.5}}>📤 SHAREABLE LINK (send to parents)</p>
+                          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                            <input readOnly value={shareLink} style={{...INP,flex:1,margin:0,fontSize:10,padding:"6px 8px"}} onClick={function(e){e.target.select();}}/>
+                            <button onClick={function(){try{navigator.clipboard.writeText(shareLink);}catch(e){}setShareLinkCopied(true);setTimeout(function(){setShareLinkCopied(false);},2500);}} style={{...mkBtn("#34d399","#0d0d1a"),fontSize:11,padding:"6px 10px",whiteSpace:"nowrap",flexShrink:0}}>{shareLinkCopied?"✓ Copied!":"Copy"}</button>
+                          </div>
+                        </div>
+                      )}
                       <p style={{fontSize:11,color:"#4b5563",textAlign:"center",margin:0}}>Generated {new Date().toLocaleDateString()}</p>
-                      <button onClick={function(){setPrintStudent(null);}} style={{...GHOST,width:"100%",marginTop:14,fontSize:12}}>Close</button>
+                      <button onClick={function(){setPrintStudent(null);setShareLink("");}} style={{...GHOST,width:"100%",marginTop:14,fontSize:12}}>Close</button>
                     </div>
                   </div>
                 );
               })()}
+            </div>
+          );
+        })()}
+
+        {/* ── SHAREABLE REPORT ──────────────────────────────── */}
+        {stage==="report"&&reportData&&(function(){
+          var rd=reportData;
+          var QLABELS_R={"mcq":"Multiple Choice","gap_word":"Vocabulary Fill","gap_sentence":"Sentence Fill","matching":"Matching","heading":"Headings","qa":"Open Response","tfnm":"True/False/Not Mentioned","ynng":"Yes/No/Not Given"};
+          var trendColor=rd.tr==="improving"?"#16a34a":rd.tr==="declining"?"#dc2626":"#6b7280";
+          var trendLabel=rd.tr==="improving"?"📈 Improving":rd.tr==="declining"?"📉 Needs Attention":"➡️ Steady";
+          var levelDesc={A1:"Beginner",A2:"Elementary",B1:"Lower Intermediate",B2:"Upper Intermediate",C1:"Advanced",C2:"Mastery"};
+          return(
+            <div style={{background:"#fff",minHeight:"100vh",color:"#111827",padding:"24px 16px",fontFamily:"'Trebuchet MS','Inter',sans-serif"}}>
+              <div style={{maxWidth:560,margin:"0 auto"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,paddingBottom:16,borderBottom:"2px solid #e5e7eb"}}>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:700,color:"#6b7280",letterSpacing:1,marginBottom:4}}>STUDENT PROGRESS REPORT</div>
+                    <div style={{fontSize:24,fontWeight:900,color:"#111827",marginBottom:2}}>{rd.n}</div>
+                    <div style={{fontSize:13,color:"#6b7280"}}>{rd.c&&rd.c+" · "}{rd.t&&"Teacher: "+rd.t}{rd.d&&" · "+rd.d}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:28,marginBottom:4}}>📖</div>
+                    <div style={{fontSize:11,fontWeight:800,color:"#6366f1"}}>Reading Quest</div>
+                  </div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+                  {[
+                    {label:"CEFR Level",val:rd.l!=="none"?rd.l+" — "+(levelDesc[rd.l]||""):"Not yet assessed",color:"#6366f1"},
+                    {label:"Stories Completed",val:rd.g+" session"+(rd.g!==1?"s":""),color:"#0891b2"},
+                    {label:"Average Score",val:rd.g?rd.s+"%":"–",color:rd.s>=70?"#16a34a":rd.s>=50?"#d97706":"#dc2626"},
+                    {label:"Reading Speed",val:rd.w>0?rd.w+" words/min":"Not tracked",color:"#7c3aed"},
+                  ].map(function(s){return(
+                    <div key={s.label} style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:12,padding:"14px 16px"}}>
+                      <div style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:0.8,marginBottom:4}}>{s.label}</div>
+                      <div style={{fontSize:16,fontWeight:900,color:s.color,lineHeight:1.2}}>{s.val}</div>
+                    </div>
+                  );})}
+                </div>
+                <div style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:0.8,marginBottom:6}}>RECENT TREND</div>
+                  <div style={{fontSize:18,fontWeight:900,color:trendColor}}>{trendLabel}</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginTop:4}}>{rd.tr==="improving"?"Performance is improving over recent sessions — great progress!":rd.tr==="declining"?"Scores have dipped recently — some extra practice would help.":"Performance is consistent across recent sessions."}</div>
+                </div>
+                {Object.keys(rd.q).length>0&&(
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#374151",letterSpacing:0.8,marginBottom:10}}>SKILL BREAKDOWN</div>
+                    {Object.keys(rd.q).map(function(t){
+                      var pct=rd.q[t];
+                      var col=pct>=70?"#16a34a":pct>=50?"#d97706":"#dc2626";
+                      return(
+                        <div key={t} style={{marginBottom:8}}>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
+                            <span style={{color:"#374151"}}>{QLABELS_R[t]||t}</span>
+                            <span style={{color:col,fontWeight:700}}>{pct}%</span>
+                          </div>
+                          <div style={{background:"#e5e7eb",borderRadius:3,height:6}}>
+                            <div style={{height:"100%",width:pct+"%",background:col,borderRadius:3}}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {rd.r&&rd.r.length>0&&(
+                  <div style={{marginBottom:24}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#374151",letterSpacing:0.8,marginBottom:8}}>RECENT SESSIONS</div>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                      <thead><tr style={{background:"#f3f4f6"}}>{["Date","Level","Score"].map(function(h){return(<th key={h} style={{padding:"7px 10px",textAlign:"left",fontWeight:700,color:"#6b7280",borderBottom:"1px solid #e5e7eb"}}>{h}</th>);})}</tr></thead>
+                      <tbody>{rd.r.slice().reverse().map(function(g,i){return(<tr key={i} style={{borderBottom:"1px solid #f3f4f6"}}><td style={{padding:"7px 10px",color:"#374151"}}>{g.d}</td><td style={{padding:"7px 10px",color:"#6366f1",fontWeight:700}}>{g.l}</td><td style={{padding:"7px 10px",color:g.p>=70?"#16a34a":g.p>=50?"#d97706":"#dc2626",fontWeight:700}}>{g.p}%</td></tr>);})}</tbody>
+                    </table>
+                  </div>
+                )}
+                <div style={{borderTop:"1px solid #e5e7eb",paddingTop:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:11,color:"#9ca3af"}}>Generated by Reading Quest · {rd.d}</div>
+                  <button onClick={function(){window.print();}} style={{background:"#6366f1",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer"}}>🖨 Print Report</button>
+                </div>
+              </div>
             </div>
           );
         })()}
