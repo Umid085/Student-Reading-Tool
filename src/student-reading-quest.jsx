@@ -19,6 +19,257 @@ var QUOTES_KEY   = "rq-quotes-v1";
 var CLASSES_KEY      = "rq-classes-v1";
 var ASSIGNMENTS_KEY  = "rq-assignments-v1";
 
+var STRINGS = {
+  en: {
+    appName:"Reading Quest",
+    login:"Log In",register:"Register",
+    username:"Username",password:"Password",
+    orLogin:"or Log In",orRegister:"or Register",
+    startQuest:"Start Quest!",selectLevel:"Select a level to begin",
+    writingPassage:"✨ Writing your passage...",
+    chooseLevel:"CHOOSE YOUR LEVEL",
+    questionTypes:"QUESTION TYPES (min 1)",
+    topic:"TOPIC",topicPlaceholder:"e.g. climate change, football, the Moon...",
+    topicHint:"AI will write a passage about:",
+    startReading:"Start Reading",
+    startQuiz:"Begin Quiz →",
+    submitAnswer:"Check Answer",
+    nextQuestion:"Next Question",
+    seeResults:"See Results",
+    backHome:"Back to Home",
+    correct:"Correct!",incorrect:"Incorrect",
+    yourScore:"Your Score",
+    leaderboard:"Leaderboard",
+    library:"Library",
+    profile:"Profile",
+    friends:"Friends",
+    weekly:"Weekly",
+    vocab:"Vocab",
+    settings:"Settings",
+    level:"Level",
+    xp:"XP",
+    streak:"Streak",
+    language:"LANGUAGE",
+  },
+  uz: {
+    appName:"O'qish Vazifasi",
+    login:"Kirish",register:"Ro'yxatdan o'tish",
+    username:"Foydalanuvchi nomi",password:"Parol",
+    orLogin:"yoki Kirish",orRegister:"yoki Ro'yxatdan o'tish",
+    startQuest:"Vazifani boshlash!",selectLevel:"Boshlash uchun daraja tanlang",
+    writingPassage:"✨ Matn yozilmoqda...",
+    chooseLevel:"DARAJANI TANLANG",
+    questionTypes:"SAVOL TURLARI (kamida 1)",
+    topic:"MAVZU",topicPlaceholder:"masalan: iqlim o'zgarishi, futbol, Oy...",
+    topicHint:"AI quyidagi mavzuda matn yozadi:",
+    startReading:"O'qishni boshlash",
+    startQuiz:"Testni boshlash →",
+    submitAnswer:"Javobni tekshirish",
+    nextQuestion:"Keyingi savol",
+    seeResults:"Natijalarni ko'rish",
+    backHome:"Bosh sahifaga qaytish",
+    correct:"To'g'ri!",incorrect:"Noto'g'ri",
+    yourScore:"Sizning ballingiz",
+    leaderboard:"Reyting",
+    library:"Kutubxona",
+    profile:"Profil",
+    friends:"Do'stlar",
+    weekly:"Haftalik",
+    vocab:"Lug'at",
+    settings:"Sozlamalar",
+    level:"Daraja",
+    xp:"XP",
+    streak:"Seriya",
+    language:"TIL",
+  },
+  ru: {
+    appName:"Читальный Квест",
+    login:"Войти",register:"Регистрация",
+    username:"Имя пользователя",password:"Пароль",
+    orLogin:"или Войти",orRegister:"или Зарегистрироваться",
+    startQuest:"Начать квест!",selectLevel:"Выберите уровень",
+    writingPassage:"✨ Создаём текст...",
+    chooseLevel:"ВЫБЕРИТЕ УРОВЕНЬ",
+    questionTypes:"ТИПЫ ВОПРОСОВ (мин. 1)",
+    topic:"ТЕМА",topicPlaceholder:"напр. климат, футбол, Луна...",
+    topicHint:"ИИ напишет текст на тему:",
+    startReading:"Начать чтение",
+    startQuiz:"Начать тест →",
+    submitAnswer:"Проверить ответ",
+    nextQuestion:"Следующий вопрос",
+    seeResults:"Посмотреть результаты",
+    backHome:"На главную",
+    correct:"Правильно!",incorrect:"Неправильно",
+    yourScore:"Ваш результат",
+    leaderboard:"Рейтинг",
+    library:"Библиотека",
+    profile:"Профиль",
+    friends:"Друзья",
+    weekly:"Еженедельно",
+    vocab:"Словарь",
+    settings:"Настройки",
+    level:"Уровень",
+    xp:"XP",
+    streak:"Серия",
+    language:"ЯЗЫК",
+  },
+  tr: {
+    appName:"Okuma Görevi",
+    login:"Giriş Yap",register:"Kayıt Ol",
+    username:"Kullanıcı adı",password:"Şifre",
+    orLogin:"veya Giriş Yap",orRegister:"veya Kayıt Ol",
+    startQuest:"Görevi Başlat!",selectLevel:"Başlamak için seviye seçin",
+    writingPassage:"✨ Metin yazılıyor...",
+    chooseLevel:"SEVİYE SEÇİN",
+    questionTypes:"SORU TÜRLERİ (min. 1)",
+    topic:"KONU",topicPlaceholder:"örn. iklim değişikliği, futbol, Ay...",
+    topicHint:"YZ şu konuda metin yazacak:",
+    startReading:"Okumaya Başla",
+    startQuiz:"Teste Başla →",
+    submitAnswer:"Cevabı Kontrol Et",
+    nextQuestion:"Sonraki Soru",
+    seeResults:"Sonuçları Gör",
+    backHome:"Ana Sayfaya Dön",
+    correct:"Doğru!",incorrect:"Yanlış",
+    yourScore:"Puanınız",
+    leaderboard:"Liderlik Tablosu",
+    library:"Kütüphane",
+    profile:"Profil",
+    friends:"Arkadaşlar",
+    weekly:"Haftalık",
+    vocab:"Kelime Listesi",
+    settings:"Ayarlar",
+    level:"Seviye",
+    xp:"XP",
+    streak:"Seri",
+    language:"DİL",
+  },
+  ar: {
+    appName:"مهمة القراءة",
+    login:"تسجيل الدخول",register:"إنشاء حساب",
+    username:"اسم المستخدم",password:"كلمة المرور",
+    orLogin:"أو تسجيل الدخول",orRegister:"أو إنشاء حساب",
+    startQuest:"ابدأ المهمة!",selectLevel:"اختر مستوى للبدء",
+    writingPassage:"✨ جارٍ كتابة النص...",
+    chooseLevel:"اختر مستواك",
+    questionTypes:"أنواع الأسئلة (١ على الأقل)",
+    topic:"الموضوع",topicPlaceholder:"مثلاً: تغير المناخ، كرة القدم، القمر...",
+    topicHint:"سيكتب الذكاء الاصطناعي نصاً عن:",
+    startReading:"ابدأ القراءة",
+    startQuiz:"ابدأ الاختبار →",
+    submitAnswer:"تحقق من الإجابة",
+    nextQuestion:"السؤال التالي",
+    seeResults:"اعرض النتائج",
+    backHome:"العودة للرئيسية",
+    correct:"صحيح!",incorrect:"خطأ",
+    yourScore:"درجتك",
+    leaderboard:"لوحة المتصدرين",
+    library:"المكتبة",
+    profile:"الملف الشخصي",
+    friends:"الأصدقاء",
+    weekly:"أسبوعي",
+    vocab:"المفردات",
+    settings:"الإعدادات",
+    level:"المستوى",
+    xp:"XP",
+    streak:"سلسلة",
+    language:"اللغة",
+  },
+  de: {
+    appName:"Lesewettbewerb",
+    login:"Anmelden",register:"Registrieren",
+    username:"Benutzername",password:"Passwort",
+    orLogin:"oder Anmelden",orRegister:"oder Registrieren",
+    startQuest:"Quest starten!",selectLevel:"Wähle ein Level",
+    writingPassage:"✨ Text wird geschrieben...",
+    chooseLevel:"LEVEL WÄHLEN",
+    questionTypes:"FRAGETYPEN (min. 1)",
+    topic:"THEMA",topicPlaceholder:"z.B. Klimawandel, Fußball, der Mond...",
+    topicHint:"KI schreibt einen Text über:",
+    startReading:"Lesen starten",
+    startQuiz:"Quiz starten →",
+    submitAnswer:"Antwort prüfen",
+    nextQuestion:"Nächste Frage",
+    seeResults:"Ergebnisse sehen",
+    backHome:"Zurück zur Startseite",
+    correct:"Richtig!",incorrect:"Falsch",
+    yourScore:"Dein Ergebnis",
+    leaderboard:"Bestenliste",
+    library:"Bibliothek",
+    profile:"Profil",
+    friends:"Freunde",
+    weekly:"Wöchentlich",
+    vocab:"Wortschatz",
+    settings:"Einstellungen",
+    level:"Level",
+    xp:"XP",
+    streak:"Serie",
+    language:"SPRACHE",
+  },
+  es: {
+    appName:"Misión Lectora",
+    login:"Iniciar sesión",register:"Registrarse",
+    username:"Nombre de usuario",password:"Contraseña",
+    orLogin:"o Iniciar sesión",orRegister:"o Registrarse",
+    startQuest:"¡Comenzar misión!",selectLevel:"Selecciona un nivel para empezar",
+    writingPassage:"✨ Escribiendo tu texto...",
+    chooseLevel:"ELIGE TU NIVEL",
+    questionTypes:"TIPOS DE PREGUNTAS (mín. 1)",
+    topic:"TEMA",topicPlaceholder:"ej. cambio climático, fútbol, la Luna...",
+    topicHint:"La IA escribirá un texto sobre:",
+    startReading:"Empezar a leer",
+    startQuiz:"Iniciar test →",
+    submitAnswer:"Verificar respuesta",
+    nextQuestion:"Siguiente pregunta",
+    seeResults:"Ver resultados",
+    backHome:"Volver al inicio",
+    correct:"¡Correcto!",incorrect:"Incorrecto",
+    yourScore:"Tu puntuación",
+    leaderboard:"Clasificación",
+    library:"Biblioteca",
+    profile:"Perfil",
+    friends:"Amigos",
+    weekly:"Semanal",
+    vocab:"Vocabulario",
+    settings:"Ajustes",
+    level:"Nivel",
+    xp:"XP",
+    streak:"Racha",
+    language:"IDIOMA",
+  },
+  fr: {
+    appName:"Quête de Lecture",
+    login:"Se connecter",register:"S'inscrire",
+    username:"Nom d'utilisateur",password:"Mot de passe",
+    orLogin:"ou Se connecter",orRegister:"ou S'inscrire",
+    startQuest:"Démarrer la quête !",selectLevel:"Sélectionnez un niveau pour commencer",
+    writingPassage:"✨ Rédaction du texte...",
+    chooseLevel:"CHOISISSEZ VOTRE NIVEAU",
+    questionTypes:"TYPES DE QUESTIONS (min. 1)",
+    topic:"SUJET",topicPlaceholder:"ex. changement climatique, football, la Lune...",
+    topicHint:"L'IA rédigera un texte sur :",
+    startReading:"Commencer la lecture",
+    startQuiz:"Commencer le quiz →",
+    submitAnswer:"Vérifier la réponse",
+    nextQuestion:"Question suivante",
+    seeResults:"Voir les résultats",
+    backHome:"Retour à l'accueil",
+    correct:"Correct !",incorrect:"Incorrect",
+    yourScore:"Votre score",
+    leaderboard:"Classement",
+    library:"Bibliothèque",
+    profile:"Profil",
+    friends:"Amis",
+    weekly:"Hebdomadaire",
+    vocab:"Vocabulaire",
+    settings:"Paramètres",
+    level:"Niveau",
+    xp:"XP",
+    streak:"Série",
+    language:"LANGUE",
+  },
+};
+
 var LEVELS = [
   {key:"A1",color:"#22c55e",glow:"rgba(34,197,94,0.25)",  mult:1,  timeLimit:150,timeBonus:200,desc:"Elementary"},
   {key:"A2",color:"#16a34a",glow:"rgba(22,163,74,0.25)",  mult:1.5,timeLimit:150,timeBonus:200,desc:"Elementary+"},
@@ -1391,6 +1642,10 @@ export default function App(){
   var [portfolioShareData,setPortfolioShareData]=useState(null);
   var [portfolioLink,setPortfolioLink]=useState("");
   var [portfolioLinkCopied,setPortfolioLinkCopied]=useState(false);
+  // ui language
+  var [uiLang,setUiLang]=useState(function(){try{return localStorage.getItem("rq-uilang")||"en";}catch(e){return"en";}});
+
+  function t(key){return(STRINGS[uiLang]&&STRINGS[uiLang][key])||STRINGS.en[key]||key;}
 
   useEffect(function(){
     try{var params=new URLSearchParams(window.location.search);var rep=params.get("report");if(rep){var rd=JSON.parse(decodeURIComponent(escape(atob(rep))));setReportData(rd);setStage("report");setAppReady(true);return;}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(decodeURIComponent(escape(atob(pf))));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
@@ -2850,10 +3105,16 @@ export default function App(){
           <div style={{paddingTop:46,textAlign:"center"}}>
             <div style={{fontSize:52,marginBottom:8}}>📖</div>
             <h1 style={{fontSize:32,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399",margin:"0 0 6px"}}>Reading Quest</h1>
-            <p style={{color:"#6b7280",marginBottom:26,fontSize:15}}>6 question types · Friends · Compete</p>
+            <p style={{color:"#6b7280",marginBottom:16,fontSize:15}}>6 question types · Friends · Compete</p>
+            <div style={{display:"flex",justifyContent:"center",gap:4,flexWrap:"wrap",marginBottom:20}}>
+              {[{c:"en",f:"🇬🇧"},{c:"uz",f:"🇺🇿"},{c:"ru",f:"🇷🇺"},{c:"tr",f:"🇹🇷"},{c:"ar",f:"🇦🇪"},{c:"de",f:"🇩🇪"},{c:"es",f:"🇪🇸"},{c:"fr",f:"🇫🇷"}].map(function(opt){
+                var active=uiLang===opt.c;
+                return<button key={opt.c} onClick={function(){setUiLang(opt.c);try{localStorage.setItem("rq-uilang",opt.c);}catch(e){}}} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 10px",fontSize:12,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,transition:"all 0.15s"}}>{opt.f} {opt.c.toUpperCase()}</button>;
+              })}
+            </div>
             <div style={CARD}>
               <div style={{display:"flex",gap:4,marginBottom:18,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:4}}>
-                {["register","login"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} style={{...GHOST,flex:1,padding:"10px 0",borderRadius:8,fontSize:15,...(authMode===m?{background:"#34d399",color:"#0d0d1a",borderColor:"#34d399"}:{})}}>{m==="login"?"Log In":"Register"}</button>;})}
+                {["register","login"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} style={{...GHOST,flex:1,padding:"10px 0",borderRadius:8,fontSize:15,...(authMode===m?{background:"#34d399",color:"#0d0d1a",borderColor:"#34d399"}:{})}}>{m==="login"?t("login"):t("register")}</button>;})}
               </div>
               {authMode==="register"&&(
                 <div style={{display:"flex",gap:6,marginBottom:4}}>
@@ -2863,9 +3124,9 @@ export default function App(){
                 </div>
               )}
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <input style={INP} placeholder="Username" value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
+                <input style={INP} placeholder={t("username")} value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
                 <div className="rq-pass-wrap">
-                  <input style={INP} type={showPass?"text":"password"} placeholder="Password (min 4 chars)" value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
+                  <input style={INP} type={showPass?"text":"password"} placeholder={t("password")} value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
                   <button type="button" className="rq-eye-btn" onClick={function(){setShowPass(function(p){return!p;});}} title={showPass?"Hide password":"Show password"}>
                     {showPass
                       ? <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -2875,7 +3136,7 @@ export default function App(){
                 </div>
               </div>
               {authErr&&<ErrorBanner message={authErr} marginBottom={10}/>}
-              <button onClick={authMode==="login"?doLogin:doRegister} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?"Log In":"Create Account"}</button>
+              <button onClick={authMode==="login"?doLogin:doRegister} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?t("login"):t("register")}</button>
             </div>
           </div>
         )}
@@ -3618,27 +3879,33 @@ export default function App(){
         {/* ── HOME ──────────────────────────────────────────── */}
         {stage==="home"&&(
           <div>
+            <div style={{display:"flex",justifyContent:"center",gap:4,flexWrap:"wrap",marginBottom:14}}>
+              {[{c:"en",f:"🇬🇧"},{c:"uz",f:"🇺🇿"},{c:"ru",f:"🇷🇺"},{c:"tr",f:"🇹🇷"},{c:"ar",f:"🇦🇪"},{c:"de",f:"🇩🇪"},{c:"es",f:"🇪🇸"},{c:"fr",f:"🇫🇷"}].map(function(opt){
+                var active=uiLang===opt.c;
+                return<button key={opt.c} onClick={function(){setUiLang(opt.c);try{localStorage.setItem("rq-uilang",opt.c);}catch(e){}}} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 10px",fontSize:12,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,transition:"all 0.15s"}}>{opt.f} {opt.c.toUpperCase()}</button>;
+              })}
+            </div>
             <div className="rq-home-hdr">
               <div>
                 <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#34d399"}}>Hey, {currentUser?currentUser.name:""}!</h2>
                 <div className="rq-pills">
                   <span style={pill(streakAtRisk?"rgba(239,68,68,0.2)":"rgba(251,191,36,0.15)",streakAtRisk?"#f87171":"#fbbf24")}>{streakAtRisk?"⚠️":"🔥"} {myStreak} day streak{shields>0?" · "+"🛡️".repeat(shields):""}</span>
-                  <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>Friends: {myData.friends.length}</span>
+                  <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>{t("friends")}: {myData.friends.length}</span>
                   {myData.likes>0&&<span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes}</span>}
                   {pendingChallenges.length>0&&<span style={pill("rgba(239,68,68,0.2)","#f87171")}>!{pendingChallenges.length} challenge</span>}
                 </div>
               </div>
               <div className="rq-home-nav">
-                <button onClick={function(){setStage("friends");}} style={GHOST}>Friends</button>
+                <button onClick={function(){setStage("friends");}} style={GHOST}>{t("friends")}</button>
                 <button onClick={function(){setStage("analytics");}} style={GHOST}>Stats</button>
-                <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>Vocab</button>
+                <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>{t("vocab")}</button>
                 <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
                 <button onClick={function(){setStage("goals");}} style={GHOST}>Goals</button>
-                <button onClick={function(){setStage("library");}} style={GHOST}>Library</button>
+                <button onClick={function(){setStage("library");}} style={GHOST}>{t("library")}</button>
                 <button onClick={function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}} style={GHOST}>Portfolio</button>
-                <button onClick={function(){setStage("weekly");}} style={GHOST}>Weekly</button>
-                <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
-                <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
+                <button onClick={function(){setStage("weekly");}} style={GHOST}>{t("weekly")}</button>
+                <button onClick={function(){setStage("profile");}} style={GHOST}>{t("profile")}</button>
+                <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>{t("leaderboard")}</button>
                 {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={GHOST}>Quotes</button>}
               </div>
             </div>
@@ -3988,25 +4255,25 @@ export default function App(){
             {/* question type selector */}
             <div style={{...CARD,marginBottom:12,padding:14}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>QUESTION TYPES (min 1)</p>
+                <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>{t("questionTypes")}</p>
                 <span style={{fontSize:10,color:"#6b7280"}}>{selectedTypes.length} selected</span>
               </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {Object.keys(Q_LABELS).map(function(t){
-                  var active=selectedTypes.indexOf(t)!==-1;
-                  function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(t)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==t;});return prev.concat([t]);});}
-                  return(<button key={t} onClick={toggle} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{Q_LABELS[t]}</button>);
+                {Object.keys(Q_LABELS).map(function(qt){
+                  var active=selectedTypes.indexOf(qt)!==-1;
+                  function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(qt)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==qt;});return prev.concat([qt]);});}
+                  return(<button key={qt} onClick={toggle} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{Q_LABELS[qt]}</button>);
                 })}
               </div>
             </div>
 
             {/* custom topic input */}
             <div style={{...CARD,marginBottom:12,padding:14}}>
-              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>TOPIC <span style={{color:"#4b5563",fontWeight:400,letterSpacing:0}}>(optional — leave blank for random)</span></p>
+              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>{t("topic")} <span style={{color:"#4b5563",fontWeight:400,letterSpacing:0}}>(optional — leave blank for random)</span></p>
               <div style={{display:"flex",gap:8}}>
                 <input
                   style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid "+(customTopic.trim()?"#818cf8":"rgba(255,255,255,0.12)"),borderRadius:10,padding:"9px 12px",fontSize:13,color:"#f3f4f6",fontFamily:"inherit",outline:"none"}}
-                  placeholder="e.g. climate change, football, the Moon..."
+                  placeholder={t("topicPlaceholder")}
                   value={customTopic}
                   onChange={function(e){setCustomTopic(e.target.value);}}
                   onKeyDown={function(e){if(e.key==="Enter"&&level)generate();}}
@@ -4014,7 +4281,7 @@ export default function App(){
                 />
                 {customTopic.trim()&&<button onClick={function(){setCustomTopic("");}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>✕</button>}
               </div>
-              {customTopic.trim()&&<p style={{fontSize:11,color:"#818cf8",margin:"6px 0 0"}}>AI will write a passage about: <strong>{customTopic.trim()}</strong></p>}
+              {customTopic.trim()&&<p style={{fontSize:11,color:"#818cf8",margin:"6px 0 0"}}>{t("topicHint")} <strong>{customTopic.trim()}</strong></p>}
               {/* personalised passage toggle */}
               {(function(){
                 var activeVocab=vocab.filter(function(w){return w.status!=="known";});
@@ -4070,7 +4337,7 @@ export default function App(){
             </div>
 
             {/* level selector */}
-            <p style={{fontWeight:700,color:"#d1fae5",fontSize:11,letterSpacing:0.8,marginBottom:8}}>CHOOSE LEVEL</p>
+            <p style={{fontWeight:700,color:"#d1fae5",fontSize:11,letterSpacing:0.8,marginBottom:8}}>{t("chooseLevel")}</p>
             <div className="rq-lvgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
               {LEVELS.map(function(l){
                 var active=level===l.key;
@@ -4091,7 +4358,7 @@ export default function App(){
             {error&&<ErrorBanner message={error}/>}
             {error&&error.includes("Daily AI quota")&&<button onClick={function(){setStage("library");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",fontSize:14,marginBottom:10}}>📚 Browse Library Stories</button>}
             <button onClick={generate} disabled={!level||genLoading} style={{...mkBtn(level&&!genLoading?lv.color:"#374151",level&&!genLoading?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>
-              {genLoading?"✨ Writing your passage...":level?"Start "+level+" Quest!":"Select a level to begin"}
+              {genLoading?t("writingPassage"):level?t("startQuest"):t("selectLevel")}
             </button>
 
             {/* Custom Text Quiz */}
@@ -4243,7 +4510,7 @@ export default function App(){
                   if(rsvpActive){setRsvpActive(false);setRsvpPaused(false);setRsvpIdx(0);setRsvpDone(false);}
                   else{rsvpWordsRef.current=passage.split(/\s+/).filter(Boolean);setRsvpIdx(0);setRsvpPaused(false);setRsvpDone(false);setRsvpActive(true);}
                 }} style={{background:rsvpActive?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(rsvpActive?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpActive?"#a78bfa":"#9ca3af",borderRadius:8,padding:"6px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>⚡ RSVP</button>
-                <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"9px 18px",fontSize:13}}>Begin Quiz →</button>
+                <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"9px 18px",fontSize:13}}>{t("startQuiz")}</button>
               </div>
             </div>
           );
@@ -4327,7 +4594,7 @@ export default function App(){
                         <div style={{fontSize:32,marginBottom:8}}>✓</div>
                         <div style={{fontSize:16,fontWeight:700,color:"#a78bfa",marginBottom:4}}>Speed read complete!</div>
                         <div style={{fontSize:12,color:"#9ca3af",marginBottom:16}}>{words.length} words at {rsvpWpm} WPM</div>
-                        <button onClick={startQuiz} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"10px 24px",fontSize:14}}>Take the Quiz →</button>
+                        <button onClick={startQuiz} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"10px 24px",fontSize:14}}>{t("startQuiz")}</button>
                       </div>
                     )}
                     {/* controls */}
@@ -4472,7 +4739,7 @@ export default function App(){
                   <button onClick={function(){setChallengeMode(function(v){return !v;});}} style={{background:challengeMode?"#f59e0b":"rgba(255,255,255,0.08)",border:"none",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:700,color:challengeMode?"#0d0d1a":"#6b7280",cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{challengeMode?"ON":"OFF"}</button>
                 </div>
               </div>
-              <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>Begin Quiz →</button>
+              <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>{t("startQuiz")}</button>
             </div>
           );
         })()}
@@ -4518,8 +4785,8 @@ export default function App(){
               {q.type==="ynng"&&<YnngQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {confirmed&&q.explanation&&q.type!=="qa"&&(<div style={{marginTop:10,padding:"9px 11px",borderRadius:10,background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#d1fae5"}}>{q.explanation}</div>)}
               <div style={{marginTop:12,display:"flex",justifyContent:"flex-end"}}>
-                {!confirmed?<button onClick={doConfirm} disabled={!canConfirm()} style={mkBtn(canConfirm()?"#6366f1":"#374151")}>Check Answer</button>
-                :<button onClick={doNext} style={mkBtn(lv?lv.color:"#34d399","#0d0d1a")}>{current+1>=questions.length?"See Results":"Next Question"}</button>}
+                {!confirmed?<button onClick={doConfirm} disabled={!canConfirm()} style={mkBtn(canConfirm()?"#6366f1":"#374151")}>{t("submitAnswer")}</button>
+                :<button onClick={doNext} style={mkBtn(lv?lv.color:"#34d399","#0d0d1a")}>{current+1>=questions.length?t("seeResults"):t("nextQuestion")}</button>}
               </div>
             </div>
           </div>
@@ -4743,12 +5010,12 @@ export default function App(){
               );
             })()}
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-              <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
+              <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>{t("leaderboard")}</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
               <button onClick={function(){setTutorChat([]);setStage("tutor");}} style={{...mkBtn("#0891b2"),flex:1,fontSize:12}}>🤖 Tutor</button>
               <button onClick={doShare} style={{...mkBtn("#a78bfa"),flex:1,fontSize:12}} title="Share your result">📤 Share</button>
               {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>🔖 Quotes</button>}
-              <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>Profile</button>
+              <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>{t("profile")}</button>
               <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
             </div>
           </div>
@@ -4763,7 +5030,7 @@ export default function App(){
               <div style={{fontSize:40,marginBottom:12}}>✅</div>
               <div style={{fontSize:16,fontWeight:700,color:"#34d399",marginBottom:8}}>All caught up!</div>
               <div style={{fontSize:13,color:"#6b7280",marginBottom:20}}>No reviews due today.</div>
-              <button onClick={function(){setStage("home");}} style={{...mkBtn("#6366f1"),padding:"10px 24px"}}>Back to Home</button>
+              <button onClick={function(){setStage("home");}} style={{...mkBtn("#6366f1"),padding:"10px 24px"}}>{t("backHome")}</button>
             </div>
           );
           if(reviewIdx>=due.length){
@@ -4772,7 +5039,7 @@ export default function App(){
                 <div style={{fontSize:40,marginBottom:12}}>🎉</div>
                 <div style={{fontSize:16,fontWeight:700,color:"#34d399",marginBottom:8}}>Review complete!</div>
                 <div style={{fontSize:13,color:"#6b7280",marginBottom:20}}>You reviewed {due.length} question{due.length!==1?"s":""}.</div>
-                <button onClick={function(){setStage("home");}} style={{...mkBtn("#6366f1"),padding:"10px 24px"}}>Back to Home</button>
+                <button onClick={function(){setStage("home");}} style={{...mkBtn("#6366f1"),padding:"10px 24px"}}>{t("backHome")}</button>
               </div>
             );
           }
@@ -4938,7 +5205,7 @@ export default function App(){
                   <p style={{color:"#6b7280",fontSize:14}}>
                     {vocabFilter==="due"?"All caught up! No words due today — check back tomorrow.":vocabFilter==="review"?"No active words. Keep saving as you read!":"No saved words yet — tap words in the reading passage to save them."}
                   </p>
-                  <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Start Reading</button>
+                  <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>{t("startReading")}</button>
                 </div>
               )}
             </div>
@@ -5048,7 +5315,7 @@ export default function App(){
                 <div style={{...CARD,textAlign:"center",padding:40}}>
                   <div style={{fontSize:36,marginBottom:10}}>📖</div>
                   <p style={{color:"#6b7280",fontSize:14}}>{historyLevel?"No "+historyLevel+" sessions yet.":"No sessions yet — play your first game!"}</p>
-                  <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),marginTop:14}}>Start Reading</button>
+                  <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),marginTop:14}}>{t("startReading")}</button>
                 </div>
               )}
               {filtered.length>0&&(
@@ -5782,7 +6049,7 @@ export default function App(){
               </div>
 
               {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>📊</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No data yet</div><div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Complete quizzes to see your stats</div><button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:8}}>Start Playing</button></div>}
-              <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>Start Reading</button>
+              <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>{t("startReading")}</button>
             </div>
           );
         })()}
@@ -5868,7 +6135,7 @@ export default function App(){
                   </div>
                 );
               })}
-              <button onClick={function(){setStage("home");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:4}}>Back to Home</button>
+              <button onClick={function(){setStage("home");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:4}}>{t("backHome")}</button>
             </div>
           );
         })()}
@@ -6454,7 +6721,7 @@ export default function App(){
               <div style={{...CARD,textAlign:"center",padding:40}}>
                 <div style={{fontSize:36,marginBottom:10}}>🔖</div>
                 <p style={{color:"#6b7280",fontSize:14}}>No saved sentences yet. In the reading screen, tap a sentence then click "🔖 Save" to add it here.</p>
-                <button onClick={function(){setStage("home");}} style={{...mkBtn("#f59e0b","#0d0d1a"),marginTop:14}}>Start Reading</button>
+                <button onClick={function(){setStage("home");}} style={{...mkBtn("#f59e0b","#0d0d1a"),marginTop:14}}>{t("startReading")}</button>
               </div>
             ):(
               <div>
