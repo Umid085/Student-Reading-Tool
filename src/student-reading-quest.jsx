@@ -1218,9 +1218,12 @@ export default function App(){
   var [shareLink,setShareLink]=useState("");
   var [shareLinkCopied,setShareLinkCopied]=useState(false);
   var [milestoneSeen,setMilestoneSeen]=useState(false);
+  var [portfolioShareData,setPortfolioShareData]=useState(null);
+  var [portfolioLink,setPortfolioLink]=useState("");
+  var [portfolioLinkCopied,setPortfolioLinkCopied]=useState(false);
 
   useEffect(function(){
-    try{var params=new URLSearchParams(window.location.search);var rep=params.get("report");if(rep){var rd=JSON.parse(decodeURIComponent(escape(atob(rep))));setReportData(rd);setStage("report");setAppReady(true);return;}}catch(e){}
+    try{var params=new URLSearchParams(window.location.search);var rep=params.get("report");if(rep){var rd=JSON.parse(decodeURIComponent(escape(atob(rep))));setReportData(rd);setStage("report");setAppReady(true);return;}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(decodeURIComponent(escape(atob(pf))));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
@@ -1541,6 +1544,21 @@ export default function App(){
     var report={n:sName,t:currentClass?currentClass.teacherName:"",c:currentClass?currentClass.name:"",d:new Date().toLocaleDateString(),l:getBestLevel(pg),g:pg.length,s:avgPct,w:avgWpm,tr:trend,q:qBreakdown,r:pg.slice(-5).map(function(g){return{d:g.date,p:g.pct,l:g.level};})};
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(report))));
     return window.location.origin+window.location.pathname+"?report="+encoded;
+  }
+
+  function generatePortfolioLink(){
+    if(!currentUser)return "";
+    var pg=currentUser.games||[];
+    var bestPct=pg.length?Math.max.apply(null,pg.map(function(g){return g.pct;})):0;
+    var wpmGames=pg.filter(function(g){return g.wpm>0;});
+    var bestWpm=wpmGames.length?Math.max.apply(null,wpmGames.map(function(g){return g.wpm;})):0;
+    var topicCounts={};pg.forEach(function(g){if(g.topic)topicCounts[g.topic]=(topicCounts[g.topic]||0)+1;});
+    var favTopic=Object.keys(topicCounts).sort(function(a,b){return topicCounts[b]-topicCounts[a];})[0]||null;
+    var favSubj=favTopic?(SUBJECT_LABELS[SUBJECT_MAP[favTopic]]||"🏠 Life"):null;
+    var lvBreak=["A1","A2","B1","B2","C1","C2"].map(function(lv){var lvg=pg.filter(function(g){return g.level===lv;});return{l:lv,c:lvg.length,a:lvg.length?Math.round(lvg.reduce(function(s,g){return s+g.pct;},0)/lvg.length):0};}).filter(function(x){return x.c>0;});
+    var data={n:currentUser.name,g:pg.length,xp:currentUser.totalXp||0,bs:bestPct,bw:bestWpm,ls:longestStreak,lv:getBestLevel(pg),fs:favSubj,lb:lvBreak,d:new Date().toLocaleDateString()};
+    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    return window.location.origin+window.location.pathname+"?portfolio="+encoded;
   }
 
   // ── social actions ─────────────────────────────────────────
@@ -3055,6 +3073,149 @@ export default function App(){
           );
         })()}
 
+        {/* ── PORTFOLIO (logged-in) ──────────────────────────── */}
+        {stage==="portfolio"&&currentUser&&(function(){
+          var pg=currentUser.games||[];
+          var bestPct=pg.length?Math.max.apply(null,pg.map(function(g){return g.pct;})):0;
+          var wpmGames=pg.filter(function(g){return g.wpm>0;});
+          var bestWpm=wpmGames.length?Math.max.apply(null,wpmGames.map(function(g){return g.wpm;})):0;
+          var topicCounts={};pg.forEach(function(g){if(g.topic)topicCounts[g.topic]=(topicCounts[g.topic]||0)+1;});
+          var favTopic=Object.keys(topicCounts).sort(function(a,b){return topicCounts[b]-topicCounts[a];})[0]||null;
+          var favSubj=favTopic?(SUBJECT_LABELS[SUBJECT_MAP[favTopic]]||"🏠 Life"):"—";
+          var lvBreak=["A1","A2","B1","B2","C1","C2"].map(function(lv){var lvg=pg.filter(function(g){return g.level===lv;});return{l:lv,c:lvg.length,a:lvg.length?Math.round(lvg.reduce(function(s,g){return s+g.pct;},0)/lvg.length):0};}).filter(function(x){return x.c>0;});
+          var totalXpP=currentUser.totalXp||0;
+          var bestLvl=getBestLevel(pg);
+          var lvObj2=getLv(bestLvl);
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:16}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>🏆 My Portfolio</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              </div>
+              {/* identity card */}
+              <div style={{...CARD,marginBottom:12,padding:16,background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(167,139,250,0.06))",borderColor:"rgba(99,102,241,0.35)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,"+lvObj2.color+",rgba(255,255,255,0.1))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+                    {currentUser.name.slice(0,1).toUpperCase()}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#f3f4f6"}}>{currentUser.name}</div>
+                    <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
+                      <span style={{...pill(lvObj2.color+"26",lvObj2.color),fontSize:11,fontWeight:700}}>{bestLvl!=="none"?bestLvl+" · "+lvObj2.desc:"No games yet"}</span>
+                      <span style={{...pill("rgba(251,191,36,0.15)","#fbbf24"),fontSize:11}}>🔥 {longestStreak}-day best streak</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* personal records grid */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                {[
+                  {icon:"🎯",label:"Best Score",val:pg.length?bestPct+"%":"—",col:"#34d399"},
+                  {icon:"⚡",label:"Best WPM",val:bestWpm>0?bestWpm+" wpm":"—",col:"#06b6d4"},
+                  {icon:"🔥",label:"Longest Streak",val:longestStreak+" days",col:"#fbbf24"},
+                  {icon:"📚",label:"Top Subject",val:favSubj,col:"#a78bfa"},
+                  {icon:"⭐",label:"Total XP",val:totalXpP.toLocaleString(),col:"#f472b6"},
+                  {icon:"📖",label:"Sessions",val:pg.length+"",col:"#818cf8"},
+                ].map(function(s){return(
+                  <div key={s.label} style={{...CARD,padding:"12px 14px"}}>
+                    <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
+                    <div style={{fontSize:9,fontWeight:700,color:"#6b7280",letterSpacing:0.8,marginBottom:2}}>{s.label.toUpperCase()}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:s.col,lineHeight:1.2}}>{s.val}</div>
+                  </div>
+                );})}
+              </div>
+              {/* level breakdown bars */}
+              {lvBreak.length>0&&(
+                <div style={{...CARD,marginBottom:12,padding:14}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"0 0 10px"}}>LEVEL BREAKDOWN</p>
+                  {lvBreak.map(function(x){var lc=getLv(x.l).color;return(
+                    <div key={x.l} style={{marginBottom:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                        <span style={{color:lc,fontWeight:700}}>{x.l} <span style={{color:"#6b7280",fontWeight:400}}>· {x.c} session{x.c!==1?"s":""}</span></span>
+                        <span style={{color:pctColor(x.a),fontWeight:700}}>{x.a}%</span>
+                      </div>
+                      <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:6}}>
+                        <div style={{height:"100%",width:x.a+"%",background:lc,borderRadius:999,transition:"width 0.5s ease"}}/>
+                      </div>
+                    </div>
+                  );})}
+                </div>
+              )}
+              {/* share */}
+              <div style={{...CARD,marginBottom:12,padding:14}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"0 0 10px"}}>SHARE YOUR PORTFOLIO</p>
+                <button onClick={function(){var lnk=generatePortfolioLink();setPortfolioLink(lnk);setPortfolioLinkCopied(false);}} style={{...mkBtn("#6366f1"),width:"100%",fontSize:13,padding:"10px"}}>🔗 Generate Share Link</button>
+                {portfolioLink&&(
+                  <div style={{marginTop:10}}>
+                    <div style={{display:"flex",gap:6}}>
+                      <input readOnly value={portfolioLink} style={{flex:1,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,color:"#9ca3af",fontSize:11,padding:"7px 10px",outline:"none",fontFamily:"monospace"}}/>
+                      <button onClick={function(){try{navigator.clipboard.writeText(portfolioLink);}catch(e){}setPortfolioLinkCopied(true);setTimeout(function(){setPortfolioLinkCopied(false);},2000);}} style={{...mkBtn(portfolioLinkCopied?"#34d399":"#6366f1"),padding:"7px 12px",fontSize:12,flexShrink:0}}>{portfolioLinkCopied?"✓":"Copy"}</button>
+                    </div>
+                    <p style={{fontSize:10,color:"#6b7280",marginTop:6}}>Anyone with this link can view your portfolio — no login needed.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── PORTFOLIO SHARE (URL standalone) ──────────────── */}
+        {stage==="portfolioShare"&&portfolioShareData&&(function(){
+          var pd=portfolioShareData;
+          var lvObj3=getLv(pd.lv||"none");
+          return(
+            <div style={{minHeight:"100vh",background:"#f9fafb",padding:"24px 16px",fontFamily:"'Outfit',sans-serif",color:"#111"}}>
+              <div style={{maxWidth:480,margin:"0 auto"}}>
+                <div style={{textAlign:"center",marginBottom:20}}>
+                  <div style={{fontSize:32,marginBottom:4}}>🏆</div>
+                  <h1 style={{margin:0,fontSize:22,fontWeight:900,color:"#111"}}>{pd.n}'s Portfolio</h1>
+                  <p style={{fontSize:13,color:"#6b7280",margin:"4px 0 0"}}>Reading Quest · {pd.d}</p>
+                </div>
+                <div style={{background:"#fff",border:"1px solid #e5e7eb",borderRadius:16,padding:"16px 20px",marginBottom:16}}>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                    {pd.lv!=="none"&&<span style={{background:lvObj3.color+"20",color:lvObj3.color,fontWeight:800,fontSize:12,padding:"3px 10px",borderRadius:99}}>{pd.lv}</span>}
+                    {pd.fs&&<span style={{background:"#f3f4f6",color:"#374151",fontSize:12,padding:"3px 10px",borderRadius:99}}>{pd.fs}</span>}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:12}}>
+                    {[
+                      {label:"Best Score",val:pd.bs+"%",col:pd.bs>=70?"#16a34a":pd.bs>=50?"#d97706":"#dc2626"},
+                      {label:"Best WPM",val:pd.bw>0?pd.bw+" wpm":"—",col:"#0891b2"},
+                      {label:"Longest Streak",val:pd.ls+" days",col:"#d97706"},
+                      {label:"Sessions",val:pd.g+"",col:"#7c3aed"},
+                      {label:"Total XP",val:(pd.xp||0).toLocaleString(),col:"#db2777"},
+                    ].map(function(s){return(
+                      <div key={s.label} style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,padding:"10px 12px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#9ca3af",letterSpacing:0.8}}>{s.label.toUpperCase()}</div>
+                        <div style={{fontSize:15,fontWeight:900,color:s.col,marginTop:2}}>{s.val}</div>
+                      </div>
+                    );})}
+                  </div>
+                </div>
+                {pd.lb&&pd.lb.length>0&&(
+                  <div style={{background:"#fff",border:"1px solid #e5e7eb",borderRadius:16,padding:"16px 20px",marginBottom:16}}>
+                    <p style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:0.8,margin:"0 0 10px"}}>CEFR LEVEL BREAKDOWN</p>
+                    {pd.lb.map(function(x){var col=x.a>=70?"#16a34a":x.a>=50?"#d97706":"#dc2626";return(
+                      <div key={x.l} style={{marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
+                          <span style={{color:"#374151",fontWeight:700}}>{x.l} <span style={{color:"#9ca3af",fontWeight:400}}>· {x.c} session{x.c!==1?"s":""}</span></span>
+                          <span style={{color:col,fontWeight:700}}>{x.a}%</span>
+                        </div>
+                        <div style={{background:"#e5e7eb",borderRadius:3,height:6}}>
+                          <div style={{height:"100%",width:x.a+"%",background:col,borderRadius:3}}/>
+                        </div>
+                      </div>
+                    );})}
+                  </div>
+                )}
+                <div style={{textAlign:"center",padding:"16px 0",borderTop:"1px solid #e5e7eb"}}>
+                  <p style={{fontSize:13,color:"#6b7280",margin:"0 0 10px"}}>Want to build your own reading portfolio?</p>
+                  <a href={window.location.origin+window.location.pathname} style={{display:"inline-block",background:"#6366f1",color:"#fff",fontWeight:700,fontSize:14,padding:"10px 24px",borderRadius:10,textDecoration:"none"}}>Play Reading Quest →</a>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── HOME ──────────────────────────────────────────── */}
         {stage==="home"&&(
           <div>
@@ -3075,6 +3236,7 @@ export default function App(){
                 <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
                 <button onClick={function(){setStage("goals");}} style={GHOST}>Goals</button>
                 <button onClick={function(){setStage("library");}} style={GHOST}>Library</button>
+                <button onClick={function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}} style={GHOST}>Portfolio</button>
                 <button onClick={function(){setStage("weekly");}} style={GHOST}>Weekly</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>Profile</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>Board</button>
