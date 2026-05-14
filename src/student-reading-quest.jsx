@@ -1243,6 +1243,7 @@ export default function App(){
   var [loadMsg,setLoadMsg]=useState("");
   var [lbLevel,setLbLevel]=useState("A1");
   var [error,setError]=useState("");
+  var [genLoading,setGenLoading]=useState(false);
   // social ui
   var [searchQuery,setSearchQuery]=useState("");
   var [friendStage,setFriendStage]=useState("search"); // search|requests|list
@@ -1879,9 +1880,35 @@ export default function App(){
   // ── game ──────────────────────────────────────────────────
   function shuffleArr(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
-  function generate(){
+  async function generate(){
     if(!level){setError("Pick a level first!");return;}
     setError("");
+
+    if(customTopic.trim()){
+      // AI path: call Claude to generate a passage on the custom topic
+      setGenLoading(true);
+      try{
+        var types=selectedTypes.length?selectedTypes:["mcq","gap_word","qa","tfnm"];
+        var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:level,topic:customTopic.trim(),types:types})});
+        var d=await r.json();
+        if(!r.ok||d.error)throw new Error(d.error||"Generation failed");
+        if(!d.passage||!d.questions)throw new Error("Invalid response from AI");
+        setPassage(d.passage);setTopic(customTopic.trim());setQuestions(d.questions);setCurrentStoryId(null);
+        var mq=null;for(var i=0;i<d.questions.length;i++){if(d.questions[i].type==="matching"){mq=d.questions[i];break;}}
+        setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
+        setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
+        setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+        setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setIsDailyGame(false);
+        setGenLoading(false);
+        setStage("reading");
+      }catch(e){
+        setError("Could not generate passage: "+e.message);
+        setGenLoading(false);
+      }
+      return;
+    }
+
+    // Library path: pick a random pre-written story (no API call)
     var levelStories=STORY_LIBRARY.filter(function(s){return s.level===level;});
     var played=new Set((currentUser&&currentUser.games||[]).map(function(g){return g.storyId;}));
     var unplayed=levelStories.filter(function(s){return !played.has(s.id);});
@@ -4045,7 +4072,9 @@ export default function App(){
             </div>
             {error&&<ErrorBanner message={error}/>}
             {error&&error.includes("Daily AI quota")&&<button onClick={function(){setStage("library");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",fontSize:14,marginBottom:10}}>📚 Browse Library Stories</button>}
-            <button onClick={generate} disabled={!level} style={{...mkBtn(level?lv.color:"#374151",level?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>{level?"Start "+level+" Quest!":"Select a level to begin"}</button>
+            <button onClick={generate} disabled={!level||genLoading} style={{...mkBtn(level&&!genLoading?lv.color:"#374151",level&&!genLoading?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>
+              {genLoading?"✨ Writing your passage...":level?"Start "+level+" Quest!":"Select a level to begin"}
+            </button>
 
             {/* Custom Text Quiz */}
             <div style={{marginTop:10}}>
