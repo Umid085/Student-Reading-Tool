@@ -6,7 +6,7 @@ An AI-powered language reading and quiz app for students learning English. Users
 
 ## Features
 
-- **AI-generated content** — Each session calls Google Gemini API (`gemini-2.0-flash`) to produce a unique reading passage and quiz tailored to the chosen level.
+- **AI-generated content** — Each session calls Claude Sonnet (`claude-sonnet-4-6`) to produce a unique reading passage and quiz tailored to the chosen level.
 - **6 question types** — Multiple Choice, Gap Fill (word & sentence), Matching, Match Headings, Open Answer.
 - **Click-to-define** — Tap any word in the passage to see its definition (word, phonetic, part of speech, definition, example) via Free Dictionary API. Results are cached to avoid repeated requests.
 - **Text-to-Speech** — Listen to passages and questions read aloud using the Web Speech API for accessibility.
@@ -27,7 +27,7 @@ An AI-powered language reading and quiz app for students learning English. Users
 | Layer | Technology |
 |---|---|
 | Frontend | React 18, Vite 5, Google Fonts (Inter, Outfit, JetBrains Mono) |
-| AI | Google Gemini API (`gemini-2.0-flash`) via Netlify Function |
+| AI | Claude Sonnet (`claude-sonnet-4-6`) via Netlify Function |
 | Storage | Firebase Realtime Database (REST) via Netlify Function |
 | Design System | CSS-in-JS with design tokens (colors, spacing, typography) in `src/designSystem.js` |
 | Hosting | Netlify (SPA + serverless functions) |
@@ -78,13 +78,13 @@ npm install
 Create a `.env.local` file in the project root:
 
 ```env
-GOOGLE_API_KEY=AIzaSy...
+ANTHROPIC_API_KEY=sk-ant-...
 FIREBASE_DB_URL=https://your-project-default-rtdb.firebaseio.com
 ```
 
 | Variable | Required | Description |
 |---|---|---|
-| `GOOGLE_API_KEY` | Yes | API key for Google Generative AI (Gemini) — get it from [Google AI Studio](https://aistudio.google.com/apikey) |
+| `ANTHROPIC_API_KEY` | Yes | API key for Claude (Anthropic) — get it from [console.anthropic.com](https://console.anthropic.com/) |
 | `FIREBASE_DB_URL` | Yes | Firebase Realtime Database base URL |
 
 ---
