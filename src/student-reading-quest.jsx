@@ -1073,6 +1073,10 @@ export default function App(){
   var [timeExpired,setTimeExpired]=useState(false);
   var [challengeMode,setChallengeMode]=useState(false);
   var [result,setResult]=useState(null);
+  var [reviewQueue,setReviewQueue]=useState([]);
+  var [reviewIdx,setReviewIdx]=useState(0);
+  var [reviewAns,setReviewAns]=useState(null);
+  var [reviewConfirmed,setReviewConfirmed]=useState(false);
   // ui
   var [stage,setStage]=useState("auth");
   var [loadMsg,setLoadMsg]=useState("");
@@ -1298,6 +1302,9 @@ export default function App(){
     var gk="rq-goals-v1-"+currentUser.name;
     var gd=null;try{gd=JSON.parse(localStorage.getItem(gk));}catch(e){}
     setGoals(gd||{});
+    var rqk="rq-review-"+currentUser.name;
+    var rqd=null;try{rqd=JSON.parse(localStorage.getItem(rqk));}catch(e){}
+    setReviewQueue(rqd||[]);
   },[currentUser]);
 
   // pull fresh users when entering friends page or typing a search
@@ -1880,6 +1887,18 @@ export default function App(){
           return a.storyId&&a.storyId===currentStoryId;
         });
         if(matchingAsgn){doCompleteAssignment(matchingAsgn.id,pct,finalXp,timeSecs);setActiveAssignmentId(null);}
+      }
+      // save missed questions to SRS review queue
+      var REVIEW_TYPES=["mcq","gap_word","gap_sentence","tfnm","ynng","qa"];
+      var missed=[];var todayLoc=new Date().toLocaleDateString();
+      for(var ri=0;ri<questions.length;ri++){if(!ansArr[ri]&&REVIEW_TYPES.indexOf(questions[ri].type)!==-1){missed.push({id:todayLoc+"-"+ri+"-"+Math.random().toString(36).slice(2),q:questions[ri],topic:topic,level:lvObj.key,date:todayLoc,nextReview:todayLoc,srInterval:0});}}
+      if(missed.length>0&&currentUser){
+        var rqExist=[];try{rqExist=JSON.parse(localStorage.getItem("rq-review-"+currentUser.name)||"[]");}catch(e){}
+        var rqTexts=new Set(rqExist.map(function(r){return r.q.q||r.q.sentence||r.q.instruction||"";}));
+        var rqNew=missed.filter(function(r){return !rqTexts.has(r.q.q||r.q.sentence||r.q.instruction||"");});
+        var rqUpdated=rqExist.concat(rqNew).slice(-60);
+        localStorage.setItem("rq-review-"+currentUser.name,JSON.stringify(rqUpdated));
+        setReviewQueue(rqUpdated);
       }
       setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds,wasChallenge:wasChallenge});
       stopMusic();playSfx("complete");
@@ -3475,6 +3494,27 @@ export default function App(){
               </div>
             )}
 
+            {/* missed-question review nudge */}
+            {currentUser&&(function(){
+              var todayL=new Date().toLocaleDateString();
+              var due=reviewQueue.filter(function(r){return r.nextReview<=todayL;});
+              if(!due.length)return null;
+              return(
+                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(168,85,247,0.35)",background:"rgba(168,85,247,0.05)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:26}}>🔁</span>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:"#c084fc"}}>Review due</div>
+                        <div style={{fontSize:11,color:"#6b7280"}}>{due.length} missed question{due.length!==1?"s":""} from past quizzes</div>
+                      </div>
+                    </div>
+                    <button onClick={function(){setReviewIdx(0);setReviewAns(null);setReviewConfirmed(false);setStage("review");}} style={{...mkBtn("#a855f7","#0d0d1a"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Review</button>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* vocab SRS nudge */}
             {currentUser&&(function(){
               var due=vocab.filter(srsDueToday);
@@ -4441,6 +4481,104 @@ export default function App(){
             </div>
           </div>
         )}
+
+        {/* ── MISSED-QUESTION REVIEW ────────────────────────── */}
+        {stage==="review"&&currentUser&&(function(){
+          var todayL=new Date().toLocaleDateString();
+          var due=reviewQueue.filter(function(r){return r.nextReview<=todayL;});
+          if(!due.length)return(
+            <div style={{textAlign:"center",padding:"40px 0"}}>
+              <div style={{fontSize:40,marginBottom:12}}>✅</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#34d399",marginBottom:8}}>All caught up!</div>
+              <div style={{fontSize:13,color:"#6b7280",marginBottom:20}}>No reviews due today.</div>
+              <button onClick={function(){setStage("home");}} style={{...mkBtn("#6366f1"),padding:"10px 24px"}}>Back to Home</button>
+            </div>
+          );
+          if(reviewIdx>=due.length){
+            return(
+              <div style={{textAlign:"center",padding:"40px 0"}}>
+                <div style={{fontSize:40,marginBottom:12}}>🎉</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#34d399",marginBottom:8}}>Review complete!</div>
+                <div style={{fontSize:13,color:"#6b7280",marginBottom:20}}>You reviewed {due.length} question{due.length!==1?"s":""}.</div>
+                <button onClick={function(){setStage("home");}} style={{...mkBtn("#6366f1"),padding:"10px 24px"}}>Back to Home</button>
+              </div>
+            );
+          }
+          var item=due[reviewIdx];
+          var rq2=item.q;
+          var isCorrect=false;
+          if(reviewConfirmed&&reviewAns!==null){
+            if(rq2.type==="mcq"||rq2.type==="gap_word"||rq2.type==="gap_sentence"||rq2.type==="tfnm"||rq2.type==="ynng"){
+              isCorrect=Number(reviewAns)===Number(rq2.answer);
+            } else if(rq2.type==="qa"){
+              var lo=(reviewAns||"").toLowerCase();var hits=0;
+              (rq2.keywords||[]).forEach(function(k){if(lo.includes(k.toLowerCase()))hits++;});
+              isCorrect=hits>=Math.ceil((rq2.keywords||[]).length/2);
+            }
+          }
+          function advanceReview(correct){
+            var updated=reviewQueue.map(function(r){
+              if(r.id!==item.id)return r;
+              var nextIdx=correct?Math.min((r.srInterval||0)+1,SRS_INTERVALS.length-1):0;
+              var done=correct&&nextIdx>=SRS_INTERVALS.length;
+              return Object.assign({},r,{srInterval:nextIdx,nextReview:done?null:srsNextDate(SRS_INTERVALS[nextIdx])});
+            }).filter(function(r){return r.nextReview!==null;});
+            localStorage.setItem("rq-review-"+currentUser.name,JSON.stringify(updated));
+            setReviewQueue(updated);setReviewIdx(reviewIdx+1);setReviewAns(null);setReviewConfirmed(false);
+          }
+          return(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:16}}>
+                <button onClick={function(){setStage("home");}} style={GHOST}>← Home</button>
+                <h2 style={{margin:0,fontSize:17,fontWeight:900,color:"#c084fc"}}>🔁 Review</h2>
+                <span style={{fontSize:12,color:"#6b7280"}}>{reviewIdx+1}/{due.length}</span>
+              </div>
+              {/* progress bar */}
+              <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,marginBottom:16,overflow:"hidden"}}>
+                <div style={{height:"100%",width:(reviewIdx/due.length*100)+"%",background:"#a855f7",borderRadius:999,transition:"width 0.3s"}}/>
+              </div>
+              <div style={{...CARD,marginBottom:12,padding:14}}>
+                <div style={{fontSize:10,color:"#6b7280",letterSpacing:0.6,marginBottom:6}}>{item.topic} · {item.level} · {Q_LABELS[rq2.type]||rq2.type}</div>
+                {rq2.instruction&&<p style={{fontSize:13,color:"#9ca3af",margin:"0 0 6px",fontStyle:"italic"}}>{rq2.instruction}</p>}
+                <p style={{fontSize:14,fontWeight:600,color:"#f3f4f6",margin:"0 0 12px",lineHeight:1.5}}>{rq2.q||rq2.sentence}</p>
+                {(rq2.type==="mcq"||rq2.type==="gap_word"||rq2.type==="gap_sentence"||rq2.type==="tfnm"||rq2.type==="ynng")&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                    {(rq2.options||[]).map(function(opt,oi){
+                      var chosen=reviewAns!==null&&Number(reviewAns)===oi;
+                      var isRight=reviewConfirmed&&oi===Number(rq2.answer);
+                      var isWrong=reviewConfirmed&&chosen&&!isRight;
+                      var bg=isRight?"rgba(52,211,153,0.15)":isWrong?"rgba(239,68,68,0.12)":chosen?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.04)";
+                      var border=isRight?"rgba(52,211,153,0.6)":isWrong?"rgba(239,68,68,0.5)":chosen?"rgba(99,102,241,0.5)":"rgba(255,255,255,0.08)";
+                      var col=isRight?"#34d399":isWrong?"#f87171":chosen?"#a78bfa":"#d1d5db";
+                      return(
+                        <button key={oi} disabled={reviewConfirmed} onClick={function(){setReviewAns(oi);}} style={{textAlign:"left",background:bg,border:"1px solid "+border,borderRadius:10,padding:"10px 12px",color:col,fontWeight:chosen||isRight?700:400,fontSize:13,cursor:reviewConfirmed?"default":"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>
+                          {isRight&&"✓ "}{isWrong&&"✗ "}{opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {rq2.type==="qa"&&(
+                  <textarea value={reviewAns||""} onChange={function(e){if(!reviewConfirmed)setReviewAns(e.target.value);}} disabled={reviewConfirmed} placeholder="Type your answer…" style={{width:"100%",minHeight:70,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:13,padding:"9px 12px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+                )}
+                {reviewConfirmed&&rq2.explanation&&(
+                  <div style={{marginTop:10,padding:"9px 12px",borderRadius:10,background:isCorrect?"rgba(52,211,153,0.08)":"rgba(239,68,68,0.08)",border:"1px solid "+(isCorrect?"rgba(52,211,153,0.3)":"rgba(239,68,68,0.3)")}}>
+                    <div style={{fontSize:12,fontWeight:700,color:isCorrect?"#34d399":"#f87171",marginBottom:3}}>{isCorrect?"✓ Correct!":"✗ Incorrect"}</div>
+                    <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>{rq2.explanation}</div>
+                  </div>
+                )}
+              </div>
+              {!reviewConfirmed?(
+                <button onClick={function(){setReviewConfirmed(true);}} disabled={reviewAns===null} style={{...mkBtn(reviewAns!==null?"#a855f7":"#374151","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800}}>Check Answer</button>
+              ):(
+                <button onClick={function(){advanceReview(isCorrect);}} style={{...mkBtn(isCorrect?"#34d399":"#6366f1","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800}}>{isCorrect?"Next →":"Got it — Next →"}</button>
+              )}
+              <div style={{marginTop:8,textAlign:"center",fontSize:11,color:"#4b5563"}}>
+                {(item.srInterval||0)===0?"Next review: tomorrow":("Next review in "+(SRS_INTERVALS[Math.min((item.srInterval||0)+1,SRS_INTERVALS.length-1)])+"d if correct")}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── VOCAB NOTEBOOK ────────────────────────────────── */}
         {stage==="vocab"&&currentUser&&(function(){
