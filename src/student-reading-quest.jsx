@@ -683,16 +683,19 @@ function doLikeProfile(social,liker,target){
 
 function hasLiked(social,liker,target){return!!(social._likes&&social._likes[liker+"->"+target]);}
 
-function doSendChallenge(social,from,to,level,types){
+function doSendChallenge(social,from,to,level,types,storyId,storyTitle,senderPct){
   var n=JSON.parse(JSON.stringify(social));
   var id=Date.now().toString(36);
-  var expiresAt=Date.now()+48*60*60*1000;
+  var expiresAt=Date.now()+24*60*60*1000;
+  var ch={id:id,from:from,level:level,types:types,date:new Date().toISOString().split('T')[0],status:"pending",expiresAt:expiresAt};
+  if(storyId){ch.storyId=storyId;ch.storyTitle=storyTitle||"";}
+  if(senderPct!=null)ch.senderPct=senderPct;
   if(!n[to])n[to]={friends:[],requests:[],likes:0,challenges:[]};
   if(!n[to].challenges)n[to].challenges=[];
-  n[to].challenges.push({id:id,from:from,level:level,types:types,date:new Date().toISOString().split('T')[0],status:"pending",expiresAt:expiresAt});
+  n[to].challenges.push(ch);
   if(!n[from])n[from]={friends:[],requests:[],likes:0,challenges:[],sent:[]};
   if(!n[from].sent)n[from].sent=[];
-  n[from].sent.push({id:id,to:to,level:level,date:new Date().toISOString().split('T')[0],status:"pending",expiresAt:expiresAt});
+  n[from].sent.push({id:id,to:to,level:level,storyId:storyId||null,storyTitle:storyTitle||"",senderPct:senderPct!=null?senderPct:null,date:new Date().toISOString().split('T')[0],status:"pending",expiresAt:expiresAt});
   return n;
 }
 
@@ -709,11 +712,10 @@ function doCompleteChallenge(social,recipient,challengeIdx,result){
   var ch=n[recipient]&&n[recipient].challenges&&n[recipient].challenges[challengeIdx];
   if(!ch)return n;
   ch.status="completed";ch.result=result;
-  // write result notification back to sender's sent list
   var sender=ch.from;
   if(n[sender]&&n[sender].sent){
     var si=n[sender].sent.findIndex(function(s){return s.id===ch.id;});
-    if(si!==-1){n[sender].sent[si].status="completed";n[sender].sent[si].result={pct:result.pct,xp:result.xp,by:recipient};}
+    if(si!==-1){n[sender].sent[si].status="completed";n[sender].sent[si].result={pct:result.pct,xp:result.xp,by:recipient,senderPct:ch.senderPct!=null?ch.senderPct:null};}
   }
   return n;
 }
@@ -1091,6 +1093,8 @@ export default function App(){
   var [challengeTypes,setChallengeTypes]=useState(["mcq","qa"]);
   var [activeChallengeIdx,setActiveChallengeIdx]=useState(null);
   var [activeChallengeFrom,setActiveChallengeFrom]=useState("");
+  var [storyChallengeOpen,setStoryChallengeOpen]=useState(false);
+  var [storyChallengeMsg,setStoryChallengeMsg]=useState("");
   var [socialMsg,setSocialMsg]=useState("");
   // history
   var [historyLevel,setHistoryLevel]=useState("");
@@ -1607,6 +1611,14 @@ export default function App(){
     setChallengeTarget(null);
   }
 
+  async function sendStoryChallenge(friendName){
+    if(!friendName||!currentUser||!result||!result.storyId)return;
+    var n=doSendChallenge(social,currentUser.name,friendName,result.level||level,selectedTypes||["mcq","qa"],result.storyId,topic,result.pct);
+    await saveSocial(n);setSocial(n);
+    setStoryChallengeMsg("⚔️ Challenge sent to "+friendName+"!");
+    setStoryChallengeOpen(false);
+  }
+
   async function respondChallenge(idx,status,challenge){
     var n=doRespondChallenge(social,currentUser.name,idx,status);
     await saveSocial(n);setSocial(n);
@@ -1616,6 +1628,10 @@ export default function App(){
       setLevel(challenge.level);
       setSelectedTypes(challenge.types||["mcq","qa"]);
       setSocialMsg("");
+      if(challenge.storyId){
+        var libStory=STORY_LIBRARY.find(function(s){return s.id===challenge.storyId;});
+        if(libStory){startStoryFromLibrary(libStory);return;}
+      }
       setStage("home");
     }
   }
@@ -3577,9 +3593,11 @@ export default function App(){
                         var realIdx=myData.challenges.indexOf(c);
                         var tl=challengeTimeLeft(c.expiresAt);
                         var lvC=getLv(c.level);
-                        return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid rgba(255,255,255,0.07)"}}>
+                        return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid "+(c.storyId?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.07)")}}>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:12,color:"#f3f4f6",fontWeight:600}}><strong>{c.from}</strong> → <span style={{color:lvC.color}}>{c.level}</span></div>
+                            <div style={{fontSize:12,color:"#f3f4f6",fontWeight:600}}><strong>{c.from}</strong> → <span style={{color:lvC.color}}>{c.level}</span>{c.storyId&&<span style={{color:"#f87171",marginLeft:5}}>⚔️ story</span>}</div>
+                            {c.storyTitle&&<div style={{fontSize:11,color:"#e9d5ff",marginTop:1}}>"{c.storyTitle}"</div>}
+                            {c.senderPct!=null&&<div style={{fontSize:10,color:"#fbbf24",marginTop:1}}>Their score: {c.senderPct}% — can you beat it?</div>}
                             {tl&&<div style={{fontSize:10,color:tl==="expired"?"#f87171":"#6b7280",marginTop:1}}>⏱ {tl}</div>}
                           </div>
                           <button onClick={function(){respondChallenge(realIdx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
@@ -3592,9 +3610,24 @@ export default function App(){
                     <>
                       <p style={{fontSize:11,color:"#34d399",fontWeight:700,marginBottom:8,marginTop:live.length?10:0}}>✅ CHALLENGE RESULTS</p>
                       {completedSent.map(function(s,i){
-                        return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,fontSize:12}}>
-                          <span style={{color:"#9ca3af",flex:1}}><strong style={{color:"#f3f4f6"}}>{s.to}</strong> scored <strong style={{color:pctColor(s.result.pct)}}>{s.result.pct}%</strong> on your {s.level} challenge</span>
-                          <span style={{color:"#fbbf24",fontWeight:700,fontSize:11}}>{s.result.xp} XP</span>
+                        var isStory=!!s.storyId;
+                        var theirPct=s.result.pct;
+                        var myPct=s.result.senderPct!=null?s.result.senderPct:(s.senderPct!=null?s.senderPct:null);
+                        var won=myPct!=null&&theirPct<myPct;
+                        var tied=myPct!=null&&theirPct===myPct;
+                        return(<div key={i} style={{marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.02)",borderRadius:8,border:"1px solid "+(won?"rgba(34,197,94,0.25)":tied?"rgba(251,191,36,0.2)":"rgba(239,68,68,0.2)")}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:myPct!=null?5:0}}>
+                            <span style={{fontSize:12,color:"#f3f4f6",flex:1}}><strong>{s.to}</strong> scored <strong style={{color:pctColor(theirPct)}}>{theirPct}%</strong>{isStory&&s.storyTitle?<span style={{color:"#9ca3af",fontSize:11}}> · "{s.storyTitle}"</span>:" on your "+s.level+" challenge"}</span>
+                            <span style={{color:"#fbbf24",fontWeight:700,fontSize:11}}>{s.result.xp} XP</span>
+                          </div>
+                          {myPct!=null&&(
+                            <div style={{display:"flex",gap:12,fontSize:11}}>
+                              <span style={{color:"#a78bfa"}}>You: <strong style={{color:"#e9d5ff"}}>{myPct}%</strong></span>
+                              <span style={{color:"#9ca3af"}}>vs</span>
+                              <span style={{color:"#f87171"}}>{s.to}: <strong style={{color:pctColor(theirPct)}}>{theirPct}%</strong></span>
+                              <span style={{fontWeight:700,color:won?"#22c55e":tied?"#fbbf24":"#f87171"}}>{won?"🏆 You won!":tied?"🤝 Tie!":"😤 They beat you"}</span>
+                            </div>
+                          )}
                         </div>);
                       })}
                     </>
@@ -4470,6 +4503,38 @@ export default function App(){
                 }} style={{...mkBtn("#06b6d4","#0d0d1a"),fontSize:12,padding:"7px 14px"}}>+ Add {autoVocabWords.filter(function(w){return!vocab.some(function(v){return v.word===w;});}).length} to Vocab</button>
               </div>
             )}
+            {/* ── Story Challenge Panel ── */}
+            {result.storyId&&currentUser&&(function(){
+              var friends=myData.friends||[];
+              if(!friends.length)return null;
+              return(
+                <div style={{...CARD,marginBottom:10,padding:14,borderColor:"rgba(239,68,68,0.4)",background:"rgba(239,68,68,0.05)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#f87171",marginBottom:2}}>⚔️ Challenge a Friend</div>
+                      <div style={{fontSize:11,color:"#9ca3af"}}>Dare a friend to beat your {result.pct}% on this story — 24h to respond.</div>
+                    </div>
+                    <button onClick={function(){setStoryChallengeOpen(function(v){return !v;});setStoryChallengeMsg("");}} style={{...mkBtn("#ef4444","#fff"),padding:"8px 16px",fontSize:12,flexShrink:0}}>{storyChallengeOpen?"Cancel":"Challenge →"}</button>
+                  </div>
+                  {storyChallengeOpen&&(
+                    <div style={{marginTop:12,borderTop:"1px solid rgba(239,68,68,0.2)",paddingTop:10}}>
+                      <div style={{fontSize:11,color:"#9ca3af",marginBottom:8}}>Pick a friend to challenge:</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {friends.map(function(fn){
+                          var alreadySent=(myData.sent||[]).some(function(s){return s.status==="pending"&&s.to===fn&&s.storyId===result.storyId&&s.expiresAt>Date.now();});
+                          return(
+                            <button key={fn} disabled={alreadySent} onClick={function(){sendStoryChallenge(fn);}} style={{...mkBtn(alreadySent?"#374151":"#ef4444",alreadySent?"#6b7280":"#fff"),padding:"6px 14px",fontSize:12,opacity:alreadySent?0.6:1}}>
+                              {fn}{alreadySent?" ✓":""}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {storyChallengeMsg&&<div style={{fontSize:12,color:"#f87171",marginTop:8,fontWeight:600}}>{storyChallengeMsg}</div>}
+                </div>
+              );
+            })()}
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>Leaderboard</button>
               {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
