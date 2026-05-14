@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -7,20 +7,17 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
-const TIMEOUT_MS = 25000;
-const MODELS = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export const handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: CORS, body: "" };
   }
-
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method Not Allowed" }) };
   }
-
-  if (!process.env.GOOGLE_API_KEY) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "GOOGLE_API_KEY is not set" }) };
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "ANTHROPIC_API_KEY is not set" }) };
   }
 
   let body;
@@ -35,41 +32,22 @@ export const handler = async function (event) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "No message provided" }) };
   }
 
-  const maxOutputTokens = body.max_tokens || 4096;
-  const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-  let lastError = "";
+  const maxTokens = body.max_tokens || 4096;
 
-  for (const modelName of MODELS) {
-    try {
-      const model = client.getGenerativeModel({ model: modelName });
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`Timeout after 25s on ${modelName}`)), TIMEOUT_MS)
-      );
+  try {
+    const msg = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: userMessage }],
+    });
 
-      const result = await Promise.race([
-        model.generateContent({
-          contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generationConfig: { maxOutputTokens },
-        }),
-        timeout,
-      ]);
-
-      const text = result.response.text();
-      if (!text || !text.trim()) {
-        lastError = `${modelName} returned empty response`;
-        continue;
-      }
-
-      return {
-        statusCode: 200,
-        headers: CORS,
-        body: JSON.stringify({ content: [{ type: "text", text }] }),
-      };
-    } catch (e) {
-      lastError = `${modelName}: ${e.message}`;
-      continue;
-    }
+    const text = msg.content[0].text;
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({ content: [{ type: "text", text }] }),
+    };
+  } catch (e) {
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }
-
-  return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: lastError }) };
 };

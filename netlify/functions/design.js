@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -6,6 +6,8 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
   "Content-Type": "application/json",
 };
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const PROMPT = (description) =>
   `You are a UI color designer creating a neon dark-theme color scheme.
@@ -34,8 +36,8 @@ export const handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method Not Allowed" }) };
   }
-  if (!process.env.GOOGLE_API_KEY) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "GOOGLE_API_KEY not set" }) };
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "ANTHROPIC_API_KEY not set" }) };
   }
 
   let body;
@@ -49,20 +51,17 @@ export const handler = async function (event) {
   }
 
   try {
-    const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const result = await Promise.race([
-      model.generateContent({
-        contents: [{ role: "user", parts: [{ text: PROMPT(description.trim().slice(0, 120)) }] }],
-        generationConfig: { maxOutputTokens: 150 },
-      }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error("Design timeout")), 8000)),
-    ]);
-    const raw = result.response.text();
-    const parsed = JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
-    if (!parsed.accent || !parsed.secondary) {
-      throw new Error("Invalid color response");
-    }
+    const msg = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 150,
+      messages: [{ role: "user", content: PROMPT(description.trim().slice(0, 120)) }],
+    });
+
+    const raw = msg.content[0].text.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON in response");
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!parsed.accent || !parsed.secondary) throw new Error("Invalid color response");
     return { statusCode: 200, headers: CORS, body: JSON.stringify(parsed) };
   } catch (e) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
