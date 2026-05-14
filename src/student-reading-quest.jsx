@@ -1071,6 +1071,7 @@ export default function App(){
   var [timerRunning,setTimerRunning]=useState(false);
   var startTimeRef=useRef(null);
   var [timeExpired,setTimeExpired]=useState(false);
+  var [challengeMode,setChallengeMode]=useState(false);
   var [result,setResult]=useState(null);
   // ui
   var [stage,setStage]=useState("auth");
@@ -1795,6 +1796,8 @@ export default function App(){
       var lvObj=lv||LEVELS[0];
       var tb=Math.round(lvObj.timeBonus*Math.max(0,(lvObj.timeLimit-timeSecs)/lvObj.timeLimit));
       var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
+      var wasChallenge=challengeMode&&!timeExpired;
+      if(wasChallenge)finalXp=Math.round(finalXp*1.5);
       var today=new Date().toLocaleDateString();
 
       var badgesBefore=checkBadges(currentUser,vocab,calcStreakWithShields(currentUser.games,shieldDates));
@@ -1878,7 +1881,7 @@ export default function App(){
         });
         if(matchingAsgn){doCompleteAssignment(matchingAsgn.id,pct,finalXp,timeSecs);setActiveAssignmentId(null);}
       }
-      setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds});
+      setResult({xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds,wasChallenge:wasChallenge});
       stopMusic();playSfx("complete");
       setStage("result");
     }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");}
@@ -1888,7 +1891,7 @@ export default function App(){
     setLevel("");setPassage("");setTopic("");setQuestions([]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setTotalXpSoFar(0);
-    setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");
+    setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");setChallengeMode(false);
     setIsDailyGame(false);setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setCurrentStoryId(null);setSavedWordDefs({});setActiveAssignmentId(null);
@@ -4010,6 +4013,15 @@ export default function App(){
                 );
               })()}
 
+              <div style={{...CARD,marginBottom:10,padding:"10px 14px",borderColor:challengeMode?"rgba(245,158,11,0.5)":"rgba(255,255,255,0.08)",background:challengeMode?"rgba(245,158,11,0.06)":"rgba(255,255,255,0.02)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:challengeMode?"#fbbf24":"#9ca3af"}}>⚡ Challenge Mode</div>
+                    <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Half the time · 1.5× XP if you finish</div>
+                  </div>
+                  <button onClick={function(){setChallengeMode(function(v){return !v;});}} style={{background:challengeMode?"#f59e0b":"rgba(255,255,255,0.08)",border:"none",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:700,color:challengeMode?"#0d0d1a":"#6b7280",cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{challengeMode?"ON":"OFF"}</button>
+                </div>
+              </div>
               <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>Begin Quiz →</button>
             </div>
           );
@@ -4026,7 +4038,10 @@ export default function App(){
               </div>
               <span style={{background:"rgba(255,255,255,0.07)",borderRadius:999,padding:"4px 11px",fontSize:12,color:lv?lv.color:"#34d399",fontWeight:700}}>{totalXpSoFar} XP</span>
             </div>
-            <div style={{...CARD,padding:"11px 14px",marginBottom:9}}><Timer limit={lv?lv.timeLimit:180} running={timerRunning} onExpire={handleExpire}/></div>
+            <div style={{...CARD,padding:"11px 14px",marginBottom:9,borderColor:challengeMode?"rgba(245,158,11,0.4)":"rgba(255,255,255,0.08)",background:challengeMode?"rgba(245,158,11,0.05)":"transparent"}}>
+              {challengeMode&&<div style={{fontSize:10,fontWeight:700,color:"#f59e0b",letterSpacing:0.8,marginBottom:6}}>⚡ CHALLENGE MODE · 1.5× XP</div>}
+              <Timer limit={challengeMode?Math.floor((lv?lv.timeLimit:180)/2):(lv?lv.timeLimit:180)} running={timerRunning} onExpire={handleExpire}/>
+            </div>
             {/* ── hint banner ── */}
             {Q_HINTS[q.type]&&!dismissedHints.has(q.type)&&(
               <div style={{marginBottom:9,background:"rgba(99,102,241,0.08)",border:"1px solid rgba(99,102,241,0.28)",borderRadius:10,padding:"9px 12px",display:"flex",alignItems:"flex-start",gap:9,animation:"rqFadeIn 0.3s ease both"}}>
@@ -4075,6 +4090,13 @@ export default function App(){
               <div className="rq-float-up" style={{color:lv?lv.color:"#34d399",fontSize:22,fontFamily:"'JetBrains Mono',monospace",fontWeight:900,left:"50%",transform:"translateX(-50%)",top:"50%"}} key="xp-float">+{result.xp} XP</div>
               {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>Speed bonus: +{result.timeBonus} XP!</div>}
             </div>
+            {result.wasChallenge&&(
+              <div style={{...CARD,marginBottom:10,padding:14,background:"linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.04))",borderColor:"rgba(245,158,11,0.5)",textAlign:"center"}}>
+                <div style={{fontSize:28,marginBottom:4}}>⚡</div>
+                <div style={{fontSize:15,fontWeight:900,color:"#fbbf24",marginBottom:2}}>Challenge Complete!</div>
+                <div style={{fontSize:12,color:"#9ca3af"}}>You beat the clock — 1.5× XP applied</div>
+              </div>
+            )}
             {result.newBadges&&result.newBadges.length>0&&(
               <div style={{...CARD,marginBottom:10,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.4)"}}>
                 <p style={{fontWeight:700,fontSize:12,color:"#fbbf24",marginBottom:10,textAlign:"left"}}>🏅 NEW BADGE{result.newBadges.length>1?"S":""} UNLOCKED!</p>
