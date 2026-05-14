@@ -1888,7 +1888,10 @@ export default function App(){
       // AI path: call Claude to generate a passage on the custom topic
       setGenLoading(true);
       try{
-        var types=selectedTypes.length?selectedTypes:["mcq","gap_word","qa","tfnm"];
+        // matching/heading require complex formats Claude can't reliably produce — exclude from AI generation
+        var AI_TYPES=["mcq","gap_word","gap_sentence","qa","tfnm","ynng"];
+        var types=selectedTypes.filter(function(t){return AI_TYPES.indexOf(t)!==-1;});
+        if(!types.length)types=["mcq","gap_word","qa","tfnm"];
         var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:level,topic:customTopic.trim(),types:types})});
         var d=await r.json();
         if(!r.ok||d.error)throw new Error(d.error||"Generation failed");
