@@ -10,7 +10,7 @@ const CORS = {
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const TYPE_EXAMPLES = {
-  mcq:          '{"type":"mcq","q":"Question?","options":["A","B","C","D"],"answer":0,"explanation":"Why A."}',
+  mcq:          '{"type":"mcq","q":"Question?","options":["A","B","C","D"],"answer":0,"explanation":"Why A is correct."}',
   gap_word:     '{"type":"gap_word","sentence":"The ___ was important.","options":["cat","dog","event","reason"],"answer":2,"explanation":"Because..."}',
   gap_sentence: '{"type":"gap_sentence","sentence":"___ was the main cause.","options":["Sent1","Sent2","Sent3","Sent4"],"answer":0,"explanation":"Because..."}',
   qa:           '{"type":"qa","q":"Open question?","keywords":["word1","word2","word3"],"explanation":"Model answer."}',
@@ -18,13 +18,16 @@ const TYPE_EXAMPLES = {
   ynng:         '{"type":"ynng","instruction":"Do the following statements agree with the claims of the writer?","q":"Statement.","options":["Yes","No","Not Given"],"answer":0,"explanation":"..."}',
 };
 
+// matching and heading require complex structured formats — excluded from AI generation
+const SUPPORTED_AI_TYPES = new Set(Object.keys(TYPE_EXAMPLES));
+
 const LEVEL_CONFIG = {
-  A1: { words: "80-100",  sentences: "very short (5-8 words)",     vocab: "top 500 most common words only" },
-  A2: { words: "100-130", sentences: "short (8-12 words)",          vocab: "basic everyday vocabulary" },
-  B1: { words: "150-200", sentences: "moderate (10-15 words)",      vocab: "intermediate everyday vocabulary" },
-  B2: { words: "200-250", sentences: "varied (12-18 words)",        vocab: "upper-intermediate, some academic" },
-  C1: { words: "250-320", sentences: "complex (15-22 words)",       vocab: "advanced academic vocabulary" },
-  C2: { words: "300-400", sentences: "sophisticated (18-25 words)", vocab: "idiomatic and sophisticated language" },
+  A1: { words: "80-100",  vocab: "ONLY the 500 most common English words. No complex words at all.", sentences: "Maximum 8 words per sentence. Very simple grammar (present simple, 'I have', 'There is')." },
+  A2: { words: "100-130", vocab: "Basic everyday vocabulary only. No academic or technical words.", sentences: "Short sentences, 8-12 words. Simple past tense and basic connectors (and, but, because)." },
+  B1: { words: "150-200", vocab: "Intermediate vocabulary. Occasional topic-specific words are fine, but avoid jargon.", sentences: "Moderate complexity, 10-15 words. Use some subordinate clauses." },
+  B2: { words: "200-250", vocab: "Upper-intermediate vocabulary including some academic and abstract words.", sentences: "Varied sentence length, 12-18 words. Complex grammar structures allowed." },
+  C1: { words: "250-320", vocab: "Advanced academic vocabulary, idiomatic expressions, nuanced language.", sentences: "Long and complex sentences, 15-22 words. Sophisticated grammar." },
+  C2: { words: "300-400", vocab: "Sophisticated, native-level vocabulary including rare and technical terms.", sentences: "Native-level complexity, 18-25 words. All grammar structures." },
 };
 
 export const handler = async function (event) {
@@ -71,30 +74,28 @@ export const handler = async function (event) {
   const types = Array.isArray(body.types) ? body.types : ["mcq", "qa"];
 
   const lc = LEVEL_CONFIG[level] || LEVEL_CONFIG["B1"];
-  const validTypes = types.filter((t) => TYPE_EXAMPLES[t]).slice(0, 5);
+  const validTypes = types.filter((t) => SUPPORTED_AI_TYPES.has(t)).slice(0, 4);
   if (!validTypes.length) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "No valid question types provided" }) };
   }
 
   const typeExamples = validTypes.map((t) => "  " + TYPE_EXAMPLES[t]).join(",\n");
 
-  const prompt = `You are a CEFR ${level} English language teacher creating a reading exercise.
+  const prompt = `You are an English language teacher. Write a reading passage STRICTLY at CEFR level ${level} on the topic below, then create quiz questions.
 
-Topic: "${topic}"
+TOPIC: "${topic}"
 
-Write an original reading passage, then create exactly ${validTypes.length} quiz question(s).
-
-Passage requirements:
-- Length: ${lc.words} words
-- Sentence length: ${lc.sentences}
+STRICT CEFR ${level} REQUIREMENTS — you MUST follow these exactly:
+- Passage length: ${lc.words} words (count carefully)
 - Vocabulary: ${lc.vocab}
-- Informative, engaging, and appropriate for CEFR ${level}
+- Sentences: ${lc.sentences}
+- The passage MUST be about the topic "${topic}" — do not drift to other subjects
 
-Question types (in this exact order): ${validTypes.join(", ")}
+Create exactly ${validTypes.length} quiz question(s) in this order: ${validTypes.join(", ")}
 
-Return ONLY valid JSON with no markdown or explanation:
+Return ONLY valid JSON, no markdown, no explanation:
 {
-  "passage": "<the full reading passage>",
+  "passage": "<the reading passage — CEFR ${level}, about ${topic}>",
   "questions": [
 ${typeExamples}
   ]
@@ -102,8 +103,9 @@ ${typeExamples}
 
 Rules:
 - Every question must be answerable from the passage alone
-- Explanations must cite the passage
-- For mcq/gap_word/gap_sentence: answer is the 0-based index of the correct option`;
+- Explanations must quote or paraphrase the passage
+- For mcq/gap_word/gap_sentence: answer is the 0-based index of the correct option
+- Do NOT use vocabulary or grammar beyond CEFR ${level}`;
 
   try {
     const msg = await client.messages.create({
