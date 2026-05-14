@@ -1,24 +1,66 @@
 # Reading Quest
 
-An AI-powered language reading and quiz app for students learning English. Users pick a CEFR level (A1–C2), read a Claude-generated passage, answer a 6-question quiz, and earn XP — with a leaderboard and social features.
+An AI-powered English reading and comprehension platform for students, teachers, and exam candidates. Users pick a CEFR level (A1–C2), read a passage, answer a multi-type quiz, and earn XP — with a full teacher dashboard, social features, vocabulary system, and spaced repetition.
 
 ---
 
 ## Features
 
-- **AI-generated content** — Each session calls Claude Sonnet (`claude-sonnet-4-6`) to produce a unique reading passage and quiz tailored to the chosen level.
-- **6 question types** — Multiple Choice, Gap Fill (word & sentence), Matching, Match Headings, Open Answer.
-- **Click-to-define** — Tap any word in the passage to see its definition (word, phonetic, part of speech, definition, example) via Free Dictionary API. Results are cached to avoid repeated requests.
-- **Text-to-Speech** — Listen to passages and questions read aloud using the Web Speech API for accessibility.
-- **XP & scoring system** — Per-question scoring with level multipliers (A1 = 1×, C2 = 4×), time bonuses, and streak bonuses (+50 XP after 3 correct in a row).
-- **User leveling system** — 21 levels based on total XP progression (0–190k+ XP) with real-time progress tracking.
-- **Leaderboards** — Per-level rankings (A1–C2) stored in Firebase and cached locally. Each user appears once with their best score.
-- **Game history chart** — SVG line chart showing XP progression over time on personal and friend profiles.
-- **Social layer** — Friend requests, likes (with heart emoji ❤️), and head-to-head challenges between users.
-- **Head-to-head comparison** — Visual comparison bars showing stats differences between current user and friends (green vs pink).
-- **Auto-login** — Automatic login with saved credentials (username + password hash) via `localStorage`.
-- **Persistent accounts** — Username + password (base64) auth with session management.
+### Core Reading & Quiz
+- **Custom topic generation** — Type any topic (e.g. "Formula 1 drivers") and Claude writes a fresh, level-appropriate passage with questions on demand. Leave blank for an instant library story.
+- **Story library** — 100+ pre-written passages across A1–C2 covering science, culture, history, sport, technology, and more. Available instantly, no API call needed.
+- **8 question types** — Multiple Choice, Gap Fill (word & sentence), Matching, Match Headings, Open Answer, True/False/Not Mentioned, Yes/No/Not Given.
+- **Click-to-define** — Tap any word in the passage for definition, phonetic, part of speech, and example via Free Dictionary API. Results cached to avoid repeat requests.
+- **Text-to-Speech** — Listen to passages and questions via Web Speech API. Playback rate selector (0.75×, 1×, 1.25×, 1.5×) and sentence-by-sentence playback mode.
+
+### Reading Enhancements
+- **Reading Speed Tracker** — Live WPM counter during reading; labeled stat on results (Beginner / Elementary / Intermediate / Advanced / Expert).
+- **Difficulty Analyzer** — Flesch-Kincaid star rating (1–5), word count, estimated read time, and new-word count shown on the reading screen.
+- **Vocab Heatmap** — Toggle to highlight uncommon words with amber dotted underline, using a ~800-word common-words baseline.
+- **Sentence Translation** — Tap any sentence to translate it. Supports Uzbek, Russian, Turkish, Arabic, and German via MyMemory API.
+- **Personal Favourites** — Heart toggle on reading screen; favourited stories appear at the top of the Library screen.
+
+### Gamification & Progression
+- **XP & scoring** — Per-question scoring with level multipliers (A1 = 1×, C2 = 4×), time bonus, and streak bonus (+50 XP per 3 consecutive correct answers).
+- **User leveling** — 21 levels (0–190k+ XP) with real-time progress bar and level badge on all profiles.
+- **Leaderboards** — Per-level rankings (A1–C2) stored in Firebase, cached locally. Each user appears once with their best score.
+- **Weekly Challenge Board** — Per-week XP leaderboard with a 3-story weekly goal tracker.
+- **Timed Challenge Mode** — Half the time limit, 1.5× XP multiplier for extra difficulty.
+- **Story-specific head-to-head challenges** — Challenge a friend on the exact story you just completed; includes sender's score so the opponent knows the target.
+
+### Vocabulary System
+- **Spaced Repetition (SRS)** — Vocab deck with 4-interval review schedule (1, 3, 7, 14 days). Words auto-extracted from passages or manually added.
+- **Vocabulary Review Game** — Three modes: Flashcard, Word Quiz (MCQ), Fill the Blank. Score tracked per session.
+- **Auto-vocab prompt** — After quiz, uncommon words from the passage are offered for one-click addition to the SRS deck.
+- **Missed-question SRS** — Questions answered incorrectly are automatically queued for spaced repetition review.
+
+### Social
+- **Friend system** — Send/accept friend requests, view friend profiles and game history.
+- **Likes** — Heart a friend's profile.
+- **Head-to-head comparison** — Color-coded stat bars (green = you, pink = friend).
+- **Game history chart** — SVG line chart showing XP over time on personal and friend profiles.
+- **Story Discussions** — Per-story flat comment threads (newest-first, capped at 50 comments, 1 post/user/day).
+
+### Teacher Dashboard
+- **Class management** — Create classes, invite students by username, view per-student stats.
+- **Assignments** — Three assignment types: Library Story (pick from built-in), AI Topic (Claude generates a passage on a custom topic), Custom Text (paste any passage and get AI-generated questions).
+- **Assignment tracking** — Per-student completion rates, scores, and time; trend indicators.
+- **Announcements** — Post class-wide messages.
+- **Student portfolio** — Shareable URL-encoded progress report per student.
+- **Standards alignment** — Subject area and skill-level tags on library stories; filterable.
+- **Class analytics dashboard** — Reading trends, question-type breakdown, at-risk flagging.
+
+### Exercises
+- **Error Hunt** — 5 deliberate errors injected into the passage (2 spelling, 1 grammar, 1 vocabulary, 1 tense). Tap words to identify them. Fully client-side — no API call.
+- **Written summary** — Free-text passage summary with local scoring.
+- **Placement test** — 10 adaptive questions that recommend a starting CEFR level.
+
+### Account & UX
+- **Auto-login** — Saved credentials (`localStorage`) for seamless return visits.
 - **Dark theme, mobile-first** — Inline styles, responsive at 640 px breakpoint.
+- **10 colour themes** — Indigo, Ocean, Forest, Magenta, Sunset Fire, Neon Green, Synthwave, Golden Hour, Cosmic Purple, Ice Crystal.
+- **Word of the Day** — Rotating advanced vocabulary card on the home screen.
+- **Smart Recommendations** — 3 library stories suggested based on the player's dominant CEFR level.
 
 ---
 
@@ -26,29 +68,39 @@ An AI-powered language reading and quiz app for students learning English. Users
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Vite 5, Google Fonts (Inter, Outfit, JetBrains Mono) |
-| AI | Claude Sonnet (`claude-sonnet-4-6`) via Netlify Function |
+| Frontend | React 18, Vite 7, Google Fonts (Inter, Outfit, JetBrains Mono) |
+| AI | Claude Sonnet (`claude-sonnet-4-6`) via Anthropic SDK |
 | Storage | Firebase Realtime Database (REST) via Netlify Function |
-| Design System | CSS-in-JS with design tokens (colors, spacing, typography) in `src/designSystem.js` |
+| Design System | CSS-in-JS with design tokens in `src/designSystem.js` |
 | Hosting | Netlify (SPA + serverless functions) |
-| Testing | Vitest |
+| Testing | Vitest (70 tests across 6 suites) |
 
 ---
 
 ## Project Structure
 
 ```
-├── student-reading-quest.jsx   # Root React component — all screens & logic (~1100 lines)
+├── student-reading-quest.jsx      # Root React component — all screens & logic (~6100 lines)
 ├── src/
-│   └── main.jsx                # Entry point — mounts <App /> in StrictMode
+│   ├── main.jsx                   # Entry point — mounts <App /> in StrictMode
+│   └── designSystem.js            # Design tokens: colors, spacing, typography
 ├── netlify/
 │   └── functions/
-│       ├── generate.js         # Proxies to Anthropic API
-│       └── storage.js          # Firebase REST wrapper (GET / POST)
+│       ├── generate.js            # AI passage + quiz generation (Claude Sonnet)
+│       ├── quiz-from-text.js      # Quiz generation from custom pasted text (Claude Sonnet)
+│       ├── storage.js             # Firebase REST wrapper (GET / POST)
+│       ├── auth.js                # User authentication
+│       ├── register.js            # User registration
+│       ├── users.js               # User management
+│       └── _rateLimit.js          # Rate limiting helper
 ├── tests/
-│   ├── setup.js                # Vitest setup — patches require.cache to mock SDK
-│   ├── generate.test.js        # Unit tests for generate.js (6 tests)
-│   └── storage.test.js         # Unit tests for storage.js (9 tests)
+│   ├── setup.js
+│   ├── generate.test.js           # 6 tests
+│   ├── storage.test.js            # 9 tests
+│   ├── auth.test.js
+│   ├── register.test.js
+│   ├── rateLimit.test.js
+│   └── users.test.js
 ├── index.html
 ├── vite.config.js
 └── netlify.toml
@@ -61,15 +113,15 @@ An AI-powered language reading and quiz app for students learning English. Users
 ### Prerequisites
 
 - Node.js 18+
-- A [Netlify CLI](https://docs.netlify.com/cli/get-started/) install (`npm i -g netlify-cli`)
-- An [Anthropic API key](https://console.anthropic.com/)
+- [Netlify CLI](https://docs.netlify.com/cli/get-started/) (`npm i -g netlify-cli`)
+- An [Anthropic API key](https://console.anthropic.com/) (separate from Claude.ai subscription)
 - A [Firebase Realtime Database](https://firebase.google.com/) project
 
 ### Installation
 
 ```bash
 git clone <repo-url>
-cd "Student Reading Tool"
+cd student-reading-tool
 npm install
 ```
 
@@ -84,8 +136,10 @@ FIREBASE_DB_URL=https://your-project-default-rtdb.firebaseio.com
 
 | Variable | Required | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | API key for Claude (Anthropic) — get it from [console.anthropic.com](https://console.anthropic.com/) |
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key — get from [console.anthropic.com](https://console.anthropic.com/) |
 | `FIREBASE_DB_URL` | Yes | Firebase Realtime Database base URL |
+
+> **Note:** `ANTHROPIC_API_KEY` is your API billing account, entirely separate from a Claude.ai subscription.
 
 ---
 
@@ -97,7 +151,7 @@ netlify dev        # Full stack: app on :8888, functions on /.netlify/functions/
 npm run dev        # Vite only (:5173) — Netlify functions unavailable
 ```
 
-> Use `netlify dev` for full functionality including AI generation and storage.
+Use `netlify dev` for full functionality including AI generation and storage.
 
 ---
 
@@ -108,66 +162,79 @@ npm run dev        # Vite only (:5173) — Netlify functions unavailable
 | `npm run dev` | Start Vite dev server (port 5173) |
 | `npm run build` | Production build → `dist/` |
 | `npm run preview` | Preview the production build locally |
-| `npm test` | Run all unit tests with Vitest |
+| `npm test` | Run all 70 unit tests with Vitest |
 
 ---
 
 ## Testing
 
-Unit tests cover the two Netlify functions:
-
 ```bash
 npm test
 ```
 
-**`tests/generate.test.js`** — 6 tests for `netlify/functions/generate.js`:
-- 405 on non-POST requests
-- 500 when `GOOGLE_API_KEY` is missing
-- 400 on invalid JSON body
-- 200 with correct response on success
-- 500 when the Google Gemini API throws
-- Correct model/max_tokens forwarding to Gemini API
+70 tests across 6 suites covering all Netlify functions:
 
-**`tests/storage.test.js`** — 9 tests for `netlify/functions/storage.js`:
-- Health check (GET with no key)
-- 503 when `FIREBASE_DB_URL` is missing
-- GET with key — fetches and returns data from Firebase
-- GET returns null when Firebase has no data
-- POST — saves data via Firebase PUT
-- 400 when key is missing
-- 405 for unsupported methods
-- 500 when fetch throws
-
-> **Note:** `generate.js` is a CJS module. Vitest's `vi.mock` doesn't intercept CJS `require()`. The test setup patches Node's `require.cache` directly in `tests/setup.js` to inject the mock SDK before any test imports the handler.
+| Suite | Tests | Covers |
+|---|---|---|
+| `generate.test.js` | 6 | 405 on non-POST, 500 missing API key, 400 invalid JSON, 200 success, 500 API error, max_tokens forwarding |
+| `storage.test.js` | 9 | Health check, 503 missing DB URL, GET/POST Firebase, null data, 400 missing key, 405 unsupported method, 500 fetch error |
+| `auth.test.js` | — | Authentication flows |
+| `register.test.js` | — | Registration flows |
+| `rateLimit.test.js` | — | Rate limiting logic |
+| `users.test.js` | — | User management |
 
 ---
 
 ## Deployment (Netlify)
 
 1. Push the repo to GitHub.
-2. Connect the repo in the [Netlify dashboard](https://app.netlify.com/).
-3. Set the environment variables (`GOOGLE_API_KEY`, `FIREBASE_DB_URL`) under **Site settings → Environment variables**.
-4. Netlify uses `netlify.toml` — build command is `npm run build`, publish dir is `dist/`, functions dir is `netlify/functions/`.
+2. Connect in the [Netlify dashboard](https://app.netlify.com/).
+3. Set environment variables (`ANTHROPIC_API_KEY`, `FIREBASE_DB_URL`) under **Site settings → Environment variables**.
+4. Netlify uses `netlify.toml` — build command `npm run build`, publish dir `dist/`, functions dir `netlify/functions/`.
+
+---
+
+## AI Architecture
+
+Two modes in `generate.js`:
+
+| Mode | Input | Output | Used by |
+|---|---|---|---|
+| Custom topic | `{level, topic, types}` | `{passage, questions}` | Home screen topic input, Teacher AI assignments |
+| Generic proxy | `{messages:[{role,content}]}` | `{content:[{type,text}]}` | Direct API callers |
+
+`quiz-from-text.js` handles teacher "paste your own text" assignments — takes a passage and returns questions only.
+
+**Error Hunt** is entirely client-side (`injectErrors()` in the frontend) — no Claude call, no cost.
+
+**Answer checking** is entirely client-side (`scoreQuestion()`) — no Claude call.
 
 ---
 
 ## Storage Architecture
 
-All writes go to `localStorage` first (instant), then fire-and-forget to Firebase. Reads try Firebase first, then fall back to the local cache silently.
+Dual-write: `localStorage` first (instant), then fire-and-forget to Firebase. Reads try Firebase then fall back to local cache silently.
 
 **Firebase keys:**
 
 | Key | Contents |
 |---|---|
-| `rq-users-v6` | Array of `{ name, hash, games, joined }` |
-| `rq-boards-v6` | Leaderboard entries per level (A1–C2) — deduplicated per user |
+| `rq-users-v6` | Array of `{ name, hash, games, joined, level, totalXp }` |
+| `rq-boards-v6` | Leaderboard entries per level (A1–C2), deduplicated per user |
 | `rq-social-v6` | Per-user `{ friends, requests, likes, challenges }` |
+| `rq-favs-v1` | Favourited story IDs per user |
+| `rq-weekly-v1` | Per-week XP leaderboard entries |
+| `rq-discuss-v1` | Per-story comment threads `{ author, text, timestamp }` |
+| `rq-vocab-v1` | Per-user SRS vocabulary deck |
+| `rq-daily-v1` | Daily challenge data |
+| `rq-classes-v1` | Teacher class data |
+| `rq-assignments-v1` | Teacher assignments and student completions |
 
 **Local-only keys:**
 
 | Key | Contents |
 |---|---|
-| `rq-session` | Current logged-in user's username |
+| `rq-session` | Current logged-in username |
 | `rq-credentials` | Auto-login credentials `{ name, hash }` |
 
 ---
@@ -191,7 +258,7 @@ Streak bonus: +50 XP after every 3 consecutive correct answers.
 
 ## User Progression System
 
-Users advance through 21 levels based on accumulated XP:
+21 levels based on accumulated XP:
 
 | Level | XP Required | Level | XP Required |
 |---|---|---|---|
@@ -207,46 +274,29 @@ Users advance through 21 levels based on accumulated XP:
 | 10 | 36,000 | 21 | 190,000+ |
 | 11 | 45,000 | | (Max) |
 
-**Level Features:**
-- Level badge displayed on all profiles (⭐ Lvl X)
-- Real-time progress bar showing XP towards next level
-- Levels visible in search results, friends list, and leaderboards
-- Progress resets when viewing other users' profiles
-
 ---
 
-## Design System & Typography (v4.0)
+## Recent Updates (v5.0)
 
-### UI/UX Pro Max Enhancements
-- ✅ **Google Fonts Integration** — Inter, Outfit, JetBrains Mono for improved readability and visual hierarchy
-- ✅ **Design Tokens** — Centralized `src/designSystem.js` with color, spacing, and typography scales
-- ✅ **ErrorBanner Component** — Unified error notification styling across all screens
-- ✅ **Reading Screen Polish** — Optimized passage typography (17px Inter, 1.85 line-height) with smooth button transitions
-- ✅ **CSS Variables** — `--rq-transition`, `--rq-card-radius` for consistent interactive elements and standardized border-radius
+### AI Backend
+- Migrated from Google Gemini to **Claude Sonnet (`claude-sonnet-4-6`)** across all AI features
+- Custom topic input on home screen now calls Claude to generate a real passage (was silently ignored before)
+- AI assignment generation fixed — was returning 400 since the migration; now fully functional
+- `generate.js` supports both generic proxy mode and structured `{level, topic, types}` mode
 
-### Improvements
-- Passage text now uses Inter font for 15% better readability on mobile
-- All number displays (XP, WPM, scores, time) use JetBrains Mono for clarity
-- Section headings use Outfit (700/900) for visual hierarchy
-- Smooth 0.15s ease transitions on all interactive buttons
-- Unified error styling with warning icon and amber/red card design
+### Codebase Cleanup
+- Removed 5 dead Netlify functions: `design.js`, `errorcorrect.js`, `test-api.js`, `tutor.js`, `writefeedback.js`
+- Error Hunt game replaced with pure-JS `injectErrors()` — no API call, no cost, works offline
+- Removed dead `DESIGN_API` variable from frontend
 
----
-
-## Recent Updates (v3.0)
-
-### New Features
-- ✅ **User Leveling System** — 21 levels with progressive XP requirements
-- ✅ **Game History Chart** — SVG line chart showing XP progression over time
-- ✅ **Enhanced Like Feature** — Heart emoji (❤️) with improved visuals
-- ✅ **Head-to-Head Comparison** — Color-coded bars (green = you, pink = friend)
-- ✅ **Auto-Login** — Saved credentials for seamless return
-- ✅ **Level Display** — Visible across profiles, search, and friends list
-
-### Bug Fixes
-- ✅ **Leaderboard Duplication** — Users now appear once per level
-- ✅ **Leaderboard Clickability** — Click handlers with cursor feedback
-- ✅ **Division by Zero** — Fixed in level progress calculation for max level users
-
-### Testing
-See `DASHBOARD_TEST_REPORT.md` for comprehensive QA coverage.
+### Previously Released
+- Story-specific head-to-head challenges with sender score and 24h expiry
+- Spaced repetition for missed quiz questions (SRS_INTERVALS: 1, 3, 7, 14 days)
+- Teacher dashboard: class analytics, assignments, portfolio links, announcements
+- Timed challenge mode (0.5× time, 1.5× XP)
+- Student portfolio with shareable URL-encoded report
+- Standards alignment tags and library filtering
+- Story Discussions (per-story comment threads)
+- Weekly Challenge Board
+- Vocabulary Review Game (Flashcard, MCQ, Fill the Blank)
+- Reading Speed Tracker, Difficulty Analyzer, Sentence Translation, Heatmap
