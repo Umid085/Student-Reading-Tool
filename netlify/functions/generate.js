@@ -81,36 +81,35 @@ export const handler = async function (event) {
 
   const typeExamples = validTypes.map((t) => "  " + TYPE_EXAMPLES[t]).join(",\n");
 
-  const prompt = `You are an English language teacher. Write a reading passage STRICTLY at CEFR level ${level} on the topic below, then create quiz questions.
+  const prompt = `Write a ${lc.words}-word reading passage ONLY about: "${topic}"
 
-TOPIC: "${topic}"
+The very first sentence must introduce "${topic}" directly.
+Every sentence in the passage must relate to "${topic}".
+Do not write about any other subject.
 
-STRICT CEFR ${level} REQUIREMENTS — you MUST follow these exactly:
-- Passage length: ${lc.words} words (count carefully)
+CEFR level ${level} rules (strictly enforced):
 - Vocabulary: ${lc.vocab}
 - Sentences: ${lc.sentences}
-- The passage MUST be about the topic "${topic}" — do not drift to other subjects
 
-Create exactly ${validTypes.length} quiz question(s) in this order: ${validTypes.join(", ")}
+After the passage, write exactly ${validTypes.length} comprehension question(s) in this order: ${validTypes.join(", ")}
 
-Return ONLY valid JSON, no markdown, no explanation:
+Return ONLY this JSON structure, no markdown, no explanation:
 {
-  "passage": "<the reading passage — CEFR ${level}, about ${topic}>",
+  "passage": "<passage about ${topic}>",
   "questions": [
 ${typeExamples}
   ]
 }
 
-Rules:
-- Every question must be answerable from the passage alone
-- Explanations must quote or paraphrase the passage
-- For mcq/gap_word/gap_sentence: answer is the 0-based index of the correct option
-- Do NOT use vocabulary or grammar beyond CEFR ${level}`;
+- All questions must be answered from the passage only
+- answer field = 0-based index of the correct option (for mcq/gap_word/gap_sentence)
+- Do NOT go above CEFR ${level} vocabulary or grammar`;
 
   try {
     const msg = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 2048,
+      system: `You are an English reading exercise generator. You always write passages about the exact topic the user specifies. You never change the topic or drift to related subjects. You always follow CEFR level vocabulary and grammar rules strictly.`,
       messages: [{ role: "user", content: prompt }],
     });
 
