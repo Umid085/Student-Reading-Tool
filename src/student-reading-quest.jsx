@@ -2730,6 +2730,7 @@ export default function App(){
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
                 <button onClick={function(){setStage("teacherDashboard");}} style={GHOST}>← Back</button>
                 <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#f3f4f6",flex:1}}>{cls.name}</h2>
+                {cls.students.length>0&&<button onClick={function(){setStage("classAnalytics");}} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>📊 Analytics</button>}
                 {cls.students.length>0&&<button onClick={doExportClassCSV} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>⬇ CSV</button>}
               </div>
 
@@ -2992,6 +2993,176 @@ export default function App(){
                   </div>
                 );
               })()}
+            </div>
+          );
+        })()}
+
+        {/* ── CLASS ANALYTICS ───────────────────────────────── */}
+        {stage==="classAnalytics"&&currentClass&&currentUser&&(function(){
+          var cls=currentClass;
+          var clsAssignments=assignments.filter(function(a){return a.classId===cls.id;});
+          var today=new Date();today.setHours(0,0,0,0);
+          var stuData=cls.students.map(function(sName){
+            var u=allUsers.find(function(u){return u.name===sName;});
+            var games=u&&u.games?u.games:[];
+            var validGames=games.filter(function(g){return typeof g.pct==="number";});
+            var avgPct=validGames.length?Math.round(validGames.reduce(function(s,g){return s+g.pct;},0)/validGames.length):null;
+            var wpmGames=games.filter(function(g){return g.wpm>0;});
+            var avgWpm=wpmGames.length?Math.round(wpmGames.reduce(function(s,g){return s+g.wpm;},0)/wpmGames.length):0;
+            var bestLv=getBestLevel(games);
+            var lastGame=games.length?games[games.length-1]:null;
+            var daysSince=lastGame?(Math.round((today-new Date(lastGame.date))/(864e5))):null;
+            var recent3=validGames.slice(-3);var prev3=validGames.slice(-6,-3);
+            var rAvg=recent3.length?recent3.reduce(function(s,g){return s+g.pct;},0)/recent3.length:null;
+            var pAvg=prev3.length?prev3.reduce(function(s,g){return s+g.pct;},0)/prev3.length:null;
+            var trend=rAvg===null?"new":pAvg===null?"new":rAvg-pAvg>5?"up":rAvg-pAvg<-5?"down":"stable";
+            var completedCount=clsAssignments.filter(function(a){return a.completions&&a.completions[sName];}).length;
+            var typeAgg={};
+            games.forEach(function(g){if(g.typeStats)Object.keys(g.typeStats).forEach(function(t){if(!typeAgg[t])typeAgg[t]={e:0,m:0};typeAgg[t].e+=g.typeStats[t].earned||0;typeAgg[t].m+=g.typeStats[t].max||0;});});
+            var weakType=null;var weakPct=Infinity;
+            Object.keys(typeAgg).forEach(function(t){var p=typeAgg[t].m>0?typeAgg[t].e/typeAgg[t].m:1;if(p<weakPct){weakPct=p;weakType=t;}});
+            return{name:sName,games:games.length,avgPct:avgPct,avgWpm:avgWpm,bestLv:bestLv,daysSince:daysSince,trend:trend,completedCount:completedCount,weakType:weakType,weakPct:weakPct<Infinity?Math.round(weakPct*100):null};
+          });
+          var activeStudents=stuData.filter(function(d){return d.games>0;});
+          var atRisk=stuData.filter(function(d){return d.daysSince===null||d.daysSince>=7;});
+          var classAvgPct=activeStudents.length?Math.round(activeStudents.filter(function(d){return d.avgPct!==null;}).reduce(function(s,d){return s+d.avgPct;},0)/activeStudents.filter(function(d){return d.avgPct!==null;}).length):null;
+          var lvDist={};stuData.forEach(function(d){if(d.bestLv!=="none"){lvDist[d.bestLv]=(lvDist[d.bestLv]||0)+1;}});
+          var classTypeAgg={};
+          activeStudents.forEach(function(d){
+            var u=allUsers.find(function(u){return u.name===d.name;});
+            var games=u&&u.games?u.games:[];
+            games.forEach(function(g){if(g.typeStats)Object.keys(g.typeStats).forEach(function(t){if(!classTypeAgg[t])classTypeAgg[t]={e:0,m:0};classTypeAgg[t].e+=g.typeStats[t].earned||0;classTypeAgg[t].m+=g.typeStats[t].max||0;});});
+          });
+          var typeList=Object.keys(classTypeAgg).map(function(t){return{t:t,pct:classTypeAgg[t].m>0?Math.round(classTypeAgg[t].e/classTypeAgg[t].m*100):0,label:Q_LABELS[t]||t};}).sort(function(a,b){return a.pct-b.pct;});
+          return(
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:8}}>
+                <button onClick={function(){setStage("classView");}} style={GHOST}>← Back</button>
+                <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#06b6d4",flex:1}}>📊 {cls.name} Analytics</h2>
+              </div>
+
+              {/* top stats row */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
+                {[
+                  {label:"Students",val:cls.students.length,col:"#a78bfa"},
+                  {label:"Active",val:activeStudents.length,col:"#34d399"},
+                  {label:"Class Avg",val:classAvgPct!==null?classAvgPct+"%":"–",col:classAvgPct>=70?"#34d399":classAvgPct>=50?"#f59e0b":"#f87171"},
+                  {label:"At Risk",val:atRisk.length,col:atRisk.length>0?"#f87171":"#4b5563"},
+                ].map(function(s){return(
+                  <div key={s.label} style={{...CARD,textAlign:"center",padding:"12px 6px"}}>
+                    <div style={{fontSize:20,fontWeight:900,color:s.col}}>{s.val}</div>
+                    <div style={{fontSize:9,color:"#6b7280",marginTop:2,letterSpacing:0.5}}>{s.label.toUpperCase()}</div>
+                  </div>
+                );})}
+              </div>
+
+              {/* assignment completion matrix */}
+              {clsAssignments.length>0&&(
+                <div style={{...CARD,marginBottom:14,overflowX:"auto"}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"0 0 10px"}}>ASSIGNMENT COMPLETION</p>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,minWidth:320}}>
+                    <thead>
+                      <tr>
+                        <th style={{textAlign:"left",color:"#6b7280",fontWeight:600,padding:"4px 6px 8px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>Student</th>
+                        {clsAssignments.map(function(a){return(
+                          <th key={a.id} style={{textAlign:"center",color:"#6b7280",fontWeight:600,padding:"4px 4px 8px",borderBottom:"1px solid rgba(255,255,255,0.06)",maxWidth:60,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={a.topic}>{a.topic.slice(0,8)}{a.topic.length>8?"…":""}</th>
+                        );})}
+                        <th style={{textAlign:"center",color:"#6b7280",fontWeight:600,padding:"4px 4px 8px",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>Done</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cls.students.map(function(sName){
+                        var done=clsAssignments.filter(function(a){return a.completions&&a.completions[sName];}).length;
+                        return(
+                          <tr key={sName} style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                            <td style={{padding:"6px 6px 6px 0",color:"#f3f4f6",fontWeight:600,whiteSpace:"nowrap"}}>{sName}</td>
+                            {clsAssignments.map(function(a){
+                              var c=a.completions&&a.completions[sName];
+                              return(
+                                <td key={a.id} style={{textAlign:"center",padding:"6px 4px"}}>
+                                  {c?(
+                                    <span title={c.pct+"%"} style={{display:"inline-block",width:22,height:22,borderRadius:"50%",background:"rgba(52,211,153,0.2)",border:"2px solid #34d399",fontSize:10,lineHeight:"20px",color:"#34d399",fontWeight:700}}>{c.pct}%</span>
+                                  ):(
+                                    <span style={{display:"inline-block",width:22,height:22,borderRadius:"50%",background:"rgba(255,255,255,0.05)",border:"2px solid rgba(255,255,255,0.08)"}}/>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td style={{textAlign:"center",padding:"6px 4px",fontWeight:700,color:done===clsAssignments.length?"#34d399":done>0?"#f59e0b":"#6b7280"}}>{done}/{clsAssignments.length}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* class weak areas */}
+              {typeList.length>0&&(
+                <div style={{...CARD,marginBottom:14}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"0 0 10px"}}>CLASS WEAK AREAS (lowest first)</p>
+                  {typeList.map(function(t){var col=t.pct<50?"#f87171":t.pct<70?"#f59e0b":"#34d399";return(
+                    <div key={t.t} style={{marginBottom:7}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:2}}>
+                        <span style={{color:"#d1d5db"}}>{t.label}</span>
+                        <span style={{color:col,fontWeight:700}}>{t.pct}%</span>
+                      </div>
+                      <div style={{background:"rgba(0,0,0,0.3)",borderRadius:4,height:5}}>
+                        <div style={{height:"100%",width:t.pct+"%",background:col,borderRadius:4,transition:"width 0.4s"}}/>
+                      </div>
+                    </div>
+                  );})}
+                </div>
+              )}
+
+              {/* level distribution */}
+              {Object.keys(lvDist).length>0&&(
+                <div style={{...CARD,marginBottom:14}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"0 0 10px"}}>LEVEL DISTRIBUTION</p>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {["A1","A2","B1","B2","C1","C2"].filter(function(lv){return lvDist[lv];}).map(function(lv){
+                      var lvMeta=LEVELS.find(function(l){return l.key===lv;});
+                      return(
+                        <div key={lv} style={{flex:"1 1 auto",textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 8px",border:"1px solid "+(lvMeta?lvMeta.color+"44":"rgba(255,255,255,0.1)")}}>
+                          <div style={{fontSize:18,fontWeight:900,color:lvMeta?lvMeta.color:"#f3f4f6"}}>{lvDist[lv]}</div>
+                          <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{lv}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* per-student table */}
+              <div style={{...CARD,marginBottom:14}}>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"0 0 10px"}}>PER-STUDENT BREAKDOWN</p>
+                {stuData.map(function(d){
+                  var trendIcon=d.trend==="up"?"📈":d.trend==="down"?"📉":d.trend==="stable"?"➡️":"🆕";
+                  var lvMeta=LEVELS.find(function(l){return l.key===d.bestLv;});
+                  var atRiskFlag=d.daysSince===null||d.daysSince>=7;
+                  return(
+                    <div key={d.name} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <span style={{fontSize:13,fontWeight:700,color:"#f3f4f6"}}>{d.name}</span>
+                          {atRiskFlag&&<span style={{fontSize:9,fontWeight:700,color:"#f87171",background:"rgba(248,113,113,0.12)",borderRadius:4,padding:"1px 5px"}}>INACTIVE</span>}
+                        </div>
+                        <div style={{fontSize:10,color:"#6b7280",marginTop:1}}>
+                          {d.games} game{d.games!==1?"s":""}
+                          {d.daysSince!==null?" · "+d.daysSince+"d ago":" · never played"}
+                          {d.weakType&&d.weakPct<70?" · weak: "+(Q_LABELS[d.weakType]||d.weakType)+" ("+d.weakPct+"%)":""}
+                        </div>
+                      </div>
+                      <div style={{textAlign:"right",flexShrink:0}}>
+                        <div style={{fontSize:13,fontWeight:900,color:lvMeta?lvMeta.color:"#4b5563"}}>{d.bestLv!=="none"?d.bestLv:"–"}</div>
+                        <div style={{fontSize:11,color:d.avgPct!==null?(d.avgPct>=70?"#34d399":d.avgPct>=50?"#f59e0b":"#f87171"):"#4b5563"}}>{d.avgPct!==null?d.avgPct+"%":"–"} {d.games>=3?trendIcon:""}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button onClick={function(){setStage("classView");}} style={{...GHOST,width:"100%"}}>← Back to Class</button>
             </div>
           );
         })()}
