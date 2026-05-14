@@ -12,3 +12,20 @@
   from   = "/*"
   to     = "/index.html"
   status = 200
+
+# Never HTTP-cache the SW or the HTML shell — browser must always fetch latest
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store"
+
+# Long-term cache for Vite-hashed assets (safe — filenames change on every build)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
