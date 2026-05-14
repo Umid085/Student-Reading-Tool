@@ -1,8 +1,8 @@
-const CACHE_NAME = 'srq-v6';
+const CACHE_NAME = 'srq-v7';
 // Don't pre-cache index.html — must always come fresh from network
 const STATIC_ASSETS = ['/manifest.json'];
-// Never cache API/function calls
-const NEVER_CACHE = /\/(\.netlify\/functions|netlify\/functions)\//;
+// Never cache API calls
+const NEVER_CACHE = /\/api\//;
 // Always fetch HTML navigation requests fresh
 const IS_NAVIGATE = function(req) { return req.mode === 'navigate'; };
 
