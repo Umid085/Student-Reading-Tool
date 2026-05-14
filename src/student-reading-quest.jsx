@@ -3054,7 +3054,7 @@ export default function App(){
             </div>
 
             {/* streak card */}
-            {currentUser&&(myStreak>1||streakAtRisk)&&(
+            {currentUser&&(myStreak>=1||streakAtRisk)&&(
               <div style={{...CARD,marginBottom:12,padding:14,borderColor:streakAtRisk?"rgba(239,68,68,0.35)":"rgba(251,191,36,0.3)",background:streakAtRisk?"rgba(239,68,68,0.06)":"rgba(251,191,36,0.05)"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
                   <div style={{display:"flex",alignItems:"center",gap:12}}>
