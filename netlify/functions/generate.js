@@ -68,10 +68,11 @@ export const handler = async function (event) {
     }
   }
 
-  // ── Mode 2: AI assignment generation — {level, topic, types} → {passage, questions} ──
+  // ── Mode 2: AI assignment generation — {level, topic, types, language} → {passage, questions} ──
   const level = body.level || "B1";
   const topic = body.topic || "General";
   const types = Array.isArray(body.types) ? body.types : ["mcq", "qa"];
+  const language = body.language || "English";
 
   const lc = LEVEL_CONFIG[level] || LEVEL_CONFIG["B1"];
   const validTypes = types.filter((t) => SUPPORTED_AI_TYPES.has(t)).slice(0, 4);
@@ -81,7 +82,7 @@ export const handler = async function (event) {
 
   const typeExamples = validTypes.map((t) => "  " + TYPE_EXAMPLES[t]).join(",\n");
 
-  const prompt = `Write a ${lc.words}-word reading passage ONLY about: "${topic}"
+  const prompt = `Write a ${lc.words}-word reading passage in ${language} ONLY about: "${topic}"
 
 The very first sentence must introduce "${topic}" directly.
 Every sentence in the passage must relate to "${topic}".
@@ -95,7 +96,7 @@ After the passage, write exactly ${validTypes.length} comprehension question(s) 
 
 Return ONLY this JSON structure, no markdown, no explanation:
 {
-  "passage": "<passage about ${topic}>",
+  "passage": "<passage in ${language} about ${topic}>",
   "questions": [
 ${typeExamples}
   ]
@@ -109,7 +110,7 @@ ${typeExamples}
     const msg = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 2048,
-      system: `You are an English reading exercise generator. You always write passages about the exact topic the user specifies. You never change the topic or drift to related subjects. You always follow CEFR level vocabulary and grammar rules strictly.`,
+      system: `You are a language learning exercise generator. You always write reading passages in ${language} about the exact topic the user specifies. You never change the language or topic. You always follow CEFR level vocabulary and grammar rules strictly.`,
       messages: [{ role: "user", content: prompt }],
     });
 
