@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srq-v4';
+const CACHE_NAME = 'srq-v5';
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.json'];
 // Never cache API/function calls
 const NEVER_CACHE = /\/(\.netlify\/functions|netlify\/functions)\//;
