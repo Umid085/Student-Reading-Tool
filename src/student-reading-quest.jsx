@@ -1233,6 +1233,7 @@ export default function App(){
   var startTimeRef=useRef(null);
   var [timeExpired,setTimeExpired]=useState(false);
   var [challengeMode,setChallengeMode]=useState(false);
+  var [genLoading,setGenLoading]=useState(false);
   var [result,setResult]=useState(null);
   var [reviewQueue,setReviewQueue]=useState([]);
   var [reviewIdx,setReviewIdx]=useState(0);
@@ -1243,7 +1244,6 @@ export default function App(){
   var [loadMsg,setLoadMsg]=useState("");
   var [lbLevel,setLbLevel]=useState("A1");
   var [error,setError]=useState("");
-  var [genLoading,setGenLoading]=useState(false);
   // social ui
   var [searchQuery,setSearchQuery]=useState("");
   var [friendStage,setFriendStage]=useState("search"); // search|requests|list
