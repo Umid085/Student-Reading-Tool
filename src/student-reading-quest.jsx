@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from "react";
 var API        = "/.netlify/functions/generate";
 var AUTH       = "/.netlify/functions/auth";
 var REGISTER   = "/.netlify/functions/register";
-var DESIGN_API = "/.netlify/functions/design";
 var USERS_API  = "/.netlify/functions/users";
 var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
@@ -141,6 +140,166 @@ function srsDueToday(word){
   var today=new Date();today.setHours(0,0,0,0);
   var due=new Date(word.nextReview);due.setHours(0,0,0,0);
   return due<=today;
+}
+
+// ── injectErrors: pure-JS error-correction exercise generator ──
+function injectErrors(passage,level){
+  var r=passage,errs=[],used=new Set();
+  function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+  function sub(orig,bad,type,expl){
+    if(used.has(orig.toLowerCase()))return false;
+    var m=new RegExp("(?<![a-zA-Z])"+esc(orig)+"(?![a-zA-Z])").exec(r);
+    if(!m)return false;
+    r=r.slice(0,m.index)+bad+r.slice(m.index+orig.length);
+    errs.push({corrupted:bad,original:orig,type:type,explanation:expl});
+    used.add(orig.toLowerCase());used.add(bad.toLowerCase());
+    return true;
+  }
+  // SPELLING (need 2)
+  var SP=[
+    ["receive","recieve","'receive': remember 'i before e except after c'"],
+    ["believe","beleive","'believe': 'i before e' rule — not '-ei-'"],
+    ["achieve","acheive","'achieve': 'i before e' in '-ieve' words"],
+    ["necessary","neccessary","'necessary': one 'c', double 's' — ne-cess-ary"],
+    ["separate","seperate","'separate': 'a' in the middle — sep-a-rate"],
+    ["definitely","definately","'definitely': from 'definite', not 'definate'"],
+    ["occurred","occured","'occurred': double 'r' in past tense"],
+    ["beginning","begining","'beginning': double 'n' before '-ing'"],
+    ["different","diferent","'different': double 'f' — dif-fer-ent"],
+    ["important","importent","'important': ends in '-ant', not '-ent'"],
+    ["beautiful","beautifull","'beautiful': one 'l' at the end"],
+    ["because","becuase","'because': 'au' not 'ua' — be-cause"],
+    ["people","pepole","'people': 'eo' pair in order — peo-ple"],
+    ["which","wich","'which': wh- words keep the 'h'"],
+    ["their","thier","'their': 'ei' not 'ie' — the-ir"],
+    ["friend","freind","'friend': 'ie' not 'ei' — fr-ie-nd"],
+    ["written","writen","'written': double 't' from 'write'"],
+    ["environment","enviroment","'environment': en-vi-ron-ment"],
+    ["government","goverment","'government': gov-ern-ment has 'n'"],
+    ["language","langauge","'language': 'ua' in order — lang-uage"],
+    ["experience","experiance","'experience': '-ence' not '-ance'"],
+    ["interesting","intresting","'interesting': four syllables — in-ter-est-ing"],
+    ["knowledge","knowlege","'knowledge': know + ledge"],
+    ["accommodation","accomodation","'accommodation': double 'c' and double 'm'"],
+    ["immediately","imediately","'immediately': double 'm' — im-me-di-ate-ly"],
+    ["professional","profesional","'professional': double 's' — pro-fes-sion-al"],
+    ["especially","especialy","'especially': double 'l' — es-pe-cial-ly"],
+    ["generally","generaly","'generally': double 'l' — gen-er-al-ly"],
+    ["actually","actualy","'actually': double 'l' — ac-tu-al-ly"],
+    ["probably","probaly","'probably': prob-ab-ly"],
+    ["possible","posible","'possible': double 's' — pos-si-ble"],
+    ["available","availible","'available': '-able' not '-ible'"],
+    ["responsible","responsable","'responsible': '-ible' not '-able'"],
+    ["development","developement","'development': develop + ment, no extra 'e'"],
+    ["opportunity","oportunity","'opportunity': double 'p' — op-por-tu-ni-ty"],
+    ["community","comunity","'community': double 'm' — com-mu-ni-ty"],
+    ["technology","tecnology","'technology': tech from Greek — tech-nol-o-gy"],
+    ["communication","comunication","'communication': double 'm'"],
+    ["traditional","tradional","'traditional': tradition + al"],
+    ["happened","happend","'happened': '-ened' ending, not '-end'"],
+    ["followed","folowed","'followed': double 'l'"],
+    ["increased","increaced","'increased': '-sed' ending from 'increase'"],
+    ["through","throgh","'through': silent 'ugh' — thr-ough"],
+    ["although","althogh","'although': contains 'though'"],
+    ["information","infomation","'information': in-for-ma-tion"],
+    ["understanding","understaning","'understanding': 'stand' inside"],
+    ["management","managment","'management': manage + ment"],
+  ];
+  for(var i=0;i<SP.length&&errs.filter(function(e){return e.type==="spelling";}).length<2;i++){
+    var s=SP[i];
+    if(!sub(s[0],s[1],"spelling",s[2])){
+      sub(s[0][0].toUpperCase()+s[0].slice(1),s[1][0].toUpperCase()+s[1].slice(1),"spelling",s[2]);
+    }
+  }
+  // GRAMMAR (need 1)
+  var GR=[
+    ["interested in","interested on","'interested in': the correct preposition is 'in'"],
+    ["depend on","depend in","'depend on': 'depend' collocates with 'on'"],
+    ["consists of","consists from","'consists of': use 'of' after 'consists'"],
+    ["responsible for","responsible of","'responsible for': use 'for' after 'responsible'"],
+    ["in the","on the","'in the': use 'in' for enclosed locations"],
+    ["on the","in the","'on the': use 'on' for surfaces"],
+    ["in","at","'in': use 'in' for enclosed spaces, not 'at'"],
+    ["at","in","'at': use 'at' for specific points, not 'in'"],
+    ["on","in","'on': use 'on' for surfaces, not 'in'"],
+    ["for","to","'for': use 'for' here, not 'to'"],
+    ["of","from","'of': use 'of' here, not 'from'"],
+    ["the","a","'the': definite article needed — this item is already known"],
+    ["a","the","'a': indefinite article needed for first mention"],
+    ["an","a","'an': use 'an' before vowel sounds"],
+  ];
+  for(var j=0;j<GR.length&&errs.filter(function(e){return e.type==="grammar";}).length<1;j++){
+    sub(GR[j][0],GR[j][1],"grammar",GR[j][2]);
+  }
+  // VOCABULARY (need 1)
+  var VO=[
+    ["large","heavy","'large': describes size/extent, not weight"],
+    ["quickly","hardly","'quickly': means rapidly; 'hardly' means barely"],
+    ["difficult","impossible","'difficult': means hard; 'impossible' means cannot be done"],
+    ["common","normal","'common': means widespread/frequent, not merely typical"],
+    ["said","told","'said': use 'said' without an indirect object"],
+    ["make","do","'make': for creating; 'do' for general activities"],
+    ["increase","raise","'increase': intransitive — use 'increase', not 'raise'"],
+    ["cause","create","'cause': for bringing about effects, not for creation"],
+    ["allow","enable","'allow': to permit; 'enable': to make possible"],
+    ["need","want","'need': necessity; 'want': desire"],
+    ["important","necessary","'important': significant, not required"],
+    ["show","prove","'show': to demonstrate; 'prove': requires formal evidence"],
+    ["problem","challenge","'problem': more negative connotation here"],
+    ["understand","know","'understand': deep comprehension; 'know': to have a fact"],
+    ["describe","explain","'describe': give characteristics; 'explain': give reasons"],
+    ["small","thin","'small': overall size; 'thin': only one dimension"],
+    ["fast","tall","'fast': speed, not height"],
+    ["new","young","'new': recently created; 'young': recent in age"],
+    ["big","old","'big': size, not age"],
+  ];
+  for(var k=0;k<VO.length&&errs.filter(function(e){return e.type==="vocabulary";}).length<1;k++){
+    sub(VO[k][0],VO[k][1],"vocabulary",VO[k][2]);
+  }
+  // TENSE (need 1)
+  var TE=[
+    ["was","is","'was': past tense required here; 'is' is present"],
+    ["were","are","'were': past tense required; 'are' is present"],
+    ["had","has","'had': past form required; 'has' is present"],
+    ["went","goes","'went': past tense of 'go'; 'goes' is present"],
+    ["said","says","'said': past tense required; 'says' is present"],
+    ["came","comes","'came': past of 'come'; 'comes' is present"],
+    ["took","takes","'took': past of 'take'; 'takes' is present"],
+    ["made","makes","'made': past of 'make'; 'makes' is present"],
+    ["found","finds","'found': past of 'find'; 'finds' is present"],
+    ["gave","gives","'gave': past of 'give'; 'gives' is present"],
+    ["began","begins","'began': past of 'begin'; 'begins' is present"],
+    ["became","becomes","'became': past of 'become'; 'becomes' is present"],
+    ["helped","helps","'helped': past tense required; 'helps' is present"],
+    ["showed","shows","'showed': past tense required; 'shows' is present"],
+    ["started","starts","'started': past tense required; 'starts' is present"],
+    ["continued","continues","'continued': past tense required; 'continues' is present"],
+    ["developed","develops","'developed': past tense required; 'develops' is present"],
+    ["created","creates","'created': past tense required; 'creates' is present"],
+    ["allowed","allows","'allowed': past tense required; 'allows' is present"],
+    ["caused","causes","'caused': past tense required; 'causes' is present"],
+    ["changed","changes","'changed': past tense required; 'changes' is present"],
+    ["is","was","'is': present tense required; 'was' is past"],
+    ["are","were","'are': present tense required; 'were' is past"],
+    ["has","had","'has': present tense required; 'had' is past"],
+  ];
+  for(var t=0;t<TE.length&&errs.filter(function(e){return e.type==="tense";}).length<1;t++){
+    if(!sub(TE[t][0],TE[t][1],"tense",TE[t][2])){
+      sub(TE[t][0][0].toUpperCase()+TE[t][0].slice(1),TE[t][1][0].toUpperCase()+TE[t][1].slice(1),"tense",TE[t][2]);
+    }
+  }
+  // FALLBACK: letter-transpose any long lowercase word
+  if(errs.filter(function(e){return e.type==="spelling";}).length<2){
+    var ww=(passage.match(/\b[a-z]{7,}\b/g)||[]);
+    for(var fi=0;fi<ww.length&&errs.filter(function(e){return e.type==="spelling";}).length<2;fi++){
+      var fw=ww[fi];
+      if(used.has(fw))continue;
+      var mid=Math.floor(fw.length/2);
+      var fb=fw.slice(0,mid-1)+fw[mid]+fw[mid-1]+fw.slice(mid+1);
+      if(fb!==fw)sub(fw,fb,"spelling","Spelling: letters transposed — look carefully at the correct order");
+    }
+  }
+  return{passage:r,errors:errs};
 }
 
 // ── pure helpers ─────────────────────────────────────────────
@@ -4468,15 +4627,16 @@ export default function App(){
                   <div style={{fontSize:13,fontWeight:700,color:"#f87171",marginBottom:2}}>🔍 Error Hunt</div>
                   <div style={{fontSize:11,color:"#9ca3af"}}>Find 5 deliberate errors hidden in the passage. Can you spot them all?</div>
                 </div>
-                <button onClick={async function(){
+                <button onClick={function(){
                   setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcError("");setEcLoading(true);setStage("errorcorrect");
-                  try{
-                    var r=await fetch("/.netlify/functions/errorcorrect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level})});
-                    var d=await r.json();
-                    if(d.error)throw new Error(d.error);
-                    setEcData(d);
-                  }catch(e){setEcError(e.message||"Failed — try again.");setStage("result");}
-                  setEcLoading(false);
+                  setTimeout(function(){
+                    try{
+                      var d=injectErrors(passage,level);
+                      if(!d.errors||d.errors.length<3)throw new Error("Not enough errors could be injected. Try another passage.");
+                      setEcData(d);
+                    }catch(e){setEcError(e.message||"Failed — try again.");setStage("result");}
+                    setEcLoading(false);
+                  },0);
                 }} style={{...mkBtn("#ef4444","#fff0f0"),padding:"8px 16px",fontSize:12,flexShrink:0}}>Start →</button>
               </div>
             </div>
@@ -6165,15 +6325,15 @@ export default function App(){
                       disabled={ecSelected.size===0}
                       style={{...mkBtn(ecSelected.size===0?"#374151":"#ef4444","#fff0f0"),flex:1,fontSize:13,padding:"11px 0"}}
                     >Check Answers ({ecSelected.size}/5)</button>}
-                    {ecRevealed&&<button onClick={async function(){
+                    {ecRevealed&&<button onClick={function(){
                       setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcError("");setEcLoading(true);
-                      try{
-                        var r=await fetch("/.netlify/functions/errorcorrect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage,topic,level})});
-                        var d=await r.json();
-                        if(d.error)throw new Error(d.error);
-                        setEcData(d);
-                      }catch(e){setEcError(e.message||"Failed — try again.");}
-                      setEcLoading(false);
+                      setTimeout(function(){
+                        try{
+                          var d=injectErrors(passage,level);
+                          setEcData(d);
+                        }catch(e){setEcError(e.message||"Failed — try again.");}
+                        setEcLoading(false);
+                      },0);
                     }} style={{...mkBtn("#ef4444","#fff0f0"),flex:1,fontSize:13}}>Try Again</button>}
                     <button onClick={function(){setStage("result");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:13}}>Back to Results</button>
                   </div>
