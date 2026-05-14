@@ -1205,6 +1205,7 @@ export default function App(){
   var [assignLevel,setAssignLevel]=useState("B1");
   var [assignLoading,setAssignLoading]=useState(false);
   var [assignMsg,setAssignMsg]=useState("");
+  var [assignCustomText,setAssignCustomText]=useState("");
   var [announcementText,setAnnouncementText]=useState("");
   var [announcementMsg,setAnnouncementMsg]=useState("");
   var [printStudent,setPrintStudent]=useState(null);
@@ -1409,6 +1410,7 @@ export default function App(){
     setAssignMsg("");
     if(assignType==="library"&&!assignStoryId){setAssignMsg("Select a story first.");return;}
     if(assignType==="ai_topic"&&!assignTopic.trim()){setAssignMsg("Enter a topic first.");return;}
+    if(assignType==="custom_text"&&assignCustomText.trim().length<30){setAssignMsg("Paste at least 30 characters of text.");return;}
     setAssignLoading(true);
     var id="asgn-"+Date.now();
     var base={id:id,classId:currentClass.id,teacherName:currentUser.name,type:assignType,dueDate:assignDue||null,createdAt:new Date().toISOString(),completions:{}};
@@ -1416,6 +1418,13 @@ export default function App(){
     if(assignType==="library"){
       var story=STORY_LIBRARY.find(function(s){return s.id===assignStoryId;});
       asgn=Object.assign({},base,{storyId:assignStoryId,topic:story?story.title:"Library Story",level:story?story.level:assignLevel,passage:null,questions:null});
+    } else if(assignType==="custom_text"){
+      try{
+        var rc=await fetch("/.netlify/functions/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:assignCustomText.trim(),level:assignLevel,types:["mcq","gap_word","qa","tfnm"]})});
+        var dc=await rc.json();
+        if(!rc.ok||dc.error)throw new Error(dc.error||"Generation failed");
+        asgn=Object.assign({},base,{storyId:null,topic:dc.topic||"Custom Passage",level:assignLevel,passage:assignCustomText.trim(),questions:dc.questions});
+      }catch(e){setAssignMsg("Quiz generation failed: "+e.message);setAssignLoading(false);return;}
     } else {
       try{
         var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:assignLevel,topic:assignTopic.trim(),types:["mcq","gap_word","qa","tfnm"]})});
@@ -1426,7 +1435,7 @@ export default function App(){
     }
     var updated=assignments.concat([asgn]);
     setAssignments(updated);
-    setAssignStoryId("");setAssignTopic("");setAssignDue("");
+    setAssignStoryId("");setAssignTopic("");setAssignDue("");setAssignCustomText("");
     setAssignMsg("✓ Assignment created!");
     setAssignLoading(false);
     // update currentClass ref so UI refreshes
@@ -2490,8 +2499,8 @@ export default function App(){
                   <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>Create your first assignment</h2>
                   <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 16px",lineHeight:1.5}}>Pick a story from the library or let AI generate one on any topic.</p>
                   <div style={{display:"flex",gap:6,marginBottom:12}}>
-                    {[["library","📚 Library Story"],["ai_topic","🤖 AI Topic"]].map(function(opt){return(
-                      <button key={opt[0]} onClick={function(){setAssignType(opt[0]);}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"2px solid "+(assignType===opt[0]?"#6366f1":"rgba(255,255,255,0.1)"),background:assignType===opt[0]?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)",color:assignType===opt[0]?"#a78bfa":"#9ca3af",fontFamily:"inherit",fontWeight:700,fontSize:12,cursor:"pointer"}}>{opt[1]}</button>
+                    {[["library","📚 Library"],["ai_topic","🤖 AI Topic"],["custom_text","✍️ Custom Text"]].map(function(opt){return(
+                      <button key={opt[0]} onClick={function(){setAssignType(opt[0]);}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"2px solid "+(assignType===opt[0]?"#6366f1":"rgba(255,255,255,0.1)"),background:assignType===opt[0]?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)",color:assignType===opt[0]?"#a78bfa":"#9ca3af",fontFamily:"inherit",fontWeight:700,fontSize:11,cursor:"pointer"}}>{opt[1]}</button>
                     );})}
                   </div>
                   {assignType==="library"?(
@@ -2501,6 +2510,16 @@ export default function App(){
                         <optgroup key={lv} label={lv}>{STORY_LIBRARY.filter(function(s){return s.level===lv;}).map(function(s){return(<option key={s.id} value={s.id}>{s.title} · {SUBJECT_LABELS[getSubjectKey(s)]}</option>);})}</optgroup>
                       );})}
                     </select>
+                  ):assignType==="custom_text"?(
+                    <div>
+                      <textarea value={assignCustomText} onChange={function(e){setAssignCustomText(e.target.value.slice(0,3000));}} placeholder="Paste your passage here… (30–3000 characters)" style={{...INP,width:"100%",boxSizing:"border-box",minHeight:90,resize:"vertical",marginBottom:4,fontFamily:"inherit",fontSize:12}}/>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <span style={{fontSize:10,color:"#6b7280"}}>{assignCustomText.length}/3000</span>
+                        <select value={assignLevel} onChange={function(e){setAssignLevel(e.target.value);}} style={{...INP,margin:0,width:72}}>
+                          {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(<option key={lv} value={lv}>{lv}</option>);})}
+                        </select>
+                      </div>
+                    </div>
                   ):(
                     <div>
                       <input value={assignTopic} onChange={function(e){setAssignTopic(e.target.value);}} placeholder="Topic (e.g. Climate Change)" style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:8}}/>
@@ -2813,8 +2832,8 @@ export default function App(){
               <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"20px 0 10px"}}>ASSIGNMENTS</p>
               <div style={{...CARD,marginBottom:14}}>
                 <div style={{display:"flex",gap:6,marginBottom:12}}>
-                  {[{v:"library",label:"📚 Library Story"},{v:"ai_topic",label:"🤖 AI Topic"}].map(function(t){return(
-                    <button key={t.v} onClick={function(){setAssignType(t.v);setAssignMsg("");}} style={{flex:1,padding:"7px 0",borderRadius:10,border:"2px solid "+(assignType===t.v?"#f59e0b":"rgba(255,255,255,0.1)"),background:assignType===t.v?"rgba(245,158,11,0.15)":"rgba(255,255,255,0.03)",color:assignType===t.v?"#fcd34d":"#6b7280",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>
+                  {[{v:"library",label:"📚 Library"},{v:"ai_topic",label:"🤖 AI Topic"},{v:"custom_text",label:"✍️ Custom Text"}].map(function(t){return(
+                    <button key={t.v} onClick={function(){setAssignType(t.v);setAssignMsg("");}} style={{flex:1,padding:"7px 0",borderRadius:10,border:"2px solid "+(assignType===t.v?"#f59e0b":"rgba(255,255,255,0.1)"),background:assignType===t.v?"rgba(245,158,11,0.15)":"rgba(255,255,255,0.03)",color:assignType===t.v?"#fcd34d":"#6b7280",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>
                   );})}
                 </div>
 
@@ -2829,6 +2848,16 @@ export default function App(){
                       </optgroup>
                     );})}
                   </select>
+                ):assignType==="custom_text"?(
+                  <div style={{marginBottom:8}}>
+                    <textarea value={assignCustomText} onChange={function(e){setAssignCustomText(e.target.value.slice(0,3000));}} placeholder="Paste your passage here… (30–3000 characters). An AI quiz will be generated from your text." style={{...INP,width:"100%",boxSizing:"border-box",minHeight:90,resize:"vertical",marginBottom:4,fontFamily:"inherit",fontSize:12}}/>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:10,color:"#6b7280"}}>{assignCustomText.length}/3000</span>
+                      <select value={assignLevel} onChange={function(e){setAssignLevel(e.target.value);}} style={{...INP,margin:0,width:72}}>
+                        {LEVELS.map(function(l){return<option key={l.key} value={l.key}>{l.key}</option>;})}
+                      </select>
+                    </div>
+                  </div>
                 ):(
                   <div style={{display:"flex",gap:8,marginBottom:8}}>
                     <input value={assignTopic} onChange={function(e){setAssignTopic(e.target.value);}} placeholder="Topic (e.g. Climate Change)" style={{...INP,flex:1,margin:0}}/>
@@ -2840,7 +2869,7 @@ export default function App(){
 
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
                   <input type="date" value={assignDue} onChange={function(e){setAssignDue(e.target.value);}} style={{...INP,margin:0,flex:1,colorScheme:"dark"}} title="Due date (optional)"/>
-                  <button onClick={doCreateAssignment} disabled={assignLoading||(assignType==="library"&&!assignStoryId)||(assignType==="ai_topic"&&!assignTopic.trim())} style={{...mkBtn(assignLoading?"#374151":"#f59e0b","#0d0d1a"),padding:"10px 14px",fontSize:12,whiteSpace:"nowrap"}}>{assignLoading?"Generating…":"+ Assign"}</button>
+                  <button onClick={doCreateAssignment} disabled={assignLoading||(assignType==="library"&&!assignStoryId)||(assignType==="ai_topic"&&!assignTopic.trim())||(assignType==="custom_text"&&assignCustomText.trim().length<30)} style={{...mkBtn(assignLoading?"#374151":"#f59e0b","#0d0d1a"),padding:"10px 14px",fontSize:12,whiteSpace:"nowrap"}}>{assignLoading?"Generating…":"+ Assign"}</button>
                 </div>
                 {assignMsg&&<p style={{fontSize:12,color:assignMsg.startsWith("✓")?"#34d399":"#f87171",margin:"8px 0 0"}}>{assignMsg}</p>}
               </div>
@@ -2856,7 +2885,7 @@ export default function App(){
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                       <div style={{flex:1,paddingRight:8}}>
                         <div style={{fontSize:13,fontWeight:800,color:"#f3f4f6"}}>{asgn.topic}</div>
-                        <div style={{fontSize:11,color:"#6b7280"}}>{asgn.level} · {asgn.type==="ai_topic"?"🤖 AI generated":"📚 Library"}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
+                        <div style={{fontSize:11,color:"#6b7280"}}>{asgn.level} · {asgn.type==="ai_topic"?"🤖 AI generated":asgn.type==="custom_text"?"✍️ Custom text":"📚 Library"}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
                       </div>
                       <div style={{textAlign:"right",flexShrink:0}}>
                         <div style={{fontSize:13,fontWeight:900,color:pct===100?"#34d399":"#f59e0b"}}>{done}/{total}</div>
