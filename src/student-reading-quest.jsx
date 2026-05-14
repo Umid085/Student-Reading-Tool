@@ -407,6 +407,21 @@ var STORY_LIBRARY=[
   {id:"c2_10",level:"C2",title:"Tragedy and Catharsis",topic:"Literature",passage:"Aristotle defined tragedy as an imitation of a serious, complete action of sufficient magnitude, effecting through pity and fear the catharsis of such emotions. The notion of catharsis — typically translated as purging or purification — has generated centuries of scholarly debate. Some interpret it medically: tragedy evacuates pent-up emotions, restoring psychological equilibrium. Others read it cognitively: through engaging with fictional suffering, audiences refine their emotional intelligence and moral understanding. Nietzsche challenged the Aristotelian account entirely, arguing that tragedy's power lies not in purging suffering but in affirming it — confronting the Dionysian chaos of existence without retreating into comforting illusions. Contemporary theorists draw on both traditions to analyse how narrative art mediates human responses to mortality and injustice.",questions:[{type:"mcq",q:"What is the medical interpretation of catharsis?",options:["Tragedy teaches moral lessons","Tragedy evacuates pent-up emotions, restoring psychological equilibrium","Tragedy reinforces social norms","Tragedy provides intellectual pleasure only"],answer:1,explanation:"'Some interpret it medically: tragedy evacuates pent-up emotions, restoring psychological equilibrium.'"},{type:"mcq",q:"How does Nietzsche's view of tragedy differ from Aristotle's?",options:["He agreed catharsis purges suffering","He argued tragedy's power lies in affirming rather than purging suffering","He claimed tragedy was morally harmful","He rejected all emotional responses to art"],answer:1,explanation:"'Nietzsche...arguing that tragedy's power lies not in purging suffering but in affirming it.'"},{type:"qa",q:"What do contemporary theorists examine, drawing on both Aristotelian and Nietzschean traditions?",keywords:["narrative","mediates","mortality","injustice","responses"],explanation:"'Contemporary theorists...analyse how narrative art mediates human responses to mortality and injustice.'"}]},
 ];
 
+var SUBJECT_MAP={
+  "Family":"life","Shopping":"life","Food":"life","Daily Life":"life","School":"life",
+  "Education":"life","Home":"life","Health":"life","Recreation":"life","Sport":"life",
+  "Animals":"life","Celebrations":"life","Interests":"life","Community":"life",
+  "Science":"science","Environment":"science","Nature":"science","Biology":"science",
+  "Climate":"science","Medicine":"science","Geography":"science",
+  "Technology":"tech","Economics":"tech","Society":"tech","Ethics":"tech",
+  "Psychology":"mind","Philosophy":"mind","Cognitive Science":"mind","Linguistics":"mind",
+  "Culture":"humanities","History":"humanities","Literature":"humanities"
+};
+var SUBJECT_LABELS={life:"🏠 Life",science:"🔬 Science",tech:"💻 Tech",mind:"🧠 Mind",humanities:"🌍 Humanities"};
+var SUBJECT_COLORS={life:"#34d399",science:"#38bdf8",tech:"#a78bfa",mind:"#fb923c",humanities:"#f472b6"};
+var SKILL_LEVEL={A1:"Literal",A2:"Literal",B1:"Inferential",B2:"Inferential",C1:"Analytical",C2:"Analytical"};
+function getSubjectKey(story){return SUBJECT_MAP[story.topic]||"life";}
+
 function getUnlockedStories(games){
   var played={};
   games.forEach(function(g){played[g.level]=(played[g.level]||0)+1;});
@@ -1197,6 +1212,7 @@ export default function App(){
   var [activeAssignmentId,setActiveAssignmentId]=useState(null);
   var [onboardStep,setOnboardStep]=useState(null);
   var [onboardClassCode,setOnboardClassCode]=useState("");
+  var [libSubjectFilter,setLibSubjectFilter]=useState("");
 
   useEffect(function(){
     var saved=localStorage.getItem("rq-session");
@@ -2453,7 +2469,7 @@ export default function App(){
                     <select value={assignStoryId} onChange={function(e){setAssignStoryId(e.target.value);}} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:10}}>
                       <option value="">— Select a story —</option>
                       {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(
-                        <optgroup key={lv} label={lv}>{STORY_LIBRARY.filter(function(s){return s.level===lv;}).map(function(s){return(<option key={s.id} value={s.id}>{s.title}</option>);})}</optgroup>
+                        <optgroup key={lv} label={lv}>{STORY_LIBRARY.filter(function(s){return s.level===lv;}).map(function(s){return(<option key={s.id} value={s.id}>{s.title} · {SUBJECT_LABELS[getSubjectKey(s)]}</option>);})}</optgroup>
                       );})}
                     </select>
                   ):(
@@ -2779,7 +2795,7 @@ export default function App(){
                     {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(
                       <optgroup key={lv} label={lv+" — "+LEVELS.find(function(l){return l.key===lv;}).desc}>
                         {STORY_LIBRARY.filter(function(s){return s.level===lv;}).map(function(s){return(
-                          <option key={s.id} value={s.id}>{s.title} ({s.topic})</option>
+                          <option key={s.id} value={s.id}>{s.title} · {SUBJECT_LABELS[getSubjectKey(s)]} · {SKILL_LEVEL[s.level]}</option>
                         );})}
                       </optgroup>
                     );})}
@@ -4828,7 +4844,15 @@ export default function App(){
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>Story Library</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
               </div>
-              <p style={{color:"#6b7280",fontSize:12,marginBottom:12,lineHeight:1.5}}>Pre-written stories — instant play. Unlock more by completing quizzes.</p>
+              <p style={{color:"#6b7280",fontSize:12,marginBottom:10,lineHeight:1.5}}>Pre-written stories — instant play. Unlock more by completing quizzes.</p>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+                {["","life","science","tech","mind","humanities"].map(function(key){
+                  var label=key?SUBJECT_LABELS[key]:"All Topics";
+                  var col=key?SUBJECT_COLORS[key]:"#9ca3af";
+                  var active=libSubjectFilter===key;
+                  return(<button key={key} onClick={function(){setLibSubjectFilter(key);}} style={{padding:"5px 12px",borderRadius:99,border:"1.5px solid "+(active?col:"rgba(255,255,255,0.1)"),background:active?col+"22":"transparent",color:active?col:"#6b7280",fontFamily:"inherit",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s"}}>{label}</button>);
+                })}
+              </div>
               {favs.length>0&&(
                 <div style={{marginBottom:16}}>
                   <p style={{fontSize:11,fontWeight:700,color:"#f472b6",letterSpacing:0.5,margin:"0 0 8px"}}>❤️ MY FAVORITES</p>
@@ -4852,7 +4876,8 @@ export default function App(){
               )}
               {levelOrder.map(function(lk){
                 var lObj=getLv(lk);
-                var stories=STORY_LIBRARY.filter(function(s){return s.level===lk;});
+                var stories=STORY_LIBRARY.filter(function(s){return s.level===lk&&(libSubjectFilter===""||getSubjectKey(s)===libSubjectFilter);});
+                if(stories.length===0)return null;
                 return(
                   <div key={lk} style={{marginBottom:20}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -4864,7 +4889,7 @@ export default function App(){
                       {stories.map(function(story){
                         var isUnlocked=!!unlockedMap[story.id];
                         var myClass2=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
-                        var isAssigned=myClass2?assignments.some(function(a){return a.classId===myClass2.id&&a.storyId===story.id&&!a.completions[currentUser.name];}):false;
+                        var isAssigned=myClass2?assignments.some(function(a){return a.classId===myClass2.id&&a.storyId===story.id&&(!a.completions||!a.completions[currentUser.name]);}):false;
                         return(
                           <div key={story.id} className="rq-raised" style={{...CARD,padding:0,display:"flex",alignItems:"stretch",gap:0,opacity:isUnlocked?1:0.45,border:"1px solid "+(isAssigned?"rgba(245,158,11,0.6)":isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",overflow:"hidden"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
                             <div style={{width:120,height:80,flexShrink:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
@@ -4873,8 +4898,12 @@ export default function App(){
                             <div style={{flex:1,minWidth:0,padding:12,display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
                               <div>
                                 <div style={{fontSize:13,fontWeight:700,color:isUnlocked?"#f3f4f6":"#6b7280",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
-                                <div style={{fontSize:11,color:"#6b7280"}}>{story.topic} · {story.questions.length} Qs</div>
-                                {isAssigned&&<div style={{marginTop:4,display:"inline-block",fontSize:10,fontWeight:700,color:"#fcd34d",background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.4)",borderRadius:6,padding:"1px 7px"}}>📋 Assigned</div>}
+                                <div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>{story.topic} · {story.questions.length} Qs</div>
+                                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                                  <span style={{fontSize:9,fontWeight:700,color:SUBJECT_COLORS[getSubjectKey(story)],background:SUBJECT_COLORS[getSubjectKey(story)]+"22",borderRadius:5,padding:"1px 6px"}}>{SUBJECT_LABELS[getSubjectKey(story)]}</span>
+                                  <span style={{fontSize:9,fontWeight:700,color:"#818cf8",background:"rgba(99,102,241,0.15)",borderRadius:5,padding:"1px 6px"}}>{SKILL_LEVEL[lk]}</span>
+                                  {isAssigned&&<span style={{fontSize:9,fontWeight:700,color:"#fcd34d",background:"rgba(245,158,11,0.15)",borderRadius:5,padding:"1px 6px"}}>📋 Assigned</span>}
+                                </div>
                               </div>
                               {!isUnlocked&&<div style={{fontSize:10,color:"#4b5563"}}>Unlock by completing {lk} quizzes</div>}
                             </div>
