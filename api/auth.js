@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const secret = process.env.SESSION_SECRET || process.env.FIREBASE_DB_SECRET || "";
+  const secret = process.env.SESSION_SECRET || process.env.SESSIONS_SECRET || process.env.FIREBASE_DB_SECRET || "";
   if (!secret) return res.status(503).json({ error: "Auth not configured" });
 
   const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
