@@ -3,27 +3,31 @@ import { createHash } from "crypto";
 const MAX_ATTEMPTS = 10;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
-export async function checkRateLimit(DB, ip) {
+export async function checkRateLimit(DB, ip, opts) {
   if (process.env.RATE_LIMIT_DISABLED) return { limited: false };
   if (!DB || !ip) return { limited: false };
 
+  const maxAttempts = (opts && opts.max) || MAX_ATTEMPTS;
+  const bucket = (opts && opts.bucket) ? String(opts.bucket).replace(/[^a-z0-9_-]/gi, "") : "";
+
   const ipHash = createHash("sha256").update(ip).digest("hex").slice(0, 12);
+  const path = bucket ? `rl-${bucket}/${ipHash}` : `rl/${ipHash}`;
   const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
 
   try {
-    const r = await fetch(`${DB}/rl/${ipHash}.json${fbAuth}`);
+    const r = await fetch(`${DB}/${path}.json${fbAuth}`);
     const data = await r.json();
     const now = Date.now();
     const inWindow = data && typeof data.count === "number" && data.resetAt > now;
     const count = inWindow ? data.count : 0;
     const resetAt = inWindow ? data.resetAt : now + WINDOW_MS;
 
-    if (count >= MAX_ATTEMPTS) {
+    if (count >= maxAttempts) {
       return { limited: true, retryAfter: Math.ceil((resetAt - now) / 1000) };
     }
 
     // Increment counter — fire-and-forget so auth latency is unaffected
-    fetch(`${DB}/rl/${ipHash}.json${fbAuth}`, {
+    fetch(`${DB}/${path}.json${fbAuth}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ count: count + 1, resetAt }),

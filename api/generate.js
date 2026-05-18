@@ -1,6 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { checkRateLimit } from "./_rateLimit.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const AI_RATE_LIMIT_MAX = 60; // requests per 15-minute window
+const USER_MSG_MAX_LEN = 4000;
+const MAX_TOKENS_CAP = 2048;
 
 const TYPE_EXAMPLES = {
   mcq:          '{"type":"mcq","q":"Question?","options":["A","B","C","D"],"answer":0,"explanation":"Why A is correct."}',
@@ -37,13 +42,25 @@ export default async function handler(req, res) {
 
   const body = req.body || {};
 
+  const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+  const ip = ((req.headers["x-forwarded-for"] || req.headers["client-ip"] || "").split(",")[0]).trim();
+  const rl = await checkRateLimit(DB, ip, { max: AI_RATE_LIMIT_MAX, bucket: "ai" });
+  if (rl.limited) {
+    res.setHeader("Retry-After", String(rl.retryAfter));
+    return res.status(429).json({ error: "Too many AI requests. Try again later." });
+  }
+
   // ── Mode 1: generic proxy — {messages:[{role,content}]} → {content:[{type,text}]} ──
   if (body.messages && Array.isArray(body.messages)) {
-    const userMessage = body.messages[body.messages.length - 1]?.content || "";
+    let userMessage = body.messages[body.messages.length - 1]?.content || "";
     if (!userMessage) {
       return res.status(400).json({ error: "No message provided" });
     }
-    const maxTokens = body.max_tokens || 4096;
+    if (typeof userMessage === "string" && userMessage.length > USER_MSG_MAX_LEN) {
+      userMessage = userMessage.slice(0, USER_MSG_MAX_LEN);
+    }
+    const requestedTokens = Number(body.max_tokens) || 4096;
+    const maxTokens = Math.min(MAX_TOKENS_CAP, Math.max(1, requestedTokens));
     try {
       const msg = await client.messages.create({
         model: "claude-sonnet-4-6",
