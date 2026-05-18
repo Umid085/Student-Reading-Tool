@@ -2148,11 +2148,13 @@ export default function App(){
         var AI_TYPES=["mcq","gap_word","gap_sentence","qa","tfnm","ynng"];
         var types=selectedTypes.filter(function(t){return AI_TYPES.indexOf(t)!==-1;});
         if(!types.length)types=["mcq","gap_word","qa","tfnm"];
-        var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:level,topic:customTopic.trim(),types:types,language:passageLang})});
+        var safeTopic=customTopic.trim().replace(/[\r\n"]+/g," ").replace(/\s+/g," ").slice(0,120);
+        if(!safeTopic){setError("Topic is empty after sanitising.");setGenLoading(false);return;}
+        var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:level,topic:safeTopic,types:types,language:passageLang})});
         var d=await r.json();
         if(!r.ok||d.error)throw new Error(d.error||"Generation failed");
         if(!d.passage||!d.questions)throw new Error("Invalid response from AI");
-        setPassage(d.passage);setTopic(customTopic.trim());setQuestions(d.questions);setCurrentStoryId(null);
+        setPassage(d.passage);setTopic(safeTopic);setQuestions(d.questions);setCurrentStoryId(null);
         var mq=null;for(var i=0;i<d.questions.length;i++){if(d.questions[i].type==="matching"){mq=d.questions[i];break;}}
         setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
         setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
