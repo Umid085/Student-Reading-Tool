@@ -1207,7 +1207,7 @@ function GameChart(props){
   if(!games.length)return<div style={{textAlign:"center",padding:20,color:"#6b7280"}}>No games to chart yet</div>;
 
   var w=320,h=200,pad=40;
-  var maxXp=Math.max.apply(null,games.map(function(g){return g.xp;}));
+  var maxXp=Math.max.apply(null,[1].concat(games.map(function(g){return g.xp;})));
   var scale=function(val,max,size){return(val/max)*(size-pad*2)+pad;};
 
   var points=games.map(function(g,i){
