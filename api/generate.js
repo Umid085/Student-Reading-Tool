@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "ANTHROPIC_API_KEY is not set" });
   }
 
-  const body = req.body;
+  const body = req.body || {};
 
   // ── Mode 1: generic proxy — {messages:[{role,content}]} → {content:[{type,text}]} ──
   if (body.messages && Array.isArray(body.messages)) {
