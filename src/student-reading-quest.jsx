@@ -1009,7 +1009,11 @@ function trimOldGames(users,maxGamesPerUser){
 }
 async function saveUsers(u){
   var trimmed=trimOldGames(u,150);
-  var profiles=trimmed.map(function(usr){return {name:usr.name,games:usr.games,joined:usr.joined};});
+  var profiles=trimmed.map(function(usr){
+    var gamesXp=(usr.games||[]).reduce(function(s,g){return s+(g.xp||0);},0);
+    var totalXp=Math.max(Number(usr.totalXp)||0,gamesXp);
+    return {name:usr.name,games:usr.games,joined:usr.joined,totalXp:totalXp};
+  });
   try{
     localStorage.setItem(USERS_KEY,JSON.stringify(profiles));
   }catch(e){}
@@ -2287,7 +2291,9 @@ export default function App(){
       }
       var wpm=getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs);
       var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
-      var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined};
+      var priorXp=Math.max(Number(currentUser.totalXp)||0,(currentUser.games||[]).reduce(function(s,g){return s+(g.xp||0);},0));
+      var newTotalXp=priorXp+finalXp;
+      var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined,totalXp:newTotalXp};
       var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
       try{await saveUsers(newUsers);}catch(e){console.warn("saveUsers failed:",e);}
       setAllUsers(newUsers);setCurrentUser(updatedUser);
@@ -5429,7 +5435,8 @@ export default function App(){
                   var isFriend=myData.friends.indexOf(u.name)!==-1;
                   var requested=(getSocial(social,u.name).requests||[]).indexOf(currentUser.name)!==-1;
                   var uData=getSocial(social,u.name);
-                  var uTotalXp=u.games?u.games.reduce(function(s,g){return s+g.xp;},0):0;
+                  var uGamesXp=u.games?u.games.reduce(function(s,g){return s+g.xp;},0):0;
+                  var uTotalXp=Math.max(Number(u&&u.totalXp)||0,uGamesXp);
                   var uLevel=getUserLevel(uTotalXp);
                   return(<div key={u.name} className="rq-raised" style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
                     <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#fff",flexShrink:0}}>{u.name[0].toUpperCase()}</div>
@@ -5474,7 +5481,8 @@ export default function App(){
                   var fStreak=calcStreak(fuGames);
                   var fData=getSocial(social,fname);
                   fData=fData||{friends:[],requests:[],likes:0,challenges:[]};
-                  var fTotalXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
+                  var fGamesXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
+                  var fTotalXp=Math.max(Number(fu&&fu.totalXp)||0,fGamesXp);
                   var fLevel=getUserLevel(fTotalXp);
                   return(<div key={fname} style={{...CARD,marginBottom:8,padding:14}}>
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
@@ -5552,12 +5560,14 @@ export default function App(){
           var fuGames=fu&&fu.games?fu.games:[];
           var fStreak=calcStreak(fuGames);
           var fBest=getBestLevel(fuGames);
-          var totalXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
+          var fGamesXp=fuGames.reduce(function(s,g){return s+g.xp;},0);
+          var totalXp=Math.max(Number(fu&&fu.totalXp)||0,fGamesXp);
           var avgPct=fuGames.length?Math.round(fuGames.reduce(function(s,g){return s+(g.pct||0);},0)/fuGames.length):0;
           var fLvlInfo=getLevelProgress(totalXp);
           // comparison with current user
           var curGames=currentUser&&currentUser.games?currentUser.games:[];
-          var myTotalXp=curGames.reduce(function(s,g){return s+g.xp;},0);
+          var myGamesXp=curGames.reduce(function(s,g){return s+g.xp;},0);
+          var myTotalXp=Math.max(Number(currentUser&&currentUser.totalXp)||0,myGamesXp);
           var myAvgPct=curGames.length?Math.round(curGames.reduce(function(s,g){return s+g.pct;},0)/curGames.length):0;
           return(<div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
@@ -5655,7 +5665,8 @@ export default function App(){
         {/* ── MY PROFILE ────────────────────────────────────── */}
         {stage==="profile"&&currentUser&&(function(){
           var games=(currentUser&&currentUser.games)?currentUser.games:[];
-          var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
+          var gamesXp=games.reduce(function(s,g){return s+g.xp;},0);
+          var totalXp=Math.max(Number(currentUser&&currentUser.totalXp)||0,gamesXp);
           var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
           var avgTime=games.length?Math.round(games.reduce(function(s,g){return s+g.timeSecs;},0)/games.length):0;
           var lvlInfo=getLevelProgress(totalXp);
@@ -5821,7 +5832,8 @@ export default function App(){
         {stage==="analytics"&&currentUser&&(function(){
           var games=currentUser.games||[];
           var today=new Date().toLocaleDateString();
-          var totalXp=games.reduce(function(s,g){return s+g.xp;},0);
+          var gamesXp=games.reduce(function(s,g){return s+g.xp;},0);
+          var totalXp=Math.max(Number(currentUser&&currentUser.totalXp)||0,gamesXp);
           var totalTimeSecs=games.reduce(function(s,g){return s+g.timeSecs;},0);
           var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
           var lvlInfo=getLevelProgress(totalXp);
