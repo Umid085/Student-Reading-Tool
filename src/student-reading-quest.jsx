@@ -2388,7 +2388,8 @@ export default function App(){
     if(shields<=0||!currentUser)return;
     var yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
     var yDate=yesterday.toLocaleDateString();
-    var newSDs=shieldDates.indexOf(yDate)===-1?shieldDates.concat([yDate]):shieldDates;
+    if(shieldDates.indexOf(yDate)!==-1)return;
+    var newSDs=shieldDates.concat([yDate]);
     var newSh=shields-1;
     setShields(newSh);setShieldDates(newSDs);
     var sKey="rq-streak-data-v1-"+currentUser.name;
