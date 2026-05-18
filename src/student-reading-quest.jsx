@@ -1907,7 +1907,7 @@ export default function App(){
         var avg=Math.round(relevant.reduce(function(s,g){return s+(g.typeStats[t]||0);},0)/relevant.length);
         return avg;
       });
-      var vocabCount=0;try{var vd=JSON.parse(localStorage.getItem(VOCAB_KEY)||"[]");if(Array.isArray(vd))vocabCount=vd.length;}catch(e){}
+      var vocabCount=(allVocab&&Array.isArray(allVocab[sName]))?allVocab[sName].length:0;
       return[sName,bestLv,games.length,avgPct,avgWpm].concat(typeScores).concat([vocabCount,lastDate]);
     });
     var csv=[headers].concat(rows).map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
