@@ -1021,7 +1021,11 @@ async function saveUsers(u){
 }
 async function loadBoards(){try{var v=await apiGet(BOARDS_KEY);if(v)return v;}catch(e){}try{var lv=localStorage.getItem(BOARDS_KEY);return lv?JSON.parse(lv):{};}catch(e2){return {};}}
 async function saveBoards(b){try{localStorage.setItem(BOARDS_KEY,JSON.stringify(b));}catch(e){}try{await apiSet(BOARDS_KEY,b);}catch(e){console.warn("saveBoards failed:",e);}}
-async function loadSocial(){var v=await apiGet(SOCIAL_KEY);return v||{};}
+async function loadSocial(){
+  var v=await apiGet(SOCIAL_KEY)||{};
+  if(v._likes&&!v["!likes"]){v["!likes"]=v._likes;delete v._likes;}
+  return v;
+}
 async function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}try{await apiSet(SOCIAL_KEY,s);}catch(e){console.warn("saveSocial failed:",e);}}
 async function loadVocab(){var v=await apiGet(VOCAB_KEY);return v||{};}
 async function saveVocab(v){await apiSet(VOCAB_KEY,v);}
@@ -1080,18 +1084,19 @@ function doRemoveFriend(social,username,friend){
   return n;
 }
 
+var SOCIAL_LIKES_KEY="!likes";
 function doLikeProfile(social,liker,target){
   var n=JSON.parse(JSON.stringify(social));
-  if(!n._likes)n._likes={};
+  if(!n[SOCIAL_LIKES_KEY])n[SOCIAL_LIKES_KEY]={};
   var key=liker+"->"+target;
-  if(n._likes[key])return{ok:false,social:n,err:"Already liked"};
-  n._likes[key]=true;
+  if(n[SOCIAL_LIKES_KEY][key])return{ok:false,social:n,err:"Already liked"};
+  n[SOCIAL_LIKES_KEY][key]=true;
   if(!n[target])n[target]={friends:[],requests:[],likes:0,challenges:[]};
   n[target].likes=(n[target].likes||0)+1;
   return{ok:true,social:n};
 }
 
-function hasLiked(social,liker,target){return!!(social._likes&&social._likes[liker+"->"+target]);}
+function hasLiked(social,liker,target){return!!(social[SOCIAL_LIKES_KEY]&&social[SOCIAL_LIKES_KEY][liker+"->"+target]);}
 
 function doSendChallenge(social,from,to,level,types,storyId,storyTitle,senderPct){
   var n=JSON.parse(JSON.stringify(social));
