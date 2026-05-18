@@ -1657,7 +1657,7 @@ export default function App(){
   function t(key){return(STRINGS[uiLang]&&STRINGS[uiLang][key])||STRINGS.en[key]||key;}
 
   useEffect(function(){
-    try{var params=new URLSearchParams(window.location.search);var rep=params.get("report");if(rep){var rd=JSON.parse(decodeURIComponent(escape(atob(rep))));setReportData(rd);setStage("report");setAppReady(true);return;}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(decodeURIComponent(escape(atob(pf))));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
+    try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){var rd=JSON.parse(b64dec(rep));setReportData(rd);setStage("report");setAppReady(true);return;}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
