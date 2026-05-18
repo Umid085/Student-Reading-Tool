@@ -2447,6 +2447,17 @@ export default function App(){
   }
 
   function scoreWrittenSummary(text,summary,lvl){
+    var minWordsMap={A1:20,A2:25,B1:35,B2:45,C1:55,C2:70};
+    var minWordsFallback=minWordsMap[lvl]||30;
+    if(!summary||!summary.trim()){
+      return{
+        scores:{content:0,vocabulary:0,grammar:0,structure:0},
+        feedback:{content:"Write a summary first.",vocabulary:"Write a summary first.",grammar:"Write a summary first.",structure:"Try to write at least "+minWordsFallback+" words."},
+        strengths:"",
+        improvements:"Write a summary of the passage to receive feedback.",
+        overall:0
+      };
+    }
     var passageWords=text.toLowerCase().split(/\W+/).filter(Boolean);
     var summaryWords=summary.toLowerCase().split(/\W+/).filter(Boolean);
     var passageSet=new Set(passageWords);
@@ -2457,10 +2468,10 @@ export default function App(){
     var uniqueRatio=new Set(summaryWords).size/Math.max(summaryWords.length,1);
     var vocabScore=Math.min(100,Math.round(uniqueRatio*150));
 
-    var minWords={A1:20,A2:25,B1:35,B2:45,C1:55,C2:70}[lvl]||30;
+    var minWords=minWordsFallback;
     var structureScore=summaryWords.length>=minWords?80:Math.round((summaryWords.length/minWords)*80);
 
-    var grammarScore=(summary[0]===summary[0].toUpperCase()&&/[.!?]$/.test(summary.trim()))?75:55;
+    var grammarScore=(/^[A-Z]/.test(summary)&&/[.!?]$/.test(summary.trim()))?75:55;
 
     var overall=Math.round((contentScore+vocabScore+structureScore+grammarScore)/4);
     return{
