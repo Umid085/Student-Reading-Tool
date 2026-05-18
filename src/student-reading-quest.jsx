@@ -5334,7 +5334,7 @@ export default function App(){
                             <div style={{fontSize:13,fontWeight:900,color:"#fbbf24"}}>{g.xp} XP</div>
                             <div style={{fontSize:11,color:pctColor(g.pct),marginTop:1}}>{g.pct}%</div>
                           </div>
-                          {g.topic&&g.level&&<button onClick={function(){setLevel(g.level);setCustomTopic(g.topic);doRestart();}} title="Retry this topic" style={{background:"rgba(52,211,153,0.12)",border:"1px solid rgba(52,211,153,0.25)",color:"#34d399",borderRadius:7,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>↩ Retry</button>}
+                          {g.topic&&g.level&&<button onClick={function(){doRestart();setLevel(g.level);setCustomTopic(g.topic);}} title="Retry this topic" style={{background:"rgba(52,211,153,0.12)",border:"1px solid rgba(52,211,153,0.25)",color:"#34d399",borderRadius:7,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>↩ Retry</button>}
                         </div>
                       </div>
                     );
