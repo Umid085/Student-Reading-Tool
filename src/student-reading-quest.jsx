@@ -2284,7 +2284,7 @@ export default function App(){
       var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
       try{await saveUsers(newUsers);}catch(e){console.warn("saveUsers failed:",e);}
       setAllUsers(newUsers);setCurrentUser(updatedUser);
-      var prevStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
+      var prevStreakVal=calcStreakWithShields(currentUser.games,shieldDates);
       var newStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
       var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
       var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
