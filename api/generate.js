@@ -50,7 +50,10 @@ export default async function handler(req, res) {
         max_tokens: maxTokens,
         messages: [{ role: "user", content: userMessage }],
       });
-      const text = msg.content[0].text;
+      const text = msg.content?.[0]?.text || "";
+      if (!text) {
+        return res.status(502).json({ error: "Empty model response" });
+      }
       return res.status(200).json({ content: [{ type: "text", text }] });
     } catch (e) {
       return res.status(500).json({ error: e.message });
@@ -103,7 +106,11 @@ ${typeExamples}
       messages: [{ role: "user", content: prompt }],
     });
 
-    const raw = msg.content[0].text.trim();
+    const rawText = msg.content?.[0]?.text;
+    if (!rawText) {
+      return res.status(502).json({ error: "Empty model response" });
+    }
+    const raw = rawText.trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
 
