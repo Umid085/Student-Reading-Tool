@@ -2159,7 +2159,25 @@ export default function App(){
         if(!types.length)types=["mcq","gap_word","qa","tfnm"];
         var safeTopic=customTopic.trim().replace(/[\r\n"]+/g," ").replace(/\s+/g," ").slice(0,120);
         if(!safeTopic){setError("Topic is empty after sanitising.");setGenLoading(false);return;}
-        var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:level,topic:safeTopic,types:types,language:passageLang})});
+        // Independent topic translation (via MyMemory) so the backend can verify
+        // Claude wrote about the right thing instead of trusting Claude's own
+        // self-reported topic_echo. Skipped for English and on translation
+        // failure — backend falls back to topic_echo / English-topic checks.
+        var PASS_LANG_CODES={English:"en",Spanish:"es",French:"fr",German:"de",Italian:"it",Portuguese:"pt",Russian:"ru",Turkish:"tr",Arabic:"ar",Uzbek:"uz"};
+        var topicInLang=null;
+        var langCode=PASS_LANG_CODES[passageLang];
+        if(langCode&&langCode!=="en"){
+          try{
+            var tu="https://api.mymemory.translated.net/get?q="+encodeURIComponent(safeTopic)+"&langpair=en|"+langCode;
+            var tr=await fetch(tu);
+            var td=await tr.json();
+            var tt=td&&td.responseData&&td.responseData.translatedText;
+            if(tt&&typeof tt==="string"){topicInLang=tt.trim().slice(0,120);}
+          }catch(_){/* swallow — backend will fall back */}
+        }
+        var reqBody={level:level,topic:safeTopic,types:types,language:passageLang};
+        if(topicInLang)reqBody.topic_in_language=topicInLang;
+        var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
         var d=await r.json();
         if(!r.ok||d.error)throw new Error(d.error||"Generation failed");
         if(!d.passage||!d.questions)throw new Error("Invalid response from AI");

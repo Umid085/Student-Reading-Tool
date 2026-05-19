@@ -172,4 +172,44 @@ describe("api/generate.js", () => {
     });
     expect(r.statusCode).toBe(502);
   });
+
+  // Topic-drift detection: English passage without the topic word → 422
+  it("Mode 2: returns 422 when English passage does not mention the topic", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({ passage: "Tom and his family went to the park.", questions: [{ type: "mcq", q: "?" }] }) }],
+    });
+    const handler = await loadHandler();
+    const r = await runHandler(handler, {
+      method: "POST",
+      body: { level: "B1", topic: "Mars", types: ["mcq"], language: "English" },
+    });
+    expect(r.statusCode).toBe(422);
+    expect(JSON.parse(r.body).error).toMatch(/drifted off-topic/);
+  });
+
+  // Non-English: trust client-provided topic_in_language, accept passage containing it
+  it("Mode 2: accepts non-English passage containing the client-translated topic", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({ passage: "Марс — четвёртая планета. На Марс летают зонды.", questions: [{ type: "mcq", q: "?" }] }) }],
+    });
+    const handler = await loadHandler();
+    const r = await runHandler(handler, {
+      method: "POST",
+      body: { level: "B1", topic: "Mars", types: ["mcq"], language: "Russian", topic_in_language: "Марс" },
+    });
+    expect(r.statusCode).toBe(200);
+  });
+
+  // Non-English: client translation overrides Claude's lying topic_echo
+  it("Mode 2: rejects non-English drift even if Claude's topic_echo matches the passage", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({ topic_echo: "Дом", passage: "Дом был старым. Семья жила в доме.", questions: [{ type: "mcq", q: "?" }] }) }],
+    });
+    const handler = await loadHandler();
+    const r = await runHandler(handler, {
+      method: "POST",
+      body: { level: "B1", topic: "Mars", types: ["mcq"], language: "Russian", topic_in_language: "Марс" },
+    });
+    expect(r.statusCode).toBe(422);
+  });
 });

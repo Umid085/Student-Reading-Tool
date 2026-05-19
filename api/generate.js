@@ -82,6 +82,10 @@ export default async function handler(req, res) {
   const topic = body.topic || "General";
   const types = Array.isArray(body.types) ? body.types : ["mcq", "qa"];
   const language = body.language || "English";
+  const topicInLanguage =
+    typeof body.topic_in_language === "string" && body.topic_in_language.trim()
+      ? body.topic_in_language.trim().slice(0, 120)
+      : null;
 
   const lc = LEVEL_CONFIG[level] || LEVEL_CONFIG["B1"];
   const validTypes = types.filter((t) => SUPPORTED_AI_TYPES.has(t)).slice(0, 4);
@@ -91,29 +95,33 @@ export default async function handler(req, res) {
 
   const typeExamples = validTypes.map((t) => "  " + TYPE_EXAMPLES[t]).join(",\n");
 
-  const prompt = `Write a ${lc.words}-word reading passage in ${language} ONLY about: "${topic}"
+  const prompt = `Write a ${lc.words}-word reading passage in ${language} about: "${topic}"
 
-The very first sentence must introduce "${topic}" directly.
-Every sentence in the passage must relate to "${topic}".
-Do not write about any other subject.
+TOPIC ADHERENCE (highest priority — overrides all other rules):
+- The word "${topic}" (translated into ${language} if needed) MUST appear in the passage at least twice.
+- The first sentence MUST name "${topic}" directly.
+- Every paragraph MUST be about "${topic}".
+- Do NOT drift to generic subjects (family, school, weather, daily routines) unless that IS the topic.
+- If "${topic}" is harder than CEFR ${level} vocabulary, KEEP the word and explain it with simpler words.
 
-CEFR level ${level} rules (strictly enforced):
+CEFR ${level} rules:
 - Vocabulary: ${lc.vocab}
 - Sentences: ${lc.sentences}
 
 After the passage, write exactly ${validTypes.length} comprehension question(s) in this order: ${validTypes.join(", ")}
 
-Return ONLY this JSON structure, no markdown, no explanation:
+Return ONLY this JSON, no markdown, no explanation:
 {
-  "passage": "<passage in ${language} about ${topic}>",
+  "topic_echo": "the word(s) for \\"${topic}\\" exactly as you wrote them in ${language} (e.g. \\"Mars\\" → \\"Марс\\" for Russian, \\"المريخ\\" for Arabic, \\"Mars\\" for English). This must appear verbatim in your passage.",
+  "passage": "your passage about ${topic}",
   "questions": [
 ${typeExamples}
   ]
 }
 
-- All questions must be answered from the passage only
-- answer field = 0-based index of the correct option (for mcq/gap_word/gap_sentence)
-- Do NOT go above CEFR ${level} vocabulary or grammar`;
+- Every question must be answerable from the passage alone.
+- answer = 0-based index of the correct option (mcq/gap_word/gap_sentence).
+- topic_echo MUST appear in the passage — this is how topic adherence is verified.`;
 
   try {
     const msg = await client.messages.create({
@@ -134,6 +142,35 @@ ${typeExamples}
     const parsed = JSON.parse(jsonMatch[0]);
     if (!parsed.passage || !Array.isArray(parsed.questions)) {
       throw new Error("Invalid response structure from Claude");
+    }
+
+    // Topic-adherence check: if Claude drifted to a generic passage that does not
+    // actually cover the topic, surface it rather than rendering a mismatched
+    // title/body. Priority order:
+    //   1. `topic_in_language` from the client (independently translated via
+    //      MyMemory — Claude cannot fabricate this), if provided.
+    //   2. `topic_echo` self-reported by Claude — only used as fallback when no
+    //      trusted translation is available.
+    //   3. The original `topic` for English requests.
+    if (topic && topic !== "General") {
+      const candidates = [];
+      if (language === "English") candidates.push(topic);
+      if (topicInLanguage) {
+        candidates.push(topicInLanguage);
+      } else if (parsed.topic_echo && typeof parsed.topic_echo === "string") {
+        candidates.push(parsed.topic_echo);
+      }
+      if (candidates.length > 0) {
+        const passageLc = parsed.passage.toLowerCase();
+        const words = candidates
+          .flatMap((c) => c.toLowerCase().split(/\s+/))
+          .filter((w) => w.length >= 3);
+        if (words.length > 0 && !words.some((w) => passageLc.includes(w))) {
+          return res.status(422).json({
+            error: `The model drifted off-topic (no mention of "${topic}"). Please try again.`,
+          });
+        }
+      }
     }
 
     return res.status(200).json({ passage: parsed.passage, questions: parsed.questions });
