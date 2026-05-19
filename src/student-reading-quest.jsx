@@ -50,6 +50,10 @@ var STRINGS = {
     xp:"XP",
     streak:"Streak",
     language:"LANGUAGE",
+    stats:"Stats",history:"History",goals:"Goals",portfolio:"Portfolio",quotes:"Quotes",
+    logOut:"Log Out",hey:"Hey",
+    todaysDailyChallenge:"TODAY'S DAILY CHALLENGE",recommendedForYou:"RECOMMENDED FOR YOU",todaysQuests:"TODAY'S QUESTS",
+    passageLanguage:"PASSAGE LANGUAGE",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -81,6 +85,10 @@ var STRINGS = {
     xp:"XP",
     streak:"Seriya",
     language:"TIL",
+    stats:"Statistika",history:"Tarix",goals:"Maqsadlar",portfolio:"Portfolio",quotes:"Iqtiboslar",
+    logOut:"Chiqish",hey:"Salom",
+    todaysDailyChallenge:"BUGUNGI KUNLIK VAZIFA",recommendedForYou:"SIZ UCHUN TAVSIYALAR",todaysQuests:"BUGUNGI VAZIFALAR",
+    passageLanguage:"MATN TILI",
   },
   ru: {
     appName:"Читальный Квест",
@@ -112,6 +120,10 @@ var STRINGS = {
     xp:"XP",
     streak:"Серия",
     language:"ЯЗЫК",
+    stats:"Статистика",history:"История",goals:"Цели",portfolio:"Портфолио",quotes:"Цитаты",
+    logOut:"Выйти",hey:"Привет",
+    todaysDailyChallenge:"СЕГОДНЯШНИЙ ВЫЗОВ",recommendedForYou:"РЕКОМЕНДУЕТСЯ ВАМ",todaysQuests:"СЕГОДНЯШНИЕ ЗАДАЧИ",
+    passageLanguage:"ЯЗЫК ТЕКСТА",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -143,6 +155,10 @@ var STRINGS = {
     xp:"XP",
     streak:"Seri",
     language:"DİL",
+    stats:"İstatistik",history:"Geçmiş",goals:"Hedefler",portfolio:"Portföy",quotes:"Alıntılar",
+    logOut:"Çıkış",hey:"Selam",
+    todaysDailyChallenge:"BUGÜNÜN GÖREVİ",recommendedForYou:"SİZE ÖNERİLENLER",todaysQuests:"BUGÜNÜN GÖREVLERİ",
+    passageLanguage:"METİN DİLİ",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -174,6 +190,10 @@ var STRINGS = {
     xp:"XP",
     streak:"سلسلة",
     language:"اللغة",
+    stats:"إحصاءات",history:"السجل",goals:"الأهداف",portfolio:"الملف الشخصي",quotes:"اقتباسات",
+    logOut:"تسجيل الخروج",hey:"مرحباً",
+    todaysDailyChallenge:"تحدي اليوم",recommendedForYou:"موصى به لك",todaysQuests:"مهام اليوم",
+    passageLanguage:"لغة النص",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -205,6 +225,10 @@ var STRINGS = {
     xp:"XP",
     streak:"Serie",
     language:"SPRACHE",
+    stats:"Statistik",history:"Verlauf",goals:"Ziele",portfolio:"Portfolio",quotes:"Zitate",
+    logOut:"Abmelden",hey:"Hey",
+    todaysDailyChallenge:"TÄGLICHE HERAUSFORDERUNG",recommendedForYou:"FÜR DICH EMPFOHLEN",todaysQuests:"TÄGLICHE AUFGABEN",
+    passageLanguage:"TEXTSPRACHE",
   },
   es: {
     appName:"Misión Lectora",
@@ -236,6 +260,10 @@ var STRINGS = {
     xp:"XP",
     streak:"Racha",
     language:"IDIOMA",
+    stats:"Estadísticas",history:"Historial",goals:"Metas",portfolio:"Portafolio",quotes:"Citas",
+    logOut:"Cerrar sesión",hey:"Hola",
+    todaysDailyChallenge:"DESAFÍO DE HOY",recommendedForYou:"RECOMENDADO PARA TI",todaysQuests:"MISIONES DE HOY",
+    passageLanguage:"IDIOMA DEL TEXTO",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -267,6 +295,10 @@ var STRINGS = {
     xp:"XP",
     streak:"Série",
     language:"LANGUE",
+    stats:"Stats",history:"Historique",goals:"Objectifs",portfolio:"Portfolio",quotes:"Citations",
+    logOut:"Déconnexion",hey:"Salut",
+    todaysDailyChallenge:"DÉFI DU JOUR",recommendedForYou:"RECOMMANDÉ POUR VOUS",todaysQuests:"QUÊTES DU JOUR",
+    passageLanguage:"LANGUE DU TEXTE",
   },
 };
 
@@ -1477,7 +1509,13 @@ export default function App(){
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
   var [customTopic,setCustomTopic]=useState("");
-  var [passageLang,setPassageLang]=useState("English");
+  var [passageLang,setPassageLang]=useState(function(){
+    try{
+      var ui=localStorage.getItem("rq-uilang")||"en";
+      var map={en:"English",uz:"Uzbek",ru:"Russian",tr:"Turkish",ar:"Arabic",de:"German",es:"Spanish",fr:"French"};
+      return map[ui]||"English";
+    }catch(e){return"English";}
+  });
   var [useWeakVocab,setUseWeakVocab]=useState(false);
   var [personalizedWords,setPersonalizedWords]=useState([]);
   var [questions,setQuestions]=useState([]);
@@ -1655,6 +1693,15 @@ export default function App(){
   var [uiLang,setUiLang]=useState(function(){try{return localStorage.getItem("rq-uilang")||"en";}catch(e){return"en";}});
 
   function t(key){return(STRINGS[uiLang]&&STRINGS[uiLang][key])||STRINGS.en[key]||key;}
+
+  // Keep passageLang in sync with uiLang: switching UI to Russian also makes
+  // AI-generated passages Russian by default. User can still override per
+  // generation via the PASSAGE LANGUAGE chips when a custom topic is entered.
+  useEffect(function(){
+    var map={en:"English",uz:"Uzbek",ru:"Russian",tr:"Turkish",ar:"Arabic",de:"German",es:"Spanish",fr:"French"};
+    var matched=map[uiLang];
+    if(matched)setPassageLang(matched);
+  },[uiLang]);
 
   useEffect(function(){
     try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){var rd=JSON.parse(b64dec(rep));setReportData(rd);setStage("report");setAppReady(true);return;}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
@@ -3197,7 +3244,7 @@ export default function App(){
                   <h2 style={{margin:"0 0 4px",fontSize:22,fontWeight:900,color:"#a78bfa"}}>👩‍🏫 Teacher Dashboard</h2>
                   <p style={{margin:0,fontSize:13,color:"#6b7280"}}>Welcome back, {currentUser.name}</p>
                 </div>
-                <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>Log Out</button>
+                <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>{t("logOut")}</button>
               </div>
 
               <div style={{...CARD,marginBottom:14}}>
@@ -3933,7 +3980,7 @@ export default function App(){
             </div>
             <div className="rq-home-hdr">
               <div>
-                <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#34d399"}}>Hey, {currentUser?currentUser.name:""}!</h2>
+                <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#34d399"}}>{t("hey")}, {currentUser?currentUser.name:""}!</h2>
                 <div className="rq-pills">
                   <span style={pill(streakAtRisk?"rgba(239,68,68,0.2)":"rgba(251,191,36,0.15)",streakAtRisk?"#f87171":"#fbbf24")}>{streakAtRisk?"⚠️":"🔥"} {myStreak} day streak{shields>0?" · "+"🛡️".repeat(shields):""}</span>
                   <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>{t("friends")}: {myData.friends.length}</span>
@@ -3943,16 +3990,16 @@ export default function App(){
               </div>
               <div className="rq-home-nav">
                 <button onClick={function(){setStage("friends");}} style={GHOST}>{t("friends")}</button>
-                <button onClick={function(){setStage("analytics");}} style={GHOST}>Stats</button>
+                <button onClick={function(){setStage("analytics");}} style={GHOST}>{t("stats")}</button>
                 <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>{t("vocab")}</button>
-                <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>History</button>
-                <button onClick={function(){setStage("goals");}} style={GHOST}>Goals</button>
+                <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>{t("history")}</button>
+                <button onClick={function(){setStage("goals");}} style={GHOST}>{t("goals")}</button>
                 <button onClick={function(){setStage("library");}} style={GHOST}>{t("library")}</button>
-                <button onClick={function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}} style={GHOST}>Portfolio</button>
+                <button onClick={function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}} style={GHOST}>{t("portfolio")}</button>
                 <button onClick={function(){setStage("weekly");}} style={GHOST}>{t("weekly")}</button>
                 <button onClick={function(){setStage("profile");}} style={GHOST}>{t("profile")}</button>
                 <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>{t("leaderboard")}</button>
-                {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={GHOST}>Quotes</button>}
+                {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={GHOST}>{t("quotes")}</button>}
               </div>
             </div>
 
@@ -4232,7 +4279,7 @@ export default function App(){
                 <div style={{...CARD,marginBottom:12,padding:14,borderColor:done?"rgba(251,191,36,0.3)":"rgba(6,182,212,0.3)",background:done?"rgba(251,191,36,0.05)":"rgba(6,182,212,0.05)"}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                     <div>
-                      <p style={{fontSize:11,color:done?"#fbbf24":"#06b6d4",fontWeight:700,letterSpacing:0.6,margin:"0 0 2px"}}>TODAY'S DAILY CHALLENGE</p>
+                      <p style={{fontSize:11,color:done?"#fbbf24":"#06b6d4",fontWeight:700,letterSpacing:0.6,margin:"0 0 2px"}}>{t("todaysDailyChallenge")}</p>
                       <p style={{fontSize:12,color:"#9ca3af",margin:0}}>{done?"Completed! "+dailyDone.xp+" XP · "+dailyDone.pct+"%":dailyChallenge&&dailyChallenge.date===today?dailyChallenge.topic+" (B1)":"B1 · All question types"}</p>
                     </div>
                     <button onClick={done?function(){setStage("dailyleaderboard");}:startDailyChallenge} disabled={dailyLoading} style={{...mkBtn(done?"#fbbf24":"#06b6d4","#0d0d1a"),padding:"9px 16px",fontSize:13,flexShrink:0}}>{dailyLoading?"Loading...":done?"Leaderboard":"Play"}</button>
@@ -4247,7 +4294,7 @@ export default function App(){
               if(!recs.length)return null;
               return(
                 <div style={{...CARD,marginBottom:12,padding:14}}>
-                  <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.6,margin:"0 0 10px"}}>RECOMMENDED FOR YOU</p>
+                  <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.6,margin:"0 0 10px"}}>{t("recommendedForYou")}</p>
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
                     {recs.map(function(s){
                       var lo=getLv(s.level);
@@ -4277,7 +4324,7 @@ export default function App(){
               return(
                 <div style={{...CARD,marginBottom:12,padding:14,borderColor:allDone?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.1)",background:allDone?"rgba(52,211,153,0.04)":"rgba(255,255,255,0.02)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <p style={{fontSize:11,color:allDone?"#34d399":"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>TODAY'S QUESTS</p>
+                    <p style={{fontSize:11,color:allDone?"#34d399":"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>{t("todaysQuests")}</p>
                     <span style={{fontSize:11,color:"#6b7280"}}>{doneCount}/{dailyQuests.length} done</span>
                   </div>
                   {dailyQuests.map(function(q){
@@ -4352,7 +4399,7 @@ export default function App(){
             {customTopic.trim()&&(function(){
               var PASS_LANGS=[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}];
               return(<div style={{...CARD,marginBottom:12,padding:14}}>
-                <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>PASSAGE LANGUAGE</p>
+                <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>{t("passageLanguage")}</p>
                 <div style={{display:"flex",overflowX:"auto",gap:6,paddingBottom:4}}>
                   {PASS_LANGS.map(function(l){
                     var active=passageLang===l.name;
@@ -5780,7 +5827,7 @@ export default function App(){
             })()}
             <div style={{display:"flex",gap:7}}>
               <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
-              <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>Log Out</button>
+              <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>{t("logOut")}</button>
             </div>
           </div>);
         })()}
