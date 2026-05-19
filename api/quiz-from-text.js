@@ -1,10 +1,27 @@
-// Generates a quiz from user-submitted custom text using Claude
+// Generates a quiz for a pre-written passage using Claude. Used by the
+// custom-text assignment flow (teacher) and the library AI-quiz upgrade
+// (student). Question count scales by CEFR level to match /api/generate.
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit } from "./_rateLimit.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const AI_RATE_LIMIT_MAX = 60; // requests per 15-minute window
+
+// Must match LEVEL_CONFIG in generate.js — stronger learners get longer
+// quizzes for the same passage.
+const QUESTIONS_PER_LEVEL = { A1: 5, A2: 6, B1: 8, B2: 10, C1: 12, C2: 15 };
+
+const TYPE_EXAMPLES = {
+  mcq:          '{"type":"mcq","q":"Question?","options":["A","B","C","D"],"answer":0,"explanation":"Why A is correct."}',
+  gap_word:     '{"type":"gap_word","sentence":"The ___ was important.","options":["cat","dog","event","reason"],"answer":2,"explanation":"Because..."}',
+  gap_sentence: '{"type":"gap_sentence","sentence":"___ was the main cause.","options":["Sent1","Sent2","Sent3","Sent4"],"answer":0,"explanation":"Because..."}',
+  qa:           '{"type":"qa","q":"Open question?","keywords":["word1","word2","word3"],"explanation":"Model answer."}',
+  tfnm:         '{"type":"tfnm","instruction":"According to the passage...","q":"Statement.","options":["True","False","Not Mentioned"],"answer":0,"explanation":"..."}',
+  ynng:         '{"type":"ynng","instruction":"Do the following statements agree with the claims of the writer?","q":"Statement.","options":["Yes","No","Not Given"],"answer":0,"explanation":"..."}',
+};
+
+const SUPPORTED_TYPES = new Set(Object.keys(TYPE_EXAMPLES));
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -27,56 +44,55 @@ export default async function handler(req, res) {
   if (!passage || passage.trim().length < 30) {
     return res.status(400).json({ error: "Passage must be at least 30 characters." });
   }
-  if (passage.length > 3000) {
-    return res.status(400).json({ error: "Passage too long (max 3000 characters)." });
+  if (passage.length > 4000) {
+    return res.status(400).json({ error: "Passage too long (max 4000 characters)." });
   }
 
-  const typeDescriptions = {
-    mcq: "Multiple-choice question with 4 options (answer is the index 0-3)",
-    tfnm: "True/False/Not Mentioned — options are ['True','False','Not Mentioned'] (answer: 0/1/2)",
-    ynng: "Yes/No/Not Given — options are ['Yes','No','Not Given'] (answer: 0/1/2)",
-    qa: "Open-answer with keywords array (3-5 key words from the ideal answer)",
-    gap_word: "Gap-fill word: sentence with ___ and 4 word options (answer is index 0-3)",
-  };
-
-  const usedTypes = types.filter((t) => typeDescriptions[t]).slice(0, 4);
-  if (!usedTypes.length) {
+  // Filter to supported types and pad up to the level's target count by
+  // cycling — same approach as /api/generate. The model is told to vary the
+  // detail it tests for repeated types so we don't get duplicated stems.
+  const baseTypes = (Array.isArray(types) ? types : []).filter((t) => SUPPORTED_TYPES.has(t));
+  if (!baseTypes.length) {
     return res.status(400).json({ error: "No valid question types specified." });
   }
+  const targetCount = QUESTIONS_PER_LEVEL[level] || 6;
+  const orderedTypes = [];
+  for (let i = 0; i < targetCount; i++) {
+    orderedTypes.push(baseTypes[i % baseTypes.length]);
+  }
+  const uniqueTypes = Array.from(new Set(orderedTypes));
+  const typeShapes = uniqueTypes.map((t) => `  ${t}: ${TYPE_EXAMPLES[t]}`).join("\n");
 
   const prompt = `You are a CEFR ${level} English language test designer.
 
-The user has pasted the following passage:
+The passage below has already been written. Generate exactly ${targetCount} comprehension questions about it, one per slot in this exact order: ${orderedTypes.join(", ")}
+
+Each question object must follow the JSON shape for its type:
+${typeShapes}
+
 <passage>
 ${passage.trim()}
 </passage>
 
-Generate exactly ${usedTypes.length + 1} quiz questions about this passage. Use these question types (in order): ${usedTypes.join(", ")}, then one more of any type.
-
-Return ONLY a JSON object (no markdown, no explanation):
+Return ONLY this JSON, no markdown, no explanation:
 {
-  "topic": "<short title for this passage, 3-6 words>",
-  "questions": [
-    // mcq example:
-    {"type":"mcq","q":"Question text?","options":["A","B","C","D"],"answer":0,"explanation":"Why A is correct."},
-    // tfnm example:
-    {"type":"tfnm","instruction":"According to the passage...","q":"Statement to evaluate.","options":["True","False","Not Mentioned"],"answer":0,"explanation":"..."},
-    // qa example:
-    {"type":"qa","q":"Open question?","keywords":["word1","word2","word3"],"explanation":"Model answer."},
-    // gap_word example:
-    {"type":"gap_word","sentence":"The ___ was important.","options":["cat","dog","event","reason"],"answer":2,"explanation":"Because..."}
-  ]
+  "topic": "short title for this passage, 3-6 words",
+  "questions": [ ${targetCount} question objects in the order listed above ]
 }
 
 Rules:
 - All questions must be answerable ONLY from the passage — no outside knowledge.
-- Explanations must cite the passage.
-- Keep question language appropriate for CEFR ${level}.`;
+- answer = 0-based index of the correct option (mcq/gap_word/gap_sentence/tfnm/ynng).
+- When the same type appears multiple times, each occurrence MUST ask about a DIFFERENT detail from the passage — no repeated stems, no rephrased duplicates.
+- Keep question language appropriate for CEFR ${level}.
+- Explanations should cite the passage briefly.`;
 
   try {
     const msg = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 1024,
+      // Up to 15 questions × ~150 tokens each + JSON scaffolding fits
+      // comfortably in 4096 tokens.
+      max_tokens: 4096,
       messages: [{ role: "user", content: prompt }],
     });
 
