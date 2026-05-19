@@ -14,6 +14,11 @@ export default defineConfig({
             if (id.includes("react") || id.includes("scheduler")) return "react-vendor";
             return "vendor";
           }
+          // Static story library (~190 lines of inline data) lives in its
+          // own chunk so deploys that only touch app logic don't bust the
+          // library's hashed filename, and the browser can fetch it in
+          // parallel with the main app code.
+          if (id.includes("/src/storyLibrary")) return "story-library";
         },
       },
     },
