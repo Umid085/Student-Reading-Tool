@@ -2246,6 +2246,7 @@ export default function App(){
   var [onboardClassCode,setOnboardClassCode]=useState("");
   var [libSubjectFilter,setLibSubjectFilter]=useState("");
   var [reportData,setReportData]=useState(null);
+  var [pendingReportData,setPendingReportData]=useState(null);
   var [shareLink,setShareLink]=useState("");
   var [shareLinkCopied,setShareLinkCopied]=useState(false);
   var [milestoneSeen,setMilestoneSeen]=useState(false);
@@ -2280,8 +2281,22 @@ export default function App(){
     if(matched)setPassageLang(matched);
   },[uiLang]);
 
+  // Gate ?report= links: only the named student or their teacher can open one.
+  // The data is still embedded in the URL, but the viewer must be signed in
+  // under one of those two names; otherwise we silently drop the payload.
   useEffect(function(){
-    try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){var rd=JSON.parse(b64dec(rep));setReportData(rd);setStage("report");setAppReady(true);return;}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
+    if(!pendingReportData||!currentUser)return;
+    if(currentUser.name===pendingReportData.n||currentUser.name===pendingReportData.t){
+      setReportData(pendingReportData);
+      setStage("report");
+    } else {
+      setError("This report is not for your account.");
+    }
+    setPendingReportData(null);
+  },[currentUser,pendingReportData]);
+
+  useEffect(function(){
+    try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){try{var rd=JSON.parse(b64dec(rep));setPendingReportData(rd);}catch(e){}/* don't short-circuit auth — gate the report behind a logged-in name match below */}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
@@ -2447,9 +2462,15 @@ export default function App(){
   }
 
   // ── teacher class actions ───────────────────────────────────
+  function isTeacherOf(cls){return !!(cls&&currentUser&&cls.teacherName===currentUser.name);}
+  function uniqueClassCode(){
+    for(var i=0;i<50;i++){var code=generateClassCode();if(!classes.some(function(c){return c.id===code;}))return code;}
+    return generateClassCode()+Date.now().toString(36).slice(-2).toUpperCase();
+  }
+
   async function doCreateClass(){
     if(!currentUser||!newClassName.trim())return;
-    var code=generateClassCode();
+    var code=uniqueClassCode();
     var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:new Date().toLocaleDateString(),targetLevel:"B1"};
     var updated=classes.concat([cls]);
     setClasses(updated);
@@ -2476,10 +2497,11 @@ export default function App(){
   // ── assignment actions ──────────────────────────────────────
   async function doCreateAssignment(){
     if(!currentUser||!currentClass)return;
+    if(!isTeacherOf(currentClass)){setAssignMsg("Only the class teacher can create assignments.");return;}
     setAssignMsg("");
     if(assignType==="library"&&!assignStoryId){setAssignMsg("Select a story first.");return;}
     if(assignType==="ai_topic"&&!assignTopic.trim()){setAssignMsg("Enter a topic first.");return;}
-    if(assignType==="custom_text"&&assignCustomText.trim().length<30){setAssignMsg("Paste at least 30 characters of text.");return;}
+    if(assignType==="custom_text"&&assignCustomText.trim().length<150){setAssignMsg("Paste at least 150 characters of text so the AI can generate a full quiz.");return;}
     setAssignLoading(true);
     var id="asgn-"+Date.now();
     var base={id:id,classId:currentClass.id,teacherName:currentUser.name,type:assignType,dueDate:assignDue||null,createdAt:new Date().toISOString(),completions:{}};
@@ -2507,32 +2529,37 @@ export default function App(){
     setAssignStoryId("");setAssignTopic("");setAssignDue("");setAssignCustomText("");
     setAssignMsg("✓ Assignment created!");
     setAssignLoading(false);
-    // update currentClass ref so UI refreshes
-    setCurrentClass(Object.assign({},currentClass));
     await saveAssignmentsRemote(updated);
   }
 
   function doCompleteAssignment(asgnId,pct,xp,timeSecs){
     if(!currentUser)return;
-    setAssignments(function(prev){
-      var updated=prev.map(function(a){
-        if(a.id!==asgnId)return a;
-        var comps=Object.assign({},a.completions);
-        comps[currentUser.name]={pct:pct,xp:xp,timeSecs:timeSecs,completedAt:new Date().toISOString()};
-        return Object.assign({},a,{completions:comps});
-      });
-      saveAssignmentsRemote(updated);
-      return updated;
+    // Compute outside setter so React strict-mode doesn't double-trigger the
+    // remote save, and so the save uses the same snapshot we render with.
+    var updated=assignments.map(function(a){
+      if(a.id!==asgnId)return a;
+      var comps=Object.assign({},a.completions);
+      comps[currentUser.name]={pct:pct,xp:xp,timeSecs:timeSecs,completedAt:new Date().toISOString()};
+      return Object.assign({},a,{completions:comps});
     });
+    setAssignments(updated);
+    saveAssignmentsRemote(updated).catch(function(e){console.error("doCompleteAssignment save failed:",e);});
   }
 
   function doExportClassCSV(){
     if(!currentClass||!allUsers)return;
+    if(!isTeacherOf(currentClass))return;
     var Q_TYPES=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
     var headers=["Student","Best Level","Games","Avg Score %","Avg WPM"].concat(Q_TYPES.map(function(t){return qLabel(t)+" %";})).concat(["Vocab Words","Last Active"]);
-    var rows=currentClass.students.map(function(sName){
+    var rows=(currentClass.students||[]).map(function(sName){
       var u=allUsers.find(function(u){return u.name===sName;});
-      var games=u&&u.games?u.games:[];
+      if(!u){
+        // Student was removed from the user list. Emit a labelled placeholder row
+        // instead of a ghost row with zeros so the export reflects reality.
+        var blanks=Q_TYPES.map(function(){return"";});
+        return[sName+" (removed)","–",0,"","",].concat(blanks).concat([0,"Never"]);
+      }
+      var games=u.games||[];
       var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
       var wpmGames=games.filter(function(g){return g.wpm>0;});
       var avgWpm=wpmGames.length?Math.round(wpmGames.reduce(function(s,g){return s+g.wpm;},0)/wpmGames.length):0;
@@ -2547,7 +2574,9 @@ export default function App(){
       var vocabCount=(allVocab&&Array.isArray(allVocab[sName]))?allVocab[sName].length:0;
       return[sName,bestLv,games.length,avgPct,avgWpm].concat(typeScores).concat([vocabCount,lastDate]);
     });
-    var csv=[headers].concat(rows).map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
+    // Normalise newlines inside cells so RFC-4180 parsers don't split rows.
+    function csvCell(c){return'"'+String(c).replace(/\r?\n/g," ").replace(/"/g,'""')+'"';}
+    var csv=[headers].concat(rows).map(function(r){return r.map(csvCell).join(",");}).join("\n");
     var blob=new Blob([csv],{type:"text/csv"});
     var url=URL.createObjectURL(blob);
     var a=document.createElement("a");a.href=url;a.download=currentClass.name.replace(/\s+/g,"_")+"_analytics.csv";a.click();
@@ -2556,12 +2585,14 @@ export default function App(){
 
   async function doPostAnnouncement(){
     if(!currentClass||!currentUser||!announcementText.trim())return;
+    if(!isTeacherOf(currentClass))return;
     var updated=classes.map(function(c){
       if(c.id!==currentClass.id)return c;
       return Object.assign({},c,{announcement:{text:announcementText.trim(),date:new Date().toLocaleDateString(),teacherName:currentUser.name}});
     });
     setClasses(updated);
-    setCurrentClass(updated.find(function(c){return c.id===currentClass.id;}));
+    var next=updated.find(function(c){return c.id===currentClass.id;});
+    if(next)setCurrentClass(next); // class was deleted in another tab — leave currentClass alone rather than nuking it
     setAnnouncementText("");
     setAnnouncementMsg("✓ Posted!");
     setTimeout(function(){setAnnouncementMsg("");},3000);
@@ -2569,23 +2600,28 @@ export default function App(){
   }
 
   async function doClearAnnouncement(){
+    if(!currentClass||!isTeacherOf(currentClass))return;
     var updated=classes.map(function(c){
       if(c.id!==currentClass.id)return c;
       var n=Object.assign({},c);delete n.announcement;return n;
     });
     setClasses(updated);
-    setCurrentClass(updated.find(function(c){return c.id===currentClass.id;}));
+    var next=updated.find(function(c){return c.id===currentClass.id;});
+    if(next)setCurrentClass(next);
     await saveClassesRemote(updated);
   }
 
   function doFinishOnboarding(){
     if(currentUser)localStorage.setItem("rq-onboarded-"+currentUser.name,"true");
     setOnboardStep(null);setOnboardClassCode("");
+    // The onboarding class is auto-selected at step 2 — clear it so the teacher
+    // lands on the dashboard list rather than a stale class view.
+    setCurrentClass(null);
   }
 
   function doOnboardCreateClass(){
     if(!currentUser||!newClassName.trim())return;
-    var code=generateClassCode();
+    var code=uniqueClassCode();
     var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:new Date().toLocaleDateString(),announcement:null};
     var updated=classes.concat([cls]);
     setClasses(updated);setCurrentClass(cls);setNewClassName("");setOnboardClassCode(code);setOnboardStep(2);
@@ -3011,10 +3047,11 @@ export default function App(){
         if(newProg.done&&!prevProg.done)completedGoalIds.push(def.id);
       });
       saveGoalsLocal(updatedGoals);
-      var myAsgClass=classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;});
-      if(myAsgClass){
+      // Search assignments across ALL classes the student is in — they may belong to more than one.
+      var myAsgClassIds=classes.filter(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;}).map(function(c){return c.id;});
+      if(myAsgClassIds.length){
         var matchingAsgn=assignments.find(function(a){
-          if(a.classId!==myAsgClass.id||!a.completions||a.completions[currentUser.name])return false;
+          if(myAsgClassIds.indexOf(a.classId)===-1||!a.completions||a.completions[currentUser.name])return false;
           if(activeAssignmentId)return a.id===activeAssignmentId;
           return a.storyId&&a.storyId===currentStoryId;
         });
@@ -3947,7 +3984,8 @@ export default function App(){
                   <p style={{fontSize:14}}>{t("noClassesYet")}</p>
                 </div>
               ):myClasses.map(function(cls){
-                var stuData=cls.students.map(function(n){var u=allUsers.find(function(u){return u.name===n;});return u&&u.games?u.games:[];});
+                var students=cls.students||[];
+                var stuData=students.map(function(n){var u=allUsers.find(function(u){return u.name===n;});return u&&u.games?u.games:[];});
                 var allGames=stuData.reduce(function(a,g){return a.concat(g);},[]);
                 var avgPct=allGames.length?Math.round(allGames.reduce(function(s,g){return s+g.pct;},0)/allGames.length):0;
                 return(
@@ -3956,7 +3994,7 @@ export default function App(){
                     onMouseLeave={function(e){e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";}}>
                     <div>
                       <div style={{fontSize:15,fontWeight:800,color:"#f3f4f6",marginBottom:3}}>{cls.name}</div>
-                      <div style={{fontSize:12,color:"#6b7280"}}>{cls.students.length} student{cls.students.length!==1?"s":""} · created {cls.created}</div>
+                      <div style={{fontSize:12,color:"#6b7280"}}>{students.length} student{students.length!==1?"s":""} · created {cls.created}</div>
                     </div>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:18,fontWeight:900,color:"#a78bfa",marginBottom:2}}>{avgPct>0?avgPct+"%":"–"}</div>
@@ -3972,7 +4010,8 @@ export default function App(){
         {/* ── CLASS VIEW ───────────────────────────────────── */}
         {stage==="classView"&&currentClass&&currentUser&&(function(){
           var cls=currentClass;
-          var stuData=cls.students.map(function(sName){
+          var students=cls.students||[];
+          var stuData=students.map(function(sName){
             var u=allUsers.find(function(u){return u.name===sName;});
             var games=u&&u.games?u.games:[];
             var validGames=games.filter(function(g){return g.pct>=0;});
@@ -3998,8 +4037,8 @@ export default function App(){
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
                 <button onClick={function(){setStage("teacherDashboard");}} style={GHOST}>← Back</button>
                 <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#f3f4f6",flex:1}}>{cls.name}</h2>
-                {cls.students.length>0&&<button onClick={function(){setStage("classAnalytics");}} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>📊 Analytics</button>}
-                {cls.students.length>0&&<button onClick={doExportClassCSV} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>⬇ CSV</button>}
+                {students.length>0&&<button onClick={function(){setStage("classAnalytics");}} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>📊 Analytics</button>}
+                {students.length>0&&<button onClick={doExportClassCSV} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>⬇ CSV</button>}
               </div>
 
               <div style={{...CARD,textAlign:"center",marginBottom:12}}>
@@ -4009,7 +4048,7 @@ export default function App(){
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
-                {[{label:"Students",val:cls.students.length,color:"#a78bfa"},{label:"Class Avg",val:classAvg>0?classAvg+"%":"–",color:"#34d399"},{label:"Avg WPM",val:classWpm>0?classWpm:"–",color:"#f59e0b"}].map(function(s){return(
+                {[{label:"Students",val:students.length,color:"#a78bfa"},{label:"Class Avg",val:classAvg>0?classAvg+"%":"–",color:"#34d399"},{label:"Avg WPM",val:classWpm>0?classWpm:"–",color:"#f59e0b"}].map(function(s){return(
                   <div key={s.label} style={{...CARD,textAlign:"center",padding:"12px 8px"}}>
                     <div style={{fontSize:22,fontWeight:900,color:s.color}}>{s.val}</div>
                     <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.label}</div>
@@ -4082,7 +4121,7 @@ export default function App(){
 
               {/* Students */}
               <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:8}}>STUDENTS</p>
-              {cls.students.length===0?(
+              {students.length===0?(
                 <div style={{textAlign:"center",padding:"24px 0",color:"#4b5563",marginBottom:16}}>
                   <p style={{margin:0}}>No students yet. Share the code above!</p>
                 </div>
@@ -4169,7 +4208,7 @@ export default function App(){
 
               {/* Existing assignments for this class */}
               {assignments.filter(function(a){return a.classId===cls.id;}).map(function(asgn){
-                var total=cls.students.length;
+                var total=students.length;
                 var done=Object.keys(asgn.completions||{}).length;
                 var pct=total>0?Math.round((done/total)*100):0;
                 var avgScore=done>0?Math.round(Object.values(asgn.completions).reduce(function(s,c){return s+c.pct;},0)/done):0;
@@ -4268,9 +4307,10 @@ export default function App(){
         {/* ── CLASS ANALYTICS ───────────────────────────────── */}
         {stage==="classAnalytics"&&currentClass&&currentUser&&(function(){
           var cls=currentClass;
+          var students=cls.students||[];
           var clsAssignments=assignments.filter(function(a){return a.classId===cls.id;});
           var today=new Date();today.setHours(0,0,0,0);
-          var stuData=cls.students.map(function(sName){
+          var stuData=students.map(function(sName){
             var u=allUsers.find(function(u){return u.name===sName;});
             var games=u&&u.games?u.games:[];
             var validGames=games.filter(function(g){return typeof g.pct==="number";});
@@ -4312,7 +4352,7 @@ export default function App(){
               {/* top stats row */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
                 {[
-                  {label:"Students",val:cls.students.length,col:"#a78bfa"},
+                  {label:"Students",val:students.length,col:"#a78bfa"},
                   {label:"Active",val:activeStudents.length,col:"#34d399"},
                   {label:"Class Avg",val:classAvgPct!==null?classAvgPct+"%":"–",col:classAvgPct>=70?"#34d399":classAvgPct>=50?"#f59e0b":"#f87171"},
                   {label:"At Risk",val:atRisk.length,col:atRisk.length>0?"#f87171":"#4b5563"},
@@ -4339,7 +4379,7 @@ export default function App(){
                       </tr>
                     </thead>
                     <tbody>
-                      {cls.students.map(function(sName){
+                      {students.map(function(sName){
                         var done=clsAssignments.filter(function(a){return a.completions&&a.completions[sName];}).length;
                         return(
                           <tr key={sName} style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
@@ -4876,31 +4916,34 @@ export default function App(){
             {(function(){
               var doy=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(864e5));
               var wotd=WORD_OF_DAY[doy%WORD_OF_DAY.length];
-              var myClass3=currentUser?classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;})||null:null;
-              var pendingAssignments=myClass3?assignments.filter(function(a){return a.classId===myClass3.id&&(!a.completions||!a.completions[currentUser.name])&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
+              var myClasses3=currentUser?classes.filter(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;}):[];
+              var myClassIds3=myClasses3.map(function(c){return c.id;});
+              var pendingAssignments=myClassIds3.length?assignments.filter(function(a){return myClassIds3.indexOf(a.classId)!==-1&&(!a.completions||!a.completions[currentUser.name])&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
+              var classesWithAnnouncement=myClasses3.filter(function(c){return c.announcement;});
               return(
                 <div>
-                {myClass3&&myClass3.announcement&&(
-                  <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(167,139,250,0.4)",background:"rgba(99,102,241,0.07)"}}>
+                {classesWithAnnouncement.map(function(c){return(
+                  <div key={"ann-"+c.id} style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(167,139,250,0.4)",background:"rgba(99,102,241,0.07)"}}>
                     <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                       <div style={{fontSize:20,flexShrink:0}}>📢</div>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:3}}>{myClass3.name} · {myClass3.announcement.teacherName}</div>
-                        <div style={{fontSize:13,color:"#e9d5ff",lineHeight:1.5}}>{myClass3.announcement.text}</div>
+                        <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:3}}>{c.name} · {c.announcement.teacherName}</div>
+                        <div style={{fontSize:13,color:"#e9d5ff",lineHeight:1.5}}>{c.announcement.text}</div>
                       </div>
                     </div>
                   </div>
-                )}
+                );})}
                 {pendingAssignments.length>0&&(
                   <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(245,158,11,0.5)",background:"rgba(245,158,11,0.07)"}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#fcd34d",letterSpacing:0.6,margin:"0 0 10px"}}>📋 ASSIGNMENTS FROM {(myClass3.teacherName||"").toUpperCase()}</p>
+                    <p style={{fontSize:11,fontWeight:700,color:"#fcd34d",letterSpacing:0.6,margin:"0 0 10px"}}>📋 ASSIGNMENTS</p>
                     {pendingAssignments.map(function(asgn){
                       var story=asgn.storyId?STORY_LIBRARY.find(function(s){return s.id===asgn.storyId;}):null;
+                      var fromClass=myClasses3.find(function(c){return c.id===asgn.classId;});
                       return(
                         <div key={asgn.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid rgba(245,158,11,0.15)"}}>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{asgn.topic}</div>
-                            <div style={{fontSize:11,color:"#9ca3af"}}>{asgn.level}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
+                            <div style={{fontSize:11,color:"#9ca3af"}}>{fromClass?fromClass.name+" · ":""}{asgn.level}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
                           </div>
                           <button onClick={function(){
                             setActiveAssignmentId(asgn.id);
