@@ -110,6 +110,16 @@ export default async function handler(req, res) {
     typeof body.topic_in_language === "string" && body.topic_in_language.trim()
       ? body.topic_in_language.trim().slice(0, 120)
       : null;
+  // Vocab integration: words from the user's spaced-repetition queue that the
+  // passage should naturally include. Validated as a string array, capped to 5,
+  // each word sanitised to a single short token to avoid prompt injection.
+  const vocabWords = Array.isArray(body.vocab_words)
+    ? body.vocab_words
+        .filter((w) => typeof w === "string")
+        .map((w) => w.replace(/[\r\n"`]+/g, " ").trim().slice(0, 40))
+        .filter((w) => w.length > 0)
+        .slice(0, 5)
+    : [];
 
   const lc = LEVEL_CONFIG[level] || LEVEL_CONFIG["B1"];
   const validTypes = types.filter((t) => SUPPORTED_AI_TYPES.has(t)).slice(0, 4);
@@ -132,7 +142,12 @@ CEFR ${level} GRAMMAR ADHERENCE (non-negotiable — both vocab AND structure mus
 - Vocabulary: ${lc.vocab}
 - Grammar / sentence structures: ${lc.sentences}
 - Do not pull difficulty up by using rarer vocabulary while keeping sentences simple. The grammar profile must match the level just as strictly as the vocabulary does. A passage at this level that uses only plain SVO sentences with advanced words is WRONG.
-
+${vocabWords.length > 0 ? `
+VOCAB INTEGRATION (best effort — never break the CEFR rules above):
+- The user is reviewing these words: ${vocabWords.map((w) => `"${w}"`).join(", ")}.
+- Naturally weave AT LEAST 3 of them into the passage in a way that fits the topic and the CEFR level.
+- If a word would force vocabulary or grammar above CEFR ${level}, OMIT it rather than warp the passage. The CEFR profile takes priority over vocab inclusion.
+` : ''}
 After the passage, write exactly ${validTypes.length} comprehension question(s) in this order: ${validTypes.join(", ")}
 
 Return ONLY this JSON, no markdown, no explanation:

@@ -2222,13 +2222,25 @@ export default function App(){
             if(tt&&typeof tt==="string"){topicInLang=tt.trim().slice(0,120);}
           }catch(_){/* swallow — backend will fall back */}
         }
+        // Vocab personalization: when "Personalise with my vocab" is on, ship
+        // the same weakest-5 active-vocab list that the toggle previews. Backend
+        // asks Claude to naturally weave them into the passage; the reading
+        // screen surfaces them via personalizedWords for the green banner.
+        var vocabWords=[];
+        if(useWeakVocab){
+          var activeV=vocab.filter(function(w){return w.status!=="known";});
+          activeV.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
+          vocabWords=activeV.slice(0,5).map(function(w){return w.word;});
+        }
         var reqBody={level:level,topic:safeTopic,types:types,language:passageLang};
         if(topicInLang)reqBody.topic_in_language=topicInLang;
+        if(vocabWords.length>0)reqBody.vocab_words=vocabWords;
         var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
         var d=await r.json();
         if(!r.ok||d.error)throw new Error(d.error||"Generation failed");
         if(!d.passage||!d.questions)throw new Error("Invalid response from AI");
         setPassage(d.passage);setTopic(safeTopic);setQuestions(d.questions);setCurrentStoryId(null);
+        setPersonalizedWords(vocabWords);
         var mq=null;for(var i=0;i<d.questions.length;i++){if(d.questions[i].type==="matching"){mq=d.questions[i];break;}}
         setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
         setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
