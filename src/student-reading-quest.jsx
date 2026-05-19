@@ -3448,6 +3448,16 @@ export default function App(){
     }
   }
 
+  // Show Sean Ellis PMF prompt after 5th completed quiz, once per user.
+  // MUST be declared before any early return — Rules of Hooks.
+  useEffect(function(){
+    if(!currentUser||stage!=="result")return;
+    var gc=(currentUser.games||[]).length;
+    if(gc<5)return;
+    try{if(localStorage.getItem("rq-se-"+currentUser.name))return;}catch(e){return;}
+    setSeModal(true);
+  },[stage,currentUser]);
+
   if(!appReady)return<div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"sans-serif",padding:20}}><div style={{width:"100%",maxWidth:300}}><div className="rq-skeleton" style={{width:48,height:48,borderRadius:"50%",margin:"0 auto 20px"}}/><Skeleton h={16} mb={8}/><Skeleton h={14} mb={6}/><Skeleton h={14} w="70%"/></div></div>;
 
   // ── current user's social data ─────────────────────────────
@@ -3476,15 +3486,6 @@ export default function App(){
   var weekDots=(function(){var dots=[];for(var di=6;di>=0;di--){var d=new Date();d.setDate(d.getDate()-di);d.setHours(0,0,0,0);var ds=d.toLocaleDateString();var dn=["S","M","T","W","T","F","S"][d.getDay()];dots.push({played:currentUser?(currentUser.games||[]).some(function(g){return g.date===ds;}):false,day:dn,today:di===0});}return dots;})();
   var STREAK_MILESTONES={3:"Three days in a row! Keep going 💪",7:"One whole week! You're building a real habit 🔥",14:"Two weeks strong! Incredible consistency 🏆",30:"30-day legend! You're unstoppable 🌟"};
   var milestoneToShow=currentUser&&[3,7,14,30].indexOf(myStreak)!==-1&&!milestoneSeen&&!localStorage.getItem("rq-ms-"+currentUser.name+"-"+myStreak)?STREAK_MILESTONES[myStreak]:null;
-
-  // Show Sean Ellis PMF prompt after 5th completed quiz, once per user.
-  useEffect(function(){
-    if(!currentUser||stage!=="result")return;
-    var gc=(currentUser.games||[]).length;
-    if(gc<5)return;
-    try{if(localStorage.getItem("rq-se-"+currentUser.name))return;}catch(e){return;}
-    setSeModal(true);
-  },[stage,currentUser]);
 
   function answerSeanEllis(answer){
     if(!currentUser)return;
