@@ -2462,10 +2462,10 @@ export default function App(){
     var code=joinClassCode.trim().toUpperCase();
     var cls=classes.find(function(c){return c.id===code;});
     if(!cls){setJoinClassMsg("Class not found. Check the code and try again.");return;}
-    if(cls.students.indexOf(currentUser.name)!==-1){setJoinClassMsg("You are already in "+cls.name+"!");return;}
+    if((cls.students||[]).indexOf(currentUser.name)!==-1){setJoinClassMsg("You are already in "+cls.name+"!");return;}
     var updated=classes.map(function(c){
       if(c.id!==code)return c;
-      return Object.assign({},c,{students:c.students.concat([currentUser.name])});
+      return Object.assign({},c,{students:(c.students||[]).concat([currentUser.name])});
     });
     setClasses(updated);
     setJoinClassCode("");
@@ -3011,7 +3011,7 @@ export default function App(){
         if(newProg.done&&!prevProg.done)completedGoalIds.push(def.id);
       });
       saveGoalsLocal(updatedGoals);
-      var myAsgClass=classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;});
+      var myAsgClass=classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;});
       if(myAsgClass){
         var matchingAsgn=assignments.find(function(a){
           if(a.classId!==myAsgClass.id||!a.completions||a.completions[currentUser.name])return false;
@@ -4876,7 +4876,7 @@ export default function App(){
             {(function(){
               var doy=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(864e5));
               var wotd=WORD_OF_DAY[doy%WORD_OF_DAY.length];
-              var myClass3=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
+              var myClass3=currentUser?classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;})||null:null;
               var pendingAssignments=myClass3?assignments.filter(function(a){return a.classId===myClass3.id&&(!a.completions||!a.completions[currentUser.name])&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
               return(
                 <div>
@@ -5170,7 +5170,7 @@ export default function App(){
 
             {/* Join a Class */}
             {(function(){
-              var myClass=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
+              var myClass=currentUser?classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;})||null:null;
               return myClass?(
                 <div style={{...CARD,marginTop:10,display:"flex",alignItems:"center",gap:12}}>
                   <div style={{fontSize:28}}>🏫</div>
@@ -6895,7 +6895,7 @@ export default function App(){
                     <div style={{display:"flex",flexDirection:"column",gap:8}}>
                       {stories.map(function(story){
                         var isUnlocked=!!unlockedMap[story.id];
-                        var myClass2=currentUser?classes.find(function(c){return c.students.indexOf(currentUser.name)!==-1;})||null:null;
+                        var myClass2=currentUser?classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;})||null:null;
                         var isAssigned=myClass2?assignments.some(function(a){return a.classId===myClass2.id&&a.storyId===story.id&&(!a.completions||!a.completions[currentUser.name]);}):false;
                         return(
                           <div key={story.id} className="rq-raised" style={{...CARD,padding:0,display:"flex",alignItems:"stretch",gap:0,opacity:isUnlocked?1:0.45,border:"1px solid "+(isAssigned?"rgba(245,158,11,0.6)":isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",overflow:"hidden"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
