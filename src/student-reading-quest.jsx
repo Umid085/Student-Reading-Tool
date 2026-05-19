@@ -114,6 +114,17 @@ var STRINGS = {
       tfnm:"TRUE = passage clearly states it. FALSE = passage directly contradicts it. NOT MENTIONED = the passage says nothing about it — don't guess.",
       ynng:"YES = passage agrees with the statement. NO = passage disagrees. NOT GIVEN = the passage neither confirms nor denies it.",
     },
+    weakTypeTips:{
+      matching:"Try matching pairs step-by-step — eliminate confident ones first.",
+      heading:"Read paragraph topic sentences carefully before matching headings.",
+      qa:"Write 1-2 key words from the passage in your answer.",
+      mcq:"Re-read the relevant sentence before choosing.",
+      gap_word:"Think about grammar (noun/verb/adj) before guessing.",
+      gap_sentence:"Check the sentence before and after the gap for context.",
+      tfnm:"For 'Not Mentioned' — only choose if the passage has zero reference.",
+      ynng:"'Not Given' means the passage doesn't confirm OR deny.",
+    },
+    practiceMore:"Practice this type more!",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -208,6 +219,17 @@ var STRINGS = {
       tfnm:"TO'G'RI = matn aniq aytadi. NOTO'G'RI = matn bunga zid. AYTILMAGAN = matn bu haqda hech narsa demaydi — taxmin qilmang.",
       ynng:"HA = matn fikrga qo'shiladi. YO'Q = matn rozi emas. BERILMAGAN = matn na tasdiqlaydi, na inkor etadi.",
     },
+    weakTypeTips:{
+      matching:"Juftliklarni bosqichma-bosqich moslang — avval aniq bo'lganlarini olib tashlang.",
+      heading:"Sarlavhalarni moslashdan oldin paragraf mavzu gaplarini diqqat bilan o'qing.",
+      qa:"Javobingizga matndan 1-2 ta kalit so'z yozing.",
+      mcq:"Tanlashdan oldin tegishli gapni qayta o'qing.",
+      gap_word:"Taxmin qilishdan oldin grammatika (ot/fe'l/sifat) haqida o'ylang.",
+      gap_sentence:"Kontekst uchun bo'shliqdan oldin va keyingi gapni tekshiring.",
+      tfnm:"'Aytilmagan' uchun — faqat matnda umuman aytilmagan bo'lsa tanlang.",
+      ynng:"'Berilmagan' degani matn na tasdiqlaydi, na inkor etadi.",
+    },
+    practiceMore:"Bu turni ko'proq mashq qiling!",
   },
   ru: {
     appName:"Читальный Квест",
@@ -302,6 +324,17 @@ var STRINGS = {
       tfnm:"ВЕРНО = в тексте прямо так сказано. НЕВЕРНО = текст прямо противоречит. НЕ УПОМИНАЕТСЯ = в тексте об этом ничего нет — не угадывайте.",
       ynng:"ДА = текст согласен с утверждением. НЕТ = текст не согласен. НЕ УКАЗАНО = текст ни подтверждает, ни отрицает.",
     },
+    weakTypeTips:{
+      matching:"Сопоставляйте пары пошагово — сначала уберите те, в которых уверены.",
+      heading:"Внимательно читайте тематические предложения абзацев перед подбором заголовков.",
+      qa:"Включите в ответ 1-2 ключевых слова из текста.",
+      mcq:"Перечитайте соответствующее предложение перед выбором.",
+      gap_word:"Подумайте о грамматике (сущ/глагол/прил) перед догадкой.",
+      gap_sentence:"Смотрите на предложения до и после пропуска для контекста.",
+      tfnm:"Для 'Не упоминается' — выбирайте только если в тексте об этом ничего нет.",
+      ynng:"'Не указано' означает, что текст ни подтверждает, ни отрицает.",
+    },
+    practiceMore:"Тренируйте этот тип больше!",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -396,6 +429,17 @@ var STRINGS = {
       tfnm:"DOĞRU = metin açıkça söyler. YANLIŞ = metin doğrudan çelişir. BELİRTİLMEMİŞ = metin bu konuda hiçbir şey söylemez — tahmin etme.",
       ynng:"EVET = metin ifadeyle hemfikir. HAYIR = metin karşı. BELİRTİLMEDİ = metin ne onaylar ne inkâr eder.",
     },
+    weakTypeTips:{
+      matching:"Çiftleri adım adım eşleştir — emin olduklarını önce ele.",
+      heading:"Başlıkları eşleştirmeden önce paragraf konu cümlelerini dikkatle oku.",
+      qa:"Cevabına metinden 1-2 anahtar kelime yaz.",
+      mcq:"Seçmeden önce ilgili cümleyi tekrar oku.",
+      gap_word:"Tahmin etmeden önce dilbilgisini (isim/fiil/sıfat) düşün.",
+      gap_sentence:"Bağlam için boşluktan önceki ve sonraki cümleyi kontrol et.",
+      tfnm:"'Belirtilmemiş' için — metinde hiç değinilmemişse seç.",
+      ynng:"'Belirtilmedi', metin ne onaylar ne inkâr eder demektir.",
+    },
+    practiceMore:"Bu türü daha fazla pratik yap!",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -490,6 +534,17 @@ var STRINGS = {
       tfnm:"صحيح = النص يذكر ذلك بوضوح. خطأ = النص يناقض ذلك مباشرة. غير مذكور = النص لا يقول شيئاً عنه — لا تخمن.",
       ynng:"نعم = النص يوافق العبارة. لا = النص يعارض. غير محدد = النص لا يؤكد ولا ينفي.",
     },
+    weakTypeTips:{
+      matching:"طابق الأزواج خطوة بخطوة — استبعد الواثقة منها أولاً.",
+      heading:"اقرأ جمل موضوع الفقرة بعناية قبل مطابقة العناوين.",
+      qa:"اكتب 1-2 من الكلمات الرئيسية من النص في إجابتك.",
+      mcq:"أعد قراءة الجملة ذات الصلة قبل الاختيار.",
+      gap_word:"فكر في القواعد (اسم/فعل/صفة) قبل التخمين.",
+      gap_sentence:"تحقق من الجملة قبل وبعد الفراغ للسياق.",
+      tfnm:"اختر 'غير مذكور' فقط إذا لم يشر النص إليه إطلاقاً.",
+      ynng:"'غير محدد' يعني أن النص لا يؤكد ولا ينفي.",
+    },
+    practiceMore:"تدرب أكثر على هذا النوع!",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -584,6 +639,17 @@ var STRINGS = {
       tfnm:"WAHR = Text sagt es klar. FALSCH = Text widerspricht direkt. NICHT ERWÄHNT = Text sagt nichts dazu — nicht raten.",
       ynng:"JA = Text stimmt mit Aussage überein. NEIN = Text widerspricht. NICHT ANGEGEBEN = Text bestätigt noch verneint.",
     },
+    weakTypeTips:{
+      matching:"Ordne Paare schrittweise zu — die sicheren zuerst rauspicken.",
+      heading:"Lies die Themensätze der Absätze sorgfältig, bevor du Überschriften zuordnest.",
+      qa:"Schreibe 1-2 Schlüsselwörter aus dem Text in deine Antwort.",
+      mcq:"Lies den relevanten Satz noch einmal, bevor du wählst.",
+      gap_word:"Denke an Grammatik (Nomen/Verb/Adj) vor dem Raten.",
+      gap_sentence:"Prüfe den Satz vor und nach der Lücke für den Kontext.",
+      tfnm:"Für 'Nicht erwähnt' — nur wählen, wenn der Text gar nichts dazu sagt.",
+      ynng:"'Nicht angegeben' bedeutet, der Text bestätigt noch verneint.",
+    },
+    practiceMore:"Übe diesen Typ mehr!",
   },
   es: {
     appName:"Misión Lectora",
@@ -678,6 +744,17 @@ var STRINGS = {
       tfnm:"VERDADERO = el texto lo dice claramente. FALSO = el texto lo contradice. NO MENCIONADO = el texto no dice nada al respecto — no adivines.",
       ynng:"SÍ = el texto coincide con la afirmación. NO = el texto está en desacuerdo. NO DADO = el texto ni confirma ni niega.",
     },
+    weakTypeTips:{
+      matching:"Empareja los pares paso a paso — elimina los seguros primero.",
+      heading:"Lee las oraciones temáticas con atención antes de emparejar títulos.",
+      qa:"Incluye 1-2 palabras clave del texto en tu respuesta.",
+      mcq:"Relee la oración relevante antes de elegir.",
+      gap_word:"Piensa en la gramática (sust/verbo/adj) antes de adivinar.",
+      gap_sentence:"Revisa la oración antes y después del hueco para el contexto.",
+      tfnm:"Para 'No mencionado' — solo elige si el texto no lo menciona en absoluto.",
+      ynng:"'No dado' significa que el texto ni confirma ni niega.",
+    },
+    practiceMore:"¡Practica más este tipo!",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -772,6 +849,17 @@ var STRINGS = {
       tfnm:"VRAI = le texte le dit clairement. FAUX = le texte le contredit directement. NON MENTIONNÉ = le texte n'en parle pas — ne devine pas.",
       ynng:"OUI = le texte est d'accord. NON = le texte est en désaccord. NON DONNÉ = le texte ni ne confirme ni n'infirme.",
     },
+    weakTypeTips:{
+      matching:"Apparie les paires étape par étape — élimine d'abord celles dont tu es sûr.",
+      heading:"Lis attentivement les phrases thématiques des paragraphes avant d'apparier les titres.",
+      qa:"Écris 1-2 mots-clés du texte dans ta réponse.",
+      mcq:"Relis la phrase concernée avant de choisir.",
+      gap_word:"Pense à la grammaire (nom/verbe/adj) avant de deviner.",
+      gap_sentence:"Vérifie la phrase avant et après le trou pour le contexte.",
+      tfnm:"Pour 'Non mentionné' — choisis seulement si le texte n'en parle pas du tout.",
+      ynng:"'Non donné' signifie que le texte ne confirme ni n'infirme.",
+    },
+    practiceMore:"Entraîne-toi plus sur ce type !",
   },
 };
 
@@ -6679,12 +6767,14 @@ export default function App(){
                 <div style={{...CARD,marginBottom:12,borderColor:"rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.04)"}}>
                   <p style={{fontSize:11,fontWeight:700,color:"#f87171",marginBottom:10}}>{t("focusAreas")}</p>
                   {weakTypes.map(function(w){
-                    var tips={matching:"Try matching pairs step-by-step — eliminate confident ones first.",heading:"Read paragraph topic sentences carefully before matching headings.",qa:"Write 1-2 key words from the passage in your answer.",mcq:"Re-read the relevant sentence before choosing.",gap_word:"Think about grammar (noun/verb/adj) before guessing.",gap_sentence:"Check the sentence before and after the gap for context.",tfnm:"For 'Not Mentioned' — only choose if the passage has zero reference.",ynng:"'Not Given' means the passage doesn't confirm OR deny."};
+                    var tipTbl=STRINGS[uiLang]&&STRINGS[uiLang].weakTypeTips;
+                    var enTbl=STRINGS.en.weakTypeTips;
+                    var tip=(tipTbl&&tipTbl[w.t])||(enTbl&&enTbl[w.t])||t("practiceMore");
                     return(<div key={w.t} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8,padding:"10px 12px",background:"rgba(239,68,68,0.07)",borderRadius:10}}>
                       <div style={{width:36,height:36,borderRadius:8,background:"rgba(239,68,68,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:900,color:"#f87171"}}>{w.pct}%</div>
                       <div>
                         <div style={{fontSize:12,fontWeight:700,color:"#f3f4f6",marginBottom:2}}>{qLabel(w.t)}</div>
-                        <div style={{fontSize:11,color:"#9ca3af"}}>{tips[w.t]||"Practice this type more!"}</div>
+                        <div style={{fontSize:11,color:"#9ca3af"}}>{tip}</div>
                       </div>
                     </div>);
                   })}
