@@ -62,6 +62,7 @@ var STRINGS = {
     speedBonus:"Speed bonus",challengeComplete:"Challenge Complete!",youBeatTheClock:"You beat the clock — 1.5× XP applied",
     breakdown:"BREAKDOWN",playAgain:"Play Again",newBadgeUnlocked:"NEW BADGE UNLOCKED!",
     allCaughtUp:"All caught up!",reviewComplete:"Review complete!",
+    back:"Back",readingHistory:"Reading History",sessions:"Sessions",totalXp:"Total XP",avgScore:"Avg Score",dailyBoard:"Daily Board",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -104,6 +105,7 @@ var STRINGS = {
     speedBonus:"Tezlik bonusi",challengeComplete:"Tanlov yakunlandi!",youBeatTheClock:"Vaqtni yengdingiz — 1.5× XP qo'llanildi",
     breakdown:"TAFSILOTLAR",playAgain:"Yana o'ynash",newBadgeUnlocked:"YANGI NISHON OCHILDI!",
     allCaughtUp:"Hammasi qilingan!",reviewComplete:"Ko'rib chiqish yakunlandi!",
+    back:"Orqaga",readingHistory:"O'qish Tarixi",sessions:"Mashg'ulotlar",totalXp:"Jami XP",avgScore:"O'rtacha Ball",dailyBoard:"Kunlik Doska",
   },
   ru: {
     appName:"Читальный Квест",
@@ -146,6 +148,7 @@ var STRINGS = {
     speedBonus:"Бонус за скорость",challengeComplete:"Вызов выполнен!",youBeatTheClock:"Вы успели — применён бонус 1.5× XP",
     breakdown:"ПОДРОБНО",playAgain:"Играть снова",newBadgeUnlocked:"ПОЛУЧЕНА НОВАЯ НАГРАДА!",
     allCaughtUp:"Всё готово!",reviewComplete:"Повторение завершено!",
+    back:"Назад",readingHistory:"История чтения",sessions:"Сессий",totalXp:"Всего XP",avgScore:"Средний результат",dailyBoard:"Дневная доска",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -188,6 +191,7 @@ var STRINGS = {
     speedBonus:"Hız bonusu",challengeComplete:"Meydan okuma tamamlandı!",youBeatTheClock:"Zamanı yendin — 1.5× XP uygulandı",
     breakdown:"DETAYLAR",playAgain:"Tekrar oyna",newBadgeUnlocked:"YENİ ROZET KAZANILDI!",
     allCaughtUp:"Her şey tamam!",reviewComplete:"İnceleme tamamlandı!",
+    back:"Geri",readingHistory:"Okuma Geçmişi",sessions:"Oturum",totalXp:"Toplam XP",avgScore:"Ort. Skor",dailyBoard:"Günlük Tablo",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -230,6 +234,7 @@ var STRINGS = {
     speedBonus:"مكافأة السرعة",challengeComplete:"اكتمل التحدي!",youBeatTheClock:"هزمت الوقت — تم تطبيق 1.5× XP",
     breakdown:"التفاصيل",playAgain:"العب مرة أخرى",newBadgeUnlocked:"تم فتح شارة جديدة!",
     allCaughtUp:"كل شيء جاهز!",reviewComplete:"اكتملت المراجعة!",
+    back:"رجوع",readingHistory:"سجل القراءة",sessions:"جلسات",totalXp:"مجموع XP",avgScore:"متوسط النتيجة",dailyBoard:"لوحة اليوم",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -272,6 +277,7 @@ var STRINGS = {
     speedBonus:"Geschwindigkeitsbonus",challengeComplete:"Herausforderung abgeschlossen!",youBeatTheClock:"Du hast die Zeit geschlagen — 1.5× XP angewendet",
     breakdown:"ÜBERSICHT",playAgain:"Nochmal spielen",newBadgeUnlocked:"NEUES ABZEICHEN FREIGESCHALTET!",
     allCaughtUp:"Alles erledigt!",reviewComplete:"Wiederholung abgeschlossen!",
+    back:"Zurück",readingHistory:"Leseverlauf",sessions:"Sitzungen",totalXp:"Gesamt-XP",avgScore:"Ø Ergebnis",dailyBoard:"Tagestabelle",
   },
   es: {
     appName:"Misión Lectora",
@@ -314,6 +320,7 @@ var STRINGS = {
     speedBonus:"Bono de velocidad",challengeComplete:"¡Desafío completado!",youBeatTheClock:"Venciste al reloj — 1.5× XP aplicado",
     breakdown:"DESGLOSE",playAgain:"Jugar de nuevo",newBadgeUnlocked:"¡NUEVA INSIGNIA DESBLOQUEADA!",
     allCaughtUp:"¡Todo al día!",reviewComplete:"¡Repaso completado!",
+    back:"Atrás",readingHistory:"Historial de lectura",sessions:"Sesiones",totalXp:"XP Total",avgScore:"Puntuación med.",dailyBoard:"Tabla diaria",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -356,6 +363,7 @@ var STRINGS = {
     speedBonus:"Bonus de vitesse",challengeComplete:"Défi terminé !",youBeatTheClock:"Vous avez battu le chrono — bonus 1.5× XP appliqué",
     breakdown:"DÉTAILS",playAgain:"Rejouer",newBadgeUnlocked:"NOUVEAU BADGE DÉBLOQUÉ !",
     allCaughtUp:"Tout est à jour !",reviewComplete:"Révision terminée !",
+    back:"Retour",readingHistory:"Historique de lecture",sessions:"Sessions",totalXp:"XP Total",avgScore:"Score moyen",dailyBoard:"Tableau du jour",
   },
 };
 
@@ -1542,6 +1550,8 @@ export default function App(){
   var [passInput,setPassInput]=useState("");
   var [authMode,setAuthMode]=useState("register");
   var [showPass,setShowPass]=useState(false);
+  // Sean Ellis PMF survey — shown once after 5+ completed quizzes per user
+  var [seModal,setSeModal]=useState(false);
   // quiz hints
   var [dismissedHints,setDismissedHints]=useState(new Set());
   // keyword highlight
@@ -3045,8 +3055,39 @@ export default function App(){
   var STREAK_MILESTONES={3:"Three days in a row! Keep going 💪",7:"One whole week! You're building a real habit 🔥",14:"Two weeks strong! Incredible consistency 🏆",30:"30-day legend! You're unstoppable 🌟"};
   var milestoneToShow=currentUser&&[3,7,14,30].indexOf(myStreak)!==-1&&!milestoneSeen&&!localStorage.getItem("rq-ms-"+currentUser.name+"-"+myStreak)?STREAK_MILESTONES[myStreak]:null;
 
+  // Show Sean Ellis PMF prompt after 5th completed quiz, once per user.
+  useEffect(function(){
+    if(!currentUser||stage!=="result")return;
+    var gc=(currentUser.games||[]).length;
+    if(gc<5)return;
+    try{if(localStorage.getItem("rq-se-"+currentUser.name))return;}catch(e){return;}
+    setSeModal(true);
+  },[stage,currentUser]);
+
+  function answerSeanEllis(answer){
+    if(!currentUser)return;
+    try{localStorage.setItem("rq-se-"+currentUser.name,answer);}catch(e){}
+    track("sean_ellis_response",{answer:answer,gameCount:(currentUser.games||[]).length});
+    setSeModal(false);
+  }
+
   return(
     <>
+    {seModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20,backdropFilter:"blur(4px)"}}>
+        <div style={{background:"#1a1a2e",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:24,maxWidth:440,width:"100%",color:"#fff",fontFamily:"system-ui,-apple-system,sans-serif",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
+          <div style={{fontSize:24,marginBottom:8}}>💬 Quick question</div>
+          <div style={{fontSize:16,lineHeight:1.5,marginBottom:20,opacity:0.9}}>How would you feel if you could no longer use <b>Student Reading Quest</b>?</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <button onClick={function(){answerSeanEllis("very_disappointed");}} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",color:"#fca5a5",padding:"12px 14px",borderRadius:10,fontSize:14,fontWeight:600,cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>Very disappointed</button>
+            <button onClick={function(){answerSeanEllis("somewhat_disappointed");}} style={{background:"rgba(234,179,8,0.15)",border:"1px solid rgba(234,179,8,0.4)",color:"#fde68a",padding:"12px 14px",borderRadius:10,fontSize:14,fontWeight:600,cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>Somewhat disappointed</button>
+            <button onClick={function(){answerSeanEllis("not_disappointed");}} style={{background:"rgba(148,163,184,0.15)",border:"1px solid rgba(148,163,184,0.4)",color:"#cbd5e1",padding:"12px 14px",borderRadius:10,fontSize:14,fontWeight:600,cursor:"pointer",textAlign:"left",fontFamily:"inherit"}}>Not disappointed</button>
+            <button onClick={function(){answerSeanEllis("dismissed");}} style={{background:"transparent",border:"none",color:"#9ca3af",padding:"8px 14px",fontSize:12,cursor:"pointer",marginTop:6,fontFamily:"inherit"}}>Skip</button>
+          </div>
+          <div style={{fontSize:11,opacity:0.5,marginTop:14,textAlign:"center"}}>Helps me make this better for you. Takes 1 second.</div>
+        </div>
+      </div>
+    )}
     <style>{`
       :root{
         --rq-accent:${_accent};
@@ -3977,7 +4018,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:16}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>🏆 My Portfolio</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
               {/* identity card */}
               <div style={{...CARD,marginBottom:12,padding:16,background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(167,139,250,0.06))",borderColor:"rgba(99,102,241,0.35)"}}>
@@ -5378,7 +5419,7 @@ export default function App(){
                   {vocab.length>=2&&<button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);setStage("vocabgame");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"7px 14px",fontSize:12}}>🎮 Practice</button>}
                   {vocab.length>0&&<button onClick={function(){doExportVocab("csv");}} style={{...GHOST,padding:"7px 12px",fontSize:12}} title="Export as CSV">⬇ CSV</button>}
                   {vocab.length>0&&<button onClick={function(){doExportVocab("anki");}} style={{...GHOST,padding:"7px 12px",fontSize:12}} title="Export for Anki">🃏 Anki</button>}
-                  <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                  <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
                 </div>
               </div>
               <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
@@ -5443,8 +5484,8 @@ export default function App(){
         {stage==="dailyleaderboard"&&(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Daily Board</h2>
-              <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>{t("dailyBoard")}</h2>
+              <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
             </div>
             <p style={{color:"#6b7280",fontSize:12,marginBottom:12}}>Today · {new Date().toLocaleDateString()} · B1</p>
             {dailyLb.length===0?(
@@ -5494,8 +5535,8 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>Reading History</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>{t("readingHistory")}</h2>
+                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
 
               {/* level filter pills */}
@@ -5507,7 +5548,7 @@ export default function App(){
               {/* summary bar */}
               {filtered.length>0&&(
                 <div style={{display:"flex",gap:7,marginBottom:12}}>
-                  {[{v:filtered.length,l:"Sessions",c:"#34d399"},{v:totalXp,l:"Total XP",c:"#fbbf24"},{v:avgPct+"%",l:"Avg Score",c:pctColor(avgPct)}].map(function(s){
+                  {[{v:filtered.length,l:t("sessions"),c:"#34d399"},{v:totalXp,l:t("totalXp"),c:"#fbbf24"},{v:avgPct+"%",l:t("avgScore"),c:pctColor(avgPct)}].map(function(s){
                     return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:15,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;
                   })}
                 </div>
@@ -5578,7 +5619,7 @@ export default function App(){
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
               <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Leaderboard</h2>
-              <button onClick={function(){setStage(currentUser?"home":"auth");}} style={GHOST}>Back</button>
+              <button onClick={function(){setStage(currentUser?"home":"auth");}} style={GHOST}>{t("back")}</button>
             </div>
             <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
               {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setLbLevel(l.key);}} style={{background:lbLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:lbLevel===l.key?"#0d0d1a":"#9ca3af",border:"1px solid "+(lbLevel===l.key?l.color:"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
@@ -5614,7 +5655,7 @@ export default function App(){
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
               <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>Friends</h2>
-              <button onClick={function(){setStage("home");setSocialMsg("");}} style={GHOST}>Back</button>
+              <button onClick={function(){setStage("home");setSocialMsg("");}} style={GHOST}>{t("back")}</button>
             </div>
             {socialMsg&&<div style={{background:"rgba(52,211,153,0.1)",border:"1px solid #34d399",borderRadius:10,padding:"8px 12px",fontSize:13,color:"#34d399",marginBottom:10}}>{socialMsg}</div>}
 
@@ -5753,7 +5794,7 @@ export default function App(){
         {/* ── FRIEND PROFILE ────────────────────────────────── */}
         {stage==="friendProfile"&&viewingUser&&currentUser&&(function(){
           var fu=null;for(var i=0;i<allUsers.length;i++){if(allUsers[i].name===viewingUser){fu=allUsers[i];break;}}
-          if(!fu)return<div style={{textAlign:"center",padding:40}}><p style={{color:"#6b7280"}}>User not found.</p><button onClick={function(){setStage("friends");}} style={GHOST}>Back</button></div>;
+          if(!fu)return<div style={{textAlign:"center",padding:40}}><p style={{color:"#6b7280"}}>User not found.</p><button onClick={function(){setStage("friends");}} style={GHOST}>{t("back")}</button></div>;
           var fData=getSocial(social,viewingUser);
           fData=fData||{friends:[],requests:[],likes:0,challenges:[]};
           var isFriend=myData.friends.indexOf(viewingUser)!==-1;
@@ -5774,7 +5815,7 @@ export default function App(){
           return(<div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
               <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#a78bfa"}}>{viewingUser}'s Profile</h2>
-              <button onClick={function(){setStage("friends");setSocialMsg("");}} style={GHOST}>Back</button>
+              <button onClick={function(){setStage("friends");setSocialMsg("");}} style={GHOST}>{t("back")}</button>
             </div>
             {socialMsg&&<div style={{background:"rgba(52,211,153,0.1)",border:"1px solid #34d399",borderRadius:10,padding:"8px 12px",fontSize:13,color:"#34d399",marginBottom:10}}>{socialMsg}</div>}
 
@@ -5875,7 +5916,7 @@ export default function App(){
           return(<div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
               <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>My Profile</h2>
-              <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+              <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
             </div>
             <div style={{...CARD,marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
               <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",flexShrink:0}}>{currentUser.name[0].toUpperCase()}</div>
@@ -5973,7 +6014,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>🎯 Reading Goals</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
 
               {/* active goals */}
@@ -6109,7 +6150,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#06b6d4"}}>My Analytics</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
 
               {/* top stats */}
@@ -6295,7 +6336,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>Story Library</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
               <p style={{color:"#6b7280",fontSize:12,marginBottom:10,lineHeight:1.5}}>Pre-written stories — instant play. Unlock more by completing quizzes.</p>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
@@ -6381,7 +6422,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:6}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#fbbf24"}}>Badges</h2>
-                <button onClick={function(){setStage("profile");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("profile");}} style={GHOST}>{t("back")}</button>
               </div>
               <p style={{color:"#6b7280",fontSize:13,marginBottom:14}}>{earnedCount} of {BADGES.length} earned</p>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -6414,7 +6455,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#a78bfa"}}>Vocab Practice</h2>
-                <button onClick={function(){setStage("vocab");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("vocab");}} style={GHOST}>{t("back")}</button>
               </div>
               <p style={{color:"#6b7280",fontSize:13,marginBottom:16}}>{gameWords.length} words to practice</p>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -6538,7 +6579,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>Weekly Board</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
               <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(129,140,248,0.3)",background:"rgba(129,140,248,0.05)"}}>
                 <p style={{fontSize:11,color:"#818cf8",fontWeight:700,letterSpacing:0.5,margin:"0 0 8px"}}>THIS WEEK</p>
@@ -6588,7 +6629,7 @@ export default function App(){
                 <p style={{margin:0,fontSize:11,color:"#6b7280"}}>{level} · {topic}</p>
               </div>
               <div style={{display:"flex",gap:6}}>
-                <button onClick={function(){setStage("result");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("result");}} style={GHOST}>{t("back")}</button>
                 <button onClick={doRestart} style={{...GHOST,color:"#34d399",borderColor:"rgba(52,211,153,0.3)"}}>Home</button>
               </div>
             </div>
@@ -6907,7 +6948,7 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10}}>
                 <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#ec4899"}}>Discussion</h2>
-                <button onClick={function(){setStage("result");}} style={GHOST}>Back</button>
+                <button onClick={function(){setStage("result");}} style={GHOST}>{t("back")}</button>
               </div>
               {story&&<div style={{...CARD,marginBottom:12,padding:12,background:"rgba(236,72,153,0.06)",borderColor:"rgba(236,72,153,0.25)"}}>
                 <p style={{fontSize:11,color:"#f472b6",fontWeight:700,margin:"0 0 4px"}}>📖 {story.title} · {story.level}</p>
@@ -6948,7 +6989,7 @@ export default function App(){
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
               <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#f59e0b"}}>🔖 Quote Book</h2>
-              <button onClick={function(){setStage(result?"result":"home");}} style={GHOST}>Back</button>
+              <button onClick={function(){setStage(result?"result":"home");}} style={GHOST}>{t("back")}</button>
             </div>
             {quotes.length===0?(
               <div style={{...CARD,textAlign:"center",padding:40}}>
