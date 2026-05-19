@@ -969,15 +969,25 @@ function analyzePassage(text){
   var newWords=words.filter(function(w){return!COMMON_WORDS.has(w.toLowerCase().replace(/[^a-z]/g,""));}).length;
   return{wordCount,sentCount,stars,newWords,estReadMins:Math.max(1,Math.round(wordCount/200))};
 }
+// ISO 8601 week number — Monday-anchored, year derived from the week's Thursday
+// so users on a year boundary see the same week id regardless of timezone.
 function getWeekId(){
-  var d=new Date();
-  var dayOfYear=Math.floor((d-new Date(d.getFullYear(),0,0))/(864e5));
-  return d.getFullYear()+"-W"+Math.ceil(dayOfYear/7);
+  var d=new Date();d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+4-(d.getDay()||7));
+  var yearStart=new Date(d.getFullYear(),0,1);
+  var weekNo=Math.ceil(((d-yearStart)/86400000+1)/7);
+  return d.getFullYear()+"-W"+(weekNo<10?"0"+weekNo:weekNo);
 }
-function getWpmFromSecs(wordCount,secs){return secs>0?Math.round(wordCount/(secs/60)):0;}
+// secs>5 floor: a 200-word passage with readingTimerSecs=1 would otherwise
+// record a nonsense 12000 WPM in game history.
+function getWpmFromSecs(wordCount,secs){return secs>5?Math.round(wordCount/(secs/60)):0;}
+// Locale-stable "today" key. Persisted dates use this so a user crossing
+// timezones or switching OS language doesn't reset (or double-collect) a daily.
+function todayKey(){return new Date().toISOString().slice(0,10);}
 
 var SRS_INTERVALS=[1,3,7,14]; // days between reviews
-function srsNextDate(days){var d=new Date();d.setDate(d.getDate()+days);return d.toLocaleDateString();}
+// Returns ISO yyyy-mm-dd so cross-locale Date parsing is reliable.
+function srsNextDate(days){var d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
 function srsDueToday(word){
   if(word.status==="known")return false;
   if(!word.nextReview)return true; // legacy words without SRS — treat as due
@@ -1212,10 +1222,11 @@ function getBestLevel(games){
 }
 
 function scoreQuestion(q,ans){
+  if(!q)return 0;
   if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence"||q.type==="tfnm"||q.type==="ynng")return Number(ans)===Number(q.answer)?Q_XP[q.type]:0;
-  if(q.type==="matching"){var s=0;for(var i=0;i<q.correctPairs.length;i++){if(ans&&Number(ans[i])===Number(q.correctPairs[i]))s++;}return s;}
-  if(q.type==="heading"){if(!q.correctMap)return 0;var h=0;for(var j=0;j<q.correctMap.length;j++){if(ans&&Number(ans[j])===Number(q.correctMap[j]))h++;}return h;}
-  if(q.type==="qa"){if(!ans||ans.trim().length<3)return 0;var lo=ans.toLowerCase(),hits=0;for(var k=0;k<q.keywords.length;k++){if(lo.includes(q.keywords[k].toLowerCase()))hits++;} var threshold=Math.ceil(q.keywords.length/2);return hits>=threshold?Q_XP.qa:0;}
+  if(q.type==="matching"){var cp=q.correctPairs||[];var s=0;for(var i=0;i<cp.length;i++){if(ans&&Number(ans[i])===Number(cp[i]))s++;}return s;}
+  if(q.type==="heading"){var cm=q.correctMap;if(!cm||!cm.length)return 0;var h=0;for(var j=0;j<cm.length;j++){if(ans&&Number(ans[j])===Number(cm[j]))h++;}return h;}
+  if(q.type==="qa"){var kws=q.keywords||[];if(!ans||ans.trim().length<3||!kws.length)return 0;var lo=ans.toLowerCase(),hits=0;for(var k=0;k<kws.length;k++){if(lo.includes(String(kws[k]).toLowerCase()))hits++;} var threshold=Math.ceil(kws.length/2);return hits>=threshold?Q_XP.qa:0;}
   return 0;
 }
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
@@ -1743,7 +1754,9 @@ function challengeTimeLeft(expiresAt){
 
 // ── pronunciation helpers ────────────────────────────────────
 function splitSentences(text){
-  var raw=text.match(/[^.!?]+[.!?]*/g)||[text];
+  // Include \n in the negated set so a paragraph that ends without .!? (or
+  // with a colon/dash) doesn't glue into the next paragraph's first sentence.
+  var raw=text.match(/[^.!?\n]+[.!?]*/g)||[text];
   return raw.map(function(s){return s.trim();}).filter(function(s){return s.length>10;});
 }
 function editDistance(a,b){
@@ -1914,33 +1927,39 @@ function GapSentQ(props){
 
 function MatchingQ(props){
   var q=props.q,matches=props.matches,conf=props.conf,onMatch=props.onMatch,shuffled=props.shuffled;
+  var lefts=q.lefts||[],rights=q.rights||[],correctPairs=q.correctPairs||[];
+  // shuffled is now an array of {idx, val} pairs so duplicate right-side
+  // strings still resolve back to their unique source index.
   var [activeLeft,setActiveLeft]=useState(null);
   function clickLeft(i){if(conf)return;setActiveLeft(i===activeLeft?null:i);}
-  function clickRight(ri){if(conf||activeLeft===null)return;onMatch(activeLeft,ri);setActiveLeft(null);}
+  function clickRight(origIdx){if(conf||activeLeft===null)return;onMatch(activeLeft,origIdx);setActiveLeft(null);}
   return(<div>
     <p style={{fontSize:11,color:"#9ca3af",marginBottom:8}}>Tap a left item then tap its match on the right.</p>
     <div style={{display:"flex",gap:8}}>
       <div style={{flex:1,display:"flex",flexDirection:"column",gap:5}}>
-        {q.lefts.map(function(l,i){
+        {lefts.map(function(l,i){
           var matched=matches&&matches[i]!==undefined;
-          var ok=conf&&matched&&matches[i]===q.correctPairs[i];
-          var bad=conf&&matched&&matches[i]!==q.correctPairs[i];
+          var ok=conf&&matched&&matches[i]===correctPairs[i];
+          var bad=conf&&matched&&matches[i]!==correctPairs[i];
           return(<button key={i} onClick={function(){clickLeft(i);}} style={{background:activeLeft===i?"rgba(99,102,241,0.3)":matched?"rgba(255,255,255,0.07)":"rgba(255,255,255,0.04)",border:"1px solid "+(activeLeft===i?"#818cf8":ok?"#34d399":bad?"#ef4444":"rgba(255,255,255,0.1)"),borderRadius:8,padding:"9px 10px",color:ok?"#34d399":bad?"#ef4444":activeLeft===i?"#c7d2fe":"#e5e7eb",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
-            {l}{matched&&<span style={{float:"right",opacity:0.5,fontSize:9}}>{q.rights[matches[i]]}</span>}
+            {l}{matched&&<span style={{float:"right",opacity:0.5,fontSize:9}}>{rights[matches[i]]}</span>}
           </button>);
         })}
       </div>
       <div style={{flex:1,display:"flex",flexDirection:"column",gap:5}}>
-        {shuffled.map(function(r,ri){
-          var origIdx=q.rights?q.rights.indexOf(r):ri;var used=matches&&Object.values(matches).indexOf(origIdx)!==-1;
-          return(<button key={ri} onClick={function(){clickRight(ri);}} style={{background:used?"rgba(255,255,255,0.07)":"rgba(255,255,255,0.04)",border:"1px solid "+(activeLeft!==null&&!conf?"rgba(99,102,241,0.4)":"rgba(255,255,255,0.1)"),borderRadius:8,padding:"9px 10px",color:used?"#6b7280":"#e5e7eb",fontSize:12,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left"}}>
-            {r}
+        {shuffled.map(function(entry,ri){
+          var isPair=entry&&typeof entry==="object"&&"idx" in entry;
+          var origIdx=isPair?entry.idx:(rights.indexOf(entry));
+          var val=isPair?entry.val:entry;
+          var used=matches&&Object.values(matches).indexOf(origIdx)!==-1;
+          return(<button key={ri} onClick={function(){clickRight(origIdx);}} style={{background:used?"rgba(255,255,255,0.07)":"rgba(255,255,255,0.04)",border:"1px solid "+(activeLeft!==null&&!conf?"rgba(99,102,241,0.4)":"rgba(255,255,255,0.1)"),borderRadius:8,padding:"9px 10px",color:used?"#6b7280":"#e5e7eb",fontSize:12,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left"}}>
+            {val}
           </button>);
         })}
       </div>
     </div>
     {conf&&(<div style={{marginTop:8,fontSize:11,color:"#d1fae5"}}>
-      {q.lefts.map(function(l,i){var ok=matches&&matches[i]===q.correctPairs[i];return<div key={i}>{ok?"✓":"✕"} {l} = {q.rights[q.correctPairs[i]]}</div>;})}
+      {lefts.map(function(l,i){var ok=matches&&matches[i]===correctPairs[i];return<div key={i}>{ok?"✓":"✕"} {l} = {rights[correctPairs[i]]}</div>;})}
     </div>)}
   </div>);
 }
@@ -2089,6 +2108,9 @@ export default function App(){
   var [headingState,setHeadingState]=useState({});
   var [confirmed,setConfirmed]=useState(false);
   var [streak,setStreak]=useState(0);
+  // Highest streak reached in the current run. Used for the +50 XP bonus so
+  // a student who hits a 5-streak but misses the last question still earns it.
+  var [maxStreak,setMaxStreak]=useState(0);
   var [totalXpSoFar,setTotalXpSoFar]=useState(0);
   var [showPassage,setShowPassage]=useState(false);
   var [timerRunning,setTimerRunning]=useState(false);
@@ -2173,6 +2195,9 @@ export default function App(){
   var [pronRecording,setPronRecording]=useState(false);
   var [pronResult,setPronResult]=useState(null);
   var pronRecRef=useRef(null);
+  // Vocab-game options caches: keyed by question index so options don't
+  // re-shuffle every time React re-renders (e.g. after the user clicks one).
+  var vocabGameCacheRef=useRef({key:"",shuffled:[],options:{},bOptions:{}});
   // reading goals
   var [goals,setGoals]=useState({});
   // ai tutor
@@ -2350,7 +2375,7 @@ export default function App(){
   // load vocab + daily challenge when user logs in
   useEffect(function(){
     if(!currentUser)return;
-    var today=new Date().toLocaleDateString();
+    var today=todayKey();
     loadVocab().then(function(v){setAllVocab(v||{});setVocab((v&&v[currentUser.name])||[]);});
     loadDaily().then(function(d){if(d&&d.date===today)setDailyChallenge(d);});
     var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
@@ -2428,7 +2453,7 @@ export default function App(){
     if(r.status===429){setAuthErr("Too many attempts. Please wait 15 minutes.");return;}
     if(!r.ok){setAuthErr(d.error==="Username taken"?"Username taken.":(d.error||"Registration failed. Try again."));return;}
     _sessionToken=d.token;
-    var user={name:nameInput.trim(),hash:hash,games:[],joined:new Date().toLocaleDateString()};
+    var user={name:nameInput.trim(),hash:hash,games:[],joined:todayKey()};
     var fresh=await loadUsers();setAllUsers(fresh);
     localStorage.setItem("rq-session",user.name);
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,hash:hash}));
@@ -2471,7 +2496,7 @@ export default function App(){
   async function doCreateClass(){
     if(!currentUser||!newClassName.trim())return;
     var code=uniqueClassCode();
-    var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:new Date().toLocaleDateString(),targetLevel:"B1"};
+    var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:todayKey(),targetLevel:"B1"};
     var updated=classes.concat([cls]);
     setClasses(updated);
     setNewClassName("");
@@ -2588,7 +2613,7 @@ export default function App(){
     if(!isTeacherOf(currentClass))return;
     var updated=classes.map(function(c){
       if(c.id!==currentClass.id)return c;
-      return Object.assign({},c,{announcement:{text:announcementText.trim(),date:new Date().toLocaleDateString(),teacherName:currentUser.name}});
+      return Object.assign({},c,{announcement:{text:announcementText.trim(),date:todayKey(),teacherName:currentUser.name}});
     });
     setClasses(updated);
     var next=updated.find(function(c){return c.id===currentClass.id;});
@@ -2622,7 +2647,7 @@ export default function App(){
   function doOnboardCreateClass(){
     if(!currentUser||!newClassName.trim())return;
     var code=uniqueClassCode();
-    var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:new Date().toLocaleDateString(),announcement:null};
+    var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:todayKey(),announcement:null};
     var updated=classes.concat([cls]);
     setClasses(updated);setCurrentClass(cls);setNewClassName("");setOnboardClassCode(code);setOnboardStep(2);
     saveClassesRemote(updated);
@@ -2642,7 +2667,7 @@ export default function App(){
     var Q_TYPES_R=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
     var qBreakdown={};
     Q_TYPES_R.forEach(function(t){var relevant=pg.filter(function(g){return g.typeStats&&g.typeStats[t]!==undefined;});if(relevant.length)qBreakdown[t]=Math.round(relevant.reduce(function(s,g){return s+(g.typeStats[t]||0);},0)/relevant.length*100);});
-    var report={n:sName,t:currentClass?currentClass.teacherName:"",c:currentClass?currentClass.name:"",d:new Date().toLocaleDateString(),l:getBestLevel(pg),g:pg.length,s:avgPct,w:avgWpm,tr:trend,q:qBreakdown,r:pg.slice(-5).map(function(g){return{d:g.date,p:g.pct,l:g.level};})};
+    var report={n:sName,t:currentClass?currentClass.teacherName:"",c:currentClass?currentClass.name:"",d:todayKey(),l:getBestLevel(pg),g:pg.length,s:avgPct,w:avgWpm,tr:trend,q:qBreakdown,r:pg.slice(-5).map(function(g){return{d:g.date,p:g.pct,l:g.level};})};
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(report))));
     return window.location.origin+window.location.pathname+"?report="+encoded;
   }
@@ -2657,7 +2682,7 @@ export default function App(){
     var favTopic=Object.keys(topicCounts).sort(function(a,b){return topicCounts[b]-topicCounts[a];})[0]||null;
     var favSubj=favTopic?(SUBJECT_LABELS[SUBJECT_MAP[favTopic]]||"🏠 Life"):null;
     var lvBreak=["A1","A2","B1","B2","C1","C2"].map(function(lv){var lvg=pg.filter(function(g){return g.level===lv;});return{l:lv,c:lvg.length,a:lvg.length?Math.round(lvg.reduce(function(s,g){return s+g.pct;},0)/lvg.length):0};}).filter(function(x){return x.c>0;});
-    var data={n:currentUser.name,g:pg.length,xp:currentUser.totalXp||0,bs:bestPct,bw:bestWpm,ls:longestStreak,lv:getBestLevel(pg),fs:favSubj,lb:lvBreak,d:new Date().toLocaleDateString()};
+    var data={n:currentUser.name,g:pg.length,xp:currentUser.totalXp||0,bs:bestPct,bw:bestWpm,ls:longestStreak,lv:getBestLevel(pg),fs:favSubj,lb:lvBreak,d:todayKey()};
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
     return window.location.origin+window.location.pathname+"?portfolio="+encoded;
   }
@@ -2773,7 +2798,10 @@ export default function App(){
     try{
       var lang=translateLang||"uz";
       var url="https://api.mymemory.translated.net/get?q="+encodeURIComponent(text)+"&langpair=en|"+lang;
-      var r=await fetch(url);
+      // Abort after 8s so a hung MyMemory request doesn't leave the UI
+      // stuck in the "Translating…" state forever.
+      var ctl=new AbortController();var tid=setTimeout(function(){ctl.abort();},8000);
+      var r=await fetch(url,{signal:ctl.signal});clearTimeout(tid);
       var d=await r.json();
       setTranslation(d.responseData&&d.responseData.translatedText?d.responseData.translatedText:"Translation unavailable.");
     }catch(e){setTranslation("Translation unavailable.");}
@@ -2783,7 +2811,7 @@ export default function App(){
   async function toggleFav(storyId,storyTitle,storyLevel){
     if(!currentUser||!storyId)return;
     var existed=favs.some(function(f){return f.id===storyId;});
-    var nFavs=existed?favs.filter(function(f){return f.id!==storyId;}):favs.concat([{id:storyId,title:storyTitle,level:storyLevel,date:new Date().toLocaleDateString()}]);
+    var nFavs=existed?favs.filter(function(f){return f.id!==storyId;}):favs.concat([{id:storyId,title:storyTitle,level:storyLevel,date:todayKey()}]);
     var nAll={};for(var k in allFavs)nAll[k]=allFavs[k];nAll[currentUser.name]=nFavs;
     setFavs(nFavs);setAllFavs(nAll);saveFavs(nAll);
   }
@@ -2792,7 +2820,8 @@ export default function App(){
     if(selectedWord===word){setSelectedWord(null);setWordDef(null);return;}
     setSelectedWord(word);setWordDef(null);setWordDefLoading(true);
     try{
-      var r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(word));
+      var ctl=new AbortController();var tid=setTimeout(function(){ctl.abort();},8000);
+      var r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(word),{signal:ctl.signal});clearTimeout(tid);
       if(!r.ok)throw new Error("not found");
       var data=await r.json();
       var entry=data[0];
@@ -2859,9 +2888,9 @@ export default function App(){
         setPassage(d.passage);setTopic(safeTopic);setQuestions(d.questions);setCurrentStoryId(null);
         setPersonalizedWords(vocabWords);
         var mq=null;for(var i=0;i<d.questions.length;i++){if(d.questions[i].type==="matching"){mq=d.questions[i];break;}}
-        setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
+        setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights.map(function(v,i){return{idx:i,val:v};})):[]);
         setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-        setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+        setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
         setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setIsDailyGame(false);
         setGenLoading(false);
         setStage("reading");
@@ -2881,9 +2910,9 @@ export default function App(){
     var story=pool[randomIdx];
     setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);setCurrentStoryId(story.id);
     var mq=null;for(var i=0;i<story.questions.length;i++){if(story.questions[i].type==="matching"){mq=story.questions[i];break;}}
-    setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
+    setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights.map(function(v,i){return{idx:i,val:v};})):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+    setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);setIsDailyGame(false);
     setStage("reading");
   }
@@ -2892,11 +2921,19 @@ export default function App(){
     setLevel(story.level);
     setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);
     var mq=null;for(var i=0;i<story.questions.length;i++){if(story.questions[i].type==="matching"){mq=story.questions[i];break;}}
-    setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights):[]);
+    setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights.map(function(v,i){return{idx:i,val:v};})):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+    setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
     setIsDailyGame(false);setCurrentStoryId(story.id);
     setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+    // Clear run-scoped UI state so a fresh start doesn't inherit stale
+    // banners, popups, or assignment credit from the previous quiz.
+    setPersonalizedWords([]);setAutoVocabWords([]);setAutoVocabDismissed(false);
+    setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
+    setSelectedWord(null);setWordDef(null);
+    setPronMode(false);setPronSentence("");setPronResult(null);setPronRecording(false);
+    setActiveAssignmentId(null);setResult(null);setError("");setChallengeMode(false);
+    setFocusMode(false);setReadingTimerSecs(0);
     setStage("reading");
   }
 
@@ -2904,7 +2941,7 @@ export default function App(){
     if(window.speechSynthesis){window.speechSynthesis.cancel();setIsSpeaking(false);}
     setFocusMode(false);setSelectedWord(null);setWordDef(null);
     if(currentUser&&savedWords.size>0){
-      var today=new Date().toLocaleDateString();
+      var today=todayKey();
       var newEntries=[];
       savedWords.forEach(function(w){if(!vocab.some(function(v){return v.word===w;})){var wd=savedWordDefs&&savedWordDefs[w];newEntries.push({word:w,level:level,topic:topic,date:today,status:"new",def:wd?wd.def:"",example:wd?wd.example:"",srInterval:0,nextReview:srsNextDate(SRS_INTERVALS[0])});}});
       if(newEntries.length>0){
@@ -2925,8 +2962,8 @@ export default function App(){
   function canConfirm(){
     if(!q||timeExpired)return false;
     if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence"||q.type==="tfnm"||q.type==="ynng")return userAnswers[current]!==undefined;
-    if(q.type==="matching")return Object.keys(matchState).length===q.lefts.length;
-    if(q.type==="heading")return Object.keys(headingState).length===q.paragraphs.length;
+    if(q.type==="matching")return Object.keys(matchState).length===(q.lefts||[]).length;
+    if(q.type==="heading")return Object.keys(headingState).length===(q.paragraphs||[]).length;
     if(q.type==="qa")return userAnswers[current]&&userAnswers[current].trim().length>=3;
     return false;
   }
@@ -2936,6 +2973,7 @@ export default function App(){
     var ans=getCurrentAnswer(),pts=scoreQuestion(q,ans),mxp=maxPoints(q);
     var isGood=pts>=Math.ceil(mxp/2),ns=isGood?streak+1:0;
     setStreak(ns);
+    if(ns>maxStreak)setMaxStreak(ns);
     setTotalXpSoFar(function(x){return x+Math.round(pts*(lv?lv.mult:1)*100)+(ns>=3?50:0);});
     playSfx(isGood?"correct":"wrong");
     setConfirmed(true);
@@ -2968,30 +3006,36 @@ export default function App(){
       var stars=pct>=90?5:pct>=75?4:pct>=60?3:pct>=40?2:1;
       var lvObj=lv||LEVELS[0];
       var tb=Math.round(lvObj.timeBonus*Math.max(0,(lvObj.timeLimit-timeSecs)/lvObj.timeLimit));
-      var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(streak>=3?50:0);
+      // Streak bonus uses maxStreak so it's awarded once-per-run when the
+      // streak ever reached 3, not only when the last answer was correct.
+      var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(Math.max(streak,maxStreak)>=3?50:0);
       var wasChallenge=challengeMode&&!timeExpired;
       if(wasChallenge)finalXp=Math.round(finalXp*1.5);
-      var today=new Date().toLocaleDateString();
+      var today=todayKey();
+      var userGames=currentUser.games||[];
 
-      var badgesBefore=checkBadges(currentUser,vocab,calcStreakWithShields(currentUser.games,shieldDates));
-      var tempTodayGames=currentUser.games.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
+      var badgesBefore=checkBadges(currentUser,vocab,calcStreakWithShields(userGames,shieldDates));
+      var tempTodayGames=userGames.filter(function(g){return g.date===today;}).concat([{level:lvObj.key,pct:pct,timeSecs:timeSecs,xp:finalXp,isDaily:isDailyGame}]);
       var newQuestItems=[];
       for(var qi=0;qi<dailyQuests.length;qi++){
         var qt=dailyQuests[qi];
         if(questsDone[qt.id])continue;
-        if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreakWithShields(currentUser.games.concat([{date:today}]),shieldDates)})){
+        if(checkQuest(qt.id,tempTodayGames,vocab.length,{dailyDone:isDailyGame,streak:calcStreakWithShields(userGames.concat([{date:today}]),shieldDates)})){
           newQuestItems.push(qt);finalXp+=qt.xp;
         }
       }
-      var wpm=getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs);
+      // Only record a WPM if the student spent enough time on the reading
+      // screen to make the measurement meaningful (otherwise we'd save
+      // garbage like 12000 WPM from a 1-second skim).
+      var wpm=readingTimerSecs>5?getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs):0;
       var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
-      var priorXp=Math.max(Number(currentUser.totalXp)||0,(currentUser.games||[]).reduce(function(s,g){return s+(g.xp||0);},0));
+      var priorXp=Math.max(Number(currentUser.totalXp)||0,userGames.reduce(function(s,g){return s+(g.xp||0);},0));
       var newTotalXp=priorXp+finalXp;
-      var updatedUser={name:currentUser.name,hash:currentUser.hash,games:currentUser.games.concat([gameEntry]),joined:currentUser.joined,totalXp:newTotalXp};
+      var updatedUser={name:currentUser.name,hash:currentUser.hash,games:userGames.concat([gameEntry]),joined:currentUser.joined,totalXp:newTotalXp};
       var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
       try{await saveUsers(newUsers);}catch(e){console.warn("saveUsers failed:",e);}
       setAllUsers(newUsers);setCurrentUser(updatedUser);
-      var prevStreakVal=calcStreakWithShields(currentUser.games,shieldDates);
+      var prevStreakVal=calcStreakWithShields(userGames,shieldDates);
       var newStreakVal=calcStreakWithShields(updatedUser.games,shieldDates);
       var badgesAfter=checkBadges(updatedUser,vocab,newStreakVal);
       var newBadgeIds=BADGES.filter(function(b){return badgesAfter[b.id]&&!badgesBefore[b.id];}).map(function(b){return b.id;});
@@ -3059,7 +3103,7 @@ export default function App(){
       }
       // save missed questions to SRS review queue
       var REVIEW_TYPES=["mcq","gap_word","gap_sentence","tfnm","ynng","qa"];
-      var missed=[];var todayLoc=new Date().toLocaleDateString();
+      var missed=[];var todayLoc=todayKey();
       for(var ri=0;ri<questions.length;ri++){if(!ansArr[ri]&&REVIEW_TYPES.indexOf(questions[ri].type)!==-1){missed.push({id:todayLoc+"-"+ri+"-"+Math.random().toString(36).slice(2),q:questions[ri],topic:topic,level:lvObj.key,date:todayLoc,nextReview:todayLoc,srInterval:0});}}
       if(missed.length>0&&currentUser){
         var rqExist=[];try{rqExist=JSON.parse(localStorage.getItem("rq-review-"+currentUser.name)||"[]");}catch(e){}
@@ -3079,7 +3123,7 @@ export default function App(){
   function doRestart(){
     setLevel("");setPassage("");setTopic("");setQuestions([]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);
+    setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);
     setResult(null);setTimerRunning(false);setTimeExpired(false);setError("");setChallengeMode(false);
     setIsDailyGame(false);setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
     setFocusMode(false);setSelectedWord(null);setWordDef(null);setReadingTimerSecs(0);
@@ -3096,7 +3140,7 @@ export default function App(){
   function useShield(){
     if(shields<=0||!currentUser)return;
     var yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
-    var yDate=yesterday.toLocaleDateString();
+    var yDate=yesterday.toISOString().slice(0,10);
     if(shieldDates.indexOf(yDate)!==-1)return;
     var newSDs=shieldDates.concat([yDate]);
     var newSh=shields-1;
@@ -3212,14 +3256,14 @@ export default function App(){
   }
 
   function startDailyChallenge(){
-    var today=new Date().toLocaleDateString();
+    var today=todayKey();
     var dc=dailyChallenge;
     if(dc&&dc.date===today){
       var mq2=null;for(var j2=0;j2<dc.questions.length;j2++){if(dc.questions[j2].type==="matching"){mq2=dc.questions[j2];break;}}
       setLevel(dc.level||"B1");setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
-      setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights):[]);
+      setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights.map(function(v,i){return{idx:i,val:v};})):[]);
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
+      setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
       setIsDailyGame(true);setStage("reading");return;
     }
     setError("");
@@ -3230,9 +3274,9 @@ export default function App(){
     saveDaily(newDc);setDailyChallenge(newDc);
     var mq3=null;for(var j3=0;j3<dStory.questions.length;j3++){if(dStory.questions[j3].type==="matching"){mq3=dStory.questions[j3];break;}}
     setLevel(dStory.level);setPassage(dStory.passage);setTopic(dStory.title);setQuestions(dStory.questions);
-    setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights):[]);
+    setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights.map(function(v,i){return{idx:i,val:v};})):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-    setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
+    setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
     setCurrentStoryId(dStory.id);setIsDailyGame(true);setStage("reading");
   }
 
@@ -3512,7 +3556,7 @@ export default function App(){
 
   // ── Feature 3: Sentence Saver ─────────────────────────────────
   function saveSentenceQuote(sentence){
-    var entry={text:sentence.trim(),topic:topic||"",level:level||"",date:new Date().toLocaleDateString(),storyId:currentStoryId||null};
+    var entry={text:sentence.trim(),topic:topic||"",level:level||"",date:todayKey(),storyId:currentStoryId||null};
     var updated=[entry].concat(quotes).slice(0,100);
     setQuotes(updated);saveQuotesLocal(updated);setQuotesSaved(true);
     setTimeout(function(){setQuotesSaved(false);},1500);
@@ -3554,20 +3598,31 @@ export default function App(){
 
   // ── Feature 7: Custom Text Quiz ───────────────────────────────
   async function doCustomTextQuiz(){
-    if(!customText.trim()||customText.trim().length<30){setCustomTextError("Please paste at least 30 characters of text.");return;}
+    if(!customText.trim()||customText.trim().length<150){setCustomTextError("Please paste at least 150 characters of text so the AI can generate a full quiz.");return;}
+    if(!level){setCustomTextError("Pick a CEFR level first so scoring matches your text's difficulty.");return;}
     setCustomTextError("");setCustomTextLoading(true);
     try{
-      var r=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:customText.trim(),level:level||"B1",types:selectedTypes.slice(0,3)})});
+      var r=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:customText.trim(),level:level,types:selectedTypes.slice(0,3)})});
       var d=await r.json();
       if(!r.ok||d.error)throw new Error(d.error||"Failed to generate quiz");
-      // reset all quiz state before launching
+      // Reset every run-scoped piece of state so we don't inherit anything
+      // from a previous quiz, then route through the reading screen so the
+      // student gets to read before the quiz timer starts.
       setPassage(customText.trim());setTopic(d.topic||"Custom Passage");
-      setQuestions(d.questions||[]);setCurrentStoryId(null);setShuffledRights([]);
+      setQuestions(d.questions||[]);setCurrentStoryId(null);
+      var mq=null;var qs=d.questions||[];for(var i=0;i<qs.length;i++){if(qs[i].type==="matching"){mq=qs[i];break;}}
+      setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights.map(function(v,i){return{idx:i,val:v};})):[]);
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-      setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setTimeExpired(false);setResult(null);
+      setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);
+      setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setResult(null);
+      setIsDailyGame(false);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
+      setPersonalizedWords([]);setAutoVocabWords([]);setAutoVocabDismissed(false);
+      setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
+      setSelectedWord(null);setWordDef(null);
+      setPronMode(false);setPronSentence("");setPronResult(null);setPronRecording(false);
+      setActiveAssignmentId(null);setChallengeMode(false);setFocusMode(false);
       setCustomTextOpen(false);setCustomText("");setCustomTextLoading(false);
-      setAutoVocabWords([]);setAutoVocabDismissed(false);
-      startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");
+      setStage("reading");
     }catch(e){
       setCustomTextError(e.message||"Failed — try again.");setCustomTextLoading(false);
     }
@@ -3606,9 +3661,9 @@ export default function App(){
     var tod=new Date();tod.setHours(0,0,0,0);
     return Math.round((tod-last)/(864e5))===2;
   })();
-  var todayStr=new Date().toLocaleDateString();
+  var todayStr=todayKey();
   var playedToday=currentUser?(currentUser.games||[]).some(function(g){return g.date===todayStr;}):false;
-  var weekDots=(function(){var dots=[];for(var di=6;di>=0;di--){var d=new Date();d.setDate(d.getDate()-di);d.setHours(0,0,0,0);var ds=d.toLocaleDateString();var dn=["S","M","T","W","T","F","S"][d.getDay()];dots.push({played:currentUser?(currentUser.games||[]).some(function(g){return g.date===ds;}):false,day:dn,today:di===0});}return dots;})();
+  var weekDots=(function(){var dots=[];for(var di=6;di>=0;di--){var d=new Date();d.setDate(d.getDate()-di);d.setHours(0,0,0,0);var ds=d.toISOString().slice(0,10);var dn=["S","M","T","W","T","F","S"][d.getDay()];dots.push({played:currentUser?(currentUser.games||[]).some(function(g){return g.date===ds;}):false,day:dn,today:di===0});}return dots;})();
   var STREAK_MILESTONES={3:"Three days in a row! Keep going 💪",7:"One whole week! You're building a real habit 🔥",14:"Two weeks strong! Incredible consistency 🏆",30:"30-day legend! You're unstoppable 🌟"};
   var milestoneToShow=currentUser&&[3,7,14,30].indexOf(myStreak)!==-1&&!milestoneSeen&&!localStorage.getItem("rq-ms-"+currentUser.name+"-"+myStreak)?STREAK_MILESTONES[myStreak]:null;
 
@@ -4294,7 +4349,7 @@ export default function App(){
                           </div>
                         </div>
                       )}
-                      <p style={{fontSize:11,color:"#4b5563",textAlign:"center",margin:0}}>Generated {new Date().toLocaleDateString()}</p>
+                      <p style={{fontSize:11,color:"#4b5563",textAlign:"center",margin:0}}>Generated {todayKey()}</p>
                       <button onClick={function(){setPrintStudent(null);setShareLink("");}} style={{...GHOST,width:"100%",marginTop:14,fontSize:12}}>Close</button>
                     </div>
                   </div>
@@ -4788,7 +4843,7 @@ export default function App(){
 
             {/* missed-question review nudge */}
             {currentUser&&(function(){
-              var todayL=new Date().toLocaleDateString();
+              var todayL=todayKey();
               var due=reviewQueue.filter(function(r){return r.nextReview<=todayL;});
               if(!due.length)return null;
               return(
@@ -4951,9 +5006,9 @@ export default function App(){
                             else if(asgn.passage&&asgn.questions){
                               setLevel(asgn.level);setPassage(asgn.passage);setTopic(asgn.topic);setQuestions(asgn.questions);
                               var mq2=null;for(var qi2=0;qi2<asgn.questions.length;qi2++){if(asgn.questions[qi2].type==="matching"){mq2=asgn.questions[qi2];break;}}
-                              setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights):[]);
+                              setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights.map(function(v,i){return{idx:i,val:v};})):[]);
                               setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
-                              setConfirmed(false);setStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
+                              setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
                               setIsDailyGame(false);setCurrentStoryId(null);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
                               setStage("reading");
                             }
@@ -5002,7 +5057,7 @@ export default function App(){
 
             {/* daily challenge card */}
             {currentUser&&(function(){
-              var today=new Date().toLocaleDateString();
+              var today=todayKey();
               var done=dailyDone&&dailyDone.date===today;
               return(
                 <div style={{...CARD,marginBottom:12,padding:14,borderColor:done?"rgba(251,191,36,0.3)":"rgba(6,182,212,0.3)",background:done?"rgba(251,191,36,0.05)":"rgba(6,182,212,0.05)"}}>
@@ -5045,7 +5100,7 @@ export default function App(){
 
             {/* daily quests card */}
             {currentUser&&dailyQuests.length>0&&(function(){
-              var today=new Date().toLocaleDateString();
+              var today=todayKey();
               var todayGames=(currentUser.games||[]).filter(function(g){return g.date===today;});
               var doneToday=dailyDone&&dailyDone.date===today;
               var allDone=dailyQuests.every(function(q){return questsDone[q.id]||checkQuest(q.id,todayGames,vocab.length,{dailyDone:doneToday,streak:myStreak});});
@@ -5506,7 +5561,10 @@ export default function App(){
                   ✏️{hlMode?" On":" Off"}
                   {hlWords.size>0&&<span style={{background:"rgba(251,191,36,0.3)",borderRadius:999,padding:"0 5px",fontSize:10,fontWeight:700,color:"#fde68a"}}>{hlWords.size}</span>}
                 </button>
-                <button onClick={function(){setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={{background:pronMode?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(pronMode?"#ec4899":"rgba(255,255,255,0.1)"),color:pronMode?"#f472b6":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s ease"}}>🎤 {pronMode?"Exit":"Pronounce"}</button>
+                {(function(){
+                  var srSupported=typeof window!=="undefined"&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+                  return<button disabled={!srSupported} title={srSupported?undefined:"Speech recognition isn't supported in this browser — try Chrome or Edge."} onClick={function(){if(!srSupported)return;setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={{background:pronMode?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(pronMode?"#ec4899":"rgba(255,255,255,0.1)"),color:!srSupported?"#4b5563":pronMode?"#f472b6":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:srSupported?"pointer":"not-allowed",opacity:srSupported?1:0.55,fontFamily:"inherit",transition:"all 0.15s ease"}}>🎤 {pronMode?"Exit":"Pronounce"}</button>;
+                })()}
                 <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.06)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"3px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s ease"}}>{r}×</button>;})}
                 </div>
               </div>
@@ -5613,7 +5671,7 @@ export default function App(){
               {q.type==="mcq"&&<McqQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {q.type==="gap_word"&&<GapWordQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {q.type==="gap_sentence"&&<GapSentQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="matching"&&<MatchingQ q={q} matches={matchState} conf={confirmed} shuffled={shuffledRights} onMatch={function(li,ri){var origIdx=q.rights?q.rights.indexOf(shuffledRights[ri]):ri;setMatchState(function(m){var n={};for(var k in m)n[k]=m[k];n[li]=origIdx;return n;});}}/>}
+              {q.type==="matching"&&<MatchingQ q={q} matches={matchState} conf={confirmed} shuffled={shuffledRights} onMatch={function(li,origIdx){setMatchState(function(m){var n={};for(var k in m)n[k]=m[k];n[li]=origIdx;return n;});}}/>}
               {q.type==="heading"&&<HeadingQ q={q} userMap={headingState} conf={confirmed} onMatch={function(pi,hi){setHeadingState(function(m){var n={};for(var k in m)n[k]=m[k];n[pi]=hi;return n;});}}/>}
               {q.type==="qa"&&<QAQ q={q} val={userAnswers[current]||""} conf={confirmed} onChange={function(v){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=v;return n;});}}/>}
               {q.type==="tfnm"&&<TfnmQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
@@ -5803,7 +5861,7 @@ export default function App(){
                   })}
                 </div>
                 <button onClick={function(){
-                  var today=new Date().toLocaleDateString();
+                  var today=todayKey();
                   var toAdd=autoVocabWords.filter(function(w){return!vocab.some(function(v){return v.word===w;});});
                   if(!toAdd.length){setAutoVocabDismissed(true);return;}
                   var newEntries=toAdd.map(function(w){return{word:w,level:level,topic:topic,date:today,status:"new",def:"",example:"",srInterval:0,nextReview:srsNextDate(SRS_INTERVALS[0])};});
@@ -5858,7 +5916,7 @@ export default function App(){
 
         {/* ── MISSED-QUESTION REVIEW ────────────────────────── */}
         {stage==="review"&&currentUser&&(function(){
-          var todayL=new Date().toLocaleDateString();
+          var todayL=todayKey();
           var due=reviewQueue.filter(function(r){return r.nextReview<=todayL;});
           if(!due.length)return(
             <div style={{textAlign:"center",padding:"40px 0"}}>
@@ -6054,7 +6112,7 @@ export default function App(){
               <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>{t("dailyBoard")}</h2>
               <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
             </div>
-            <p style={{color:"#6b7280",fontSize:12,marginBottom:12}}>Today · {new Date().toLocaleDateString()} · B1</p>
+            <p style={{color:"#6b7280",fontSize:12,marginBottom:12}}>Today · {todayKey()} · B1</p>
             {dailyLb.length===0?(
               <div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No one has played today's challenge yet.</p><button onClick={startDailyChallenge} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Be First!</button></div>
             ):(
@@ -6074,7 +6132,7 @@ export default function App(){
                 })}
               </div>
             )}
-            {!(dailyDone&&dailyDone.date===new Date().toLocaleDateString())&&<button onClick={startDailyChallenge} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:12}}>Play Today's Challenge</button>}
+            {!(dailyDone&&dailyDone.date===todayKey())&&<button onClick={startDailyChallenge} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:12}}>Play Today's Challenge</button>}
           </div>
         )}
 
@@ -6641,7 +6699,7 @@ export default function App(){
         {/* ── ANALYTICS ─────────────────────────────────────── */}
         {stage==="analytics"&&currentUser&&(function(){
           var games=currentUser.games||[];
-          var today=new Date().toLocaleDateString();
+          var today=todayKey();
           var gamesXp=games.reduce(function(s,g){return s+g.xp;},0);
           var totalXp=Math.max(Number(currentUser&&currentUser.totalXp)||0,gamesXp);
           var totalTimeSecs=games.reduce(function(s,g){return s+g.timeSecs;},0);
@@ -6651,7 +6709,7 @@ export default function App(){
           // weekly activity (last 7 days)
           var week=[];
           for(var wd=6;wd>=0;wd--){
-            var wdt=new Date();wdt.setDate(wdt.getDate()-wd);var wds=wdt.toLocaleDateString();
+            var wdt=new Date();wdt.setDate(wdt.getDate()-wd);var wds=wdt.toISOString().slice(0,10);
             var dayGames=games.filter(function(g){return g.date===wds;});
             week.push({label:wdt.toLocaleDateString("en",{weekday:"short"}),date:wds,count:dayGames.length,xp:dayGames.reduce(function(s,g){return s+g.xp;},0),isToday:wds===today});
           }
@@ -6676,7 +6734,7 @@ export default function App(){
           var xpByDay={};
           games.forEach(function(g){xpByDay[g.date]=(xpByDay[g.date]||0)+g.xp;});
           var xpDays=[];
-          for(var xi=29;xi>=0;xi--){var xd=new Date();xd.setDate(xd.getDate()-xi);var xds=xd.toLocaleDateString();xpDays.push({date:xds,xp:xpByDay[xds]||0});}
+          for(var xi=29;xi>=0;xi--){var xd=new Date();xd.setDate(xd.getDate()-xi);var xds=xd.toISOString().slice(0,10);xpDays.push({date:xds,xp:xpByDay[xds]||0});}
           var cumXp=0;var cumXpDays=xpDays.map(function(d){cumXp+=d.xp;return{date:d.date,cum:cumXp};});
           var maxCumXp=Math.max(1,cumXpDays[cumXpDays.length-1].cum);
 
@@ -6686,7 +6744,7 @@ export default function App(){
 
           // 30-day activity calendar
           var cal30=[];
-          for(var ci=29;ci>=0;ci--){var cd=new Date();cd.setDate(cd.getDate()-ci);var cds=cd.toLocaleDateString();var cg=games.filter(function(g){return g.date===cds;});cal30.push({date:cds,count:cg.length,avg:cg.length?Math.round(cg.reduce(function(s,g){return s+g.pct;},0)/cg.length):0});}
+          for(var ci=29;ci>=0;ci--){var cd=new Date();cd.setDate(cd.getDate()-ci);var cds=cd.toISOString().slice(0,10);var cg=games.filter(function(g){return g.date===cds;});cal30.push({date:cds,count:cg.length,avg:cg.length?Math.round(cg.reduce(function(s,g){return s+g.pct;},0)/cg.length):0});}
 
           // SVG sparkline helper
           function mkSparkline(vals,W,H,col,fill){
@@ -7040,7 +7098,12 @@ export default function App(){
             </div>
           );
 
-          var shuffled=gameWords.slice().sort(function(){return Math.random()-0.5;});
+          // Stable shuffles per session: only re-randomize when the pool of
+          // game words changes (e.g. on mode-switch with new vocab).
+          var vgCache=vocabGameCacheRef.current;
+          var vgKey=(vocabGameMode||"")+":"+gameWords.length+":"+gameWords.map(function(w){return w.word;}).join(",");
+          if(vgCache.key!==vgKey){vgCache.key=vgKey;vgCache.shuffled=gameWords.slice().sort(function(){return Math.random()-0.5;});vgCache.options={};vgCache.bOptions={};}
+          var shuffled=vgCache.shuffled;
           var curW=shuffled[vocabGameIdx%shuffled.length];
           var isDone=vocabGameIdx>=shuffled.length;
           if(isDone)return(
@@ -7074,8 +7137,11 @@ export default function App(){
           );
 
           if(vocabGameMode==="mcq"){
-            var distractors=gameWords.filter(function(w){return w.word!==curW.word;}).sort(function(){return Math.random()-0.5;}).slice(0,3);
-            var options=[curW].concat(distractors).sort(function(){return Math.random()-0.5;});
+            if(!vgCache.options[vocabGameIdx]){
+              var distractors=gameWords.filter(function(w){return w.word!==curW.word;}).sort(function(){return Math.random()-0.5;}).slice(0,3);
+              vgCache.options[vocabGameIdx]=[curW].concat(distractors).sort(function(){return Math.random()-0.5;});
+            }
+            var options=vgCache.options[vocabGameIdx];
             var correctIdx=options.indexOf(curW);
             return(
               <div>
@@ -7104,8 +7170,11 @@ export default function App(){
 
           if(vocabGameMode==="blank"){
             var sentence=(curW.example||"The word ___ is used in many contexts.").replace(new RegExp("\\b"+curW.word+"\\b","i"),"___");
-            var bDistractors=gameWords.filter(function(w){return w.word!==curW.word;}).sort(function(){return Math.random()-0.5;}).slice(0,3);
-            var bOptions=[curW].concat(bDistractors).sort(function(){return Math.random()-0.5;});
+            if(!vgCache.bOptions[vocabGameIdx]){
+              var bDistractors=gameWords.filter(function(w){return w.word!==curW.word;}).sort(function(){return Math.random()-0.5;}).slice(0,3);
+              vgCache.bOptions[vocabGameIdx]=[curW].concat(bDistractors).sort(function(){return Math.random()-0.5;});
+            }
+            var bOptions=vgCache.bOptions[vocabGameIdx];
             var bCorrect=bOptions.indexOf(curW);
             return(
               <div>
@@ -7504,7 +7573,7 @@ export default function App(){
         {stage==="discuss"&&currentUser&&(function(){
           var story=STORY_LIBRARY.find(function(s){return s.id===discussStoryId;});
           var posts=(allDiscuss&&allDiscuss[discussStoryId])||[];
-          var today=new Date().toLocaleDateString();
+          var today=todayKey();
           var alreadyPosted=posts.some(function(p){return p.user===currentUser.name&&p.date===today;});
           function submitPost(){
             if(!discussInput.trim()||discussInput.trim().length<3||alreadyPosted)return;
