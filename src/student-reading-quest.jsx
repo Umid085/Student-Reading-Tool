@@ -72,6 +72,9 @@ var STRINGS = {
     myAnalytics:"My Analytics",wordsSaved:"Words Saved",timeReading:"Time Reading",badges:"Badges",
     playerLevel:"Player Level",maxLevel:"Max level!",activityLast30:"ACTIVITY — LAST 30 DAYS",focusAreas:"⚠️ FOCUS AREAS",byCefrLevel:"BY CEFR LEVEL",
     scoreTrendLabel:"SCORE TREND",readingSpeedTrendLabel:"READING SPEED TREND (WPM)",xpGrowthLabel:"XP GROWTH (30 DAYS)",
+    vocabPractice:"Vocab Practice",practiceComplete:"Practice Complete!",
+    quoteBook:"🔖 Quote Book",discussion:"Discussion",postButton:"Post",beFirstToShare:"Be the first to share your thoughts!",
+    myPortfolio:"🏆 My Portfolio",noGamesYet:"No games yet",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -124,6 +127,9 @@ var STRINGS = {
     myAnalytics:"Tahlilim",wordsSaved:"Saqlangan So'zlar",timeReading:"O'qish vaqti",badges:"Nishonlar",
     playerLevel:"O'yinchi Darajasi",maxLevel:"Maksimal daraja!",activityLast30:"FAOLIYAT — SO'NGGI 30 KUN",focusAreas:"⚠️ DIQQAT MARKAZI",byCefrLevel:"CEFR DARAJA BO'YICHA",
     scoreTrendLabel:"BALL TENDENSIYASI",readingSpeedTrendLabel:"O'QISH TEZLIGI TENDENSIYASI (WPM)",xpGrowthLabel:"XP O'SISHI (30 KUN)",
+    vocabPractice:"Lug'at Mashqi",practiceComplete:"Mashq Yakunlandi!",
+    quoteBook:"🔖 Iqtiboslar Kitobi",discussion:"Munozara",postButton:"Yuborish",beFirstToShare:"Fikrlarni birinchi bo'lib ulashing!",
+    myPortfolio:"🏆 Mening Portfoliom",noGamesYet:"Hali o'yinlar yo'q",
   },
   ru: {
     appName:"Читальный Квест",
@@ -176,6 +182,9 @@ var STRINGS = {
     myAnalytics:"Моя аналитика",wordsSaved:"Слов сохранено",timeReading:"Время чтения",badges:"Награды",
     playerLevel:"Уровень игрока",maxLevel:"Максимальный уровень!",activityLast30:"АКТИВНОСТЬ — ПОСЛЕДНИЕ 30 ДНЕЙ",focusAreas:"⚠️ ОБЛАСТИ ВНИМАНИЯ",byCefrLevel:"ПО УРОВНЮ CEFR",
     scoreTrendLabel:"ТЕНДЕНЦИЯ ОЦЕНОК",readingSpeedTrendLabel:"ТЕНДЕНЦИЯ СКОРОСТИ ЧТЕНИЯ (WPM)",xpGrowthLabel:"РОСТ XP (30 ДНЕЙ)",
+    vocabPractice:"Практика словаря",practiceComplete:"Практика завершена!",
+    quoteBook:"🔖 Книга цитат",discussion:"Обсуждение",postButton:"Опубликовать",beFirstToShare:"Поделитесь мнением первым!",
+    myPortfolio:"🏆 Моё портфолио",noGamesYet:"Пока нет игр",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -228,6 +237,9 @@ var STRINGS = {
     myAnalytics:"Analizlerim",wordsSaved:"Kelimeler",timeReading:"Okuma süresi",badges:"Rozetler",
     playerLevel:"Oyuncu Seviyesi",maxLevel:"Maks seviye!",activityLast30:"ETKİNLİK — SON 30 GÜN",focusAreas:"⚠️ ODAK ALANLAR",byCefrLevel:"CEFR SEVİYESİNE GÖRE",
     scoreTrendLabel:"PUAN EĞİLİMİ",readingSpeedTrendLabel:"OKUMA HIZI EĞİLİMİ (WPM)",xpGrowthLabel:"XP BÜYÜMESİ (30 GÜN)",
+    vocabPractice:"Kelime Pratiği",practiceComplete:"Pratik Tamamlandı!",
+    quoteBook:"🔖 Alıntı Defteri",discussion:"Tartışma",postButton:"Gönder",beFirstToShare:"Düşüncelerinizi ilk siz paylaşın!",
+    myPortfolio:"🏆 Portföyüm",noGamesYet:"Henüz oyun yok",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -280,6 +292,9 @@ var STRINGS = {
     myAnalytics:"تحليلاتي",wordsSaved:"كلمات محفوظة",timeReading:"وقت القراءة",badges:"شارات",
     playerLevel:"مستوى اللاعب",maxLevel:"أقصى مستوى!",activityLast30:"النشاط — آخر ٣٠ يوماً",focusAreas:"⚠️ مجالات التركيز",byCefrLevel:"حسب مستوى CEFR",
     scoreTrendLabel:"اتجاه النتيجة",readingSpeedTrendLabel:"اتجاه سرعة القراءة (WPM)",xpGrowthLabel:"نمو XP (٣٠ يوماً)",
+    vocabPractice:"ممارسة المفردات",practiceComplete:"اكتملت الممارسة!",
+    quoteBook:"🔖 كتاب الاقتباسات",discussion:"نقاش",postButton:"نشر",beFirstToShare:"كن أول من يشارك أفكاره!",
+    myPortfolio:"🏆 ملف إنجازاتي",noGamesYet:"لا توجد ألعاب بعد",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -332,6 +347,9 @@ var STRINGS = {
     myAnalytics:"Meine Analyse",wordsSaved:"Gespeicherte Wörter",timeReading:"Lesezeit",badges:"Abzeichen",
     playerLevel:"Spieler-Level",maxLevel:"Höchstes Level!",activityLast30:"AKTIVITÄT — LETZTE 30 TAGE",focusAreas:"⚠️ FOKUSBEREICHE",byCefrLevel:"NACH CEFR-LEVEL",
     scoreTrendLabel:"PUNKTE-TREND",readingSpeedTrendLabel:"LESEGESCHWINDIGKEIT-TREND (WPM)",xpGrowthLabel:"XP-WACHSTUM (30 TAGE)",
+    vocabPractice:"Wortschatz-Übung",practiceComplete:"Übung abgeschlossen!",
+    quoteBook:"🔖 Zitatebuch",discussion:"Diskussion",postButton:"Posten",beFirstToShare:"Sei der Erste, der seine Gedanken teilt!",
+    myPortfolio:"🏆 Mein Portfolio",noGamesYet:"Noch keine Spiele",
   },
   es: {
     appName:"Misión Lectora",
@@ -384,6 +402,9 @@ var STRINGS = {
     myAnalytics:"Mis estadísticas",wordsSaved:"Palabras guardadas",timeReading:"Tiempo leyendo",badges:"Insignias",
     playerLevel:"Nivel de jugador",maxLevel:"¡Nivel máx.!",activityLast30:"ACTIVIDAD — ÚLTIMOS 30 DÍAS",focusAreas:"⚠️ ÁREAS DE ENFOQUE",byCefrLevel:"POR NIVEL CEFR",
     scoreTrendLabel:"TENDENCIA DE PUNTUACIÓN",readingSpeedTrendLabel:"TENDENCIA DE VELOCIDAD (WPM)",xpGrowthLabel:"CRECIMIENTO DE XP (30 DÍAS)",
+    vocabPractice:"Práctica de vocabulario",practiceComplete:"¡Práctica completada!",
+    quoteBook:"🔖 Libro de citas",discussion:"Discusión",postButton:"Publicar",beFirstToShare:"¡Sé el primero en compartir tu opinión!",
+    myPortfolio:"🏆 Mi Portafolio",noGamesYet:"Aún sin partidas",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -436,6 +457,9 @@ var STRINGS = {
     myAnalytics:"Mes statistiques",wordsSaved:"Mots enregistrés",timeReading:"Temps de lecture",badges:"Badges",
     playerLevel:"Niveau du joueur",maxLevel:"Niveau max !",activityLast30:"ACTIVITÉ — 30 DERNIERS JOURS",focusAreas:"⚠️ DOMAINES À TRAVAILLER",byCefrLevel:"PAR NIVEAU CECR",
     scoreTrendLabel:"TENDANCE DU SCORE",readingSpeedTrendLabel:"TENDANCE DE VITESSE (WPM)",xpGrowthLabel:"CROISSANCE XP (30 JOURS)",
+    vocabPractice:"Pratique du vocabulaire",practiceComplete:"Pratique terminée !",
+    quoteBook:"🔖 Carnet de citations",discussion:"Discussion",postButton:"Publier",beFirstToShare:"Soyez le premier à partager vos pensées !",
+    myPortfolio:"🏆 Mon Portfolio",noGamesYet:"Pas encore de parties",
   },
 };
 
@@ -4089,7 +4113,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:16}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>🏆 My Portfolio</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>{t("myPortfolio")}</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
               {/* identity card */}
@@ -4101,7 +4125,7 @@ export default function App(){
                   <div style={{flex:1}}>
                     <div style={{fontSize:18,fontWeight:900,color:"#f3f4f6"}}>{currentUser.name}</div>
                     <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
-                      <span style={{...pill(lvObj2.color+"26",lvObj2.color),fontSize:11,fontWeight:700}}>{bestLvl!=="none"?bestLvl+" · "+lvObj2.desc:"No games yet"}</span>
+                      <span style={{...pill(lvObj2.color+"26",lvObj2.color),fontSize:11,fontWeight:700}}>{bestLvl!=="none"?bestLvl+" · "+lvObj2.desc:t("noGamesYet")}</span>
                       <span style={{...pill("rgba(251,191,36,0.15)","#fbbf24"),fontSize:11}}>🔥 {longestStreak}-day best streak</span>
                     </div>
                   </div>
@@ -6526,7 +6550,7 @@ export default function App(){
           if(!vocabGameMode)return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#a78bfa"}}>Vocab Practice</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#a78bfa"}}>{t("vocabPractice")}</h2>
                 <button onClick={function(){setStage("vocab");}} style={GHOST}>{t("back")}</button>
               </div>
               <p style={{color:"#6b7280",fontSize:13,marginBottom:16}}>{gameWords.length} words to practice</p>
@@ -6549,7 +6573,7 @@ export default function App(){
           if(isDone)return(
             <div style={{textAlign:"center",paddingTop:40}}>
               <div style={{fontSize:50,marginBottom:10}}>🎉</div>
-              <h2 style={{fontSize:22,fontWeight:900,color:"#a78bfa",marginBottom:6}}>Practice Complete!</h2>
+              <h2 style={{fontSize:22,fontWeight:900,color:"#a78bfa",marginBottom:6}}>{t("practiceComplete")}</h2>
               <p style={{color:"#9ca3af",marginBottom:20}}>Score: {vocabGameScore} / {shuffled.length}</p>
               <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
                 <button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);}} style={mkBtn("#a78bfa","#0d0d1a")}>Play Again</button>
@@ -7019,7 +7043,7 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#ec4899"}}>Discussion</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#ec4899"}}>{t("discussion")}</h2>
                 <button onClick={function(){setStage("result");}} style={GHOST}>{t("back")}</button>
               </div>
               {story&&<div style={{...CARD,marginBottom:12,padding:12,background:"rgba(236,72,153,0.06)",borderColor:"rgba(236,72,153,0.25)"}}>
@@ -7031,7 +7055,7 @@ export default function App(){
                   <textarea value={discussInput} onChange={function(e){setDiscussInput(e.target.value.slice(0,200));}} placeholder="Share your thoughts..." style={{width:"100%",minHeight:70,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:13,padding:"9px 11px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
                     <span style={{fontSize:11,color:"#6b7280"}}>{discussInput.length}/200</span>
-                    <button onClick={submitPost} disabled={discussInput.trim().length<3} style={{...mkBtn(discussInput.trim().length>=3?"#ec4899":"#374151","#0d0d1a"),padding:"8px 18px",fontSize:13}}>Post</button>
+                    <button onClick={submitPost} disabled={discussInput.trim().length<3} style={{...mkBtn(discussInput.trim().length>=3?"#ec4899":"#374151","#0d0d1a"),padding:"8px 18px",fontSize:13}}>{t("postButton")}</button>
                   </div>
                 </div>
               ):(
@@ -7039,7 +7063,7 @@ export default function App(){
                   <p style={{fontSize:12,color:"#34d399",margin:0}}>✓ You've posted today. Come back tomorrow to share more!</p>
                 </div>
               )}
-              {posts.length===0&&<p style={{color:"#6b7280",fontSize:13,textAlign:"center",padding:20}}>Be the first to share your thoughts!</p>}
+              {posts.length===0&&<p style={{color:"#6b7280",fontSize:13,textAlign:"center",padding:20}}>{t("beFirstToShare")}</p>}
               {posts.map(function(p,i){
                 var isMe=p.user===currentUser.name;
                 return(
@@ -7060,7 +7084,7 @@ export default function App(){
         {stage==="quotes"&&(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#f59e0b"}}>🔖 Quote Book</h2>
+              <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#f59e0b"}}>{t("quoteBook")}</h2>
               <button onClick={function(){setStage(result?"result":"home");}} style={GHOST}>{t("back")}</button>
             </div>
             {quotes.length===0?(
