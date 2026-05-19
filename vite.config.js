@@ -19,6 +19,9 @@ export default defineConfig({
           // library's hashed filename, and the browser can fetch it in
           // parallel with the main app code.
           if (id.includes("/src/storyLibrary")) return "story-library";
+          // UI translations across 8 locales (~92kB raw). Same idea — own
+          // chunk, parallel fetch, doesn't bust on every app-only deploy.
+          if (id.includes("/src/locales")) return "locales";
         },
       },
     },
