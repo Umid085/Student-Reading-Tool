@@ -20,12 +20,36 @@ const TYPE_EXAMPLES = {
 const SUPPORTED_AI_TYPES = new Set(Object.keys(TYPE_EXAMPLES));
 
 const LEVEL_CONFIG = {
-  A1: { words: "80-100",  vocab: "ONLY the 500 most common English words. No complex words at all.", sentences: "Maximum 8 words per sentence. Very simple grammar (present simple, 'I have', 'There is')." },
-  A2: { words: "100-130", vocab: "Basic everyday vocabulary only. No academic or technical words.", sentences: "Short sentences, 8-12 words. Simple past tense and basic connectors (and, but, because)." },
-  B1: { words: "150-200", vocab: "Intermediate vocabulary. Occasional topic-specific words are fine, but avoid jargon.", sentences: "Moderate complexity, 10-15 words. Use some subordinate clauses." },
-  B2: { words: "200-250", vocab: "Upper-intermediate vocabulary including some academic and abstract words.", sentences: "Varied sentence length, 12-18 words. Complex grammar structures allowed." },
-  C1: { words: "250-320", vocab: "Advanced academic vocabulary, idiomatic expressions, nuanced language.", sentences: "Long and complex sentences, 15-22 words. Sophisticated grammar." },
-  C2: { words: "300-400", vocab: "Sophisticated, native-level vocabulary including rare and technical terms.", sentences: "Native-level complexity, 18-25 words. All grammar structures." },
+  A1: {
+    words: "80-100",
+    vocab: "ONLY the ~500 most common English words. No idioms, no phrasal verbs, no compound nouns beyond very basic ones (school bus, ice cream).",
+    sentences: "Maximum 8 words per sentence. Subject-verb-object order only. ALLOWED tenses: present simple, 'to be', 'have/has got', 'there is/are', the imperative. FORBIDDEN: past tense, future tense, passive voice, modal verbs, any subordinate clauses, any conjunctions other than 'and' and 'but'.",
+  },
+  A2: {
+    words: "100-130",
+    vocab: "Basic everyday vocabulary (~1000 words). No academic, technical, or abstract terms. Avoid phrasal verbs except very common ones (get up, look at).",
+    sentences: "8-12 words per sentence. ALLOWED tenses: present simple, present continuous, past simple (regular + common irregulars), 'going to' future. ALLOWED structures: comparatives (bigger, more useful), basic connectors (and, but, because, so, when), at most ONE subordinate clause per sentence. FORBIDDEN: present perfect, conditionals, passive voice, reported speech, relative clauses.",
+  },
+  B1: {
+    words: "150-200",
+    vocab: "Intermediate vocabulary (~2000 words). Topic-specific words are fine; avoid technical jargon and rare idioms.",
+    sentences: "10-15 words per sentence. REQUIRED across the passage (must appear at least once each): present perfect, past continuous, will-future, first conditional, basic passive (was/were + past participle), defining relative clauses (who/which/that), modal verbs (can, could, should, must, might). At least one subordinate clause every 2-3 sentences. FORBIDDEN: third conditional, mixed conditionals, inversion, cleft sentences.",
+  },
+  B2: {
+    words: "200-250",
+    vocab: "Upper-intermediate (~4000 words) including academic and abstract terms; common collocations and phrasal verbs.",
+    sentences: "12-18 words per sentence. REQUIRED across the passage: past perfect, second AND third conditionals, full passive (all tenses), reported speech, non-defining relative clauses (with commas), modal perfects ('should have done', 'must have been'), participle clauses ('Walking home, she...'). Vary sentence openings — at least two sentences should start with something other than the subject (e.g. an adverbial, a participle).",
+  },
+  C1: {
+    words: "250-320",
+    vocab: "Advanced academic + idiomatic vocabulary (~6000+ words). Nuanced register, less-common collocations, figurative phrasal verbs, register-aware word choice.",
+    sentences: "15-22 words per sentence on average. REQUIRED across the passage (each at least once): mixed conditionals ('If I had studied, I would now be...'), inversion after negative adverbials ('Never have we seen...', 'Not only does X, but Y also...'), cleft sentences ('What surprises me is...', 'It was X that...'), advanced participle clauses ('Having considered the evidence,...'), the subjunctive ('It is essential that he be...'), and at least two sophisticated cohesion devices (notwithstanding, in spite of which, given that, by which point). Avoid simple SVO openings throughout.",
+  },
+  C2: {
+    words: "300-400",
+    vocab: "Native-level vocabulary including rare, literary, and technical terms; idioms; nuanced collocations; register-specific phrasing.",
+    sentences: "Average 18-25 words per sentence; sentence length MUST vary noticeably (occasional very short sentences for emphasis are fine). REQUIRED across the passage (each at least once, no exceptions): (1) hypothetical inversion replacing 'if' ('Were he to arrive...', 'Had I known...', 'Should you require...'); (2) fronting for emphasis ('Strange though it may seem,...', 'Such was the impact that...'); (3) ellipsis ('Some preferred coffee; others, tea.'); (4) cleft and pseudo-cleft constructions; (5) nominalisation (turning verbs/adjectives into noun phrases: 'the implementation of', 'the inevitability of'); (6) the subjunctive in formal contexts; (7) discourse markers of formal register (notwithstanding, be that as it may, insofar as, by virtue of). At least ONE sentence must use a structure that would not appear below C2. Plain SVO sentences must be a minority of the passage.",
+  },
 };
 
 export default async function handler(req, res) {
@@ -97,16 +121,17 @@ export default async function handler(req, res) {
 
   const prompt = `Write a ${lc.words}-word reading passage in ${language} about: "${topic}"
 
-TOPIC ADHERENCE (highest priority — overrides all other rules):
+TOPIC ADHERENCE (non-negotiable):
 - The word "${topic}" (translated into ${language} if needed) MUST appear in the passage at least twice.
 - The first sentence MUST name "${topic}" directly.
 - Every paragraph MUST be about "${topic}".
 - Do NOT drift to generic subjects (family, school, weather, daily routines) unless that IS the topic.
 - If "${topic}" is harder than CEFR ${level} vocabulary, KEEP the word and explain it with simpler words.
 
-CEFR ${level} rules:
+CEFR ${level} GRAMMAR ADHERENCE (non-negotiable — both vocab AND structure must match):
 - Vocabulary: ${lc.vocab}
-- Sentences: ${lc.sentences}
+- Grammar / sentence structures: ${lc.sentences}
+- Do not pull difficulty up by using rarer vocabulary while keeping sentences simple. The grammar profile must match the level just as strictly as the vocabulary does. A passage at this level that uses only plain SVO sentences with advanced words is WRONG.
 
 After the passage, write exactly ${validTypes.length} comprehension question(s) in this order: ${validTypes.join(", ")}
 
@@ -127,7 +152,7 @@ ${typeExamples}
     const msg = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 2048,
-      system: `You are a language learning exercise generator. You always write reading passages in ${language} about the exact topic the user specifies. You never change the language or topic. You always follow CEFR level vocabulary and grammar rules strictly.`,
+      system: `You are a CEFR-aligned language learning exercise generator for level ${level} (${language}). You write reading passages about the exact topic the user specifies, never drifting. You match the CEFR level on BOTH dimensions equally: vocabulary AND grammar/sentence structures. A passage with level-appropriate vocab but mid-complexity SVO sentences is incorrect output and must not be returned. At ${level}, the grammatical structures listed in the user prompt are mandatory minimums — at least one occurrence of each required structure must appear in the passage.`,
       messages: [{ role: "user", content: prompt }],
     });
 
