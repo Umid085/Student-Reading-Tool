@@ -2925,7 +2925,9 @@ export default function App(){
       .rq-lb-row:hover{background:rgba(255,255,255,0.07)!important;transform:translateX(4px);box-shadow:inset 3px 0 0 var(--rq-accent)}
       .rq-wrap{width:100%;padding:16px 16px 64px;animation:rqFadeIn 0.4s ease both}
       .rq-home-hdr{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding-top:8px;margin-bottom:14px}
-      .rq-home-nav{display:flex;gap:6px;flex-shrink:0}
+      .rq-home-nav{display:flex;gap:6px;flex-shrink:1;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
+      .rq-home-nav::-webkit-scrollbar{display:none}
+      .rq-home-nav button{flex-shrink:0;white-space:nowrap}
       .rq-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
       .rq-wrap button{transition:transform 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease,opacity 0.15s ease}
       .rq-wrap button:hover:not(:disabled){filter:brightness(1.14)}
@@ -2944,6 +2946,7 @@ export default function App(){
       .rq-raised{box-shadow:0 4px 16px rgba(0,0,0,0.3),0 1px 4px rgba(0,0,0,0.2);transition:box-shadow 0.2s ease,transform 0.2s ease}
       .rq-raised:hover{box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 20px var(--rq-accent-glow);transform:translateY(-2px)}
       .rq-floating{box-shadow:0 12px 40px rgba(0,0,0,0.5),0 0 30px var(--rq-accent-glow)}
+      @media(max-width:640px){.rq-home-hdr{flex-wrap:nowrap;flex-direction:column;align-items:stretch}.rq-home-nav{width:100%}}
       @media(max-width:400px){.rq-home-nav button{padding:7px 10px!important;font-size:12px!important}}
       @media(min-width:480px){.rq-wrap{max-width:480px;margin:0 auto;padding:18px 20px 64px}}
       @media(min-width:640px){.rq-wrap{max-width:660px;padding:22px 28px 72px}.rq-lvgrid{grid-template-columns:repeat(3,1fr)!important}}
