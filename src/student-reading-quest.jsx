@@ -2273,6 +2273,10 @@ export default function App(){
   var [showPassage,setShowPassage]=useState(false);
   var [timerRunning,setTimerRunning]=useState(false);
   var startTimeRef=useRef(null);
+  // Tracks the library story whose quiz we're trying to upgrade with AI
+  // questions in the background. Cleared once the user starts the quiz so a
+  // late-arriving response can't swap questions out from under them mid-run.
+  var libraryUpgradeRef=useRef(null);
   var [timeExpired,setTimeExpired]=useState(false);
   var [challengeMode,setChallengeMode]=useState(false);
   var [genLoading,setGenLoading]=useState(false);
@@ -3091,6 +3095,30 @@ export default function App(){
     setStage("reading");
   }
 
+  // Library stories were authored with 3 questions each, but AI-generated
+  // passages now produce 5-15 depending on level. Upgrade the library quiz
+  // in the background so a B2/C1/C2 student gets a level-appropriate set
+  // for the same curated passage. Cached per story so repeat plays are
+  // instant and don't burn API quota.
+  async function getLibraryQuiz(story){
+    if(!story||!story.id||!story.passage||!story.level)return null;
+    var cacheKey="rq-libqs-"+story.id;
+    try{
+      var cached=JSON.parse(localStorage.getItem(cacheKey)||"null");
+      if(cached&&Array.isArray(cached)&&cached.length>=3)return cached;
+    }catch(e){}
+    try{
+      var r=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:story.passage,level:story.level,types:["mcq","gap_word","qa","tfnm"]})});
+      if(!r.ok)return null;
+      var d=await r.json();
+      if(d&&Array.isArray(d.questions)&&d.questions.length>=3){
+        try{localStorage.setItem(cacheKey,JSON.stringify(d.questions));}catch(e){}
+        return d.questions;
+      }
+    }catch(e){}
+    return null;
+  }
+
   function startStoryFromLibrary(story){
     setLevel(story.level);
     setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);
@@ -3109,11 +3137,24 @@ export default function App(){
     setActiveAssignmentId(null);setResult(null);setError("");setChallengeMode(false);
     setFocusMode(false);setReadingTimerSecs(0);
     setStage("reading");
+    // Kick off the AI quiz upgrade. Only swap if the user is still on this
+    // story when the response arrives — the ref is cleared in startQuiz so
+    // a late-arriving fetch can't replace questions mid-run.
+    libraryUpgradeRef.current=story.id;
+    getLibraryQuiz(story).then(function(aiQs){
+      if(!aiQs||libraryUpgradeRef.current!==story.id)return;
+      setQuestions(aiQs);
+      var mq2=null;for(var j=0;j<aiQs.length;j++){if(aiQs[j].type==="matching"){mq2=aiQs[j];break;}}
+      setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights.map(function(v,i){return{idx:i,val:v};})):[]);
+    });
   }
 
   function startQuiz(){
     if(window.speechSynthesis){window.speechSynthesis.cancel();setIsSpeaking(false);}
     setFocusMode(false);setSelectedWord(null);setWordDef(null);
+    // Quiz has started — any still-pending library AI-quiz response should
+    // be dropped to avoid swapping questions mid-run.
+    libraryUpgradeRef.current=null;
     if(currentUser&&savedWords.size>0){
       var today=todayKey();
       var newEntries=[];
