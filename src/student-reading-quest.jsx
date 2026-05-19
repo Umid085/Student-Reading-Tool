@@ -78,6 +78,8 @@ var STRINGS = {
     weeklyBoard:"Weekly Board",thisWeek:"THIS WEEK",leaderboardLabel:"LEADERBOARD",noDataYet:"No data yet — play some stories!",readAStory:"Read a Story",
     aiTutor:"🤖 AI Tutor",send:"Send",homeLabel:"Home",
     writingChallenge:"✍️ Writing Challenge",getFeedback:"Get Feedback →",overallWritingScore:"Overall Writing Score",errorHunt:"🔍 Error Hunt",
+    teacherDashboard:"👩‍🏫 Teacher Dashboard",welcomeBack:"Welcome back",createNewClass:"CREATE NEW CLASS",noClassesYet:"No classes yet. Create your first class above.",
+    createButton:"+ Create",classNamePlaceholder:"Class name (e.g. B1 Morning Group)",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -136,6 +138,8 @@ var STRINGS = {
     weeklyBoard:"Haftalik Doska",thisWeek:"SHU HAFTA",leaderboardLabel:"REYTING",noDataYet:"Hali ma'lumot yo'q — hikoyalar o'qing!",readAStory:"Hikoya o'qish",
     aiTutor:"🤖 AI O'qituvchi",send:"Yuborish",homeLabel:"Bosh sahifa",
     writingChallenge:"✍️ Yozish Vazifasi",getFeedback:"Fikr olish →",overallWritingScore:"Umumiy Yozish Bali",errorHunt:"🔍 Xatolarni Top",
+    teacherDashboard:"👩‍🏫 O'qituvchi Paneli",welcomeBack:"Qaytib kelganingizdan xursandmiz",createNewClass:"YANGI SINF YARATING",noClassesYet:"Hali sinflar yo'q. Yuqorida birinchi sinfingizni yarating.",
+    createButton:"+ Yaratish",classNamePlaceholder:"Sinf nomi (masalan: B1 ertalabki guruh)",
   },
   ru: {
     appName:"Читальный Квест",
@@ -194,6 +198,8 @@ var STRINGS = {
     weeklyBoard:"Недельная доска",thisWeek:"ЭТА НЕДЕЛЯ",leaderboardLabel:"РЕЙТИНГ",noDataYet:"Пока данных нет — почитайте истории!",readAStory:"Прочитать историю",
     aiTutor:"🤖 ИИ-репетитор",send:"Отправить",homeLabel:"Главная",
     writingChallenge:"✍️ Письменное задание",getFeedback:"Получить отзыв →",overallWritingScore:"Общий балл за письмо",errorHunt:"🔍 Охота на ошибки",
+    teacherDashboard:"👩‍🏫 Панель преподавателя",welcomeBack:"С возвращением",createNewClass:"СОЗДАТЬ КЛАСС",noClassesYet:"Пока нет классов. Создайте первый класс выше.",
+    createButton:"+ Создать",classNamePlaceholder:"Название класса (напр. B1 Утренняя группа)",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -252,6 +258,8 @@ var STRINGS = {
     weeklyBoard:"Haftalık Tablo",thisWeek:"BU HAFTA",leaderboardLabel:"LİDERLİK TABLOSU",noDataYet:"Henüz veri yok — hikaye okuyun!",readAStory:"Hikaye Oku",
     aiTutor:"🤖 YZ Öğretmen",send:"Gönder",homeLabel:"Ana sayfa",
     writingChallenge:"✍️ Yazma Görevi",getFeedback:"Geri bildirim al →",overallWritingScore:"Genel Yazma Puanı",errorHunt:"🔍 Hata Avı",
+    teacherDashboard:"👩‍🏫 Öğretmen Paneli",welcomeBack:"Tekrar hoş geldiniz",createNewClass:"YENİ SINIF OLUŞTUR",noClassesYet:"Henüz sınıf yok. İlk sınıfınızı yukarıdan oluşturun.",
+    createButton:"+ Oluştur",classNamePlaceholder:"Sınıf adı (örn. B1 Sabah Grubu)",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -310,6 +318,8 @@ var STRINGS = {
     weeklyBoard:"لوحة الأسبوع",thisWeek:"هذا الأسبوع",leaderboardLabel:"لوحة المتصدرين",noDataYet:"لا توجد بيانات بعد — اقرأ بعض القصص!",readAStory:"اقرأ قصة",
     aiTutor:"🤖 معلم الذكاء الاصطناعي",send:"إرسال",homeLabel:"الرئيسية",
     writingChallenge:"✍️ تحدي الكتابة",getFeedback:"احصل على التقييم →",overallWritingScore:"نتيجة الكتابة الإجمالية",errorHunt:"🔍 صيد الأخطاء",
+    teacherDashboard:"👩‍🏫 لوحة المعلم",welcomeBack:"مرحباً بعودتك",createNewClass:"إنشاء صف جديد",noClassesYet:"لا توجد صفوف بعد. أنشئ صفك الأول أعلاه.",
+    createButton:"+ إنشاء",classNamePlaceholder:"اسم الصف (مثل B1 المجموعة الصباحية)",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -368,6 +378,8 @@ var STRINGS = {
     weeklyBoard:"Wochentabelle",thisWeek:"DIESE WOCHE",leaderboardLabel:"BESTENLISTE",noDataYet:"Noch keine Daten — lies einige Geschichten!",readAStory:"Geschichte lesen",
     aiTutor:"🤖 KI-Tutor",send:"Senden",homeLabel:"Startseite",
     writingChallenge:"✍️ Schreib-Challenge",getFeedback:"Feedback erhalten →",overallWritingScore:"Gesamt-Schreibpunktzahl",errorHunt:"🔍 Fehlersuche",
+    teacherDashboard:"👩‍🏫 Lehrer-Dashboard",welcomeBack:"Willkommen zurück",createNewClass:"NEUE KLASSE ERSTELLEN",noClassesYet:"Noch keine Klassen. Erstelle oben deine erste Klasse.",
+    createButton:"+ Erstellen",classNamePlaceholder:"Klassenname (z.B. B1 Morgengruppe)",
   },
   es: {
     appName:"Misión Lectora",
@@ -426,6 +438,8 @@ var STRINGS = {
     weeklyBoard:"Tabla semanal",thisWeek:"ESTA SEMANA",leaderboardLabel:"CLASIFICACIÓN",noDataYet:"Aún sin datos — ¡lee algunas historias!",readAStory:"Leer una historia",
     aiTutor:"🤖 Tutor IA",send:"Enviar",homeLabel:"Inicio",
     writingChallenge:"✍️ Reto de escritura",getFeedback:"Obtener feedback →",overallWritingScore:"Puntuación general de escritura",errorHunt:"🔍 Caza de errores",
+    teacherDashboard:"👩‍🏫 Panel del profesor",welcomeBack:"Bienvenido de nuevo",createNewClass:"CREAR NUEVA CLASE",noClassesYet:"Aún sin clases. Crea tu primera clase arriba.",
+    createButton:"+ Crear",classNamePlaceholder:"Nombre de clase (ej. B1 Grupo matutino)",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -484,6 +498,8 @@ var STRINGS = {
     weeklyBoard:"Tableau hebdomadaire",thisWeek:"CETTE SEMAINE",leaderboardLabel:"CLASSEMENT",noDataYet:"Pas de données pour l'instant — lisez quelques histoires !",readAStory:"Lire une histoire",
     aiTutor:"🤖 Tuteur IA",send:"Envoyer",homeLabel:"Accueil",
     writingChallenge:"✍️ Défi d'écriture",getFeedback:"Obtenir un avis →",overallWritingScore:"Score global d'écriture",errorHunt:"🔍 Chasse aux erreurs",
+    teacherDashboard:"👩‍🏫 Tableau de bord enseignant",welcomeBack:"Bon retour",createNewClass:"CRÉER UNE NOUVELLE CLASSE",noClassesYet:"Pas encore de classes. Créez votre première au-dessus.",
+    createButton:"+ Créer",classNamePlaceholder:"Nom de classe (ex. B1 Groupe matin)",
   },
 };
 
@@ -3536,24 +3552,24 @@ export default function App(){
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
                 <div>
-                  <h2 style={{margin:"0 0 4px",fontSize:22,fontWeight:900,color:"#a78bfa"}}>👩‍🏫 Teacher Dashboard</h2>
-                  <p style={{margin:0,fontSize:13,color:"#6b7280"}}>Welcome back, {currentUser.name}</p>
+                  <h2 style={{margin:"0 0 4px",fontSize:22,fontWeight:900,color:"#a78bfa"}}>{t("teacherDashboard")}</h2>
+                  <p style={{margin:0,fontSize:13,color:"#6b7280"}}>{t("welcomeBack")}, {currentUser.name}</p>
                 </div>
                 <button onClick={function(){track("user_logout");resetIdentity();localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>{t("logOut")}</button>
               </div>
 
               <div style={{...CARD,marginBottom:14}}>
-                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>CREATE NEW CLASS</p>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>{t("createNewClass")}</p>
                 <div style={{display:"flex",gap:8}}>
-                  <input value={newClassName} onChange={function(e){setNewClassName(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doCreateClass();}} placeholder="Class name (e.g. B1 Morning Group)" style={{...INP,flex:1,margin:0}}/>
-                  <button onClick={doCreateClass} disabled={!newClassName.trim()} style={{...mkBtn("#6366f1"),padding:"10px 16px",fontSize:13,whiteSpace:"nowrap"}}>+ Create</button>
+                  <input value={newClassName} onChange={function(e){setNewClassName(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doCreateClass();}} placeholder={t("classNamePlaceholder")} style={{...INP,flex:1,margin:0}}/>
+                  <button onClick={doCreateClass} disabled={!newClassName.trim()} style={{...mkBtn("#6366f1"),padding:"10px 16px",fontSize:13,whiteSpace:"nowrap"}}>{t("createButton")}</button>
                 </div>
               </div>
 
               {myClasses.length===0?(
                 <div style={{textAlign:"center",padding:"40px 0",color:"#4b5563"}}>
                   <div style={{fontSize:48,marginBottom:12}}>🏫</div>
-                  <p style={{fontSize:14}}>No classes yet. Create your first class above.</p>
+                  <p style={{fontSize:14}}>{t("noClassesYet")}</p>
                 </div>
               ):myClasses.map(function(cls){
                 var stuData=cls.students.map(function(n){var u=allUsers.find(function(u){return u.name===n;});return u&&u.games?u.games:[];});
