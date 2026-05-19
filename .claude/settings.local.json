@@ -22,7 +22,18 @@
       "Bash(curl -s http://localhost:5173)",
       "Bash(git push *)",
       "Bash(curl -s -o /dev/null -w \"HTTP Status: %{http_code}\\\\n\" https://student-reading-tool.netlify.app)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(npm test *)",
+      "Bash(timeout 60 npx vite build)",
+      "Bash(curl -sI https://student-reading-tool.vercel.app --max-time 10)",
+      "Bash(curl -s https://student-reading-tool.vercel.app --max-time 10)",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(X11; Linux x86_64\\) AppleWebKit/537.36\" https://student-reading-tool.vercel.app --max-time 10)",
+      "Bash(curl -sI -A \"Mozilla/5.0 \\(X11; Linux x86_64\\) AppleWebKit/537.36\" https://student-reading-tool.vercel.app --max-time 10)",
+      "Bash(npm --version)",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); print\\('engines:', p.get\\('engines'\\), '\\\\nscripts:', p.get\\('scripts'\\), '\\\\ndeps:', list\\(p.get\\('dependencies',{}\\).keys\\(\\)\\), '\\\\ndevDeps:', list\\(p.get\\('devDependencies',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" -H \"Accept: text/html\" https://student-reading-tool.vercel.app --max-time 15 -o /tmp/site.html -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(curl -sI -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" https://student-reading-tool.vercel.app --max-time 15)",
+      "Skill(agent-browser)"
     ]
   }
 }
