@@ -5218,31 +5218,44 @@ export default function App(){
           var liveWpm=readingTimerSecs>5?getWpmFromSecs(wordCount,readingTimerSecs):0;
           var difficulty=analyzePassage(passage);
 
-          // Split passage into sentences for sentence TTS
-          var sentences=passage.match(/[^.!?]+[.!?]+/g)||[passage];
+          // Paragraph-aware split: passages now arrive with "\n\n" between paragraphs.
+          // Library stories without paragraph breaks still render as a single paragraph.
+          var paragraphs=passage.split(/\n{2,}/).map(function(s){return s.trim();}).filter(Boolean);
+          if(!paragraphs.length)paragraphs=[passage];
+          var paraSentences=paragraphs.map(function(p){return p.match(/[^.!?]+[.!?]+/g)||[p];});
+          // Flat sentence list still used elsewhere (TTS, pronunciation panel).
+          var sentences=[].concat.apply([],paraSentences);
 
           function WordTokens(){
-            return passage.split(/(\s+)/).map(function(token,i){
-              if(/^\s+$/.test(token))return<span key={i}>{token}</span>;
-              var word=token.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
-              if(!word)return<span key={i}>{token}</span>;
-              var saved=savedWords.has(word),isSelected=selectedWord===word;
-              var isHard=heatmapOn&&word.length>2&&!COMMON_WORDS.has(word.replace(/[^a-z]/g,""));
-              var isHl=hlWords.has(i);
-              var bg=isSelected?"rgba(251,191,36,0.3)":isHl?"rgba(251,191,36,0.35)":saved?"rgba(6,182,212,0.2)":isHard?"rgba(245,158,11,0.22)":"transparent";
-              var col=isSelected?"#fbbf24":isHl?"#fde68a":saved?"#06b6d4":isHard?"#fbbf24":"inherit";
-              function handleClick(){
-                if(hlMode){setHlWords(function(s){var n=new Set(s);if(n.has(i))n.delete(i);else n.add(i);return n;});}
-                else{lookupWord(word);}
-              }
-              return<span key={i} onClick={handleClick} title={hlMode?"Click to highlight":(isHard?"Uncommon word":undefined)} style={{cursor:hlMode?"crosshair":"pointer",borderRadius:3,background:bg,color:col,padding:"0 2px",transition:"background 0.12s",textDecoration:isSelected?"underline":isHl?"underline":isHard?"underline dotted":"none",textDecorationColor:isSelected?"#fbbf24":isHl?"rgba(251,191,36,0.6)":"rgba(245,158,11,0.5)"}}>{token}</span>;
+            var globalIdx=0;
+            return paragraphs.map(function(para,pi){
+              var tokens=para.split(/(\s+)/).map(function(token){
+                var i=globalIdx++;
+                if(/^\s+$/.test(token))return<span key={i}>{token}</span>;
+                var word=token.replace(/[^a-zA-Z'-]/g,"").toLowerCase();
+                if(!word)return<span key={i}>{token}</span>;
+                var saved=savedWords.has(word),isSelected=selectedWord===word;
+                var isHard=heatmapOn&&word.length>2&&!COMMON_WORDS.has(word.replace(/[^a-z]/g,""));
+                var isHl=hlWords.has(i);
+                var bg=isSelected?"rgba(251,191,36,0.3)":isHl?"rgba(251,191,36,0.35)":saved?"rgba(6,182,212,0.2)":isHard?"rgba(245,158,11,0.22)":"transparent";
+                var col=isSelected?"#fbbf24":isHl?"#fde68a":saved?"#06b6d4":isHard?"#fbbf24":"inherit";
+                function handleClick(){
+                  if(hlMode){setHlWords(function(s){var n=new Set(s);if(n.has(i))n.delete(i);else n.add(i);return n;});}
+                  else{lookupWord(word);}
+                }
+                return<span key={i} onClick={handleClick} title={hlMode?"Click to highlight":(isHard?"Uncommon word":undefined)} style={{cursor:hlMode?"crosshair":"pointer",borderRadius:3,background:bg,color:col,padding:"0 2px",transition:"background 0.12s",textDecoration:isSelected?"underline":isHl?"underline":isHard?"underline dotted":"none",textDecorationColor:isSelected?"#fbbf24":isHl?"rgba(251,191,36,0.6)":"rgba(245,158,11,0.5)"}}>{token}</span>;
+              });
+              return<p key={pi} style={{margin:pi>0?"0.95em 0 0":0}}>{tokens}</p>;
             });
           }
 
           function SentencePassage(){
-            return sentences.map(function(sent,si){
-              var isActive=activeSentence===sent.trim();
-              return<span key={si} onClick={function(){speakSentence(sent.trim());}} style={{cursor:"pointer",borderRadius:4,padding:"1px 2px",background:isActive?"rgba(99,102,241,0.2)":"transparent",borderBottom:isActive?"2px solid #818cf8":"none",transition:"background 0.15s"}}>{sent}</span>;
+            return paragraphs.map(function(para,pi){
+              var sents=paraSentences[pi];
+              return<p key={pi} style={{margin:pi>0?"0.95em 0 0":0}}>{sents.map(function(sent,si){
+                var isActive=activeSentence===sent.trim();
+                return<span key={si} onClick={function(){speakSentence(sent.trim());}} style={{cursor:"pointer",borderRadius:4,padding:"1px 2px",background:isActive?"rgba(99,102,241,0.2)":"transparent",borderBottom:isActive?"2px solid #818cf8":"none",transition:"background 0.15s"}}>{sent}</span>;
+              })}</p>;
             });
           }
 
@@ -5251,7 +5264,7 @@ export default function App(){
               <button onClick={function(){setFocusMode(false);}} style={{position:"fixed",top:14,right:14,background:"rgba(13,13,26,0.85)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",zIndex:100,backdropFilter:"blur(8px)"}}>✕ Exit Focus</button>
               <div style={{paddingTop:10,paddingBottom:100}}>
                 <h2 style={{margin:"0 0 18px",fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#f9fafb"}}>{topic}</h2>
-                <p style={{lineHeight:1.85,fontSize:17,color:"#e5e7eb",margin:0,letterSpacing:0.2,fontFamily:"'Inter','Trebuchet MS',sans-serif"}}><WordTokens/></p>
+                <div style={{lineHeight:1.85,fontSize:17,color:"#e5e7eb",letterSpacing:0.2,fontFamily:"'Inter','Trebuchet MS',sans-serif"}}><WordTokens/></div>
                 {activeSentence&&(
                   <div style={{...CARD,marginTop:12,padding:12,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.3)"}}>
                     <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
@@ -5388,9 +5401,9 @@ export default function App(){
 
               {/* passage — sentence TTS mode or word mode (hidden during RSVP) */}
               {!rsvpActive&&<div style={{...CARD,marginBottom:12}}>
-                <p style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb",margin:0}}>
+                <div style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb"}}>
                   {activeSentence!==null?<SentencePassage/>:<WordTokens/>}
-                </p>
+                </div>
                 <p style={{fontSize:11,color:"#4b5563",margin:"10px 0 0",textAlign:"center"}}>{activeSentence!==null?"Tap a sentence to listen":"Tap any word to look it up"}</p>
               </div>}
 
@@ -5548,7 +5561,7 @@ export default function App(){
             )}
             <div style={{marginBottom:9}}>
               <button onClick={function(){setShowPassage(function(p){return!p;});}} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?t("hidePassage"):t("showPassage")}</button>
-              {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px"}}><p style={{lineHeight:1.9,fontSize:15,color:"#d1d5db",margin:0}}>{passage}</p></div>)}
+              {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px",lineHeight:1.9,fontSize:15,color:"#d1d5db"}}>{passage.split(/\n{2,}/).map(function(p,i){return<p key={i} style={{margin:i>0?"0.7em 0 0":0}}>{p}</p>;})}</div>)}
             </div>
             <div style={CARD}>
               {(q.q)&&<p style={{fontSize:17,fontWeight:700,lineHeight:1.6,marginBottom:14,color:"#f9fafb"}}>{q.q}</p>}
@@ -7153,7 +7166,7 @@ export default function App(){
                 <button onClick={function(){setPassagePeekOpen(function(o){return!o;});}} style={{background:"none",border:"none",color:"#9ca3af",fontFamily:"inherit",fontSize:12,cursor:"pointer",fontWeight:600,padding:0,width:"100%",textAlign:"left"}}>
                   {passagePeekOpen?"▲ Hide passage":"▼ Show passage"}
                 </button>
-                {passagePeekOpen&&<p style={{margin:"8px 0 0",fontSize:13,color:"#d1d5db",lineHeight:1.8}}>{passage}</p>}
+                {passagePeekOpen&&<div style={{margin:"8px 0 0",fontSize:13,color:"#d1d5db",lineHeight:1.8}}>{passage.split(/\n{2,}/).map(function(p,i){return<p key={i} style={{margin:i>0?"0.7em 0 0":0}}>{p}</p>;})}</div>}
               </div>
             )}
 

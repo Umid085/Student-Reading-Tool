@@ -27,32 +27,38 @@ const QUESTIONS_PER_LEVEL = { A1: 5, A2: 6, B1: 8, B2: 10, C1: 12, C2: 15 };
 
 const LEVEL_CONFIG = {
   A1: {
-    words: "80-100",
+    words: "130-170",
+    paragraphs: 2,
     vocab: "ONLY the ~500 most common English words. No idioms, no phrasal verbs, no compound nouns beyond very basic ones (school bus, ice cream).",
     sentences: "Maximum 8 words per sentence. Subject-verb-object order only. ALLOWED tenses: present simple, 'to be', 'have/has got', 'there is/are', the imperative. FORBIDDEN: past tense, future tense, passive voice, modal verbs, any subordinate clauses, any conjunctions other than 'and' and 'but'.",
   },
   A2: {
-    words: "100-130",
+    words: "180-230",
+    paragraphs: 2,
     vocab: "Basic everyday vocabulary (~1000 words). No academic, technical, or abstract terms. Avoid phrasal verbs except very common ones (get up, look at).",
     sentences: "8-12 words per sentence. ALLOWED tenses: present simple, present continuous, past simple (regular + common irregulars), 'going to' future. ALLOWED structures: comparatives (bigger, more useful), basic connectors (and, but, because, so, when), at most ONE subordinate clause per sentence. FORBIDDEN: present perfect, conditionals, passive voice, reported speech, relative clauses.",
   },
   B1: {
-    words: "150-200",
+    words: "260-340",
+    paragraphs: 3,
     vocab: "Intermediate vocabulary (~2000 words). Topic-specific words are fine; avoid technical jargon and rare idioms.",
     sentences: "10-15 words per sentence. REQUIRED across the passage (must appear at least once each): present perfect, past continuous, will-future, first conditional, basic passive (was/were + past participle), defining relative clauses (who/which/that), modal verbs (can, could, should, must, might). At least one subordinate clause every 2-3 sentences. FORBIDDEN: third conditional, mixed conditionals, inversion, cleft sentences.",
   },
   B2: {
-    words: "200-250",
+    words: "360-440",
+    paragraphs: 3,
     vocab: "Upper-intermediate (~4000 words) including academic and abstract terms; common collocations and phrasal verbs.",
     sentences: "12-18 words per sentence. REQUIRED across the passage: past perfect, second AND third conditionals, full passive (all tenses), reported speech, non-defining relative clauses (with commas), modal perfects ('should have done', 'must have been'), participle clauses ('Walking home, she...'). Vary sentence openings — at least two sentences should start with something other than the subject (e.g. an adverbial, a participle).",
   },
   C1: {
-    words: "250-320",
+    words: "460-560",
+    paragraphs: 4,
     vocab: "Advanced academic + idiomatic vocabulary (~6000+ words). Nuanced register, less-common collocations, figurative phrasal verbs, register-aware word choice.",
     sentences: "15-22 words per sentence on average. REQUIRED across the passage (each at least once): mixed conditionals ('If I had studied, I would now be...'), inversion after negative adverbials ('Never have we seen...', 'Not only does X, but Y also...'), cleft sentences ('What surprises me is...', 'It was X that...'), advanced participle clauses ('Having considered the evidence,...'), the subjunctive ('It is essential that he be...'), and at least two sophisticated cohesion devices (notwithstanding, in spite of which, given that, by which point). Avoid simple SVO openings throughout.",
   },
   C2: {
-    words: "300-400",
+    words: "600-750",
+    paragraphs: 4,
     vocab: "Native-level vocabulary including rare, literary, and technical terms; idioms; nuanced collocations; register-specific phrasing.",
     sentences: "Average 18-25 words per sentence; sentence length MUST vary noticeably (occasional very short sentences for emphasis are fine). REQUIRED across the passage (each at least once, no exceptions): (1) hypothetical inversion replacing 'if' ('Were he to arrive...', 'Had I known...', 'Should you require...'); (2) fronting for emphasis ('Strange though it may seem,...', 'Such was the impact that...'); (3) ellipsis ('Some preferred coffee; others, tea.'); (4) cleft and pseudo-cleft constructions; (5) nominalisation (turning verbs/adjectives into noun phrases: 'the implementation of', 'the inevitability of'); (6) the subjunctive in formal contexts; (7) discourse markers of formal register (notwithstanding, be that as it may, insofar as, by virtue of). At least ONE sentence must use a structure that would not appear below C2. Plain SVO sentences must be a minority of the passage.",
   },
@@ -136,6 +142,12 @@ export const handler = async function (event) {
 
   const prompt = `Write a ${lc.words}-word reading passage in ${language} about: "${topic}"
 
+STRUCTURE (non-negotiable):
+- Organise the passage as EXACTLY ${lc.paragraphs} paragraphs.
+- Separate paragraphs with a single blank line (a literal "\\n\\n" between paragraphs in the JSON string).
+- Each paragraph must form a coherent unit (e.g. introduction → development → ${lc.paragraphs >= 3 ? "supporting detail → " : ""}conclusion${lc.paragraphs >= 4 ? "/implications" : ""}).
+- Do NOT use markdown headings, bullet points, or numbered lists inside the passage.
+
 TOPIC ADHERENCE (non-negotiable):
 - The word "${topic}" (translated into ${language} if needed) MUST appear in the passage at least twice.
 - The first sentence MUST name "${topic}" directly.
@@ -173,9 +185,10 @@ Return ONLY this JSON, no markdown, no explanation:
   try {
     const msg = await client.messages.create({
       model: "claude-sonnet-4-6",
-      // Passage (up to ~700 tokens at C2) + up to 15 question objects (~150
-      // tokens each ≈ 2.3K) + JSON scaffolding. 4096 is the safe ceiling.
-      max_tokens: 4096,
+      // Passage (up to ~1000 tokens at C2/750 words) + up to 15 question
+      // objects (~150 tokens each ≈ 2.3K) + JSON scaffolding. 6000 leaves
+      // headroom for the longest C2 case.
+      max_tokens: 6000,
       system: `You are a CEFR-aligned language learning exercise generator for level ${level} (${language}). You write reading passages about the exact topic the user specifies, never drifting. You match the CEFR level on BOTH dimensions equally: vocabulary AND grammar/sentence structures. A passage with level-appropriate vocab but mid-complexity SVO sentences is incorrect output and must not be returned. At ${level}, the grammatical structures listed in the user prompt are mandatory minimums — at least one occurrence of each required structure must appear in the passage.`,
       messages: [{ role: "user", content: prompt }],
     });
