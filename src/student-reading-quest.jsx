@@ -75,6 +75,9 @@ var STRINGS = {
     vocabPractice:"Vocab Practice",practiceComplete:"Practice Complete!",
     quoteBook:"🔖 Quote Book",discussion:"Discussion",postButton:"Post",beFirstToShare:"Be the first to share your thoughts!",
     myPortfolio:"🏆 My Portfolio",noGamesYet:"No games yet",
+    weeklyBoard:"Weekly Board",thisWeek:"THIS WEEK",leaderboardLabel:"LEADERBOARD",noDataYet:"No data yet — play some stories!",readAStory:"Read a Story",
+    aiTutor:"🤖 AI Tutor",send:"Send",homeLabel:"Home",
+    writingChallenge:"✍️ Writing Challenge",getFeedback:"Get Feedback →",overallWritingScore:"Overall Writing Score",errorHunt:"🔍 Error Hunt",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -130,6 +133,9 @@ var STRINGS = {
     vocabPractice:"Lug'at Mashqi",practiceComplete:"Mashq Yakunlandi!",
     quoteBook:"🔖 Iqtiboslar Kitobi",discussion:"Munozara",postButton:"Yuborish",beFirstToShare:"Fikrlarni birinchi bo'lib ulashing!",
     myPortfolio:"🏆 Mening Portfoliom",noGamesYet:"Hali o'yinlar yo'q",
+    weeklyBoard:"Haftalik Doska",thisWeek:"SHU HAFTA",leaderboardLabel:"REYTING",noDataYet:"Hali ma'lumot yo'q — hikoyalar o'qing!",readAStory:"Hikoya o'qish",
+    aiTutor:"🤖 AI O'qituvchi",send:"Yuborish",homeLabel:"Bosh sahifa",
+    writingChallenge:"✍️ Yozish Vazifasi",getFeedback:"Fikr olish →",overallWritingScore:"Umumiy Yozish Bali",errorHunt:"🔍 Xatolarni Top",
   },
   ru: {
     appName:"Читальный Квест",
@@ -185,6 +191,9 @@ var STRINGS = {
     vocabPractice:"Практика словаря",practiceComplete:"Практика завершена!",
     quoteBook:"🔖 Книга цитат",discussion:"Обсуждение",postButton:"Опубликовать",beFirstToShare:"Поделитесь мнением первым!",
     myPortfolio:"🏆 Моё портфолио",noGamesYet:"Пока нет игр",
+    weeklyBoard:"Недельная доска",thisWeek:"ЭТА НЕДЕЛЯ",leaderboardLabel:"РЕЙТИНГ",noDataYet:"Пока данных нет — почитайте истории!",readAStory:"Прочитать историю",
+    aiTutor:"🤖 ИИ-репетитор",send:"Отправить",homeLabel:"Главная",
+    writingChallenge:"✍️ Письменное задание",getFeedback:"Получить отзыв →",overallWritingScore:"Общий балл за письмо",errorHunt:"🔍 Охота на ошибки",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -240,6 +249,9 @@ var STRINGS = {
     vocabPractice:"Kelime Pratiği",practiceComplete:"Pratik Tamamlandı!",
     quoteBook:"🔖 Alıntı Defteri",discussion:"Tartışma",postButton:"Gönder",beFirstToShare:"Düşüncelerinizi ilk siz paylaşın!",
     myPortfolio:"🏆 Portföyüm",noGamesYet:"Henüz oyun yok",
+    weeklyBoard:"Haftalık Tablo",thisWeek:"BU HAFTA",leaderboardLabel:"LİDERLİK TABLOSU",noDataYet:"Henüz veri yok — hikaye okuyun!",readAStory:"Hikaye Oku",
+    aiTutor:"🤖 YZ Öğretmen",send:"Gönder",homeLabel:"Ana sayfa",
+    writingChallenge:"✍️ Yazma Görevi",getFeedback:"Geri bildirim al →",overallWritingScore:"Genel Yazma Puanı",errorHunt:"🔍 Hata Avı",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -295,6 +307,9 @@ var STRINGS = {
     vocabPractice:"ممارسة المفردات",practiceComplete:"اكتملت الممارسة!",
     quoteBook:"🔖 كتاب الاقتباسات",discussion:"نقاش",postButton:"نشر",beFirstToShare:"كن أول من يشارك أفكاره!",
     myPortfolio:"🏆 ملف إنجازاتي",noGamesYet:"لا توجد ألعاب بعد",
+    weeklyBoard:"لوحة الأسبوع",thisWeek:"هذا الأسبوع",leaderboardLabel:"لوحة المتصدرين",noDataYet:"لا توجد بيانات بعد — اقرأ بعض القصص!",readAStory:"اقرأ قصة",
+    aiTutor:"🤖 معلم الذكاء الاصطناعي",send:"إرسال",homeLabel:"الرئيسية",
+    writingChallenge:"✍️ تحدي الكتابة",getFeedback:"احصل على التقييم →",overallWritingScore:"نتيجة الكتابة الإجمالية",errorHunt:"🔍 صيد الأخطاء",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -350,6 +365,9 @@ var STRINGS = {
     vocabPractice:"Wortschatz-Übung",practiceComplete:"Übung abgeschlossen!",
     quoteBook:"🔖 Zitatebuch",discussion:"Diskussion",postButton:"Posten",beFirstToShare:"Sei der Erste, der seine Gedanken teilt!",
     myPortfolio:"🏆 Mein Portfolio",noGamesYet:"Noch keine Spiele",
+    weeklyBoard:"Wochentabelle",thisWeek:"DIESE WOCHE",leaderboardLabel:"BESTENLISTE",noDataYet:"Noch keine Daten — lies einige Geschichten!",readAStory:"Geschichte lesen",
+    aiTutor:"🤖 KI-Tutor",send:"Senden",homeLabel:"Startseite",
+    writingChallenge:"✍️ Schreib-Challenge",getFeedback:"Feedback erhalten →",overallWritingScore:"Gesamt-Schreibpunktzahl",errorHunt:"🔍 Fehlersuche",
   },
   es: {
     appName:"Misión Lectora",
@@ -405,6 +423,9 @@ var STRINGS = {
     vocabPractice:"Práctica de vocabulario",practiceComplete:"¡Práctica completada!",
     quoteBook:"🔖 Libro de citas",discussion:"Discusión",postButton:"Publicar",beFirstToShare:"¡Sé el primero en compartir tu opinión!",
     myPortfolio:"🏆 Mi Portafolio",noGamesYet:"Aún sin partidas",
+    weeklyBoard:"Tabla semanal",thisWeek:"ESTA SEMANA",leaderboardLabel:"CLASIFICACIÓN",noDataYet:"Aún sin datos — ¡lee algunas historias!",readAStory:"Leer una historia",
+    aiTutor:"🤖 Tutor IA",send:"Enviar",homeLabel:"Inicio",
+    writingChallenge:"✍️ Reto de escritura",getFeedback:"Obtener feedback →",overallWritingScore:"Puntuación general de escritura",errorHunt:"🔍 Caza de errores",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -460,6 +481,9 @@ var STRINGS = {
     vocabPractice:"Pratique du vocabulaire",practiceComplete:"Pratique terminée !",
     quoteBook:"🔖 Carnet de citations",discussion:"Discussion",postButton:"Publier",beFirstToShare:"Soyez le premier à partager vos pensées !",
     myPortfolio:"🏆 Mon Portfolio",noGamesYet:"Pas encore de parties",
+    weeklyBoard:"Tableau hebdomadaire",thisWeek:"CETTE SEMAINE",leaderboardLabel:"CLASSEMENT",noDataYet:"Pas de données pour l'instant — lisez quelques histoires !",readAStory:"Lire une histoire",
+    aiTutor:"🤖 Tuteur IA",send:"Envoyer",homeLabel:"Accueil",
+    writingChallenge:"✍️ Défi d'écriture",getFeedback:"Obtenir un avis →",overallWritingScore:"Score global d'écriture",errorHunt:"🔍 Chasse aux erreurs",
   },
 };
 
@@ -5293,7 +5317,7 @@ export default function App(){
             <div style={{...CARD,marginBottom:10,padding:14,background:"rgba(245,158,11,0.06)",borderColor:"rgba(245,158,11,0.3)"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
                 <div>
-                  <div style={{fontSize:13,fontWeight:700,color:"#fbbf24",marginBottom:2}}>✍️ Writing Challenge</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fbbf24",marginBottom:2}}>{t("writingChallenge")}</div>
                   <div style={{fontSize:11,color:"#9ca3af"}}>Write a short summary of the passage and get AI feedback on your writing.</div>
                 </div>
                 <button onClick={function(){setWriteSummary("");setWriteFeedback(null);setWriteError("");setStage("writefeedback");}} style={{...mkBtn("#f59e0b","#0d0d1a"),padding:"8px 16px",fontSize:12,flexShrink:0}}>Start →</button>
@@ -5302,7 +5326,7 @@ export default function App(){
             <div style={{...CARD,marginBottom:10,padding:14,background:"rgba(239,68,68,0.06)",borderColor:"rgba(239,68,68,0.3)"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
                 <div>
-                  <div style={{fontSize:13,fontWeight:700,color:"#f87171",marginBottom:2}}>🔍 Error Hunt</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#f87171",marginBottom:2}}>{t("errorHunt")}</div>
                   <div style={{fontSize:11,color:"#9ca3af"}}>Find 5 deliberate errors hidden in the passage. Can you spot them all?</div>
                 </div>
                 <button onClick={function(){
@@ -6674,11 +6698,11 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>Weekly Board</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>{t("weeklyBoard")}</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
               <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(129,140,248,0.3)",background:"rgba(129,140,248,0.05)"}}>
-                <p style={{fontSize:11,color:"#818cf8",fontWeight:700,letterSpacing:0.5,margin:"0 0 8px"}}>THIS WEEK</p>
+                <p style={{fontSize:11,color:"#818cf8",fontWeight:700,letterSpacing:0.5,margin:"0 0 8px"}}>{t("thisWeek")}</p>
                 <div style={{display:"flex",gap:10}}>
                   <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
                     <div style={{fontSize:18,fontWeight:900,color:"#818cf8"}}>{weekXp}</div>
@@ -6697,8 +6721,8 @@ export default function App(){
                   <span style={{fontSize:12,color:goalMet?"#34d399":"#9ca3af",fontWeight:600}}>{goalMet?"✓ Weekly goal complete! 3+ stories read":"Weekly goal: read 3 stories · "+weekGames.length+"/3 done"}</span>
                 </div>
               </div>
-              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.5,marginBottom:8}}>LEADERBOARD</p>
-              {weeklyLb.length===0&&<p style={{color:"#6b7280",fontSize:13,textAlign:"center",padding:20}}>No data yet — play some stories!</p>}
+              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.5,marginBottom:8}}>{t("leaderboardLabel")}</p>
+              {weeklyLb.length===0&&<p style={{color:"#6b7280",fontSize:13,textAlign:"center",padding:20}}>{t("noDataYet")}</p>}
               {weeklyLb.slice(0,20).map(function(e,i){
                 var isMe=e.name===currentUser.name;
                 var medals=["🥇","🥈","🥉"];
@@ -6711,7 +6735,7 @@ export default function App(){
                   </div>
                 );
               })}
-              <button onClick={doRestart} style={{...mkBtn("#818cf8","#0d0d1a"),width:"100%",marginTop:10}}>Read a Story</button>
+              <button onClick={doRestart} style={{...mkBtn("#818cf8","#0d0d1a"),width:"100%",marginTop:10}}>{t("readAStory")}</button>
             </div>
           );
         })()}
@@ -6721,12 +6745,12 @@ export default function App(){
           <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 80px)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10,flexShrink:0}}>
               <div>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#0891b2"}}>🤖 AI Tutor</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#0891b2"}}>{t("aiTutor")}</h2>
                 <p style={{margin:0,fontSize:11,color:"#6b7280"}}>{level} · {topic}</p>
               </div>
               <div style={{display:"flex",gap:6}}>
                 <button onClick={function(){setStage("result");}} style={GHOST}>{t("back")}</button>
-                <button onClick={doRestart} style={{...GHOST,color:"#34d399",borderColor:"rgba(52,211,153,0.3)"}}>Home</button>
+                <button onClick={doRestart} style={{...GHOST,color:"#34d399",borderColor:"rgba(52,211,153,0.3)"}}>{t("homeLabel")}</button>
               </div>
             </div>
 
@@ -6776,7 +6800,7 @@ export default function App(){
                 onChange={function(e){setTutorInput(e.target.value);}}
                 onKeyDown={function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendTutorMessage(tutorInput);}}}
               />
-              <button onClick={function(){sendTutorMessage(tutorInput);}} disabled={!tutorInput.trim()} style={{...mkBtn(!tutorInput.trim()?"#374151":"#0891b2"),padding:"11px 18px",fontSize:14,flexShrink:0}}>Send</button>
+              <button onClick={function(){sendTutorMessage(tutorInput);}} disabled={!tutorInput.trim()} style={{...mkBtn(!tutorInput.trim()?"#374151":"#0891b2"),padding:"11px 18px",fontSize:14,flexShrink:0}}>{t("send")}</button>
             </div>
           </div>
         )}
@@ -6786,7 +6810,7 @@ export default function App(){
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:6}}>
               <button onClick={function(){setStage("result");}} style={GHOST}>← Back</button>
-              <h2 style={{fontSize:18,fontWeight:900,color:"#fbbf24",margin:0}}>✍️ Writing Challenge</h2>
+              <h2 style={{fontSize:18,fontWeight:900,color:"#fbbf24",margin:0}}>{t("writingChallenge")}</h2>
             </div>
 
             {!writeFeedback&&(
@@ -6816,7 +6840,7 @@ export default function App(){
                       }}
                       disabled={writeSummary.trim().split(/\s+/).filter(Boolean).length<20}
                       style={{...mkBtn(writeSummary.trim().split(/\s+/).filter(Boolean).length<20?"#374151":"#f59e0b","#0d0d1a"),padding:"9px 20px",fontSize:13}}
-                    >Get Feedback →</button>
+                    >{t("getFeedback")}</button>
                   </div>
                 </div>
               </div>
@@ -6830,7 +6854,7 @@ export default function App(){
                   {/* overall score */}
                   <div style={{...CARD,marginBottom:12,textAlign:"center",padding:20,background:"rgba(245,158,11,0.07)",borderColor:"rgba(245,158,11,0.35)"}}>
                     <div className="rq-glow-green" style={{fontSize:48,fontWeight:900,color:scoreColor(writeFeedback.overall||0),marginBottom:4}}>{writeFeedback.overall||0}%</div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#fbbf24",marginBottom:8}}>Overall Writing Score</div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#fbbf24",marginBottom:8}}>{t("overallWritingScore")}</div>
                     {writeFeedback.strengths&&<p style={{fontSize:13,color:"#34d399",margin:"0 0 4px"}}>💪 {writeFeedback.strengths}</p>}
                     {writeFeedback.improvements&&<p style={{fontSize:13,color:"#9ca3af",margin:0}}>💡 {writeFeedback.improvements}</p>}
                   </div>
