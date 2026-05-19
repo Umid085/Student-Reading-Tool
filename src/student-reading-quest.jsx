@@ -80,6 +80,7 @@ var STRINGS = {
     writingChallenge:"✍️ Writing Challenge",getFeedback:"Get Feedback →",overallWritingScore:"Overall Writing Score",errorHunt:"🔍 Error Hunt",
     teacherDashboard:"👩‍🏫 Teacher Dashboard",welcomeBack:"Welcome back",createNewClass:"CREATE NEW CLASS",noClassesYet:"No classes yet. Create your first class above.",
     createButton:"+ Create",classNamePlaceholder:"Class name (e.g. B1 Morning Group)",
+    qLabels:{mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"},
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -140,6 +141,7 @@ var STRINGS = {
     writingChallenge:"✍️ Yozish Vazifasi",getFeedback:"Fikr olish →",overallWritingScore:"Umumiy Yozish Bali",errorHunt:"🔍 Xatolarni Top",
     teacherDashboard:"👩‍🏫 O'qituvchi Paneli",welcomeBack:"Qaytib kelganingizdan xursandmiz",createNewClass:"YANGI SINF YARATING",noClassesYet:"Hali sinflar yo'q. Yuqorida birinchi sinfingizni yarating.",
     createButton:"+ Yaratish",classNamePlaceholder:"Sinf nomi (masalan: B1 ertalabki guruh)",
+    qLabels:{mcq:"Ko'p tanlovli",gap_word:"Bo'sh joy - So'zlar",gap_sentence:"Bo'sh joy - Gaplar",matching:"Mosligini topish",heading:"Sarlavhalarni moslash",qa:"Erkin javob",tfnm:"To'g'ri/Noto'g'ri/Aytilmagan",ynng:"Ha/Yo'q/Berilmagan"},
   },
   ru: {
     appName:"Читальный Квест",
@@ -200,6 +202,7 @@ var STRINGS = {
     writingChallenge:"✍️ Письменное задание",getFeedback:"Получить отзыв →",overallWritingScore:"Общий балл за письмо",errorHunt:"🔍 Охота на ошибки",
     teacherDashboard:"👩‍🏫 Панель преподавателя",welcomeBack:"С возвращением",createNewClass:"СОЗДАТЬ КЛАСС",noClassesYet:"Пока нет классов. Создайте первый класс выше.",
     createButton:"+ Создать",classNamePlaceholder:"Название класса (напр. B1 Утренняя группа)",
+    qLabels:{mcq:"Множественный выбор",gap_word:"Пропуск - Слова",gap_sentence:"Пропуск - Предложения",matching:"Соответствие",heading:"Подбор заголовков",qa:"Свободный ответ",tfnm:"Верно/Неверно/Не упоминается",ynng:"Да/Нет/Не указано"},
   },
   tr: {
     appName:"Okuma Görevi",
@@ -260,6 +263,7 @@ var STRINGS = {
     writingChallenge:"✍️ Yazma Görevi",getFeedback:"Geri bildirim al →",overallWritingScore:"Genel Yazma Puanı",errorHunt:"🔍 Hata Avı",
     teacherDashboard:"👩‍🏫 Öğretmen Paneli",welcomeBack:"Tekrar hoş geldiniz",createNewClass:"YENİ SINIF OLUŞTUR",noClassesYet:"Henüz sınıf yok. İlk sınıfınızı yukarıdan oluşturun.",
     createButton:"+ Oluştur",classNamePlaceholder:"Sınıf adı (örn. B1 Sabah Grubu)",
+    qLabels:{mcq:"Çoktan Seçmeli",gap_word:"Boşluk - Kelime",gap_sentence:"Boşluk - Cümle",matching:"Eşleştirme",heading:"Başlık Eşleştir",qa:"Açık Cevap",tfnm:"Doğru/Yanlış/Belirtilmemiş",ynng:"Evet/Hayır/Belirtilmedi"},
   },
   ar: {
     appName:"مهمة القراءة",
@@ -320,6 +324,7 @@ var STRINGS = {
     writingChallenge:"✍️ تحدي الكتابة",getFeedback:"احصل على التقييم →",overallWritingScore:"نتيجة الكتابة الإجمالية",errorHunt:"🔍 صيد الأخطاء",
     teacherDashboard:"👩‍🏫 لوحة المعلم",welcomeBack:"مرحباً بعودتك",createNewClass:"إنشاء صف جديد",noClassesYet:"لا توجد صفوف بعد. أنشئ صفك الأول أعلاه.",
     createButton:"+ إنشاء",classNamePlaceholder:"اسم الصف (مثل B1 المجموعة الصباحية)",
+    qLabels:{mcq:"اختيار من متعدد",gap_word:"ملء الفراغ - كلمات",gap_sentence:"ملء الفراغ - جمل",matching:"المطابقة",heading:"مطابقة العناوين",qa:"إجابة مفتوحة",tfnm:"صحيح/خطأ/غير مذكور",ynng:"نعم/لا/غير محدد"},
   },
   de: {
     appName:"Lesewettbewerb",
@@ -380,6 +385,7 @@ var STRINGS = {
     writingChallenge:"✍️ Schreib-Challenge",getFeedback:"Feedback erhalten →",overallWritingScore:"Gesamt-Schreibpunktzahl",errorHunt:"🔍 Fehlersuche",
     teacherDashboard:"👩‍🏫 Lehrer-Dashboard",welcomeBack:"Willkommen zurück",createNewClass:"NEUE KLASSE ERSTELLEN",noClassesYet:"Noch keine Klassen. Erstelle oben deine erste Klasse.",
     createButton:"+ Erstellen",classNamePlaceholder:"Klassenname (z.B. B1 Morgengruppe)",
+    qLabels:{mcq:"Multiple-Choice",gap_word:"Lückentext - Wörter",gap_sentence:"Lückentext - Sätze",matching:"Zuordnung",heading:"Überschriften zuordnen",qa:"Freie Antwort",tfnm:"Wahr/Falsch/Nicht erwähnt",ynng:"Ja/Nein/Nicht angegeben"},
   },
   es: {
     appName:"Misión Lectora",
@@ -440,6 +446,7 @@ var STRINGS = {
     writingChallenge:"✍️ Reto de escritura",getFeedback:"Obtener feedback →",overallWritingScore:"Puntuación general de escritura",errorHunt:"🔍 Caza de errores",
     teacherDashboard:"👩‍🏫 Panel del profesor",welcomeBack:"Bienvenido de nuevo",createNewClass:"CREAR NUEVA CLASE",noClassesYet:"Aún sin clases. Crea tu primera clase arriba.",
     createButton:"+ Crear",classNamePlaceholder:"Nombre de clase (ej. B1 Grupo matutino)",
+    qLabels:{mcq:"Opción múltiple",gap_word:"Huecos - Palabras",gap_sentence:"Huecos - Oraciones",matching:"Emparejar",heading:"Emparejar títulos",qa:"Respuesta abierta",tfnm:"V/F/No mencionado",ynng:"Sí/No/No dado"},
   },
   fr: {
     appName:"Quête de Lecture",
@@ -500,6 +507,7 @@ var STRINGS = {
     writingChallenge:"✍️ Défi d'écriture",getFeedback:"Obtenir un avis →",overallWritingScore:"Score global d'écriture",errorHunt:"🔍 Chasse aux erreurs",
     teacherDashboard:"👩‍🏫 Tableau de bord enseignant",welcomeBack:"Bon retour",createNewClass:"CRÉER UNE NOUVELLE CLASSE",noClassesYet:"Pas encore de classes. Créez votre première au-dessus.",
     createButton:"+ Créer",classNamePlaceholder:"Nom de classe (ex. B1 Groupe matin)",
+    qLabels:{mcq:"Choix multiple",gap_word:"Texte à trous - Mots",gap_sentence:"Texte à trous - Phrases",matching:"Appariement",heading:"Apparier titres",qa:"Réponse libre",tfnm:"Vrai/Faux/Non mentionné",ynng:"Oui/Non/Non donné"},
   },
 };
 
@@ -1896,6 +1904,10 @@ export default function App(){
   var [uiLang,setUiLang]=useState(function(){try{return localStorage.getItem("rq-uilang")||"en";}catch(e){return"en";}});
 
   function t(key){return(STRINGS[uiLang]&&STRINGS[uiLang][key])||STRINGS.en[key]||key;}
+  // Looks up a localized question-type label (e.g. "Multiple Choice" → "Choix
+  // multiple"). Falls back to the English table Q_LABELS when the language
+  // doesn't define the lookup, then to the raw type key as a last resort.
+  function qLabel(type){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].qLabels;if(tbl&&tbl[type])return tbl[type];return Q_LABELS[type]||type;}
 
   // Keep passageLang in sync with uiLang: switching UI to Russian also makes
   // AI-generated passages Russian by default. User can still override per
@@ -2155,7 +2167,7 @@ export default function App(){
   function doExportClassCSV(){
     if(!currentClass||!allUsers)return;
     var Q_TYPES=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
-    var headers=["Student","Best Level","Games","Avg Score %","Avg WPM"].concat(Q_TYPES.map(function(t){return Q_LABELS[t]+" %";})).concat(["Vocab Words","Last Active"]);
+    var headers=["Student","Best Level","Games","Avg Score %","Avg WPM"].concat(Q_TYPES.map(function(t){return qLabel(t)+" %";})).concat(["Vocab Words","Last Active"]);
     var rows=currentClass.students.map(function(sName){
       var u=allUsers.find(function(u){return u.name===sName;});
       var games=u&&u.games?u.games:[];
@@ -3679,7 +3691,7 @@ export default function App(){
                     var tAvg=tGames.length?tGames.reduce(function(s2,g){return s2+(g.typeStats[t]||0);},0)/tGames.length:0;
                     return s+tAvg;
                   },0)/relevant.length);
-                  return{type:t,avg:avg,label:Q_LABELS[t]};
+                  return{type:t,avg:avg,label:qLabel(t)};
                 }).filter(function(x){return x!==null;});
                 if(!typeAvgs.length)return null;
                 typeAvgs.sort(function(a,b){return a.avg-b.avg;});
@@ -3861,7 +3873,7 @@ export default function App(){
                           return(
                             <div key={t} style={{marginBottom:6}}>
                               <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:2}}>
-                                <span style={{color:"#d1d5db"}}>{Q_LABELS[t]}</span>
+                                <span style={{color:"#d1d5db"}}>{qLabel(t)}</span>
                                 <span style={{color:col,fontWeight:700}}>{ta}%</span>
                               </div>
                               <div style={{background:"rgba(0,0,0,0.3)",borderRadius:3,height:5}}>
@@ -3926,7 +3938,7 @@ export default function App(){
             var games=u&&u.games?u.games:[];
             games.forEach(function(g){if(g.typeStats)Object.keys(g.typeStats).forEach(function(t){if(!classTypeAgg[t])classTypeAgg[t]={e:0,m:0};classTypeAgg[t].e+=g.typeStats[t].earned||0;classTypeAgg[t].m+=g.typeStats[t].max||0;});});
           });
-          var typeList=Object.keys(classTypeAgg).map(function(t){return{t:t,pct:classTypeAgg[t].m>0?Math.round(classTypeAgg[t].e/classTypeAgg[t].m*100):0,label:Q_LABELS[t]||t};}).sort(function(a,b){return a.pct-b.pct;});
+          var typeList=Object.keys(classTypeAgg).map(function(t){return{t:t,pct:classTypeAgg[t].m>0?Math.round(classTypeAgg[t].e/classTypeAgg[t].m*100):0,label:qLabel(t)};}).sort(function(a,b){return a.pct-b.pct;});
           return(
             <div>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingTop:8}}>
@@ -4043,7 +4055,7 @@ export default function App(){
                         <div style={{fontSize:10,color:"#6b7280",marginTop:1}}>
                           {d.games} game{d.games!==1?"s":""}
                           {d.daysSince!==null?" · "+d.daysSince+"d ago":" · never played"}
-                          {d.weakType&&d.weakPct<70?" · weak: "+(Q_LABELS[d.weakType]||d.weakType)+" ("+d.weakPct+"%)":""}
+                          {d.weakType&&d.weakPct<70?" · weak: "+qLabel(d.weakType)+" ("+d.weakPct+"%)":""}
                         </div>
                       </div>
                       <div style={{textAlign:"right",flexShrink:0}}>
@@ -4666,7 +4678,7 @@ export default function App(){
                 {Object.keys(Q_LABELS).map(function(qt){
                   var active=selectedTypes.indexOf(qt)!==-1;
                   function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(qt)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==qt;});return prev.concat([qt]);});}
-                  return(<button key={qt} onClick={toggle} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{Q_LABELS[qt]}</button>);
+                  return(<button key={qt} onClick={toggle} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{qLabel(qt)}</button>);
                 })}
               </div>
             </div>
@@ -5154,7 +5166,7 @@ export default function App(){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{display:"flex",gap:5}}>
                 <span style={pill("#7c3aed")}>Q{current+1}/{questions.length}</span>
-                <span style={pill("rgba(255,255,255,0.07)","#c7d2fe")}>{Q_LABELS[q.type]||q.type}</span>
+                <span style={pill("rgba(255,255,255,0.07)","#c7d2fe")}>{qLabel(q.type)}</span>
                 {streak>=3&&<span style={pill("#dc2626")}>Streak {streak}</span>}
               </div>
               <span style={{background:"rgba(255,255,255,0.07)",borderRadius:999,padding:"4px 11px",fontSize:12,color:lv?lv.color:"#34d399",fontWeight:700}}>{totalXpSoFar} XP</span>
@@ -5282,7 +5294,7 @@ export default function App(){
                   var ts=result.typeStats[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
                   return(<div key={t} style={{marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                      <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
+                      <span style={{color:"#9ca3af"}}>{qLabel(t)}</span>
                       <span style={{color:pctColor(tp),fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{tp}%</span>
                     </div>
                     <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
@@ -5481,7 +5493,7 @@ export default function App(){
                 <div style={{height:"100%",width:(reviewIdx/due.length*100)+"%",background:"#a855f7",borderRadius:999,transition:"width 0.3s"}}/>
               </div>
               <div style={{...CARD,marginBottom:12,padding:14}}>
-                <div style={{fontSize:10,color:"#6b7280",letterSpacing:0.6,marginBottom:6}}>{item.topic} · {item.level} · {Q_LABELS[rq2.type]||rq2.type}</div>
+                <div style={{fontSize:10,color:"#6b7280",letterSpacing:0.6,marginBottom:6}}>{item.topic} · {item.level} · {qLabel(rq2.type)}</div>
                 {rq2.instruction&&<p style={{fontSize:13,color:"#9ca3af",margin:"0 0 6px",fontStyle:"italic"}}>{rq2.instruction}</p>}
                 <p style={{fontSize:14,fontWeight:600,color:"#f3f4f6",margin:"0 0 12px",lineHeight:1.5}}>{rq2.q||rq2.sentence}</p>
                 {(rq2.type==="mcq"||rq2.type==="gap_word"||rq2.type==="gap_sentence"||rq2.type==="tfnm"||rq2.type==="ynng")&&(
@@ -5886,7 +5898,7 @@ export default function App(){
                           {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setChallengeLevel(l.key);}} style={{background:challengeLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:challengeLevel===l.key?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
                         </div>
                         <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>
-                          {Object.keys(Q_LABELS).map(function(t){var on=challengeTypes.indexOf(t)!==-1;return<button key={t} onClick={function(){setChallengeTypes(function(prev){var on2=prev.indexOf(t)!==-1;if(on2&&prev.length===1)return prev;if(on2)return prev.filter(function(x){return x!==t;});return prev.concat([t]);});}} style={{background:on?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(on?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"3px 9px",fontSize:10,color:on?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>{Q_LABELS[t]}</button>;})}
+                          {Object.keys(Q_LABELS).map(function(t){var on=challengeTypes.indexOf(t)!==-1;return<button key={t} onClick={function(){setChallengeTypes(function(prev){var on2=prev.indexOf(t)!==-1;if(on2&&prev.length===1)return prev;if(on2)return prev.filter(function(x){return x!==t;});return prev.concat([t]);});}} style={{background:on?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(on?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"3px 9px",fontSize:10,color:on?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>{qLabel(t)}</button>;})}
                         </div>
                         <div style={{display:"flex",gap:6}}>
                           <button onClick={sendChallenge} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>Send Challenge</button>
@@ -6101,7 +6113,7 @@ export default function App(){
                   var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
                   return(<div key={t} style={{marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                      <span style={{color:"#9ca3af"}}>{Q_LABELS[t]||t}</span>
+                      <span style={{color:"#9ca3af"}}>{qLabel(t)}</span>
                       <span style={{color:pctColor(tp),fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{tp}%</span>
                     </div>
                     <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
@@ -6396,7 +6408,7 @@ export default function App(){
                     return(<div key={w.t} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8,padding:"10px 12px",background:"rgba(239,68,68,0.07)",borderRadius:10}}>
                       <div style={{width:36,height:36,borderRadius:8,background:"rgba(239,68,68,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:900,color:"#f87171"}}>{w.pct}%</div>
                       <div>
-                        <div style={{fontSize:12,fontWeight:700,color:"#f3f4f6",marginBottom:2}}>{Q_LABELS[w.t]||w.t}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#f3f4f6",marginBottom:2}}>{qLabel(w.t)}</div>
                         <div style={{fontSize:11,color:"#9ca3af"}}>{tips[w.t]||"Practice this type more!"}</div>
                       </div>
                     </div>);
@@ -6432,7 +6444,7 @@ export default function App(){
                   {typeList.map(function(item){
                     return(<div key={item.t} style={{marginBottom:8}}>
                       <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                        <span style={{color:"#9ca3af"}}>{Q_LABELS[item.t]||item.t}</span>
+                        <span style={{color:"#9ca3af"}}>{qLabel(item.t)}</span>
                         <span style={{color:pctColor(item.pct),fontWeight:700}}>{item.pct}%</span>
                       </div>
                       <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
