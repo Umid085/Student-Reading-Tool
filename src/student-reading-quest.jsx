@@ -80,6 +80,18 @@ var STRINGS = {
     writingChallenge:"✍️ Writing Challenge",getFeedback:"Get Feedback →",overallWritingScore:"Overall Writing Score",errorHunt:"🔍 Error Hunt",
     teacherDashboard:"👩‍🏫 Teacher Dashboard",welcomeBack:"Welcome back",createNewClass:"CREATE NEW CLASS",noClassesYet:"No classes yet. Create your first class above.",
     createButton:"+ Create",classNamePlaceholder:"Class name (e.g. B1 Morning Group)",
+    tch_shareCode:"SHARE THIS CODE WITH STUDENTS",tch_copyCode:"📋 Copy Code",tch_copied:"Copied!",
+    tch_statStudents:"Students",tch_statClassAvg:"Class Avg",tch_statAvgWpm:"Avg WPM",
+    tch_announcement:"📢 ANNOUNCEMENT",tch_postPlaceholder:"Post a message to your class…",tch_post:"Post",tch_postedToast:"✓ Posted!",tch_postedLabel:"Posted",tch_removeAnn:"✕ Remove",
+    tch_classWeakAreas:"CLASS WEAK AREAS",tch_studentsSection:"STUDENTS",tch_noStudentsYet:"No students yet. Share the code above!",tch_needsHelp:"⚠ Needs help",
+    tch_games:"games",tch_lastActive:"last active",tch_never:"Never",tch_noGames:"No games",
+    tch_improving:"Improving",tch_declining:"Declining",tch_stable:"Stable",
+    tch_report:"🖨 Report",tch_assignments:"ASSIGNMENTS",
+    tch_typeLibrary:"📚 Library",tch_typeAi:"🤖 AI Topic",tch_typeCustom:"✍️ Custom Text",
+    tch_selectStory:"— Select a story —",tch_topicPlaceholder:"Topic (e.g. Climate Change)",tch_assignBtn:"+ Assign",tch_generating:"Generating…",
+    tch_noAssignments:"No assignments yet. Create one above.",tch_completed:"completed",tch_classAvg:"Class avg:",tch_due:"due",
+    tch_analytics:"📊 Analytics",tch_csvExport:"⬇ CSV",
+    tch_studentAssignments:"📋 ASSIGNMENTS",tch_start:"Start →",
     qLabels:{mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"},
     badgeNames:{
       first_steps:{name:"First Steps",desc:"Complete your first quiz"},
@@ -185,6 +197,18 @@ var STRINGS = {
     writingChallenge:"✍️ Yozish Vazifasi",getFeedback:"Fikr olish →",overallWritingScore:"Umumiy Yozish Bali",errorHunt:"🔍 Xatolarni Top",
     teacherDashboard:"👩‍🏫 O'qituvchi Paneli",welcomeBack:"Qaytib kelganingizdan xursandmiz",createNewClass:"YANGI SINF YARATING",noClassesYet:"Hali sinflar yo'q. Yuqorida birinchi sinfingizni yarating.",
     createButton:"+ Yaratish",classNamePlaceholder:"Sinf nomi (masalan: B1 ertalabki guruh)",
+    tch_shareCode:"TALABALARGA BU KODNI ULASHING",tch_copyCode:"📋 Kodni Nusxalash",tch_copied:"Nusxalandi!",
+    tch_statStudents:"Talabalar",tch_statClassAvg:"Sinf O'rtachasi",tch_statAvgWpm:"O'rt. SDS",
+    tch_announcement:"📢 E'LON",tch_postPlaceholder:"Sinfingizga xabar yuboring…",tch_post:"Yuborish",tch_postedToast:"✓ Yuborildi!",tch_postedLabel:"Yuborilgan",tch_removeAnn:"✕ O'chirish",
+    tch_classWeakAreas:"SINFING ZAIF JIHATLARI",tch_studentsSection:"TALABALAR",tch_noStudentsYet:"Hali talabalar yo'q. Yuqoridagi kodni ulashing!",tch_needsHelp:"⚠ Yordam kerak",
+    tch_games:"o'yin",tch_lastActive:"oxirgi faollik",tch_never:"Hech qachon",tch_noGames:"O'yinlar yo'q",
+    tch_improving:"Yaxshilanmoqda",tch_declining:"Pasaymoqda",tch_stable:"Barqaror",
+    tch_report:"🖨 Hisobot",tch_assignments:"VAZIFALAR",
+    tch_typeLibrary:"📚 Kutubxona",tch_typeAi:"🤖 AI Mavzu",tch_typeCustom:"✍️ Maxsus Matn",
+    tch_selectStory:"— Hikoya tanlang —",tch_topicPlaceholder:"Mavzu (masalan, Iqlim O'zgarishi)",tch_assignBtn:"+ Tayinlash",tch_generating:"Yaratilmoqda…",
+    tch_noAssignments:"Hali vazifalar yo'q. Yuqorida yarating.",tch_completed:"bajarildi",tch_classAvg:"Sinf o'rt.:",tch_due:"muddati",
+    tch_analytics:"📊 Tahlil",tch_csvExport:"⬇ CSV",
+    tch_studentAssignments:"📋 VAZIFALAR",tch_start:"Boshlash →",
     qLabels:{mcq:"Ko'p tanlovli",gap_word:"Bo'sh joy - So'zlar",gap_sentence:"Bo'sh joy - Gaplar",matching:"Mosligini topish",heading:"Sarlavhalarni moslash",qa:"Erkin javob",tfnm:"To'g'ri/Noto'g'ri/Aytilmagan",ynng:"Ha/Yo'q/Berilmagan"},
     badgeNames:{
       first_steps:{name:"Birinchi Qadamlar",desc:"Birinchi testni yakunlang"},
@@ -290,6 +314,18 @@ var STRINGS = {
     writingChallenge:"✍️ Письменное задание",getFeedback:"Получить отзыв →",overallWritingScore:"Общий балл за письмо",errorHunt:"🔍 Охота на ошибки",
     teacherDashboard:"👩‍🏫 Панель преподавателя",welcomeBack:"С возвращением",createNewClass:"СОЗДАТЬ КЛАСС",noClassesYet:"Пока нет классов. Создайте первый класс выше.",
     createButton:"+ Создать",classNamePlaceholder:"Название класса (напр. B1 Утренняя группа)",
+    tch_shareCode:"ПОДЕЛИТЕСЬ ЭТИМ КОДОМ СО СТУДЕНТАМИ",tch_copyCode:"📋 Скопировать код",tch_copied:"Скопировано!",
+    tch_statStudents:"Студенты",tch_statClassAvg:"Средн. класса",tch_statAvgWpm:"Сред. СПМ",
+    tch_announcement:"📢 ОБЪЯВЛЕНИЕ",tch_postPlaceholder:"Опубликовать сообщение для класса…",tch_post:"Опубликовать",tch_postedToast:"✓ Опубликовано!",tch_postedLabel:"Опубликовано",tch_removeAnn:"✕ Удалить",
+    tch_classWeakAreas:"СЛАБЫЕ МЕСТА КЛАССА",tch_studentsSection:"СТУДЕНТЫ",tch_noStudentsYet:"Пока нет студентов. Поделитесь кодом выше!",tch_needsHelp:"⚠ Нужна помощь",
+    tch_games:"игр",tch_lastActive:"посл. активность",tch_never:"Никогда",tch_noGames:"Нет игр",
+    tch_improving:"Улучшается",tch_declining:"Снижается",tch_stable:"Стабильно",
+    tch_report:"🖨 Отчёт",tch_assignments:"ЗАДАНИЯ",
+    tch_typeLibrary:"📚 Библиотека",tch_typeAi:"🤖 AI-тема",tch_typeCustom:"✍️ Свой текст",
+    tch_selectStory:"— Выберите рассказ —",tch_topicPlaceholder:"Тема (напр. Изменение климата)",tch_assignBtn:"+ Назначить",tch_generating:"Создаётся…",
+    tch_noAssignments:"Пока нет заданий. Создайте выше.",tch_completed:"выполнено",tch_classAvg:"Средн. класса:",tch_due:"до",
+    tch_analytics:"📊 Аналитика",tch_csvExport:"⬇ CSV",
+    tch_studentAssignments:"📋 ЗАДАНИЯ",tch_start:"Начать →",
     qLabels:{mcq:"Множественный выбор",gap_word:"Пропуск - Слова",gap_sentence:"Пропуск - Предложения",matching:"Соответствие",heading:"Подбор заголовков",qa:"Свободный ответ",tfnm:"Верно/Неверно/Не упоминается",ynng:"Да/Нет/Не указано"},
     badgeNames:{
       first_steps:{name:"Первые шаги",desc:"Выполните первый тест"},
@@ -395,6 +431,18 @@ var STRINGS = {
     writingChallenge:"✍️ Yazma Görevi",getFeedback:"Geri bildirim al →",overallWritingScore:"Genel Yazma Puanı",errorHunt:"🔍 Hata Avı",
     teacherDashboard:"👩‍🏫 Öğretmen Paneli",welcomeBack:"Tekrar hoş geldiniz",createNewClass:"YENİ SINIF OLUŞTUR",noClassesYet:"Henüz sınıf yok. İlk sınıfınızı yukarıdan oluşturun.",
     createButton:"+ Oluştur",classNamePlaceholder:"Sınıf adı (örn. B1 Sabah Grubu)",
+    tch_shareCode:"BU KODU ÖĞRENCİLERLE PAYLAŞIN",tch_copyCode:"📋 Kodu Kopyala",tch_copied:"Kopyalandı!",
+    tch_statStudents:"Öğrenciler",tch_statClassAvg:"Sınıf Ort.",tch_statAvgWpm:"Ort. WPM",
+    tch_announcement:"📢 DUYURU",tch_postPlaceholder:"Sınıfınıza mesaj gönderin…",tch_post:"Gönder",tch_postedToast:"✓ Gönderildi!",tch_postedLabel:"Gönderildi",tch_removeAnn:"✕ Kaldır",
+    tch_classWeakAreas:"SINIF ZAYIF NOKTALARI",tch_studentsSection:"ÖĞRENCİLER",tch_noStudentsYet:"Henüz öğrenci yok. Yukarıdaki kodu paylaşın!",tch_needsHelp:"⚠ Yardım gerekli",
+    tch_games:"oyun",tch_lastActive:"son aktiflik",tch_never:"Hiç",tch_noGames:"Oyun yok",
+    tch_improving:"Gelişiyor",tch_declining:"Düşüyor",tch_stable:"Sabit",
+    tch_report:"🖨 Rapor",tch_assignments:"ÖDEVLER",
+    tch_typeLibrary:"📚 Kütüphane",tch_typeAi:"🤖 AI Konu",tch_typeCustom:"✍️ Özel Metin",
+    tch_selectStory:"— Bir hikaye seçin —",tch_topicPlaceholder:"Konu (örn. İklim Değişikliği)",tch_assignBtn:"+ Ata",tch_generating:"Oluşturuluyor…",
+    tch_noAssignments:"Henüz ödev yok. Yukarıda oluştur.",tch_completed:"tamamlandı",tch_classAvg:"Sınıf ort.:",tch_due:"tarih",
+    tch_analytics:"📊 Analiz",tch_csvExport:"⬇ CSV",
+    tch_studentAssignments:"📋 ÖDEVLER",tch_start:"Başla →",
     qLabels:{mcq:"Çoktan Seçmeli",gap_word:"Boşluk - Kelime",gap_sentence:"Boşluk - Cümle",matching:"Eşleştirme",heading:"Başlık Eşleştir",qa:"Açık Cevap",tfnm:"Doğru/Yanlış/Belirtilmemiş",ynng:"Evet/Hayır/Belirtilmedi"},
     badgeNames:{
       first_steps:{name:"İlk Adımlar",desc:"İlk testi tamamla"},
@@ -500,6 +548,18 @@ var STRINGS = {
     writingChallenge:"✍️ تحدي الكتابة",getFeedback:"احصل على التقييم →",overallWritingScore:"نتيجة الكتابة الإجمالية",errorHunt:"🔍 صيد الأخطاء",
     teacherDashboard:"👩‍🏫 لوحة المعلم",welcomeBack:"مرحباً بعودتك",createNewClass:"إنشاء صف جديد",noClassesYet:"لا توجد صفوف بعد. أنشئ صفك الأول أعلاه.",
     createButton:"+ إنشاء",classNamePlaceholder:"اسم الصف (مثل B1 المجموعة الصباحية)",
+    tch_shareCode:"شارك هذا الرمز مع الطلاب",tch_copyCode:"📋 نسخ الرمز",tch_copied:"تم النسخ!",
+    tch_statStudents:"الطلاب",tch_statClassAvg:"متوسط الصف",tch_statAvgWpm:"متوسط الكلمات/د",
+    tch_announcement:"📢 إعلان",tch_postPlaceholder:"انشر رسالة لصفك…",tch_post:"نشر",tch_postedToast:"✓ تم النشر!",tch_postedLabel:"منشور",tch_removeAnn:"✕ إزالة",
+    tch_classWeakAreas:"نقاط ضعف الصف",tch_studentsSection:"الطلاب",tch_noStudentsYet:"لا يوجد طلاب بعد. شارك الرمز أعلاه!",tch_needsHelp:"⚠ يحتاج مساعدة",
+    tch_games:"لعبة",tch_lastActive:"آخر نشاط",tch_never:"أبداً",tch_noGames:"لا ألعاب",
+    tch_improving:"يتحسن",tch_declining:"يتراجع",tch_stable:"مستقر",
+    tch_report:"🖨 تقرير",tch_assignments:"الواجبات",
+    tch_typeLibrary:"📚 مكتبة",tch_typeAi:"🤖 موضوع AI",tch_typeCustom:"✍️ نص مخصص",
+    tch_selectStory:"— اختر قصة —",tch_topicPlaceholder:"الموضوع (مثل تغير المناخ)",tch_assignBtn:"+ تعيين",tch_generating:"جاري الإنشاء…",
+    tch_noAssignments:"لا واجبات بعد. أنشئ واحداً أعلاه.",tch_completed:"مكتمل",tch_classAvg:"متوسط الصف:",tch_due:"حتى",
+    tch_analytics:"📊 تحليلات",tch_csvExport:"⬇ CSV",
+    tch_studentAssignments:"📋 الواجبات",tch_start:"ابدأ ←",
     qLabels:{mcq:"اختيار من متعدد",gap_word:"ملء الفراغ - كلمات",gap_sentence:"ملء الفراغ - جمل",matching:"المطابقة",heading:"مطابقة العناوين",qa:"إجابة مفتوحة",tfnm:"صحيح/خطأ/غير مذكور",ynng:"نعم/لا/غير محدد"},
     badgeNames:{
       first_steps:{name:"الخطوات الأولى",desc:"أكمل اختبارك الأول"},
@@ -605,6 +665,18 @@ var STRINGS = {
     writingChallenge:"✍️ Schreib-Challenge",getFeedback:"Feedback erhalten →",overallWritingScore:"Gesamt-Schreibpunktzahl",errorHunt:"🔍 Fehlersuche",
     teacherDashboard:"👩‍🏫 Lehrer-Dashboard",welcomeBack:"Willkommen zurück",createNewClass:"NEUE KLASSE ERSTELLEN",noClassesYet:"Noch keine Klassen. Erstelle oben deine erste Klasse.",
     createButton:"+ Erstellen",classNamePlaceholder:"Klassenname (z.B. B1 Morgengruppe)",
+    tch_shareCode:"TEILE DIESEN CODE MIT SCHÜLERN",tch_copyCode:"📋 Code Kopieren",tch_copied:"Kopiert!",
+    tch_statStudents:"Schüler",tch_statClassAvg:"Klassendurchschnitt",tch_statAvgWpm:"Durchschn. WPM",
+    tch_announcement:"📢 ANKÜNDIGUNG",tch_postPlaceholder:"Nachricht an deine Klasse…",tch_post:"Senden",tch_postedToast:"✓ Veröffentlicht!",tch_postedLabel:"Veröffentlicht",tch_removeAnn:"✕ Entfernen",
+    tch_classWeakAreas:"KLASSEN-SCHWACHSTELLEN",tch_studentsSection:"SCHÜLER",tch_noStudentsYet:"Noch keine Schüler. Teile den Code oben!",tch_needsHelp:"⚠ Braucht Hilfe",
+    tch_games:"Spiele",tch_lastActive:"letzte Aktivität",tch_never:"Nie",tch_noGames:"Keine Spiele",
+    tch_improving:"Verbessert sich",tch_declining:"Schlechter",tch_stable:"Stabil",
+    tch_report:"🖨 Bericht",tch_assignments:"AUFGABEN",
+    tch_typeLibrary:"📚 Bibliothek",tch_typeAi:"🤖 KI-Thema",tch_typeCustom:"✍️ Eigener Text",
+    tch_selectStory:"— Geschichte wählen —",tch_topicPlaceholder:"Thema (z.B. Klimawandel)",tch_assignBtn:"+ Zuweisen",tch_generating:"Wird erstellt…",
+    tch_noAssignments:"Noch keine Aufgaben. Erstelle oben eine.",tch_completed:"erledigt",tch_classAvg:"Klassen-Ø:",tch_due:"fällig",
+    tch_analytics:"📊 Analyse",tch_csvExport:"⬇ CSV",
+    tch_studentAssignments:"📋 AUFGABEN",tch_start:"Start →",
     qLabels:{mcq:"Multiple-Choice",gap_word:"Lückentext - Wörter",gap_sentence:"Lückentext - Sätze",matching:"Zuordnung",heading:"Überschriften zuordnen",qa:"Freie Antwort",tfnm:"Wahr/Falsch/Nicht erwähnt",ynng:"Ja/Nein/Nicht angegeben"},
     badgeNames:{
       first_steps:{name:"Erste Schritte",desc:"Schließe deinen ersten Quiz ab"},
@@ -710,6 +782,18 @@ var STRINGS = {
     writingChallenge:"✍️ Reto de escritura",getFeedback:"Obtener feedback →",overallWritingScore:"Puntuación general de escritura",errorHunt:"🔍 Caza de errores",
     teacherDashboard:"👩‍🏫 Panel del profesor",welcomeBack:"Bienvenido de nuevo",createNewClass:"CREAR NUEVA CLASE",noClassesYet:"Aún sin clases. Crea tu primera clase arriba.",
     createButton:"+ Crear",classNamePlaceholder:"Nombre de clase (ej. B1 Grupo matutino)",
+    tch_shareCode:"COMPARTE ESTE CÓDIGO CON ESTUDIANTES",tch_copyCode:"📋 Copiar código",tch_copied:"¡Copiado!",
+    tch_statStudents:"Estudiantes",tch_statClassAvg:"Prom. clase",tch_statAvgWpm:"PPM prom.",
+    tch_announcement:"📢 AVISO",tch_postPlaceholder:"Publica un mensaje para tu clase…",tch_post:"Publicar",tch_postedToast:"✓ ¡Publicado!",tch_postedLabel:"Publicado",tch_removeAnn:"✕ Eliminar",
+    tch_classWeakAreas:"ÁREAS DÉBILES DE LA CLASE",tch_studentsSection:"ESTUDIANTES",tch_noStudentsYet:"Aún no hay estudiantes. ¡Comparte el código de arriba!",tch_needsHelp:"⚠ Necesita ayuda",
+    tch_games:"partidas",tch_lastActive:"últ. activo",tch_never:"Nunca",tch_noGames:"Sin partidas",
+    tch_improving:"Mejorando",tch_declining:"Empeorando",tch_stable:"Estable",
+    tch_report:"🖨 Informe",tch_assignments:"TAREAS",
+    tch_typeLibrary:"📚 Biblioteca",tch_typeAi:"🤖 Tema IA",tch_typeCustom:"✍️ Texto propio",
+    tch_selectStory:"— Selecciona una historia —",tch_topicPlaceholder:"Tema (ej. Cambio climático)",tch_assignBtn:"+ Asignar",tch_generating:"Generando…",
+    tch_noAssignments:"Aún no hay tareas. Crea una arriba.",tch_completed:"completado",tch_classAvg:"Prom. clase:",tch_due:"vence",
+    tch_analytics:"📊 Análisis",tch_csvExport:"⬇ CSV",
+    tch_studentAssignments:"📋 TAREAS",tch_start:"Iniciar →",
     qLabels:{mcq:"Opción múltiple",gap_word:"Huecos - Palabras",gap_sentence:"Huecos - Oraciones",matching:"Emparejar",heading:"Emparejar títulos",qa:"Respuesta abierta",tfnm:"V/F/No mencionado",ynng:"Sí/No/No dado"},
     badgeNames:{
       first_steps:{name:"Primeros Pasos",desc:"Completa tu primer quiz"},
@@ -815,6 +899,18 @@ var STRINGS = {
     writingChallenge:"✍️ Défi d'écriture",getFeedback:"Obtenir un avis →",overallWritingScore:"Score global d'écriture",errorHunt:"🔍 Chasse aux erreurs",
     teacherDashboard:"👩‍🏫 Tableau de bord enseignant",welcomeBack:"Bon retour",createNewClass:"CRÉER UNE NOUVELLE CLASSE",noClassesYet:"Pas encore de classes. Créez votre première au-dessus.",
     createButton:"+ Créer",classNamePlaceholder:"Nom de classe (ex. B1 Groupe matin)",
+    tch_shareCode:"PARTAGEZ CE CODE AVEC LES ÉLÈVES",tch_copyCode:"📋 Copier le code",tch_copied:"Copié !",
+    tch_statStudents:"Élèves",tch_statClassAvg:"Moy. classe",tch_statAvgWpm:"MPM moy.",
+    tch_announcement:"📢 ANNONCE",tch_postPlaceholder:"Publier un message pour votre classe…",tch_post:"Publier",tch_postedToast:"✓ Publié !",tch_postedLabel:"Publié",tch_removeAnn:"✕ Supprimer",
+    tch_classWeakAreas:"POINTS FAIBLES DE LA CLASSE",tch_studentsSection:"ÉLÈVES",tch_noStudentsYet:"Pas encore d'élèves. Partagez le code ci-dessus !",tch_needsHelp:"⚠ Besoin d'aide",
+    tch_games:"parties",tch_lastActive:"dern. activité",tch_never:"Jamais",tch_noGames:"Aucune partie",
+    tch_improving:"En progrès",tch_declining:"En baisse",tch_stable:"Stable",
+    tch_report:"🖨 Rapport",tch_assignments:"DEVOIRS",
+    tch_typeLibrary:"📚 Bibliothèque",tch_typeAi:"🤖 Sujet IA",tch_typeCustom:"✍️ Texte perso.",
+    tch_selectStory:"— Choisir une histoire —",tch_topicPlaceholder:"Sujet (ex. Changement climatique)",tch_assignBtn:"+ Assigner",tch_generating:"Génération…",
+    tch_noAssignments:"Pas encore de devoirs. Créez-en un.",tch_completed:"terminé",tch_classAvg:"Moy. classe :",tch_due:"échéance",
+    tch_analytics:"📊 Analyse",tch_csvExport:"⬇ CSV",
+    tch_studentAssignments:"📋 DEVOIRS",tch_start:"Démarrer →",
     qLabels:{mcq:"Choix multiple",gap_word:"Texte à trous - Mots",gap_sentence:"Texte à trous - Phrases",matching:"Appariement",heading:"Apparier titres",qa:"Réponse libre",tfnm:"Vrai/Faux/Non mentionné",ynng:"Oui/Non/Non donné"},
     badgeNames:{
       first_steps:{name:"Premiers Pas",desc:"Termine ton premier quiz"},
@@ -2619,7 +2715,7 @@ export default function App(){
     var next=updated.find(function(c){return c.id===currentClass.id;});
     if(next)setCurrentClass(next); // class was deleted in another tab — leave currentClass alone rather than nuking it
     setAnnouncementText("");
-    setAnnouncementMsg("✓ Posted!");
+    setAnnouncementMsg(t("tch_postedToast"));
     setTimeout(function(){setAnnouncementMsg("");},3000);
     await saveClassesRemote(updated);
   }
@@ -3875,7 +3971,7 @@ export default function App(){
                   <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 20px",lineHeight:1.5}}>Students enter this code on their home screen to join your class instantly.</p>
                   <div style={{background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",borderRadius:14,padding:"20px 16px",textAlign:"center",marginBottom:12}}>
                     <div style={{fontSize:40,fontWeight:900,letterSpacing:10,color:"#34d399",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>{onboardClassCode}</div>
-                    <button onClick={function(){try{navigator.clipboard.writeText(onboardClassCode);setCopyMsg("Copied!");}catch(e){setCopyMsg(onboardClassCode);}setTimeout(function(){setCopyMsg("");},2000);}} style={{...GHOST,fontSize:12,padding:"5px 14px"}}>{copyMsg||"📋 Copy Code"}</button>
+                    <button onClick={function(){try{navigator.clipboard.writeText(onboardClassCode);setCopyMsg(t("tch_copied"));}catch(e){setCopyMsg(onboardClassCode);}setTimeout(function(){setCopyMsg("");},2000);}} style={{...GHOST,fontSize:12,padding:"5px 14px"}}>{copyMsg||t("tch_copyCode")}</button>
                   </div>
                   <button onClick={function(){setOnboardStep(3);}} style={{...mkBtn("#6366f1"),width:"100%",padding:"12px",fontSize:15,fontWeight:800,marginBottom:10}}>Next: Create an Assignment →</button>
                   <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>Skip for now — I'll do this later</button>
@@ -3888,20 +3984,20 @@ export default function App(){
                   <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>Create your first assignment</h2>
                   <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 16px",lineHeight:1.5}}>Pick a story from the library or let AI generate one on any topic.</p>
                   <div style={{display:"flex",gap:6,marginBottom:12}}>
-                    {[["library","📚 Library"],["ai_topic","🤖 AI Topic"],["custom_text","✍️ Custom Text"]].map(function(opt){return(
+                    {[["library",t("tch_typeLibrary")],["ai_topic",t("tch_typeAi")],["custom_text",t("tch_typeCustom")]].map(function(opt){return(
                       <button key={opt[0]} onClick={function(){setAssignType(opt[0]);}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"2px solid "+(assignType===opt[0]?"#6366f1":"rgba(255,255,255,0.1)"),background:assignType===opt[0]?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)",color:assignType===opt[0]?"#a78bfa":"#9ca3af",fontFamily:"inherit",fontWeight:700,fontSize:11,cursor:"pointer"}}>{opt[1]}</button>
                     );})}
                   </div>
                   {assignType==="library"?(
                     <select value={assignStoryId} onChange={function(e){setAssignStoryId(e.target.value);}} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:10}}>
-                      <option value="">— Select a story —</option>
+                      <option value="">{t("tch_selectStory")}</option>
                       {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(
                         <optgroup key={lv} label={lv}>{STORY_LIBRARY.filter(function(s){return s.level===lv;}).map(function(s){return(<option key={s.id} value={s.id}>{s.title} · {SUBJECT_LABELS[getSubjectKey(s)]}</option>);})}</optgroup>
                       );})}
                     </select>
                   ):assignType==="custom_text"?(
                     <div>
-                      <textarea value={assignCustomText} onChange={function(e){setAssignCustomText(e.target.value.slice(0,3000));}} placeholder="Paste your passage here… (30–3000 characters)" style={{...INP,width:"100%",boxSizing:"border-box",minHeight:90,resize:"vertical",marginBottom:4,fontFamily:"inherit",fontSize:12}}/>
+                      <textarea value={assignCustomText} onChange={function(e){setAssignCustomText(e.target.value.slice(0,3000));}} placeholder="Paste your passage here… (150–3000 characters)" style={{...INP,width:"100%",boxSizing:"border-box",minHeight:90,resize:"vertical",marginBottom:4,fontFamily:"inherit",fontSize:12}}/>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                         <span style={{fontSize:10,color:"#6b7280"}}>{assignCustomText.length}/3000</span>
                         <select value={assignLevel} onChange={function(e){setAssignLevel(e.target.value);}} style={{...INP,margin:0,width:72}}>
@@ -3911,7 +4007,7 @@ export default function App(){
                     </div>
                   ):(
                     <div>
-                      <input value={assignTopic} onChange={function(e){setAssignTopic(e.target.value);}} placeholder="Topic (e.g. Climate Change)" style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:8}}/>
+                      <input value={assignTopic} onChange={function(e){setAssignTopic(e.target.value);}} placeholder={t("tch_topicPlaceholder")} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:8}}/>
                       <select value={assignLevel} onChange={function(e){setAssignLevel(e.target.value);}} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:8}}>
                         {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(<option key={lv} value={lv}>{lv}</option>);})}
                       </select>
@@ -3919,7 +4015,7 @@ export default function App(){
                   )}
                   <input type="date" value={assignDue} onChange={function(e){setAssignDue(e.target.value);}} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:12,color:assignDue?"#f3f4f6":"#6b7280"}} placeholder="Due date (optional)"/>
                   {assignMsg&&<p style={{fontSize:12,color:assignMsg.startsWith("✓")?"#34d399":"#f87171",margin:"0 0 10px",textAlign:"center"}}>{assignMsg}</p>}
-                  <button onClick={doCreateAssignment} disabled={assignLoading} style={{...mkBtn("#6366f1"),width:"100%",padding:"12px",fontSize:14,fontWeight:800,marginBottom:8}}>{assignLoading?"Generating…":"Create Assignment"}</button>
+                  <button onClick={doCreateAssignment} disabled={assignLoading} style={{...mkBtn("#6366f1"),width:"100%",padding:"12px",fontSize:14,fontWeight:800,marginBottom:8}}>{assignLoading?t("tch_generating"):t("tch_assignBtn")}</button>
                   {assignMsg.startsWith("✓")&&<button onClick={doFinishOnboarding} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800,marginBottom:8}}>✓ Finish Setup →</button>}
                   <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>Skip — I'll add assignments later</button>
                 </div>
@@ -4105,18 +4201,18 @@ export default function App(){
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
                 <button onClick={function(){setStage("teacherDashboard");}} style={GHOST}>← Back</button>
                 <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#f3f4f6",flex:1}}>{cls.name}</h2>
-                {students.length>0&&<button onClick={function(){setStage("classAnalytics");}} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>📊 Analytics</button>}
-                {students.length>0&&<button onClick={doExportClassCSV} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>⬇ CSV</button>}
+                {students.length>0&&<button onClick={function(){setStage("classAnalytics");}} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>{t("tch_analytics")}</button>}
+                {students.length>0&&<button onClick={doExportClassCSV} style={{...GHOST,fontSize:12,padding:"6px 10px",whiteSpace:"nowrap"}}>{t("tch_csvExport")}</button>}
               </div>
 
               <div style={{...CARD,textAlign:"center",marginBottom:12}}>
-                <p style={{fontSize:11,color:"#6b7280",margin:"0 0 6px",letterSpacing:0.6}}>SHARE THIS CODE WITH STUDENTS</p>
+                <p style={{fontSize:11,color:"#6b7280",margin:"0 0 6px",letterSpacing:0.6}}>{t("tch_shareCode")}</p>
                 <div style={{fontSize:36,fontWeight:900,letterSpacing:10,color:"#34d399",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>{cls.id}</div>
-                <button onClick={function(){try{navigator.clipboard.writeText(cls.id);setCopyMsg("Copied!");}catch(e){setCopyMsg(cls.id);}setTimeout(function(){setCopyMsg("");},2000);}} style={{...GHOST,fontSize:12,padding:"5px 14px"}}>{copyMsg||"📋 Copy Code"}</button>
+                <button onClick={function(){try{navigator.clipboard.writeText(cls.id);setCopyMsg(t("tch_copied"));}catch(e){setCopyMsg(cls.id);}setTimeout(function(){setCopyMsg("");},2000);}} style={{...GHOST,fontSize:12,padding:"5px 14px"}}>{copyMsg||t("tch_copyCode")}</button>
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
-                {[{label:"Students",val:students.length,color:"#a78bfa"},{label:"Class Avg",val:classAvg>0?classAvg+"%":"–",color:"#34d399"},{label:"Avg WPM",val:classWpm>0?classWpm:"–",color:"#f59e0b"}].map(function(s){return(
+                {[{label:t("tch_statStudents"),val:students.length,color:"#a78bfa"},{label:t("tch_statClassAvg"),val:classAvg>0?classAvg+"%":"–",color:"#34d399"},{label:t("tch_statAvgWpm"),val:classWpm>0?classWpm:"–",color:"#f59e0b"}].map(function(s){return(
                   <div key={s.label} style={{...CARD,textAlign:"center",padding:"12px 8px"}}>
                     <div style={{fontSize:22,fontWeight:900,color:s.color}}>{s.val}</div>
                     <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.label}</div>
@@ -4126,19 +4222,19 @@ export default function App(){
 
               {/* Announcement board */}
               <div style={{...CARD,marginBottom:14}}>
-                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>📢 ANNOUNCEMENT</p>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>{t("tch_announcement")}</p>
                 {cls.announcement?(
                   <div>
                     <div style={{background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:8}}>
                       <p style={{margin:"0 0 4px",fontSize:13,color:"#e9d5ff",lineHeight:1.5}}>{cls.announcement.text}</p>
-                      <p style={{margin:0,fontSize:10,color:"#6b7280"}}>Posted {cls.announcement.date}</p>
+                      <p style={{margin:0,fontSize:10,color:"#6b7280"}}>{t("tch_postedLabel")} {cls.announcement.date}</p>
                     </div>
-                    <button onClick={doClearAnnouncement} style={{...GHOST,fontSize:11,padding:"4px 10px"}}>✕ Remove</button>
+                    <button onClick={doClearAnnouncement} style={{...GHOST,fontSize:11,padding:"4px 10px"}}>{t("tch_removeAnn")}</button>
                   </div>
                 ):(
                   <div style={{display:"flex",gap:8}}>
-                    <input value={announcementText} onChange={function(e){setAnnouncementText(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doPostAnnouncement();}} placeholder="Post a message to your class…" style={{...INP,flex:1,margin:0}}/>
-                    <button onClick={doPostAnnouncement} disabled={!announcementText.trim()} style={{...mkBtn(announcementText.trim()?"#a78bfa":"#374151","#0d0d1a"),padding:"10px 14px",fontSize:12,whiteSpace:"nowrap"}}>Post</button>
+                    <input value={announcementText} onChange={function(e){setAnnouncementText(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doPostAnnouncement();}} placeholder={t("tch_postPlaceholder")} style={{...INP,flex:1,margin:0}}/>
+                    <button onClick={doPostAnnouncement} disabled={!announcementText.trim()} style={{...mkBtn(announcementText.trim()?"#a78bfa":"#374151","#0d0d1a"),padding:"10px 14px",fontSize:12,whiteSpace:"nowrap"}}>{t("tch_post")}</button>
                   </div>
                 )}
                 {announcementMsg&&<p style={{fontSize:12,color:"#34d399",margin:"6px 0 0"}}>{announcementMsg}</p>}
@@ -4167,7 +4263,7 @@ export default function App(){
                 typeAvgs.sort(function(a,b){return a.avg-b.avg;});
                 return(
                   <div style={{...CARD,marginBottom:14}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>CLASS WEAK AREAS</p>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>{t("tch_classWeakAreas")}</p>
                     {typeAvgs.map(function(t){
                       var pct=Math.min(100,Math.max(0,t.avg*100));
                       var col=pct<50?"#f87171":pct<70?"#f59e0b":"#34d399";
@@ -4188,10 +4284,10 @@ export default function App(){
               })()}
 
               {/* Students */}
-              <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:8}}>STUDENTS</p>
+              <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:8}}>{t("tch_studentsSection")}</p>
               {students.length===0?(
                 <div style={{textAlign:"center",padding:"24px 0",color:"#4b5563",marginBottom:16}}>
-                  <p style={{margin:0}}>No students yet. Share the code above!</p>
+                  <p style={{margin:0}}>{t("tch_noStudentsYet")}</p>
                 </div>
               ):stuData.map(function(d){
                 var lvMeta=LEVELS.find(function(l){return l.key===d.bestLv;});
@@ -4204,24 +4300,24 @@ export default function App(){
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
                           <span style={{fontSize:14,fontWeight:800,color:"#f3f4f6"}}>{d.name}</span>
-                          {d.isStruggling&&<span style={{fontSize:10,fontWeight:700,color:"#f87171",background:"rgba(248,113,113,0.15)",border:"1px solid rgba(248,113,113,0.3)",borderRadius:6,padding:"1px 6px"}}>⚠ Needs help</span>}
+                          {d.isStruggling&&<span style={{fontSize:10,fontWeight:700,color:"#f87171",background:"rgba(248,113,113,0.15)",border:"1px solid rgba(248,113,113,0.3)",borderRadius:6,padding:"1px 6px"}}>{t("tch_needsHelp")}</span>}
                         </div>
-                        <div style={{fontSize:11,color:"#6b7280"}}>{d.gameCount} game{d.gameCount!==1?"s":""} · last active {d.lastDate}</div>
+                        <div style={{fontSize:11,color:"#6b7280"}}>{d.gameCount} {t("tch_games")} · {t("tch_lastActive")} {d.lastDate==="Never"?t("tch_never"):d.lastDate}</div>
                       </div>
                       <div style={{textAlign:"right",flexShrink:0,paddingLeft:8}}>
                         <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end",marginBottom:2}}>
-                          {d.gameCount>=3&&<span style={{fontSize:14}} title={d.trend==="up"?"Improving":d.trend==="down"?"Declining":"Stable"}>{trendIcon}</span>}
+                          {d.gameCount>=3&&<span style={{fontSize:14}} title={d.trend==="up"?t("tch_improving"):d.trend==="down"?t("tch_declining"):t("tch_stable")}>{trendIcon}</span>}
                           <span style={{fontSize:15,fontWeight:900,color:lvMeta?lvMeta.color:"#4b5563"}}>{d.bestLv!=="none"?d.bestLv:"–"}</span>
                         </div>
-                        <div style={{fontSize:12,color:"#9ca3af"}}>{d.gameCount>0?d.avgPct+"%":"No games"}</div>
+                        <div style={{fontSize:12,color:"#9ca3af"}}>{d.gameCount>0?d.avgPct+"%":t("tch_noGames")}</div>
                       </div>
                     </div>
                     {d.gameCount>0&&(
                       <div style={{display:"flex",gap:16,marginTop:8,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",alignItems:"center"}}>
                         <span style={{fontSize:11,color:"#6b7280"}}>Avg: <b style={{color:d.isStruggling?"#f87171":"#f3f4f6"}}>{d.avgPct}%</b></span>
                         {d.avgWpm>0&&<span style={{fontSize:11,color:"#6b7280"}}>WPM: <b style={{color:"#f3f4f6"}}>{d.avgWpm}</b></span>}
-                        {d.gameCount>=3&&<span style={{fontSize:11,color:trendColor,fontWeight:700}}>{trendIcon} {d.trend==="up"?"Improving":d.trend==="down"?"Declining":"Stable"}</span>}
-                        <button onClick={function(){setPrintStudent(d.name);}} style={{...GHOST,fontSize:10,padding:"3px 8px",marginLeft:"auto"}}>🖨 Report</button>
+                        {d.gameCount>=3&&<span style={{fontSize:11,color:trendColor,fontWeight:700}}>{trendIcon} {d.trend==="up"?t("tch_improving"):d.trend==="down"?t("tch_declining"):t("tch_stable")}</span>}
+                        <button onClick={function(){setPrintStudent(d.name);}} style={{...GHOST,fontSize:10,padding:"3px 8px",marginLeft:"auto"}}>{t("tch_report")}</button>
                       </div>
                     )}
                   </div>
@@ -4229,17 +4325,17 @@ export default function App(){
               })}
 
               {/* Assignments */}
-              <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"20px 0 10px"}}>ASSIGNMENTS</p>
+              <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:"20px 0 10px"}}>{t("tch_assignments")}</p>
               <div style={{...CARD,marginBottom:14}}>
                 <div style={{display:"flex",gap:6,marginBottom:12}}>
-                  {[{v:"library",label:"📚 Library"},{v:"ai_topic",label:"🤖 AI Topic"},{v:"custom_text",label:"✍️ Custom Text"}].map(function(t){return(
+                  {[{v:"library",label:t("tch_typeLibrary")},{v:"ai_topic",label:t("tch_typeAi")},{v:"custom_text",label:t("tch_typeCustom")}].map(function(t){return(
                     <button key={t.v} onClick={function(){setAssignType(t.v);setAssignMsg("");}} style={{flex:1,padding:"7px 0",borderRadius:10,border:"2px solid "+(assignType===t.v?"#f59e0b":"rgba(255,255,255,0.1)"),background:assignType===t.v?"rgba(245,158,11,0.15)":"rgba(255,255,255,0.03)",color:assignType===t.v?"#fcd34d":"#6b7280",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>
                   );})}
                 </div>
 
                 {assignType==="library"?(
                   <select value={assignStoryId} onChange={function(e){setAssignStoryId(e.target.value);}} style={{...INP,margin:"0 0 8px",width:"100%",boxSizing:"border-box"}}>
-                    <option value="">— Select a story —</option>
+                    <option value="">{t("tch_selectStory")}</option>
                     {["A1","A2","B1","B2","C1","C2"].map(function(lv){return(
                       <optgroup key={lv} label={lv+" — "+LEVELS.find(function(l){return l.key===lv;}).desc}>
                         {STORY_LIBRARY.filter(function(s){return s.level===lv;}).map(function(s){return(
@@ -4260,7 +4356,7 @@ export default function App(){
                   </div>
                 ):(
                   <div style={{display:"flex",gap:8,marginBottom:8}}>
-                    <input value={assignTopic} onChange={function(e){setAssignTopic(e.target.value);}} placeholder="Topic (e.g. Climate Change)" style={{...INP,flex:1,margin:0}}/>
+                    <input value={assignTopic} onChange={function(e){setAssignTopic(e.target.value);}} placeholder={t("tch_topicPlaceholder")} style={{...INP,flex:1,margin:0}}/>
                     <select value={assignLevel} onChange={function(e){setAssignLevel(e.target.value);}} style={{...INP,margin:0,width:72}}>
                       {LEVELS.map(function(l){return<option key={l.key} value={l.key}>{l.key}</option>;})}
                     </select>
@@ -4269,7 +4365,7 @@ export default function App(){
 
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
                   <input type="date" value={assignDue} onChange={function(e){setAssignDue(e.target.value);}} style={{...INP,margin:0,flex:1,colorScheme:"dark"}} title="Due date (optional)"/>
-                  <button onClick={doCreateAssignment} disabled={assignLoading||(assignType==="library"&&!assignStoryId)||(assignType==="ai_topic"&&!assignTopic.trim())||(assignType==="custom_text"&&assignCustomText.trim().length<30)} style={{...mkBtn(assignLoading?"#374151":"#f59e0b","#0d0d1a"),padding:"10px 14px",fontSize:12,whiteSpace:"nowrap"}}>{assignLoading?"Generating…":"+ Assign"}</button>
+                  <button onClick={doCreateAssignment} disabled={assignLoading||(assignType==="library"&&!assignStoryId)||(assignType==="ai_topic"&&!assignTopic.trim())||(assignType==="custom_text"&&assignCustomText.trim().length<150)} style={{...mkBtn(assignLoading?"#374151":"#f59e0b","#0d0d1a"),padding:"10px 14px",fontSize:12,whiteSpace:"nowrap"}}>{assignLoading?t("tch_generating"):t("tch_assignBtn")}</button>
                 </div>
                 {assignMsg&&<p style={{fontSize:12,color:assignMsg.startsWith("✓")?"#34d399":"#f87171",margin:"8px 0 0"}}>{assignMsg}</p>}
               </div>
@@ -4285,22 +4381,22 @@ export default function App(){
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                       <div style={{flex:1,paddingRight:8}}>
                         <div style={{fontSize:13,fontWeight:800,color:"#f3f4f6"}}>{asgn.topic}</div>
-                        <div style={{fontSize:11,color:"#6b7280"}}>{asgn.level} · {asgn.type==="ai_topic"?"🤖 AI generated":asgn.type==="custom_text"?"✍️ Custom text":"📚 Library"}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
+                        <div style={{fontSize:11,color:"#6b7280"}}>{asgn.level} · {asgn.type==="ai_topic"?t("tch_typeAi"):asgn.type==="custom_text"?t("tch_typeCustom"):t("tch_typeLibrary")}{asgn.dueDate?" · "+t("tch_due")+" "+asgn.dueDate:""}</div>
                       </div>
                       <div style={{textAlign:"right",flexShrink:0}}>
                         <div style={{fontSize:13,fontWeight:900,color:pct===100?"#34d399":"#f59e0b"}}>{done}/{total}</div>
-                        <div style={{fontSize:10,color:"#6b7280"}}>completed</div>
+                        <div style={{fontSize:10,color:"#6b7280"}}>{t("tch_completed")}</div>
                       </div>
                     </div>
                     <div style={{background:"rgba(0,0,0,0.3)",borderRadius:4,height:4,overflow:"hidden"}}>
                       <div style={{height:"100%",width:pct+"%",background:pct===100?"#34d399":"#f59e0b",transition:"width 0.3s"}}/>
                     </div>
-                    {done>0&&<div style={{fontSize:11,color:"#6b7280",marginTop:6}}>Class avg: <b style={{color:"#f3f4f6"}}>{avgScore}%</b></div>}
+                    {done>0&&<div style={{fontSize:11,color:"#6b7280",marginTop:6}}>{t("tch_classAvg")} <b style={{color:"#f3f4f6"}}>{avgScore}%</b></div>}
                   </div>
                 );
               })}
               {assignments.filter(function(a){return a.classId===cls.id;}).length===0&&(
-                <p style={{fontSize:12,color:"#4b5563",textAlign:"center",padding:"16px 0"}}>No assignments yet. Create one above.</p>
+                <p style={{fontSize:12,color:"#4b5563",textAlign:"center",padding:"16px 0"}}>{t("tch_noAssignments")}</p>
               )}
 
               {/* Print report modal */}
@@ -5003,7 +5099,7 @@ export default function App(){
                 );})}
                 {pendingAssignments.length>0&&(
                   <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(245,158,11,0.5)",background:"rgba(245,158,11,0.07)"}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#fcd34d",letterSpacing:0.6,margin:"0 0 10px"}}>📋 ASSIGNMENTS</p>
+                    <p style={{fontSize:11,fontWeight:700,color:"#fcd34d",letterSpacing:0.6,margin:"0 0 10px"}}>{t("tch_studentAssignments")}</p>
                     {pendingAssignments.map(function(asgn){
                       var story=asgn.storyId?STORY_LIBRARY.find(function(s){return s.id===asgn.storyId;}):null;
                       var fromClass=myClasses3.find(function(c){return c.id===asgn.classId;});
@@ -5025,7 +5121,7 @@ export default function App(){
                               setIsDailyGame(false);setCurrentStoryId(null);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
                               setStage("reading");
                             }
-                          }} style={{...mkBtn("#f59e0b","#0d0d1a"),fontSize:12,padding:"6px 14px",whiteSpace:"nowrap",flexShrink:0}}>Start →</button>
+                          }} style={{...mkBtn("#f59e0b","#0d0d1a"),fontSize:12,padding:"6px 14px",whiteSpace:"nowrap",flexShrink:0}}>{t("tch_start")}</button>
                         </div>
                       );
                     })}
