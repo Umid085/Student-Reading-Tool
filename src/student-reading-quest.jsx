@@ -1362,6 +1362,42 @@ function scoreQuestion(q,ans){
 }
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
 
+// Placement test — 12 multiple-choice items, 2 per CEFR level, ordered from
+// easiest to hardest. correctIdx is the zero-based index of the right answer.
+// Scoring at the end maps total correct to a recommended starting level.
+var PLACEMENT_QUESTIONS=[
+  // A1 — basic vocab, present simple
+  {level:"A1",q:'I ___ a student.',options:["am","is","are","be"],correctIdx:0},
+  {level:"A1",q:'Which word means "quick"?',options:["slow","fast","big","small"],correctIdx:1},
+  // A2 — past simple, common synonyms
+  {level:"A2",q:'Yesterday I ___ to school.',options:["go","going","went","gone"],correctIdx:2},
+  {level:"A2",q:'Which word is closest to "happy"?',options:["sad","angry","glad","tired"],correctIdx:2},
+  // B1 — present perfect, modal verbs
+  {level:"B1",q:'I ___ here since 2019.',options:["live","lived","have lived","will live"],correctIdx:2},
+  {level:"B1",q:'You ___ be tired after your long trip.',options:["must","will","can","would"],correctIdx:0},
+  // B2 — conditionals, passive
+  {level:"B2",q:"If I ___ more time, I'd travel the world.",options:["have","had","would have","having"],correctIdx:1},
+  {level:"B2",q:'The bridge ___ in 1890.',options:["built","was built","has built","building"],correctIdx:1},
+  // C1 — inversion, register-aware vocab
+  {level:"C1",q:'Not only ___ the project, but they exceeded the budget.',options:["they completed","did they complete","they did complete","completed they"],correctIdx:1},
+  {level:"C1",q:'The word "ubiquitous" most nearly means:',options:["rare","found everywhere","underground","temporary"],correctIdx:1},
+  // C2 — subjunctive, idiom
+  {level:"C2",q:'It is essential that he ___ on time.',options:["arrives","arrived","arrive","arriving"],correctIdx:2},
+  {level:"C2",q:'"A flash in the pan" describes:',options:["a sudden success that doesn't last","a great cooking achievement","a slow-burning idea","a failed experiment"],correctIdx:0},
+];
+
+// Total-correct → recommended level. Picked to give roughly 1/2 weight to
+// floor and 1/2 to ceiling: scoring 0 starts at A1, 12 lands at C2, and
+// the middle bands give A2 / B1 / B2 / C1 in order.
+function placementLevel(correctCount){
+  if(correctCount>=11)return"C2";
+  if(correctCount>=9)return"C1";
+  if(correctCount>=7)return"B2";
+  if(correctCount>=5)return"B1";
+  if(correctCount>=3)return"A2";
+  return"A1";
+}
+
 
 var SUBJECT_MAP={
   "Family":"life","Shopping":"life","Food":"life","Daily Life":"life","School":"life",
@@ -2255,6 +2291,12 @@ export default function App(){
   var [copyMsg,setCopyMsg]=useState("");
   var [activeAssignmentId,setActiveAssignmentId]=useState(null);
   var [onboardStep,setOnboardStep]=useState(null);
+  // Placement test state. pmtIdx = current question index; pmtAnswers maps
+  // question index → selected option index. pmtResult is the recommended
+  // CEFR level once the user finishes all 12 questions.
+  var [pmtIdx,setPmtIdx]=useState(0);
+  var [pmtAnswers,setPmtAnswers]=useState({});
+  var [pmtResult,setPmtResult]=useState(null);
   var [onboardClassCode,setOnboardClassCode]=useState("");
   var [libSubjectFilter,setLibSubjectFilter]=useState("");
   var [reportData,setReportData]=useState(null);
@@ -4792,6 +4834,74 @@ export default function App(){
           );
         })()}
 
+        {/* ── PLACEMENT TEST ──────────────────────────────────── */}
+        {stage==="placementTest"&&(function(){
+          var total=PLACEMENT_QUESTIONS.length;
+          // Result screen
+          if(pmtResult){
+            var rec=pmtResult.level;
+            var corr=pmtResult.correct;
+            var lvObj=LEVELS.find(function(l){return l.key===rec;});
+            return(
+              <div style={{maxWidth:480,margin:"0 auto",paddingTop:20}}>
+                <h2 style={{margin:"0 0 8px",fontSize:22,fontWeight:900,color:"#f3f4f6",textAlign:"center"}}>Your recommended level</h2>
+                <p style={{margin:"0 0 18px",fontSize:13,color:"#9ca3af",textAlign:"center"}}>You answered {corr}/{total} correctly.</p>
+                <div style={{...CARD,padding:24,textAlign:"center",marginBottom:14,borderColor:lvObj?lvObj.color:"#34d399",background:"rgba(255,255,255,0.03)"}}>
+                  <div style={{fontSize:46,fontWeight:900,color:lvObj?lvObj.color:"#34d399",marginBottom:6,letterSpacing:2}}>{rec}</div>
+                  <div style={{fontSize:14,color:"#d1d5db"}}>{lvObj?lvObj.desc:""}</div>
+                </div>
+                <button onClick={function(){if(currentUser){try{localStorage.setItem("rq-pmt-"+currentUser.name,rec);}catch(e){}}setLevel(rec);setPmtResult(null);setPmtIdx(0);setPmtAnswers({});setStage("home");}} style={{...mkBtn(lvObj?lvObj.color:"#34d399","#0d0d1a"),width:"100%",padding:12,fontSize:14,marginBottom:8}}>Use {rec} →</button>
+                <button onClick={function(){setPmtResult(null);setPmtIdx(0);setPmtAnswers({});}} style={{...GHOST,width:"100%",fontSize:12}}>Retake test</button>
+                <button onClick={function(){setPmtResult(null);setPmtIdx(0);setPmtAnswers({});setStage("home");}} style={{...GHOST,width:"100%",fontSize:12,marginTop:6}}>Skip — I'll pick my own level</button>
+              </div>
+            );
+          }
+          // Question screen
+          var qIdx=Math.min(pmtIdx,total-1);
+          var pq=PLACEMENT_QUESTIONS[qIdx];
+          var picked=pmtAnswers[qIdx];
+          var hasPicked=picked!==undefined;
+          function pickOption(i){
+            var next=Object.assign({},pmtAnswers);next[qIdx]=i;
+            setPmtAnswers(next);
+            // Auto-advance or finalise once an answer is selected.
+            setTimeout(function(){
+              if(qIdx+1>=total){
+                var corr=0;
+                for(var ki=0;ki<total;ki++){
+                  if(next[ki]===PLACEMENT_QUESTIONS[ki].correctIdx)corr++;
+                }
+                setPmtResult({correct:corr,level:placementLevel(corr)});
+              } else {
+                setPmtIdx(qIdx+1);
+              }
+            },350);
+          }
+          var pct=Math.round(((qIdx)/total)*100);
+          return(
+            <div style={{maxWidth:480,margin:"0 auto",paddingTop:14}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                <span style={{fontSize:12,color:"#9ca3af",fontWeight:700}}>Question {qIdx+1} of {total}</span>
+                <button onClick={function(){setPmtResult(null);setPmtIdx(0);setPmtAnswers({});setStage("home");}} style={{...GHOST,fontSize:11,padding:"4px 10px"}}>Skip</button>
+              </div>
+              <div style={{background:"rgba(0,0,0,0.3)",borderRadius:4,height:5,overflow:"hidden",marginBottom:18}}>
+                <div style={{height:"100%",width:pct+"%",background:"#a78bfa",transition:"width 0.3s"}}/>
+              </div>
+              <div style={{...CARD,padding:18,marginBottom:14}}>
+                <p style={{margin:0,fontSize:16,color:"#f3f4f6",lineHeight:1.55,fontWeight:600}}>{pq.q}</p>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                {pq.options.map(function(opt,oi){
+                  var isPicked=picked===oi;
+                  var bg=isPicked?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.04)";
+                  var bd="1px solid "+(isPicked?"#a78bfa":"rgba(255,255,255,0.1)");
+                  return<button key={oi} onClick={function(){if(!hasPicked)pickOption(oi);}} disabled={hasPicked} style={{background:bg,border:bd,borderRadius:10,padding:"12px 14px",color:isPicked?"#e9d5ff":"#e5e7eb",fontSize:14,cursor:hasPicked?"default":"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s"}}>{opt}</button>;
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── HOME ──────────────────────────────────────────── */}
         {stage==="home"&&(
           <div>
@@ -5008,6 +5118,24 @@ export default function App(){
                 </div>
               );
             })()}
+
+            {/* placement-test prompt — only for brand-new users who haven't
+                played anything yet and haven't already taken the test */}
+            {currentUser&&(currentUser.games||[]).length===0&&!localStorage.getItem("rq-pmt-"+currentUser.name)&&(
+              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(167,139,250,0.4)",background:"rgba(167,139,250,0.06)"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                  <div style={{fontSize:28,flexShrink:0,lineHeight:1}}>🎯</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p style={{margin:"0 0 4px",fontSize:14,fontWeight:800,color:"#e9d5ff"}}>Not sure where to start?</p>
+                    <p style={{margin:"0 0 10px",fontSize:12,color:"#9ca3af",lineHeight:1.5}}>Take a 12-question placement test and we'll recommend a CEFR level that matches your English right now.</p>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      <button onClick={function(){setPmtIdx(0);setPmtAnswers({});setPmtResult(null);setStage("placementTest");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"7px 14px",fontSize:12}}>Start placement test</button>
+                      <button onClick={function(){try{localStorage.setItem("rq-pmt-"+currentUser.name,"skipped");}catch(e){}setCurrentUser(Object.assign({},currentUser));}} style={{...GHOST,padding:"7px 12px",fontSize:12}}>No thanks, I'll pick myself</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* word of the day card */}
             {(function(){
