@@ -134,10 +134,12 @@ describe("register.js", () => {
     expect(profilePut[0].hash).toBeUndefined();
     expect(profilePut[0].name).toBe("Bob");
 
-    // PUT auth list (4th fetch) should include hash
+    // PUT auth list (4th fetch) should include a scrypt-hashed credential —
+    // NOT the raw client hash, so a DB leak can't be brute-forced trivially.
     const authPut = JSON.parse(fetch.mock.calls[3][1].body);
     expect(authPut[0].name).toBe("Bob");
-    expect(authPut[0].hash).toBe("myhash");
+    expect(authPut[0].hash).toMatch(/^s\$\d+\$\d+\$\d+\$[^$]+\$[^$]+$/);
+    expect(authPut[0].hash).not.toBe("myhash");
   });
 
   it("returns 429 when rate limit is exceeded", async () => {

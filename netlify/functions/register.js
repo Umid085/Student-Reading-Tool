@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
+import { hashPassword } from "./_passwordHash.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -70,11 +71,13 @@ export const handler = async function (event) {
       body: JSON.stringify(newProfiles),
     });
 
-    // Write credentials to rq-auth-v6 (separate, never exposed via storage.js)
+    // Write credentials to rq-auth-v6 (separate, never exposed via storage.js).
+    // Store as a scrypt-hashed value so a DB leak doesn't expose passwords
+    // to trivial GPU brute force on the client-supplied SHA-256.
     const ar = await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`);
     const authData = await ar.json();
     const authList = Array.isArray(authData) ? authData : [];
-    const newAuthList = authList.concat([{ name, hash }]);
+    const newAuthList = authList.concat([{ name, hash: hashPassword(hash) }]);
     await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

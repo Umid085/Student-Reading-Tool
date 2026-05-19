@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
+import { hashPassword, verifyPassword } from "./_passwordHash.js";
 
 function issueToken(name, secret) {
   const expires = Date.now() + 48 * 60 * 60 * 1000; // 48 hours
@@ -42,10 +43,25 @@ export default async function handler(req, res) {
     const authData = await ar.json();
     if (Array.isArray(authData)) {
       const authUser = authData.find(function (u) {
-        return u.name.toLowerCase() === name.toLowerCase() && u.hash === hash;
+        return u.name.toLowerCase() === name.toLowerCase();
       });
       if (authUser) {
-        return res.status(200).json({ token: issueToken(authUser.name, secret) });
+        const v = verifyPassword(hash, authUser.hash);
+        if (v.ok) {
+          if (v.needsRehash) {
+            // Legacy hash matched — upgrade to scrypt in place.
+            const updated = authData.map(function (u) {
+              return u === authUser ? { name: authUser.name, hash: hashPassword(hash) } : u;
+            });
+            await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(updated),
+            });
+          }
+          return res.status(200).json({ token: issueToken(authUser.name, secret) });
+        }
+        return res.status(401).json({ error: "Invalid credentials" });
       }
     }
 
@@ -63,16 +79,15 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Accept SHA-256 hash or legacy btoa hash (migration path)
-    const hashMatches = profileUser.hash === hash;
-    const legacyMatches = legacy && profileUser.hash === legacy;
-    if (!hashMatches && !legacyMatches) {
+    const v = verifyPassword(hash, profileUser.hash);
+    const legacyMatches = !v.ok && legacy && verifyPassword(legacy, profileUser.hash).ok;
+    if (!v.ok && !legacyMatches) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Migrate: write to rq-auth-v6 with SHA-256 hash going forward
+    // Migrate: write to rq-auth-v6 with the freshly scrypt-hashed credential.
     const authList = Array.isArray(authData) ? authData : [];
-    const newAuthList = authList.concat([{ name: profileUser.name, hash }]);
+    const newAuthList = authList.concat([{ name: profileUser.name, hash: hashPassword(hash) }]);
     await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

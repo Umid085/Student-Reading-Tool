@@ -114,7 +114,9 @@ describe("api/register.js", () => {
 
     const authPut = JSON.parse(fetch.mock.calls[3][1].body);
     expect(authPut[0].name).toBe("Bob");
-    expect(authPut[0].hash).toBe("myhash");
+    // Stored credential is scrypt-hashed, not the raw client input.
+    expect(authPut[0].hash).toMatch(/^s\$\d+\$\d+\$\d+\$[^$]+\$[^$]+$/);
+    expect(authPut[0].hash).not.toBe("myhash");
   });
 
   it("returns 429 when rate limit is exceeded", async () => {

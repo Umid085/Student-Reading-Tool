@@ -80,15 +80,21 @@ describe("api/auth.js", () => {
     expect(r.statusCode).toBe(401);
   });
 
-  it("returns 200 with valid token when user found in auth list (fast path)", async () => {
-    fetch.mockResolvedValueOnce(mockAuthList([{ name: "Alice", hash: "myhash123" }]));
+  it("returns 200 and rehashes when auth list still holds a legacy plain hash", async () => {
+    fetch
+      .mockResolvedValueOnce(mockAuthList([{ name: "Alice", hash: "myhash123" }]))
+      .mockResolvedValueOnce({}); // PUT rehash
     const handler = await loadHandler();
     const r = await runHandler(handler, { method: "POST", body: { name: "Alice", hash: "myhash123" } });
     expect(r.statusCode).toBe(200);
     const body = JSON.parse(r.body);
     expect(typeof body.token).toBe("string");
     expect(verifyToken(body.token, "test-secret-abc")).toBe(true);
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    const rehashWrite = fetch.mock.calls[1];
+    expect(rehashWrite[1].method).toBe("PUT");
+    const writtenList = JSON.parse(rehashWrite[1].body);
+    expect(writtenList[0].hash).toMatch(/^s\$\d+\$\d+\$\d+\$[^$]+\$[^$]+$/);
   });
 
   it("returns 200 with valid token via profile fallback and migrates to auth list", async () => {
@@ -103,9 +109,11 @@ describe("api/auth.js", () => {
     expect(fetch).toHaveBeenCalledTimes(3);
     const migrationWrite = fetch.mock.calls[2];
     expect(migrationWrite[1].method).toBe("PUT");
+    const authListWritten = JSON.parse(migrationWrite[1].body);
+    expect(authListWritten[0].hash).toMatch(/^s\$\d+\$\d+\$\d+\$[^$]+\$[^$]+$/);
   });
 
-  it("accepts legacy btoa hash via profile fallback and upgrades to SHA-256", async () => {
+  it("accepts legacy btoa hash via profile fallback and stores scrypt-format on migrate", async () => {
     const btoa_hash = "YWJj";
     fetch
       .mockResolvedValueOnce(mockAuthList([]))
@@ -118,7 +126,7 @@ describe("api/auth.js", () => {
     });
     expect(r.statusCode).toBe(200);
     const authListWritten = JSON.parse(fetch.mock.calls[2][1].body);
-    expect(authListWritten[0].hash).toBe("sha256_of_abc");
+    expect(authListWritten[0].hash).toMatch(/^s\$\d+\$\d+\$\d+\$[^$]+\$[^$]+$/);
   });
 
   it("returns 429 when rate limit is exceeded", async () => {

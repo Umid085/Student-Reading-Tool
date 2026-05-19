@@ -123,15 +123,25 @@ describe("auth.js", () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it("returns 200 with valid token when user found in auth list (fast path)", async () => {
-    fetch.mockResolvedValueOnce(mockAuthList([{ name: "Alice", hash: "myhash123" }]));
+  it("returns 200 and rehashes when auth list still holds a legacy plain hash", async () => {
+    // Legacy stored value: plain SHA-256 hex (pre-scrypt). The verify path
+    // accepts it via constant-time string compare and triggers a PUT to
+    // upgrade the stored credential to scrypt format.
+    fetch
+      .mockResolvedValueOnce(mockAuthList([{ name: "Alice", hash: "myhash123" }]))
+      .mockResolvedValueOnce({}); // PUT rehash
     const handler = await loadHandler();
     const res = await handler(makeEvent({ body: JSON.stringify({ name: "Alice", hash: "myhash123" }) }));
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
     expect(typeof body.token).toBe("string");
     expect(verifyToken(body.token, "test-secret-abc")).toBe(true);
-    expect(fetch).toHaveBeenCalledTimes(1); // only auth list, no profile lookup needed
+    expect(fetch).toHaveBeenCalledTimes(2);
+    const rehashWrite = fetch.mock.calls[1];
+    expect(rehashWrite[1].method).toBe("PUT");
+    const writtenList = JSON.parse(rehashWrite[1].body);
+    expect(writtenList[0].name).toBe("Alice");
+    expect(writtenList[0].hash).toMatch(/^s\$\d+\$\d+\$\d+\$[^$]+\$[^$]+$/);
   });
 
   it("returns 200 with valid token via profile fallback and migrates to auth list", async () => {
@@ -143,15 +153,17 @@ describe("auth.js", () => {
     const res = await handler(makeEvent({ body: JSON.stringify({ name: "Alice", hash: "myhash123" }) }));
     expect(res.statusCode).toBe(200);
     expect(verifyToken(JSON.parse(res.body).token, "test-secret-abc")).toBe(true);
-    // Migration write should have happened
     expect(fetch).toHaveBeenCalledTimes(3);
     const migrationWrite = fetch.mock.calls[2];
     expect(migrationWrite[1].method).toBe("PUT");
     const authListWritten = JSON.parse(migrationWrite[1].body);
-    expect(authListWritten[0]).toEqual({ name: "Alice", hash: "myhash123" });
+    expect(authListWritten[0].name).toBe("Alice");
+    // Migrated entry is scrypt-formatted, not the raw client hash.
+    expect(authListWritten[0].hash).toMatch(/^s\$\d+\$\d+\$\d+\$[^$]+\$[^$]+$/);
+    expect(authListWritten[0].hash).not.toBe("myhash123");
   });
 
-  it("accepts legacy btoa hash via profile fallback and upgrades to SHA-256", async () => {
+  it("accepts legacy btoa hash via profile fallback and stores scrypt-format on migrate", async () => {
     const btoa_hash = "YWJj"; // btoa("abc")
     fetch
       .mockResolvedValueOnce(mockAuthList([]))
@@ -162,9 +174,21 @@ describe("auth.js", () => {
       body: JSON.stringify({ name: "Alice", hash: "sha256_of_abc", legacy: btoa_hash }),
     }));
     expect(res.statusCode).toBe(200);
-    // Migration should write the SHA-256 hash, not the btoa one
     const authListWritten = JSON.parse(fetch.mock.calls[2][1].body);
-    expect(authListWritten[0].hash).toBe("sha256_of_abc");
+    expect(authListWritten[0].name).toBe("Alice");
+    expect(authListWritten[0].hash).toMatch(/^s\$\d+\$\d+\$\d+\$[^$]+\$[^$]+$/);
+  });
+
+  it("accepts a scrypt-hashed stored value and does NOT rewrite the auth list", async () => {
+    // Pre-hash a known input so the test reflects the steady-state flow.
+    const { hashPassword } = await import("../netlify/functions/_passwordHash.js");
+    const stored = hashPassword("client-sent-hash");
+    fetch.mockResolvedValueOnce(mockAuthList([{ name: "Alice", hash: stored }]));
+    const handler = await loadHandler();
+    const res = await handler(makeEvent({ body: JSON.stringify({ name: "Alice", hash: "client-sent-hash" }) }));
+    expect(res.statusCode).toBe(200);
+    expect(verifyToken(JSON.parse(res.body).token, "test-secret-abc")).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(1); // no migration write
   });
 
   it("token payload encodes original username (case-preserved) and a future expiry", async () => {
