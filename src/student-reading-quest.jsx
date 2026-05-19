@@ -66,6 +66,9 @@ var STRINGS = {
     myProfile:"My Profile",storyLibrary:"Story Library",allTopics:"All Topics",myFavorites:"MY FAVORITES",
     gamesLabel:"Games",avgTime:"Avg Time",recentGames:"RECENT GAMES",accuracyByType:"ACCURACY BY TYPE",xpHistory:"XP HISTORY",
     joinedLabel:"Joined",bestLabel:"Best",likesLabel:"Likes",levelProgress:"LEVEL PROGRESS",xpToNext:"XP to next",
+    readingGoals:"🎯 Reading Goals",activeGoals:"ACTIVE GOALS",setAGoal:"SET A GOAL",remove:"Remove",doneLabel:"Done!",
+    allGoalTypesActive:"All goal types are active!",
+    search:"Search",requests:"Requests",myFriends:"My Friends",accept:"Accept",decline:"Decline",viewLabel:"View",addFriend:"+ Add",requestSent:"Sent",friendBadge:"Friends",noPendingRequests:"No pending requests",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -112,6 +115,9 @@ var STRINGS = {
     myProfile:"Mening Profilim",storyLibrary:"Hikoyalar Kutubxonasi",allTopics:"Barcha Mavzular",myFavorites:"SEVIMLILARIM",
     gamesLabel:"O'yinlar",avgTime:"O'rtacha Vaqt",recentGames:"SO'NGGI O'YINLAR",accuracyByType:"TUR BO'YICHA ANIQLIK",xpHistory:"XP TARIXI",
     joinedLabel:"Qo'shilgan",bestLabel:"Eng yaxshi",likesLabel:"Yoqdi",levelProgress:"DARAJA TARAQQIYOTI",xpToNext:"keyingisiga XP",
+    readingGoals:"🎯 O'qish Maqsadlari",activeGoals:"FAOL MAQSADLAR",setAGoal:"MAQSAD QO'YING",remove:"O'chirish",doneLabel:"Bajarildi!",
+    allGoalTypesActive:"Barcha maqsad turlari faol!",
+    search:"Qidirish",requests:"So'rovlar",myFriends:"Mening Do'stlarim",accept:"Qabul qilish",decline:"Rad etish",viewLabel:"Ko'rish",addFriend:"+ Qo'shish",requestSent:"Yuborildi",friendBadge:"Do'st",noPendingRequests:"Kutilayotgan so'rovlar yo'q",
   },
   ru: {
     appName:"Читальный Квест",
@@ -158,6 +164,9 @@ var STRINGS = {
     myProfile:"Мой профиль",storyLibrary:"Библиотека историй",allTopics:"Все темы",myFavorites:"ИЗБРАННОЕ",
     gamesLabel:"Игр",avgTime:"Среднее время",recentGames:"ПОСЛЕДНИЕ ИГРЫ",accuracyByType:"ТОЧНОСТЬ ПО ТИПУ",xpHistory:"ИСТОРИЯ XP",
     joinedLabel:"Регистрация",bestLabel:"Лучший",likesLabel:"Лайков",levelProgress:"ПРОГРЕСС УРОВНЯ",xpToNext:"XP до следующего",
+    readingGoals:"🎯 Цели чтения",activeGoals:"АКТИВНЫЕ ЦЕЛИ",setAGoal:"ПОСТАВЬТЕ ЦЕЛЬ",remove:"Удалить",doneLabel:"Готово!",
+    allGoalTypesActive:"Все типы целей активны!",
+    search:"Поиск",requests:"Запросы",myFriends:"Мои друзья",accept:"Принять",decline:"Отклонить",viewLabel:"Открыть",addFriend:"+ Добавить",requestSent:"Отправлено",friendBadge:"Друзья",noPendingRequests:"Нет ожидающих запросов",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -204,6 +213,9 @@ var STRINGS = {
     myProfile:"Profilim",storyLibrary:"Hikaye Kütüphanesi",allTopics:"Tüm Konular",myFavorites:"FAVORİLERİM",
     gamesLabel:"Oyun",avgTime:"Ort. Süre",recentGames:"SON OYUNLAR",accuracyByType:"TÜRE GÖRE DOĞRULUK",xpHistory:"XP GEÇMİŞİ",
     joinedLabel:"Katıldı",bestLabel:"En iyi",likesLabel:"Beğeni",levelProgress:"SEVİYE İLERLEMESİ",xpToNext:"sonraki için XP",
+    readingGoals:"🎯 Okuma Hedefleri",activeGoals:"AKTİF HEDEFLER",setAGoal:"HEDEF BELİRLE",remove:"Kaldır",doneLabel:"Tamam!",
+    allGoalTypesActive:"Tüm hedef türleri aktif!",
+    search:"Ara",requests:"İstekler",myFriends:"Arkadaşlarım",accept:"Kabul",decline:"Reddet",viewLabel:"Görüntüle",addFriend:"+ Ekle",requestSent:"Gönderildi",friendBadge:"Arkadaş",noPendingRequests:"Bekleyen istek yok",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -250,6 +262,9 @@ var STRINGS = {
     myProfile:"ملفي الشخصي",storyLibrary:"مكتبة القصص",allTopics:"جميع المواضيع",myFavorites:"المفضلة",
     gamesLabel:"ألعاب",avgTime:"متوسط الوقت",recentGames:"الألعاب الأخيرة",accuracyByType:"الدقة حسب النوع",xpHistory:"سجل XP",
     joinedLabel:"انضم في",bestLabel:"الأفضل",likesLabel:"إعجابات",levelProgress:"تقدم المستوى",xpToNext:"XP للمستوى التالي",
+    readingGoals:"🎯 أهداف القراءة",activeGoals:"الأهداف النشطة",setAGoal:"ضع هدفاً",remove:"إزالة",doneLabel:"تم!",
+    allGoalTypesActive:"جميع أنواع الأهداف نشطة!",
+    search:"بحث",requests:"الطلبات",myFriends:"أصدقائي",accept:"قبول",decline:"رفض",viewLabel:"عرض",addFriend:"+ إضافة",requestSent:"تم الإرسال",friendBadge:"صديق",noPendingRequests:"لا توجد طلبات معلقة",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -296,6 +311,9 @@ var STRINGS = {
     myProfile:"Mein Profil",storyLibrary:"Geschichtenbibliothek",allTopics:"Alle Themen",myFavorites:"MEINE FAVORITEN",
     gamesLabel:"Spiele",avgTime:"Ø Zeit",recentGames:"LETZTE SPIELE",accuracyByType:"GENAUIGKEIT NACH TYP",xpHistory:"XP-VERLAUF",
     joinedLabel:"Beigetreten",bestLabel:"Bestes",likesLabel:"Likes",levelProgress:"LEVEL-FORTSCHRITT",xpToNext:"XP zum Nächsten",
+    readingGoals:"🎯 Leseziele",activeGoals:"AKTIVE ZIELE",setAGoal:"ZIEL SETZEN",remove:"Entfernen",doneLabel:"Erledigt!",
+    allGoalTypesActive:"Alle Zieltypen sind aktiv!",
+    search:"Suche",requests:"Anfragen",myFriends:"Meine Freunde",accept:"Annehmen",decline:"Ablehnen",viewLabel:"Anzeigen",addFriend:"+ Hinzufügen",requestSent:"Gesendet",friendBadge:"Freund",noPendingRequests:"Keine offenen Anfragen",
   },
   es: {
     appName:"Misión Lectora",
@@ -342,6 +360,9 @@ var STRINGS = {
     myProfile:"Mi Perfil",storyLibrary:"Biblioteca de historias",allTopics:"Todos los temas",myFavorites:"MIS FAVORITOS",
     gamesLabel:"Partidas",avgTime:"Tiempo med.",recentGames:"PARTIDAS RECIENTES",accuracyByType:"PRECISIÓN POR TIPO",xpHistory:"HISTORIAL DE XP",
     joinedLabel:"Se unió",bestLabel:"Mejor",likesLabel:"Me gusta",levelProgress:"PROGRESO DEL NIVEL",xpToNext:"XP al siguiente",
+    readingGoals:"🎯 Metas de lectura",activeGoals:"METAS ACTIVAS",setAGoal:"ESTABLECE UNA META",remove:"Eliminar",doneLabel:"¡Listo!",
+    allGoalTypesActive:"¡Todos los tipos de meta están activos!",
+    search:"Buscar",requests:"Solicitudes",myFriends:"Mis amigos",accept:"Aceptar",decline:"Rechazar",viewLabel:"Ver",addFriend:"+ Añadir",requestSent:"Enviado",friendBadge:"Amigo",noPendingRequests:"Sin solicitudes pendientes",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -388,6 +409,9 @@ var STRINGS = {
     myProfile:"Mon Profil",storyLibrary:"Bibliothèque d'histoires",allTopics:"Tous les sujets",myFavorites:"MES FAVORIS",
     gamesLabel:"Parties",avgTime:"Temps moyen",recentGames:"PARTIES RÉCENTES",accuracyByType:"PRÉCISION PAR TYPE",xpHistory:"HISTORIQUE XP",
     joinedLabel:"Inscrit",bestLabel:"Meilleur",likesLabel:"J'aime",levelProgress:"PROGRESSION DU NIVEAU",xpToNext:"XP au suivant",
+    readingGoals:"🎯 Objectifs de lecture",activeGoals:"OBJECTIFS ACTIFS",setAGoal:"DÉFINIR UN OBJECTIF",remove:"Retirer",doneLabel:"Terminé !",
+    allGoalTypesActive:"Tous les types d'objectif sont actifs !",
+    search:"Rechercher",requests:"Demandes",myFriends:"Mes amis",accept:"Accepter",decline:"Refuser",viewLabel:"Voir",addFriend:"+ Ajouter",requestSent:"Envoyée",friendBadge:"Ami",noPendingRequests:"Aucune demande en attente",
   },
 };
 
@@ -5678,15 +5702,15 @@ export default function App(){
         {stage==="friends"&&currentUser&&(
           <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>Friends</h2>
+              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>{t("friends")}</h2>
               <button onClick={function(){setStage("home");setSocialMsg("");}} style={GHOST}>{t("back")}</button>
             </div>
             {socialMsg&&<div style={{background:"rgba(52,211,153,0.1)",border:"1px solid #34d399",borderRadius:10,padding:"8px 12px",fontSize:13,color:"#34d399",marginBottom:10}}>{socialMsg}</div>}
 
             {/* tabs */}
             <div style={{display:"flex",gap:5,marginBottom:14}}>
-              {[["search","Search"],["requests","Requests ("+(myData.requests.length)+")"],["list","My Friends ("+myData.friends.length+")"]].map(function(t){
-                return<button key={t[0]} onClick={function(){setFriendStage(t[0]);setSocialMsg("");}} style={{background:friendStage===t[0]?"#a78bfa":"rgba(255,255,255,0.05)",color:friendStage===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
+              {[["search",t("search")],["requests",t("requests")+" ("+(myData.requests.length)+")"],["list",t("myFriends")+" ("+myData.friends.length+")"]].map(function(tab){
+                return<button key={tab[0]} onClick={function(){setFriendStage(tab[0]);setSocialMsg("");}} style={{background:friendStage===tab[0]?"#a78bfa":"rgba(255,255,255,0.05)",color:friendStage===tab[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{tab[1]}</button>;
               })}
             </div>
 
@@ -5712,10 +5736,10 @@ export default function App(){
                       <div style={{fontSize:11,color:"#6b7280"}}>Lvl {uLevel} | Games: {u.games?u.games.length:0} | {uTotalXp} XP | Likes: {uData.likes||0}</div>
                     </div>
                     <div style={{display:"flex",gap:5}}>
-                      <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>View</button>
-                      {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>+ Add</button>}
-                      {requested&&<span style={{background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.5)",color:"#a78bfa",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>📨 Sent</span>}
-                      {isFriend&&<span style={{background:"rgba(52,211,153,0.15)",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>✓ Friends</span>}
+                      <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>{t("viewLabel")}</button>
+                      {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>{t("addFriend")}</button>}
+                      {requested&&<span style={{background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.5)",color:"#a78bfa",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>📨 {t("requestSent")}</span>}
+                      {isFriend&&<span style={{background:"rgba(52,211,153,0.15)",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>✓ {t("friendBadge")}</span>}
                     </div>
                   </div>);
                 })}
@@ -5726,13 +5750,13 @@ export default function App(){
             {/* REQUESTS */}
             {friendStage==="requests"&&(
               <div>
-                {myData.requests.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>📬</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No pending requests</div><div style={{fontSize:13,color:"#6b7280"}}>Your friend requests are all set!</div></div>}
+                {myData.requests.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>📬</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>{t("noPendingRequests")}</div></div>}
                 {myData.requests.map(function(from){
                   return(<div key={from} style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
                     <div style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#fff",flexShrink:0}}>{from[0].toUpperCase()}</div>
                     <span style={{flex:1,fontSize:14,fontWeight:600,color:"#f3f4f6"}}>{from} wants to be friends</span>
-                    <button onClick={function(){acceptRequest(from);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"6px 11px",fontSize:12}}>Accept</button>
-                    <button onClick={function(){declineRequest(from);}} style={{...mkBtn("#374151"),padding:"6px 11px",fontSize:12}}>Decline</button>
+                    <button onClick={function(){acceptRequest(from);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"6px 11px",fontSize:12}}>{t("accept")}</button>
+                    <button onClick={function(){declineRequest(from);}} style={{...mkBtn("#374151"),padding:"6px 11px",fontSize:12}}>{t("decline")}</button>
                   </div>);
                 })}
               </div>
@@ -6037,14 +6061,14 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>🎯 Reading Goals</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>{t("readingGoals")}</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
 
               {/* active goals */}
               {GOAL_DEFS.filter(function(d){return goals[d.id];}).length>0&&(
                 <div style={{...CARD,marginBottom:14,padding:16}}>
-                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>ACTIVE GOALS</p>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>{t("activeGoals")}</p>
                   {GOAL_DEFS.filter(function(d){return goals[d.id];}).map(function(def){
                     var g=goals[def.id];
                     var prog=getGoalProgress(def.id,g,games,myStreak);
@@ -6059,13 +6083,13 @@ export default function App(){
                             {detail&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{detail}</div>}
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginLeft:10}}>
-                            <div style={{fontSize:15,fontWeight:900,color:prog.done?"#34d399":"#a78bfa"}}>{prog.done?"✓ Done!":prog.current+(def.id==="avg_score"?" avg%":"")+"/"+prog.target+" "+def.unit}</div>
+                            <div style={{fontSize:15,fontWeight:900,color:prog.done?"#34d399":"#a78bfa"}}>{prog.done?"✓ "+t("doneLabel"):prog.current+(def.id==="avg_score"?" avg%":"")+"/"+prog.target+" "+def.unit}</div>
                           </div>
                         </div>
                         <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:7,overflow:"hidden",marginBottom:8}}>
                           <div style={{height:"100%",width:prog.pct+"%",background:prog.done?"#34d399":"linear-gradient(90deg,#6366f1,#a78bfa)",borderRadius:999,transition:"width 0.4s ease"}}/>
                         </div>
-                        <button onClick={function(){removeGoal(def.id);}} style={{background:"none",border:"1px solid rgba(239,68,68,0.25)",color:"#f87171",borderRadius:8,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Remove</button>
+                        <button onClick={function(){removeGoal(def.id);}} style={{background:"none",border:"1px solid rgba(239,68,68,0.25)",color:"#f87171",borderRadius:8,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{t("remove")}</button>
                       </div>
                     );
                   })}
@@ -6074,7 +6098,7 @@ export default function App(){
 
               {/* add new goals */}
               <div style={{...CARD,padding:16}}>
-                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>SET A GOAL</p>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:12}}>{t("setAGoal")}</p>
                 {GOAL_DEFS.filter(function(d){return!goals[d.id];}).map(function(def){
                   return(
                     <div key={def.id} style={{marginBottom:14}}>
@@ -6088,7 +6112,7 @@ export default function App(){
                   );
                 })}
                 {GOAL_DEFS.every(function(d){return goals[d.id];})&&(
-                  <p style={{color:"#6b7280",fontSize:13,textAlign:"center"}}>All goal types are active!</p>
+                  <p style={{color:"#6b7280",fontSize:13,textAlign:"center"}}>{t("allGoalTypesActive")}</p>
                 )}
               </div>
             </div>
