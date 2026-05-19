@@ -16,3 +16,4 @@ dist/
 
 # Vite cache
 .vite/
+.vercel

@@ -21,7 +21,8 @@
       "Bash(npm uninstall *)",
       "Bash(curl -s http://localhost:5173)",
       "Bash(git push *)",
-      "Bash(curl -s -o /dev/null -w \"HTTP Status: %{http_code}\\\\n\" https://student-reading-tool.netlify.app)"
+      "Bash(curl -s -o /dev/null -w \"HTTP Status: %{http_code}\\\\n\" https://student-reading-tool.netlify.app)",
+      "Bash(npx vercel *)"
     ]
   }
 }
