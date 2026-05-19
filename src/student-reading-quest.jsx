@@ -104,6 +104,16 @@ var STRINGS = {
       avg_score:{label:"Avg score (next 5 games)",unit:"%"},
       streak:{label:"Streak target",unit:"days"},
     },
+    qHints:{
+      mcq:"Read all options before choosing. Eliminate clearly wrong answers first. Watch for absolute words like 'always' or 'never' — they're often traps.",
+      gap_word:"Think about grammar (noun/verb/adjective?) and meaning. Re-read the sentence with your choice to hear if it sounds natural.",
+      gap_sentence:"Look at the sentences before AND after the gap for clues. The inserted sentence must connect logically with both neighbours.",
+      matching:"Match the easiest pairs first to reduce your options. Look for synonyms and paraphrases — the wording will rarely be identical.",
+      heading:"Read the full paragraph, then choose a heading that covers the MAIN idea, not just a detail mentioned in one sentence.",
+      qa:"Answer in your own words using evidence from the passage. Aim for 1–2 complete sentences; avoid copying large chunks verbatim.",
+      tfnm:"TRUE = passage clearly states it. FALSE = passage directly contradicts it. NOT MENTIONED = the passage says nothing about it — don't guess.",
+      ynng:"YES = passage agrees with the statement. NO = passage disagrees. NOT GIVEN = the passage neither confirms nor denies it.",
+    },
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -187,6 +197,16 @@ var STRINGS = {
       weekly_xp:{label:"Bu haftadagi XP",unit:"XP"},
       avg_score:{label:"O'rtacha ball (keyingi 5 o'yin)",unit:"%"},
       streak:{label:"Seriya maqsadi",unit:"kun"},
+    },
+    qHints:{
+      mcq:"Tanlashdan oldin barcha variantlarni o'qing. Aniq noto'g'ri javoblarni avval olib tashlang. 'doimo' yoki 'hech qachon' kabi mutlaq so'zlarga e'tibor bering — ular ko'pincha tuzoq.",
+      gap_word:"Grammatika (ot/fe'l/sifat?) va ma'no haqida o'ylang. Tanlovingiz bilan gapni qaytadan o'qib, tabiiy eshitilishini tekshiring.",
+      gap_sentence:"Bo'shliqdan oldin VA keyin keladigan gaplarga qarang. Qo'shilgan gap har ikkalasi bilan mantiqiy bog'lanishi kerak.",
+      matching:"Variantlarni qisqartirish uchun avval eng oson juftliklarni moslang. Sinonim va perafrazalarni qidiring — so'zlar kamdan-kam bir xil bo'ladi.",
+      heading:"Butun paragrafni o'qing, so'ng faqat bir gapda eslatilgan tafsilotni emas, ASOSIY g'oyani qamrab oluvchi sarlavhani tanlang.",
+      qa:"Matndan dalillar yordamida o'z so'zlaringiz bilan javob bering. 1-2 to'liq gap yozishga harakat qiling; katta qismlarni so'zma-so'z ko'chirmang.",
+      tfnm:"TO'G'RI = matn aniq aytadi. NOTO'G'RI = matn bunga zid. AYTILMAGAN = matn bu haqda hech narsa demaydi — taxmin qilmang.",
+      ynng:"HA = matn fikrga qo'shiladi. YO'Q = matn rozi emas. BERILMAGAN = matn na tasdiqlaydi, na inkor etadi.",
     },
   },
   ru: {
@@ -272,6 +292,16 @@ var STRINGS = {
       avg_score:{label:"Средний балл (следующие 5 игр)",unit:"%"},
       streak:{label:"Цель серии",unit:"дней"},
     },
+    qHints:{
+      mcq:"Прочитайте все варианты, прежде чем выбирать. Сначала исключите явно неверные. Обратите внимание на абсолютные слова вроде «всегда» или «никогда» — это часто ловушки.",
+      gap_word:"Подумайте о грамматике (существительное/глагол/прилагательное?) и смысле. Перечитайте предложение со своим выбором, чтобы услышать, звучит ли оно естественно.",
+      gap_sentence:"Смотрите на предложения ДО и ПОСЛЕ пропуска. Вставленное предложение должно логически связываться с обоими соседями.",
+      matching:"Сначала сопоставьте самые лёгкие пары, чтобы сократить варианты. Ищите синонимы и парафразы — формулировка редко бывает одинаковой.",
+      heading:"Прочитайте весь абзац, затем выберите заголовок, отражающий ГЛАВНУЮ идею, а не деталь из одного предложения.",
+      qa:"Отвечайте своими словами, опираясь на текст. Стремитесь к 1–2 полным предложениям; не переписывайте большие куски дословно.",
+      tfnm:"ВЕРНО = в тексте прямо так сказано. НЕВЕРНО = текст прямо противоречит. НЕ УПОМИНАЕТСЯ = в тексте об этом ничего нет — не угадывайте.",
+      ynng:"ДА = текст согласен с утверждением. НЕТ = текст не согласен. НЕ УКАЗАНО = текст ни подтверждает, ни отрицает.",
+    },
   },
   tr: {
     appName:"Okuma Görevi",
@@ -355,6 +385,16 @@ var STRINGS = {
       weekly_xp:{label:"Bu haftaki XP",unit:"XP"},
       avg_score:{label:"Ort. skor (sonraki 5 oyun)",unit:"%"},
       streak:{label:"Seri hedefi",unit:"gün"},
+    },
+    qHints:{
+      mcq:"Seçmeden önce tüm seçenekleri oku. Açıkça yanlış olanları ilk önce ele. 'her zaman' veya 'asla' gibi mutlak kelimelere dikkat — genelde tuzak.",
+      gap_word:"Dilbilgisini (isim/fiil/sıfat?) ve anlamı düşün. Seçiminle cümleyi yeniden oku, doğal duyulup duyulmadığına bak.",
+      gap_sentence:"Boşluktan ÖNCE VE SONRAKİ cümlelere bak. Eklenen cümle her ikisiyle de mantıksal olarak bağlanmalı.",
+      matching:"Seçenekleri azaltmak için önce en kolay çiftleri eşleştir. Eş anlamlılar ve yeniden ifadeler ara — kelimeler nadiren aynıdır.",
+      heading:"Paragrafın tamamını oku, sonra bir cümlede geçen detayı değil, ANA fikri kapsayan başlığı seç.",
+      qa:"Metinden kanıtlar kullanarak kendi sözlerinle yanıtla. 1-2 tam cümle hedefle; büyük bölümleri aynen kopyalama.",
+      tfnm:"DOĞRU = metin açıkça söyler. YANLIŞ = metin doğrudan çelişir. BELİRTİLMEMİŞ = metin bu konuda hiçbir şey söylemez — tahmin etme.",
+      ynng:"EVET = metin ifadeyle hemfikir. HAYIR = metin karşı. BELİRTİLMEDİ = metin ne onaylar ne inkâr eder.",
     },
   },
   ar: {
@@ -440,6 +480,16 @@ var STRINGS = {
       avg_score:{label:"متوسط النتيجة (5 ألعاب قادمة)",unit:"%"},
       streak:{label:"هدف السلسلة",unit:"أيام"},
     },
+    qHints:{
+      mcq:"اقرأ جميع الخيارات قبل أن تختار. استبعد الإجابات الخاطئة الواضحة أولاً. انتبه للكلمات المطلقة مثل 'دائماً' أو 'أبداً' — غالباً ما تكون فخاً.",
+      gap_word:"فكر في القواعد (اسم/فعل/صفة؟) والمعنى. أعد قراءة الجملة باختيارك لتسمع ما إذا كانت طبيعية.",
+      gap_sentence:"انظر إلى الجمل قبل الفراغ وبعده. الجملة المُدرجة يجب أن ترتبط منطقياً مع الجارتين.",
+      matching:"طابق الأزواج الأسهل أولاً لتقليل الخيارات. ابحث عن المرادفات وإعادة الصياغة — نادراً ما تتطابق الكلمات.",
+      heading:"اقرأ الفقرة كاملة، ثم اختر عنواناً يغطي الفكرة الرئيسية، لا تفصيلاً مذكوراً في جملة واحدة.",
+      qa:"أجب بكلماتك مستنداً إلى أدلة من النص. اهدف إلى 1-2 جملة كاملة؛ تجنب نسخ مقاطع طويلة حرفياً.",
+      tfnm:"صحيح = النص يذكر ذلك بوضوح. خطأ = النص يناقض ذلك مباشرة. غير مذكور = النص لا يقول شيئاً عنه — لا تخمن.",
+      ynng:"نعم = النص يوافق العبارة. لا = النص يعارض. غير محدد = النص لا يؤكد ولا ينفي.",
+    },
   },
   de: {
     appName:"Lesewettbewerb",
@@ -523,6 +573,16 @@ var STRINGS = {
       weekly_xp:{label:"XP diese Woche",unit:"XP"},
       avg_score:{label:"Ø Punkte (nächste 5 Spiele)",unit:"%"},
       streak:{label:"Serien-Ziel",unit:"Tage"},
+    },
+    qHints:{
+      mcq:"Lies alle Optionen, bevor du wählst. Schließe offensichtlich falsche Antworten zuerst aus. Achte auf absolute Wörter wie 'immer' oder 'nie' — oft Fallen.",
+      gap_word:"Denke an Grammatik (Nomen/Verb/Adjektiv?) und Bedeutung. Lies den Satz mit deiner Wahl noch einmal — klingt er natürlich?",
+      gap_sentence:"Schau auf die Sätze VOR UND NACH der Lücke. Der eingefügte Satz muss logisch mit beiden Nachbarn verbinden.",
+      matching:"Match die einfachsten Paare zuerst, um Optionen zu reduzieren. Suche nach Synonymen und Umschreibungen — der Wortlaut wird selten identisch sein.",
+      heading:"Lies den ganzen Absatz, dann wähle eine Überschrift, die die HAUPTIDEE abdeckt, nicht nur ein Detail aus einem Satz.",
+      qa:"Antworte in eigenen Worten mit Belegen aus dem Text. Ziele auf 1-2 vollständige Sätze; vermeide es, große Teile wörtlich zu kopieren.",
+      tfnm:"WAHR = Text sagt es klar. FALSCH = Text widerspricht direkt. NICHT ERWÄHNT = Text sagt nichts dazu — nicht raten.",
+      ynng:"JA = Text stimmt mit Aussage überein. NEIN = Text widerspricht. NICHT ANGEGEBEN = Text bestätigt noch verneint.",
     },
   },
   es: {
@@ -608,6 +668,16 @@ var STRINGS = {
       avg_score:{label:"Puntuación med. (próximas 5)",unit:"%"},
       streak:{label:"Objetivo de racha",unit:"días"},
     },
+    qHints:{
+      mcq:"Lee todas las opciones antes de elegir. Elimina las claramente incorrectas primero. Cuidado con palabras absolutas como 'siempre' o 'nunca' — suelen ser trampas.",
+      gap_word:"Piensa en la gramática (sustantivo/verbo/adjetivo?) y el significado. Relee la oración con tu elección para ver si suena natural.",
+      gap_sentence:"Mira las oraciones ANTES Y DESPUÉS del hueco. La oración insertada debe conectar lógicamente con ambas vecinas.",
+      matching:"Empareja primero los pares más fáciles para reducir opciones. Busca sinónimos y paráfrasis — el texto rara vez será idéntico.",
+      heading:"Lee el párrafo completo, luego elige un título que cubra la idea PRINCIPAL, no un detalle mencionado en una oración.",
+      qa:"Responde con tus propias palabras usando evidencia del texto. Apunta a 1-2 oraciones completas; evita copiar fragmentos largos.",
+      tfnm:"VERDADERO = el texto lo dice claramente. FALSO = el texto lo contradice. NO MENCIONADO = el texto no dice nada al respecto — no adivines.",
+      ynng:"SÍ = el texto coincide con la afirmación. NO = el texto está en desacuerdo. NO DADO = el texto ni confirma ni niega.",
+    },
   },
   fr: {
     appName:"Quête de Lecture",
@@ -691,6 +761,16 @@ var STRINGS = {
       weekly_xp:{label:"XP cette semaine",unit:"XP"},
       avg_score:{label:"Score moyen (5 prochaines parties)",unit:"%"},
       streak:{label:"Objectif de série",unit:"jours"},
+    },
+    qHints:{
+      mcq:"Lis toutes les options avant de choisir. Élimine d'abord les réponses clairement fausses. Méfie-toi des mots absolus comme 'toujours' ou 'jamais' — souvent des pièges.",
+      gap_word:"Pense à la grammaire (nom/verbe/adjectif ?) et au sens. Relis la phrase avec ton choix pour entendre si elle sonne naturelle.",
+      gap_sentence:"Regarde les phrases AVANT ET APRÈS le trou. La phrase insérée doit se connecter logiquement avec les deux voisines.",
+      matching:"Apparie d'abord les paires les plus faciles pour réduire les options. Cherche des synonymes et paraphrases — la formulation est rarement identique.",
+      heading:"Lis le paragraphe entier, puis choisis un titre couvrant l'idée PRINCIPALE, pas un détail mentionné dans une phrase.",
+      qa:"Réponds avec tes propres mots en utilisant des preuves du texte. Vise 1-2 phrases complètes; évite de copier de grands morceaux mot pour mot.",
+      tfnm:"VRAI = le texte le dit clairement. FAUX = le texte le contredit directement. NON MENTIONNÉ = le texte n'en parle pas — ne devine pas.",
+      ynng:"OUI = le texte est d'accord. NON = le texte est en désaccord. NON DONNÉ = le texte ni ne confirme ni n'infirme.",
     },
   },
 };
@@ -2099,6 +2179,9 @@ export default function App(){
   // to the English GOAL_DEFS table.
   function goalLabel(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].goalDefs;if(tbl&&tbl[id]&&tbl[id].label)return tbl[id].label;var d=GOAL_DEFS.find(function(x){return x.id===id;});return d?d.label:id;}
   function goalUnit(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].goalDefs;if(tbl&&tbl[id]&&tbl[id].unit)return tbl[id].unit;var d=GOAL_DEFS.find(function(x){return x.id===id;});return d?d.unit:"";}
+  // Localized quiz-strategy hint per question type. Falls back to English
+  // Q_HINTS module-level table.
+  function qHint(type){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].qHints;if(tbl&&tbl[type])return tbl[type];return Q_HINTS[type]||"";}
 
   // Keep passageLang in sync with uiLang: switching UI to Russian also makes
   // AI-generated passages Russian by default. User can still override per
@@ -5367,10 +5450,10 @@ export default function App(){
               <Timer limit={challengeMode?Math.floor((lv?lv.timeLimit:180)/2):(lv?lv.timeLimit:180)} running={timerRunning} onExpire={handleExpire}/>
             </div>
             {/* ── hint banner ── */}
-            {Q_HINTS[q.type]&&!dismissedHints.has(q.type)&&(
+            {qHint(q.type)&&!dismissedHints.has(q.type)&&(
               <div style={{marginBottom:9,background:"rgba(99,102,241,0.08)",border:"1px solid rgba(99,102,241,0.28)",borderRadius:10,padding:"9px 12px",display:"flex",alignItems:"flex-start",gap:9,animation:"rqFadeIn 0.3s ease both"}}>
                 <span style={{fontSize:16,flexShrink:0}}>💡</span>
-                <p style={{margin:0,fontSize:12,color:"#c7d2fe",lineHeight:1.55,flex:1}}>{Q_HINTS[q.type]}</p>
+                <p style={{margin:0,fontSize:12,color:"#c7d2fe",lineHeight:1.55,flex:1}}>{qHint(q.type)}</p>
                 <button onClick={function(){setDismissedHints(function(s){var n=new Set(s);n.add(q.type);return n;});}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16,lineHeight:1,flexShrink:0,padding:0}} title="Got it">✕</button>
               </div>
             )}
