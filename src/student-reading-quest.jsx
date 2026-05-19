@@ -69,6 +69,9 @@ var STRINGS = {
     readingGoals:"🎯 Reading Goals",activeGoals:"ACTIVE GOALS",setAGoal:"SET A GOAL",remove:"Remove",doneLabel:"Done!",
     allGoalTypesActive:"All goal types are active!",
     search:"Search",requests:"Requests",myFriends:"My Friends",accept:"Accept",decline:"Decline",viewLabel:"View",addFriend:"+ Add",requestSent:"Sent",friendBadge:"Friends",noPendingRequests:"No pending requests",
+    myAnalytics:"My Analytics",wordsSaved:"Words Saved",timeReading:"Time Reading",badges:"Badges",
+    playerLevel:"Player Level",maxLevel:"Max level!",activityLast30:"ACTIVITY — LAST 30 DAYS",focusAreas:"⚠️ FOCUS AREAS",byCefrLevel:"BY CEFR LEVEL",
+    scoreTrendLabel:"SCORE TREND",readingSpeedTrendLabel:"READING SPEED TREND (WPM)",xpGrowthLabel:"XP GROWTH (30 DAYS)",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -118,6 +121,9 @@ var STRINGS = {
     readingGoals:"🎯 O'qish Maqsadlari",activeGoals:"FAOL MAQSADLAR",setAGoal:"MAQSAD QO'YING",remove:"O'chirish",doneLabel:"Bajarildi!",
     allGoalTypesActive:"Barcha maqsad turlari faol!",
     search:"Qidirish",requests:"So'rovlar",myFriends:"Mening Do'stlarim",accept:"Qabul qilish",decline:"Rad etish",viewLabel:"Ko'rish",addFriend:"+ Qo'shish",requestSent:"Yuborildi",friendBadge:"Do'st",noPendingRequests:"Kutilayotgan so'rovlar yo'q",
+    myAnalytics:"Tahlilim",wordsSaved:"Saqlangan So'zlar",timeReading:"O'qish vaqti",badges:"Nishonlar",
+    playerLevel:"O'yinchi Darajasi",maxLevel:"Maksimal daraja!",activityLast30:"FAOLIYAT — SO'NGGI 30 KUN",focusAreas:"⚠️ DIQQAT MARKAZI",byCefrLevel:"CEFR DARAJA BO'YICHA",
+    scoreTrendLabel:"BALL TENDENSIYASI",readingSpeedTrendLabel:"O'QISH TEZLIGI TENDENSIYASI (WPM)",xpGrowthLabel:"XP O'SISHI (30 KUN)",
   },
   ru: {
     appName:"Читальный Квест",
@@ -167,6 +173,9 @@ var STRINGS = {
     readingGoals:"🎯 Цели чтения",activeGoals:"АКТИВНЫЕ ЦЕЛИ",setAGoal:"ПОСТАВЬТЕ ЦЕЛЬ",remove:"Удалить",doneLabel:"Готово!",
     allGoalTypesActive:"Все типы целей активны!",
     search:"Поиск",requests:"Запросы",myFriends:"Мои друзья",accept:"Принять",decline:"Отклонить",viewLabel:"Открыть",addFriend:"+ Добавить",requestSent:"Отправлено",friendBadge:"Друзья",noPendingRequests:"Нет ожидающих запросов",
+    myAnalytics:"Моя аналитика",wordsSaved:"Слов сохранено",timeReading:"Время чтения",badges:"Награды",
+    playerLevel:"Уровень игрока",maxLevel:"Максимальный уровень!",activityLast30:"АКТИВНОСТЬ — ПОСЛЕДНИЕ 30 ДНЕЙ",focusAreas:"⚠️ ОБЛАСТИ ВНИМАНИЯ",byCefrLevel:"ПО УРОВНЮ CEFR",
+    scoreTrendLabel:"ТЕНДЕНЦИЯ ОЦЕНОК",readingSpeedTrendLabel:"ТЕНДЕНЦИЯ СКОРОСТИ ЧТЕНИЯ (WPM)",xpGrowthLabel:"РОСТ XP (30 ДНЕЙ)",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -216,6 +225,9 @@ var STRINGS = {
     readingGoals:"🎯 Okuma Hedefleri",activeGoals:"AKTİF HEDEFLER",setAGoal:"HEDEF BELİRLE",remove:"Kaldır",doneLabel:"Tamam!",
     allGoalTypesActive:"Tüm hedef türleri aktif!",
     search:"Ara",requests:"İstekler",myFriends:"Arkadaşlarım",accept:"Kabul",decline:"Reddet",viewLabel:"Görüntüle",addFriend:"+ Ekle",requestSent:"Gönderildi",friendBadge:"Arkadaş",noPendingRequests:"Bekleyen istek yok",
+    myAnalytics:"Analizlerim",wordsSaved:"Kelimeler",timeReading:"Okuma süresi",badges:"Rozetler",
+    playerLevel:"Oyuncu Seviyesi",maxLevel:"Maks seviye!",activityLast30:"ETKİNLİK — SON 30 GÜN",focusAreas:"⚠️ ODAK ALANLAR",byCefrLevel:"CEFR SEVİYESİNE GÖRE",
+    scoreTrendLabel:"PUAN EĞİLİMİ",readingSpeedTrendLabel:"OKUMA HIZI EĞİLİMİ (WPM)",xpGrowthLabel:"XP BÜYÜMESİ (30 GÜN)",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -265,6 +277,9 @@ var STRINGS = {
     readingGoals:"🎯 أهداف القراءة",activeGoals:"الأهداف النشطة",setAGoal:"ضع هدفاً",remove:"إزالة",doneLabel:"تم!",
     allGoalTypesActive:"جميع أنواع الأهداف نشطة!",
     search:"بحث",requests:"الطلبات",myFriends:"أصدقائي",accept:"قبول",decline:"رفض",viewLabel:"عرض",addFriend:"+ إضافة",requestSent:"تم الإرسال",friendBadge:"صديق",noPendingRequests:"لا توجد طلبات معلقة",
+    myAnalytics:"تحليلاتي",wordsSaved:"كلمات محفوظة",timeReading:"وقت القراءة",badges:"شارات",
+    playerLevel:"مستوى اللاعب",maxLevel:"أقصى مستوى!",activityLast30:"النشاط — آخر ٣٠ يوماً",focusAreas:"⚠️ مجالات التركيز",byCefrLevel:"حسب مستوى CEFR",
+    scoreTrendLabel:"اتجاه النتيجة",readingSpeedTrendLabel:"اتجاه سرعة القراءة (WPM)",xpGrowthLabel:"نمو XP (٣٠ يوماً)",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -314,6 +329,9 @@ var STRINGS = {
     readingGoals:"🎯 Leseziele",activeGoals:"AKTIVE ZIELE",setAGoal:"ZIEL SETZEN",remove:"Entfernen",doneLabel:"Erledigt!",
     allGoalTypesActive:"Alle Zieltypen sind aktiv!",
     search:"Suche",requests:"Anfragen",myFriends:"Meine Freunde",accept:"Annehmen",decline:"Ablehnen",viewLabel:"Anzeigen",addFriend:"+ Hinzufügen",requestSent:"Gesendet",friendBadge:"Freund",noPendingRequests:"Keine offenen Anfragen",
+    myAnalytics:"Meine Analyse",wordsSaved:"Gespeicherte Wörter",timeReading:"Lesezeit",badges:"Abzeichen",
+    playerLevel:"Spieler-Level",maxLevel:"Höchstes Level!",activityLast30:"AKTIVITÄT — LETZTE 30 TAGE",focusAreas:"⚠️ FOKUSBEREICHE",byCefrLevel:"NACH CEFR-LEVEL",
+    scoreTrendLabel:"PUNKTE-TREND",readingSpeedTrendLabel:"LESEGESCHWINDIGKEIT-TREND (WPM)",xpGrowthLabel:"XP-WACHSTUM (30 TAGE)",
   },
   es: {
     appName:"Misión Lectora",
@@ -363,6 +381,9 @@ var STRINGS = {
     readingGoals:"🎯 Metas de lectura",activeGoals:"METAS ACTIVAS",setAGoal:"ESTABLECE UNA META",remove:"Eliminar",doneLabel:"¡Listo!",
     allGoalTypesActive:"¡Todos los tipos de meta están activos!",
     search:"Buscar",requests:"Solicitudes",myFriends:"Mis amigos",accept:"Aceptar",decline:"Rechazar",viewLabel:"Ver",addFriend:"+ Añadir",requestSent:"Enviado",friendBadge:"Amigo",noPendingRequests:"Sin solicitudes pendientes",
+    myAnalytics:"Mis estadísticas",wordsSaved:"Palabras guardadas",timeReading:"Tiempo leyendo",badges:"Insignias",
+    playerLevel:"Nivel de jugador",maxLevel:"¡Nivel máx.!",activityLast30:"ACTIVIDAD — ÚLTIMOS 30 DÍAS",focusAreas:"⚠️ ÁREAS DE ENFOQUE",byCefrLevel:"POR NIVEL CEFR",
+    scoreTrendLabel:"TENDENCIA DE PUNTUACIÓN",readingSpeedTrendLabel:"TENDENCIA DE VELOCIDAD (WPM)",xpGrowthLabel:"CRECIMIENTO DE XP (30 DÍAS)",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -412,6 +433,9 @@ var STRINGS = {
     readingGoals:"🎯 Objectifs de lecture",activeGoals:"OBJECTIFS ACTIFS",setAGoal:"DÉFINIR UN OBJECTIF",remove:"Retirer",doneLabel:"Terminé !",
     allGoalTypesActive:"Tous les types d'objectif sont actifs !",
     search:"Rechercher",requests:"Demandes",myFriends:"Mes amis",accept:"Accepter",decline:"Refuser",viewLabel:"Voir",addFriend:"+ Ajouter",requestSent:"Envoyée",friendBadge:"Ami",noPendingRequests:"Aucune demande en attente",
+    myAnalytics:"Mes statistiques",wordsSaved:"Mots enregistrés",timeReading:"Temps de lecture",badges:"Badges",
+    playerLevel:"Niveau du joueur",maxLevel:"Niveau max !",activityLast30:"ACTIVITÉ — 30 DERNIERS JOURS",focusAreas:"⚠️ DOMAINES À TRAVAILLER",byCefrLevel:"PAR NIVEAU CECR",
+    scoreTrendLabel:"TENDANCE DU SCORE",readingSpeedTrendLabel:"TENDANCE DE VITESSE (WPM)",xpGrowthLabel:"CROISSANCE XP (30 JOURS)",
   },
 };
 
@@ -6197,19 +6221,19 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#06b6d4"}}>My Analytics</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#06b6d4"}}>{t("myAnalytics")}</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
 
               {/* top stats */}
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
                 {[
-                  {v:games.length,     l:"Sessions",      c:"#34d399"},
-                  {v:totalXp,          l:"Total XP",      c:"#fbbf24"},
-                  {v:avgPct+"%",       l:"Avg Score",     c:pctColor(avgPct)},
-                  {v:vocab.length,     l:"Words Saved",   c:"#06b6d4"},
-                  {v:Math.floor(totalTimeSecs/60)+"m", l:"Time Reading", c:"#a78bfa"},
-                  {v:badgeCount+"/"+BADGES.length, l:"Badges",   c:"#f472b6"},
+                  {v:games.length,     l:t("sessions"),    c:"#34d399"},
+                  {v:totalXp,          l:t("totalXp"),     c:"#fbbf24"},
+                  {v:avgPct+"%",       l:t("avgScore"),    c:pctColor(avgPct)},
+                  {v:vocab.length,     l:t("wordsSaved"),  c:"#06b6d4"},
+                  {v:Math.floor(totalTimeSecs/60)+"m", l:t("timeReading"), c:"#a78bfa"},
+                  {v:badgeCount+"/"+BADGES.length, l:t("badges"),   c:"#f472b6"},
                 ].map(function(s){
                   return<div key={s.l} style={{textAlign:"center",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:14,padding:"14px 8px"}}>
                     <div style={{fontSize:18,fontWeight:900,color:s.c}}>{s.v}</div>
@@ -6221,8 +6245,8 @@ export default function App(){
               {/* level progress */}
               <div style={{...CARD,marginBottom:12}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <span style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>⭐ Player Level {lvlInfo.level}</span>
-                  <span style={{fontSize:11,color:"#6b7280"}}>{lvlInfo.xpNeeded>0?lvlInfo.xpNeeded+" XP to next":"Max level!"}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>⭐ {t("playerLevel")} {lvlInfo.level}</span>
+                  <span style={{fontSize:11,color:"#6b7280"}}>{lvlInfo.xpNeeded>0?lvlInfo.xpNeeded+" "+t("xpToNext"):t("maxLevel")}</span>
                 </div>
                 <div style={{background:"rgba(255,255,255,0.05)",borderRadius:999,height:8,overflow:"hidden"}}>
                   <div style={{height:"100%",width:lvlInfo.progress+"%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:999,transition:"width 0.4s ease"}}/>
@@ -6233,7 +6257,7 @@ export default function App(){
               {scoreTrend.length>=2&&(
                 <div style={{...CARD,marginBottom:12}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>SCORE TREND (LAST {scoreTrend.length} GAMES)</p>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>{t("scoreTrendLabel")} ({scoreTrend.length})</p>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:13,fontWeight:700,color:pctColor(avgPct)}}>{avgPct}%</div>
                       <div style={{fontSize:10,color:"#6b7280"}}>avg</div>
@@ -6255,7 +6279,7 @@ export default function App(){
               {wpmTrend.length>=2&&(
                 <div style={{...CARD,marginBottom:12}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>READING SPEED TREND (WPM)</p>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>{t("readingSpeedTrendLabel")}</p>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>{Math.round(wpmTrend.reduce(function(s,g){return s+g.wpm;},0)/wpmTrend.length)} WPM</div>
                       <div style={{fontSize:10,color:"#6b7280"}}>avg</div>
@@ -6272,7 +6296,7 @@ export default function App(){
               {totalXp>0&&(
                 <div style={{...CARD,marginBottom:12}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>XP GROWTH (30 DAYS)</p>
+                    <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",margin:0}}>{t("xpGrowthLabel")}</p>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{totalXp.toLocaleString()} XP</div>
                       <div style={{fontSize:10,color:"#6b7280"}}>total</div>
@@ -6287,7 +6311,7 @@ export default function App(){
 
               {/* 30-day activity calendar */}
               <div style={{...CARD,marginBottom:12}}>
-                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>ACTIVITY — LAST 30 DAYS</p>
+                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>{t("activityLast30")}</p>
                 <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                   {cal30.map(function(day,i){
                     var bg=day.count===0?"rgba(255,255,255,0.05)":day.avg>=80?"#22c55e":day.avg>=60?"#f59e0b":"#6366f1";
@@ -6302,7 +6326,7 @@ export default function App(){
               {/* weak question type highlight */}
               {weakTypes.length>0&&(
                 <div style={{...CARD,marginBottom:12,borderColor:"rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.04)"}}>
-                  <p style={{fontSize:11,fontWeight:700,color:"#f87171",marginBottom:10}}>⚠️ FOCUS AREAS</p>
+                  <p style={{fontSize:11,fontWeight:700,color:"#f87171",marginBottom:10}}>{t("focusAreas")}</p>
                   {weakTypes.map(function(w){
                     var tips={matching:"Try matching pairs step-by-step — eliminate confident ones first.",heading:"Read paragraph topic sentences carefully before matching headings.",qa:"Write 1-2 key words from the passage in your answer.",mcq:"Re-read the relevant sentence before choosing.",gap_word:"Think about grammar (noun/verb/adj) before guessing.",gap_sentence:"Check the sentence before and after the gap for context.",tfnm:"For 'Not Mentioned' — only choose if the passage has zero reference.",ynng:"'Not Given' means the passage doesn't confirm OR deny."};
                     return(<div key={w.t} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8,padding:"10px 12px",background:"rgba(239,68,68,0.07)",borderRadius:10}}>
@@ -6319,7 +6343,7 @@ export default function App(){
               {/* per-level breakdown */}
               {Object.keys(byLevel).length>0&&(
                 <div style={{...CARD,marginBottom:12}}>
-                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>BY CEFR LEVEL</p>
+                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:10}}>{t("byCefrLevel")}</p>
                   {["A1","A2","B1","B2","C1","C2"].filter(function(l){return byLevel[l];}).map(function(l){
                     var lv=getLv(l),ld=byLevel[l];
                     var ap=Math.round(ld.pctTotal/ld.count);
