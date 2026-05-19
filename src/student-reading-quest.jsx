@@ -1664,7 +1664,7 @@ export default function App(){
     Promise.all([loadUsers(),loadBoards(),loadSocial(),loadClasses(),loadAssignments()]).then(function(v){
       setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setClasses(v[3]||[]);setAssignments(v[4]||[]);
       var sessionName=saved||(savedCreds&&savedCreds.name);
-      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");}}
+      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}if(!Array.isArray(found.games))found=Object.assign({},found,{games:[]});setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");}}
       setAppReady(true);
     });
   },[]);
@@ -1811,7 +1811,7 @@ export default function App(){
     var fresh=await loadUsers();setAllUsers(fresh);
     var found=null;for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){found=fresh[i];break;}}
     if(!found){setAuthErr("Account error. Please try again.");return;}
-    found=Object.assign({},found,{hash:sha256});
+    found=Object.assign({},found,{hash:sha256,games:Array.isArray(found.games)?found.games:[]});
     localStorage.setItem("rq-session",found.name);
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:sha256}));
     var role=localStorage.getItem("rq-role-"+found.name);
@@ -2859,8 +2859,8 @@ export default function App(){
     return Math.round((tod-last)/(864e5))===2;
   })();
   var todayStr=new Date().toLocaleDateString();
-  var playedToday=currentUser?currentUser.games.some(function(g){return g.date===todayStr;}):false;
-  var weekDots=(function(){var dots=[];for(var di=6;di>=0;di--){var d=new Date();d.setDate(d.getDate()-di);d.setHours(0,0,0,0);var ds=d.toLocaleDateString();var dn=["S","M","T","W","T","F","S"][d.getDay()];dots.push({played:currentUser?currentUser.games.some(function(g){return g.date===ds;}):false,day:dn,today:di===0});}return dots;})();
+  var playedToday=currentUser?(currentUser.games||[]).some(function(g){return g.date===todayStr;}):false;
+  var weekDots=(function(){var dots=[];for(var di=6;di>=0;di--){var d=new Date();d.setDate(d.getDate()-di);d.setHours(0,0,0,0);var ds=d.toLocaleDateString();var dn=["S","M","T","W","T","F","S"][d.getDay()];dots.push({played:currentUser?(currentUser.games||[]).some(function(g){return g.date===ds;}):false,day:dn,today:di===0});}return dots;})();
   var STREAK_MILESTONES={3:"Three days in a row! Keep going 💪",7:"One whole week! You're building a real habit 🔥",14:"Two weeks strong! Incredible consistency 🏆",30:"30-day legend! You're unstoppable 🌟"};
   var milestoneToShow=currentUser&&[3,7,14,30].indexOf(myStreak)!==-1&&!milestoneSeen&&!localStorage.getItem("rq-ms-"+currentUser.name+"-"+myStreak)?STREAK_MILESTONES[myStreak]:null;
 
