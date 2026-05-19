@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { track, identify, resetIdentity } from "./observability";
 
 var API        = "/api/generate";
 var AUTH       = "/api/auth";
@@ -54,6 +55,13 @@ var STRINGS = {
     logOut:"Log Out",hey:"Hey",
     todaysDailyChallenge:"TODAY'S DAILY CHALLENGE",recommendedForYou:"RECOMMENDED FOR YOU",todaysQuests:"TODAY'S QUESTS",
     passageLanguage:"PASSAGE LANGUAGE",
+    showPassage:"Show passage",hidePassage:"Hide passage",fillInTheBlank:"Fill in the blank:",
+    challengeModeLabel:"⚡ CHALLENGE MODE · 1.5× XP",
+    excellent:"Excellent!",goodJob:"Good job!",keepGoing:"Keep going!",
+    earnedLabel:"earned",scoreLabel:"score",timeLabel:"time",rankLabel:"rank",
+    speedBonus:"Speed bonus",challengeComplete:"Challenge Complete!",youBeatTheClock:"You beat the clock — 1.5× XP applied",
+    breakdown:"BREAKDOWN",playAgain:"Play Again",newBadgeUnlocked:"NEW BADGE UNLOCKED!",
+    allCaughtUp:"All caught up!",reviewComplete:"Review complete!",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -89,6 +97,13 @@ var STRINGS = {
     logOut:"Chiqish",hey:"Salom",
     todaysDailyChallenge:"BUGUNGI KUNLIK VAZIFA",recommendedForYou:"SIZ UCHUN TAVSIYALAR",todaysQuests:"BUGUNGI VAZIFALAR",
     passageLanguage:"MATN TILI",
+    showPassage:"Matnni ko'rsatish",hidePassage:"Matnni yashirish",fillInTheBlank:"Bo'sh joyni to'ldiring:",
+    challengeModeLabel:"⚡ TANLOV REJIMI · 1.5× XP",
+    excellent:"Ajoyib!",goodJob:"Yaxshi ish!",keepGoing:"Davom eting!",
+    earnedLabel:"olingan",scoreLabel:"ball",timeLabel:"vaqt",rankLabel:"o'rin",
+    speedBonus:"Tezlik bonusi",challengeComplete:"Tanlov yakunlandi!",youBeatTheClock:"Vaqtni yengdingiz — 1.5× XP qo'llanildi",
+    breakdown:"TAFSILOTLAR",playAgain:"Yana o'ynash",newBadgeUnlocked:"YANGI NISHON OCHILDI!",
+    allCaughtUp:"Hammasi qilingan!",reviewComplete:"Ko'rib chiqish yakunlandi!",
   },
   ru: {
     appName:"Читальный Квест",
@@ -124,6 +139,13 @@ var STRINGS = {
     logOut:"Выйти",hey:"Привет",
     todaysDailyChallenge:"СЕГОДНЯШНИЙ ВЫЗОВ",recommendedForYou:"РЕКОМЕНДУЕТСЯ ВАМ",todaysQuests:"СЕГОДНЯШНИЕ ЗАДАЧИ",
     passageLanguage:"ЯЗЫК ТЕКСТА",
+    showPassage:"Показать текст",hidePassage:"Скрыть текст",fillInTheBlank:"Заполните пропуск:",
+    challengeModeLabel:"⚡ РЕЖИМ ВЫЗОВА · 1.5× XP",
+    excellent:"Отлично!",goodJob:"Хорошо!",keepGoing:"Продолжайте!",
+    earnedLabel:"получено",scoreLabel:"результат",timeLabel:"время",rankLabel:"место",
+    speedBonus:"Бонус за скорость",challengeComplete:"Вызов выполнен!",youBeatTheClock:"Вы успели — применён бонус 1.5× XP",
+    breakdown:"ПОДРОБНО",playAgain:"Играть снова",newBadgeUnlocked:"ПОЛУЧЕНА НОВАЯ НАГРАДА!",
+    allCaughtUp:"Всё готово!",reviewComplete:"Повторение завершено!",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -159,6 +181,13 @@ var STRINGS = {
     logOut:"Çıkış",hey:"Selam",
     todaysDailyChallenge:"BUGÜNÜN GÖREVİ",recommendedForYou:"SİZE ÖNERİLENLER",todaysQuests:"BUGÜNÜN GÖREVLERİ",
     passageLanguage:"METİN DİLİ",
+    showPassage:"Metni göster",hidePassage:"Metni gizle",fillInTheBlank:"Boşluğu doldurun:",
+    challengeModeLabel:"⚡ MEYDAN OKUMA MODU · 1.5× XP",
+    excellent:"Mükemmel!",goodJob:"Aferin!",keepGoing:"Devam et!",
+    earnedLabel:"kazanılan",scoreLabel:"skor",timeLabel:"süre",rankLabel:"sıra",
+    speedBonus:"Hız bonusu",challengeComplete:"Meydan okuma tamamlandı!",youBeatTheClock:"Zamanı yendin — 1.5× XP uygulandı",
+    breakdown:"DETAYLAR",playAgain:"Tekrar oyna",newBadgeUnlocked:"YENİ ROZET KAZANILDI!",
+    allCaughtUp:"Her şey tamam!",reviewComplete:"İnceleme tamamlandı!",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -194,6 +223,13 @@ var STRINGS = {
     logOut:"تسجيل الخروج",hey:"مرحباً",
     todaysDailyChallenge:"تحدي اليوم",recommendedForYou:"موصى به لك",todaysQuests:"مهام اليوم",
     passageLanguage:"لغة النص",
+    showPassage:"إظهار النص",hidePassage:"إخفاء النص",fillInTheBlank:"املأ الفراغ:",
+    challengeModeLabel:"⚡ وضع التحدي · 1.5× XP",
+    excellent:"ممتاز!",goodJob:"عمل جيد!",keepGoing:"واصل التقدم!",
+    earnedLabel:"مكتسب",scoreLabel:"نتيجة",timeLabel:"وقت",rankLabel:"ترتيب",
+    speedBonus:"مكافأة السرعة",challengeComplete:"اكتمل التحدي!",youBeatTheClock:"هزمت الوقت — تم تطبيق 1.5× XP",
+    breakdown:"التفاصيل",playAgain:"العب مرة أخرى",newBadgeUnlocked:"تم فتح شارة جديدة!",
+    allCaughtUp:"كل شيء جاهز!",reviewComplete:"اكتملت المراجعة!",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -229,6 +265,13 @@ var STRINGS = {
     logOut:"Abmelden",hey:"Hey",
     todaysDailyChallenge:"TÄGLICHE HERAUSFORDERUNG",recommendedForYou:"FÜR DICH EMPFOHLEN",todaysQuests:"TÄGLICHE AUFGABEN",
     passageLanguage:"TEXTSPRACHE",
+    showPassage:"Text anzeigen",hidePassage:"Text ausblenden",fillInTheBlank:"Lücke ausfüllen:",
+    challengeModeLabel:"⚡ HERAUSFORDERUNGSMODUS · 1.5× XP",
+    excellent:"Ausgezeichnet!",goodJob:"Gut gemacht!",keepGoing:"Weiter so!",
+    earnedLabel:"erzielt",scoreLabel:"Ergebnis",timeLabel:"Zeit",rankLabel:"Platz",
+    speedBonus:"Geschwindigkeitsbonus",challengeComplete:"Herausforderung abgeschlossen!",youBeatTheClock:"Du hast die Zeit geschlagen — 1.5× XP angewendet",
+    breakdown:"ÜBERSICHT",playAgain:"Nochmal spielen",newBadgeUnlocked:"NEUES ABZEICHEN FREIGESCHALTET!",
+    allCaughtUp:"Alles erledigt!",reviewComplete:"Wiederholung abgeschlossen!",
   },
   es: {
     appName:"Misión Lectora",
@@ -264,6 +307,13 @@ var STRINGS = {
     logOut:"Cerrar sesión",hey:"Hola",
     todaysDailyChallenge:"DESAFÍO DE HOY",recommendedForYou:"RECOMENDADO PARA TI",todaysQuests:"MISIONES DE HOY",
     passageLanguage:"IDIOMA DEL TEXTO",
+    showPassage:"Mostrar texto",hidePassage:"Ocultar texto",fillInTheBlank:"Completa el espacio en blanco:",
+    challengeModeLabel:"⚡ MODO DESAFÍO · 1.5× XP",
+    excellent:"¡Excelente!",goodJob:"¡Buen trabajo!",keepGoing:"¡Sigue así!",
+    earnedLabel:"ganado",scoreLabel:"puntuación",timeLabel:"tiempo",rankLabel:"puesto",
+    speedBonus:"Bono de velocidad",challengeComplete:"¡Desafío completado!",youBeatTheClock:"Venciste al reloj — 1.5× XP aplicado",
+    breakdown:"DESGLOSE",playAgain:"Jugar de nuevo",newBadgeUnlocked:"¡NUEVA INSIGNIA DESBLOQUEADA!",
+    allCaughtUp:"¡Todo al día!",reviewComplete:"¡Repaso completado!",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -299,6 +349,13 @@ var STRINGS = {
     logOut:"Déconnexion",hey:"Salut",
     todaysDailyChallenge:"DÉFI DU JOUR",recommendedForYou:"RECOMMANDÉ POUR VOUS",todaysQuests:"QUÊTES DU JOUR",
     passageLanguage:"LANGUE DU TEXTE",
+    showPassage:"Afficher le texte",hidePassage:"Masquer le texte",fillInTheBlank:"Complétez l'espace vide :",
+    challengeModeLabel:"⚡ MODE DÉFI · 1.5× XP",
+    excellent:"Excellent !",goodJob:"Bien joué !",keepGoing:"Continuez !",
+    earnedLabel:"gagné",scoreLabel:"score",timeLabel:"temps",rankLabel:"rang",
+    speedBonus:"Bonus de vitesse",challengeComplete:"Défi terminé !",youBeatTheClock:"Vous avez battu le chrono — bonus 1.5× XP appliqué",
+    breakdown:"DÉTAILS",playAgain:"Rejouer",newBadgeUnlocked:"NOUVEAU BADGE DÉBLOQUÉ !",
+    allCaughtUp:"Tout est à jour !",reviewComplete:"Révision terminée !",
   },
 };
 
@@ -1711,7 +1768,7 @@ export default function App(){
     Promise.all([loadUsers(),loadBoards(),loadSocial(),loadClasses(),loadAssignments()]).then(function(v){
       setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setClasses(v[3]||[]);setAssignments(v[4]||[]);
       var sessionName=saved||(savedCreds&&savedCreds.name);
-      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}if(!Array.isArray(found.games))found=Object.assign({},found,{games:[]});setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");}}
+      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}if(!Array.isArray(found.games))found=Object.assign({},found,{games:[]});setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");identify(found.name);track("user_session_resumed",{isTeacher:role==="teacher",gameCount:(found.games||[]).length});}}
       setAppReady(true);
     });
   },[]);
@@ -1843,6 +1900,8 @@ export default function App(){
     if(isTeacherReg)localStorage.setItem("rq-role-"+user.name,"teacher");
     setCurrentUser(user);setStage(isTeacherReg?"teacherDashboard":"home");
     if(isTeacherReg)setOnboardStep(1);
+    identify(user.name);
+    track("user_registered",{isTeacher:!!isTeacherReg});
   }
 
   async function doLogin(){
@@ -1863,6 +1922,8 @@ export default function App(){
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:sha256}));
     var role=localStorage.getItem("rq-role-"+found.name);
     setCurrentUser(found);setStage(role==="teacher"?"teacherDashboard":"home");
+    identify(found.name);
+    track("user_login",{isTeacher:role==="teacher",gameCount:(found.games||[]).length,totalXp:Number(found.totalXp)||0});
   }
 
   // ── teacher class actions ───────────────────────────────────
@@ -2454,7 +2515,8 @@ export default function App(){
       setResult({level:lvObj.key,xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds,wasChallenge:wasChallenge});
       stopMusic();playSfx("complete");
       setStage("result");
-    }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");}
+      track("quiz_completed",{level:lvObj.key,pct:pct,xp:finalXp,timeSecs:timeSecs,wpm:wpm,stars:stars,isDaily:!!wasDaily,isChallenge:!!wasChallenge,gameCount:updatedUser.games.length});
+    }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");track("quiz_failed",{error:String(e&&e.message||e)});}
   }
 
   function doRestart(){
@@ -3316,7 +3378,7 @@ export default function App(){
                   <h2 style={{margin:"0 0 4px",fontSize:22,fontWeight:900,color:"#a78bfa"}}>👩‍🏫 Teacher Dashboard</h2>
                   <p style={{margin:0,fontSize:13,color:"#6b7280"}}>Welcome back, {currentUser.name}</p>
                 </div>
-                <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>{t("logOut")}</button>
+                <button onClick={function(){track("user_logout");resetIdentity();localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>{t("logOut")}</button>
               </div>
 
               <div style={{...CARD,marginBottom:14}}>
@@ -4921,7 +4983,7 @@ export default function App(){
               <span style={{background:"rgba(255,255,255,0.07)",borderRadius:999,padding:"4px 11px",fontSize:12,color:lv?lv.color:"#34d399",fontWeight:700}}>{totalXpSoFar} XP</span>
             </div>
             <div style={{...CARD,padding:"11px 14px",marginBottom:9,borderColor:challengeMode?"rgba(245,158,11,0.4)":"rgba(255,255,255,0.08)",background:challengeMode?"rgba(245,158,11,0.05)":"transparent"}}>
-              {challengeMode&&<div style={{fontSize:10,fontWeight:700,color:"#f59e0b",letterSpacing:0.8,marginBottom:6}}>⚡ CHALLENGE MODE · 1.5× XP</div>}
+              {challengeMode&&<div style={{fontSize:10,fontWeight:700,color:"#f59e0b",letterSpacing:0.8,marginBottom:6}}>{t("challengeModeLabel")}</div>}
               <Timer limit={challengeMode?Math.floor((lv?lv.timeLimit:180)/2):(lv?lv.timeLimit:180)} running={timerRunning} onExpire={handleExpire}/>
             </div>
             {/* ── hint banner ── */}
@@ -4933,13 +4995,13 @@ export default function App(){
               </div>
             )}
             <div style={{marginBottom:9}}>
-              <button onClick={function(){setShowPassage(function(p){return!p;});}} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?"Hide passage":"Show passage"}</button>
+              <button onClick={function(){setShowPassage(function(p){return!p;});}} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?t("hidePassage"):t("showPassage")}</button>
               {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px"}}><p style={{lineHeight:1.9,fontSize:15,color:"#d1d5db",margin:0}}>{passage}</p></div>)}
             </div>
             <div style={CARD}>
               {(q.q)&&<p style={{fontSize:17,fontWeight:700,lineHeight:1.6,marginBottom:14,color:"#f9fafb"}}>{q.q}</p>}
               {(q.instruction)&&<p style={{fontSize:16,fontWeight:700,marginBottom:12,color:"#f9fafb"}}>{q.instruction}</p>}
-              {q.type==="gap_word"&&!q.q&&<p style={{fontSize:16,fontWeight:700,marginBottom:10,color:"#f9fafb"}}>Fill in the blank:</p>}
+              {q.type==="gap_word"&&!q.q&&<p style={{fontSize:16,fontWeight:700,marginBottom:10,color:"#f9fafb"}}>{t("fillInTheBlank")}</p>}
               {q.type==="mcq"&&<McqQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {q.type==="gap_word"&&<GapWordQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
               {q.type==="gap_sentence"&&<GapSentQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
@@ -4961,27 +5023,27 @@ export default function App(){
         {stage==="result"&&result&&(
           <div style={{textAlign:"center"}}>
             <div style={{fontSize:50,marginBottom:5}}>{result.pct>=80?"★":"○"}</div>
-            <h2 style={{fontSize:22,fontWeight:900,margin:"0 0 4px",color:lv?lv.color:"#34d399"}}>{result.pct>=80?"Excellent!":result.pct>=60?"Good job!":"Keep going!"}</h2>
+            <h2 style={{fontSize:22,fontWeight:900,margin:"0 0 4px",color:lv?lv.color:"#34d399"}}>{result.pct>=80?t("excellent"):result.pct>=60?t("goodJob"):t("keepGoing")}</h2>
             <p style={{color:"#9ca3af",marginBottom:14,fontSize:13}}>{level} - {topic}</p>
             <div className="rq-floating" style={{...CARD,marginBottom:10,position:"relative"}}>
               <div className="rq-glow-green" style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
               <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
               <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                {[{v:result.xp+" XP",l:"earned",c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:"score",c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:"time",c:"#a78bfa"},{v:"#"+(result.rank+1),l:"rank",c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
+                {[{v:result.xp+" XP",l:t("earnedLabel"),c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:t("scoreLabel"),c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:t("timeLabel"),c:"#a78bfa"},{v:"#"+(result.rank+1),l:t("rankLabel"),c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
               </div>
               <div className="rq-float-up" style={{color:lv?lv.color:"#34d399",fontSize:22,fontFamily:"'JetBrains Mono',monospace",fontWeight:900,left:"50%",transform:"translateX(-50%)",top:"50%"}} key="xp-float">+{result.xp} XP</div>
-              {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>Speed bonus: +{result.timeBonus} XP!</div>}
+              {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>{t("speedBonus")}: +{result.timeBonus} XP!</div>}
             </div>
             {result.wasChallenge&&(
               <div style={{...CARD,marginBottom:10,padding:14,background:"linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.04))",borderColor:"rgba(245,158,11,0.5)",textAlign:"center"}}>
                 <div style={{fontSize:28,marginBottom:4}}>⚡</div>
-                <div style={{fontSize:15,fontWeight:900,color:"#fbbf24",marginBottom:2}}>Challenge Complete!</div>
-                <div style={{fontSize:12,color:"#9ca3af"}}>You beat the clock — 1.5× XP applied</div>
+                <div style={{fontSize:15,fontWeight:900,color:"#fbbf24",marginBottom:2}}>{t("challengeComplete")}</div>
+                <div style={{fontSize:12,color:"#9ca3af"}}>{t("youBeatTheClock")}</div>
               </div>
             )}
             {result.newBadges&&result.newBadges.length>0&&(
               <div style={{...CARD,marginBottom:10,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.4)"}}>
-                <p style={{fontWeight:700,fontSize:12,color:"#fbbf24",marginBottom:10,textAlign:"left"}}>🏅 NEW BADGE{result.newBadges.length>1?"S":""} UNLOCKED!</p>
+                <p style={{fontWeight:700,fontSize:12,color:"#fbbf24",marginBottom:10,textAlign:"left"}}>🏅 {t("newBadgeUnlocked")}</p>
                 <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                   {result.newBadges.map(function(id,i){
                     var b=BADGES.find(function(x){return x.id===id;});
@@ -5033,7 +5095,7 @@ export default function App(){
               </div>
             )}
             <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
-              <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>BREAKDOWN</p>
+              <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>{t("breakdown")}</p>
               {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
             </div>
             {result.typeStats&&Object.keys(result.typeStats).length>1&&(
@@ -5181,7 +5243,7 @@ export default function App(){
               <button onClick={doShare} style={{...mkBtn("#a78bfa"),flex:1,fontSize:12}} title="Share your result">📤 Share</button>
               {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>🔖 Quotes</button>}
               <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>{t("profile")}</button>
-              <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>Play Again</button>
+              <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>{t("playAgain")}</button>
             </div>
           </div>
         )}
@@ -5193,7 +5255,7 @@ export default function App(){
           if(!due.length)return(
             <div style={{textAlign:"center",padding:"40px 0"}}>
               <div style={{fontSize:40,marginBottom:12}}>✅</div>
-              <div style={{fontSize:16,fontWeight:700,color:"#34d399",marginBottom:8}}>All caught up!</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#34d399",marginBottom:8}}>{t("allCaughtUp")}</div>
               <div style={{fontSize:13,color:"#6b7280",marginBottom:20}}>No reviews due today.</div>
               <button onClick={function(){setStage("home");}} style={{...mkBtn("#6366f1"),padding:"10px 24px"}}>{t("backHome")}</button>
             </div>
@@ -5202,7 +5264,7 @@ export default function App(){
             return(
               <div style={{textAlign:"center",padding:"40px 0"}}>
                 <div style={{fontSize:40,marginBottom:12}}>🎉</div>
-                <div style={{fontSize:16,fontWeight:700,color:"#34d399",marginBottom:8}}>Review complete!</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#34d399",marginBottom:8}}>{t("reviewComplete")}</div>
                 <div style={{fontSize:13,color:"#6b7280",marginBottom:20}}>You reviewed {due.length} question{due.length!==1?"s":""}.</div>
                 <button onClick={function(){setStage("home");}} style={{...mkBtn("#6366f1"),padding:"10px 24px"}}>{t("backHome")}</button>
               </div>
@@ -5899,7 +5961,7 @@ export default function App(){
             })()}
             <div style={{display:"flex",gap:7}}>
               <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
-              <button onClick={function(){localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>{t("logOut")}</button>
+              <button onClick={function(){track("user_logout");resetIdentity();localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>{t("logOut")}</button>
             </div>
           </div>);
         })()}
