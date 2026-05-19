@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { track, identify, resetIdentity } from "./observability";
 import { STORY_LIBRARY } from "./storyLibrary";
-import { STRINGS } from "./locales";
+import { STRINGS, loadLocale } from "./locales";
 
 var API        = "/api/generate";
 var AUTH       = "/api/auth";
@@ -1340,8 +1340,20 @@ export default function App(){
   var [portfolioLinkCopied,setPortfolioLinkCopied]=useState(false);
   // ui language
   var [uiLang,setUiLang]=useState(function(){try{return localStorage.getItem("rq-uilang")||"en";}catch(e){return"en";}});
+  // Bumps when the active locale finishes loading so render-cached t() calls
+  // re-read STRINGS. English is bundled inline; other locales are chunked
+  // and dynamic-imported by loadLocale().
+  var [localesVersion,setLocalesVersion]=useState(0);
+  useEffect(function(){
+    if(uiLang==="en")return;
+    var cancelled=false;
+    loadLocale(uiLang).then(function(){
+      if(!cancelled)setLocalesVersion(function(v){return v+1;});
+    });
+    return function(){cancelled=true;};
+  },[uiLang]);
 
-  function t(key){return(STRINGS[uiLang]&&STRINGS[uiLang][key])||STRINGS.en[key]||key;}
+  function t(key){void localesVersion;return(STRINGS[uiLang]&&STRINGS[uiLang][key])||STRINGS.en[key]||key;}
   // Looks up a localized question-type label (e.g. "Multiple Choice" → "Choix
   // multiple"). Falls back to the English table Q_LABELS when the language
   // doesn't define the lookup, then to the raw type key as a last resort.

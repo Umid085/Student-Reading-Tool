@@ -19,9 +19,13 @@ export default defineConfig({
           // library's hashed filename, and the browser can fetch it in
           // parallel with the main app code.
           if (id.includes("/src/storyLibrary")) return "story-library";
-          // UI translations across 8 locales (~92kB raw). Same idea — own
-          // chunk, parallel fetch, doesn't bust on every app-only deploy.
-          if (id.includes("/src/locales")) return "locales";
+          // Per-locale UI translations: each /src/locales/<lang>.js becomes
+          // its own dynamic-imported chunk via loadLocale() in
+          // locales/index.js, so a Russian-speaking user only downloads
+          // ru.js (plus the always-bundled en.js fallback) instead of all 8.
+          // Don't force them into a shared chunk — let Vite emit one per
+          // file. The static `en.js` import stays with the main bundle.
+          if (id.match(/\/src\/locales\/[a-z]{2}\.js$/)) return null;
         },
       },
     },
