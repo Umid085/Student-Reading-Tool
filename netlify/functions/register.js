@@ -1,6 +1,7 @@
 import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
 import { hashPassword } from "./_passwordHash.js";
+import { issueRefreshToken } from "./_refreshToken.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -84,7 +85,14 @@ export const handler = async function (event) {
       body: JSON.stringify(newAuthList),
     });
 
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ token: issueToken(name, secret) }) };
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({
+        token: issueToken(name, secret),
+        refreshToken: issueRefreshToken(name, secret),
+      }),
+    };
   } catch (e) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }

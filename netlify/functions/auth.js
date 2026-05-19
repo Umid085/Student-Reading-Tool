@@ -1,6 +1,7 @@
 import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
 import { hashPassword, verifyPassword } from "./_passwordHash.js";
+import { issueRefreshToken } from "./_refreshToken.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -67,7 +68,14 @@ export const handler = async function (event) {
               body: JSON.stringify(updated),
             });
           }
-          return { statusCode: 200, headers: CORS, body: JSON.stringify({ token: issueToken(authUser.name, secret) }) };
+          return {
+            statusCode: 200,
+            headers: CORS,
+            body: JSON.stringify({
+              token: issueToken(authUser.name, secret),
+              refreshToken: issueRefreshToken(authUser.name, secret),
+            }),
+          };
         }
         // Hash didn't match — fall through to legacy fallback only if no auth
         // entry is found at all (handled below by checking profileUser).
@@ -107,7 +115,14 @@ export const handler = async function (event) {
       body: JSON.stringify(newAuthList),
     });
 
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ token: issueToken(profileUser.name, secret) }) };
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({
+        token: issueToken(profileUser.name, secret),
+        refreshToken: issueRefreshToken(profileUser.name, secret),
+      }),
+    };
   } catch (e) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }

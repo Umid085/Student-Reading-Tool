@@ -1,6 +1,7 @@
 import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
 import { hashPassword } from "./_passwordHash.js";
+import { issueRefreshToken } from "./_refreshToken.js";
 
 const ALLOWED_NAME = /^[a-zA-Z0-9_]{2,30}$/;
 
@@ -76,7 +77,10 @@ export default async function handler(req, res) {
       body: JSON.stringify(newAuthList),
     });
 
-    return res.status(200).json({ token: issueToken(name, secret) });
+    return res.status(200).json({
+      token: issueToken(name, secret),
+      refreshToken: issueRefreshToken(name, secret),
+    });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

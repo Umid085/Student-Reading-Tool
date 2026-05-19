@@ -1,6 +1,7 @@
 import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
 import { hashPassword, verifyPassword } from "./_passwordHash.js";
+import { issueRefreshToken } from "./_refreshToken.js";
 
 function issueToken(name, secret) {
   const expires = Date.now() + 48 * 60 * 60 * 1000; // 48 hours
@@ -59,7 +60,10 @@ export default async function handler(req, res) {
               body: JSON.stringify(updated),
             });
           }
-          return res.status(200).json({ token: issueToken(authUser.name, secret) });
+          return res.status(200).json({
+            token: issueToken(authUser.name, secret),
+            refreshToken: issueRefreshToken(authUser.name, secret),
+          });
         }
         return res.status(401).json({ error: "Invalid credentials" });
       }
@@ -94,7 +98,10 @@ export default async function handler(req, res) {
       body: JSON.stringify(newAuthList),
     });
 
-    return res.status(200).json({ token: issueToken(profileUser.name, secret) });
+    return res.status(200).json({
+      token: issueToken(profileUser.name, secret),
+      refreshToken: issueRefreshToken(profileUser.name, secret),
+    });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

@@ -4,6 +4,7 @@ import { track, identify, resetIdentity } from "./observability";
 var API        = "/api/generate";
 var AUTH       = "/api/auth";
 var REGISTER   = "/api/register";
+var REFRESH    = "/api/refresh";
 var USERS_API  = "/api/users";
 var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
@@ -1699,10 +1700,39 @@ async function apiGet(key){
     try{var v=localStorage.getItem(key);return v?JSON.parse(v):null;}catch(e2){return null;}
   }
 }
-async function getSessionToken(name,hash){
+// Refresh the access token. Prefers the long-lived refreshToken (rotated on
+// every call) and falls back to the legacy password-hash flow for users
+// whose localStorage was written before the token swap. On a successful
+// hash-fallback we upgrade their stored credentials to the new shape.
+async function getSessionToken(name,creds){
+  if(!creds)return;
   try{
-    var r=await fetch(AUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,hash:hash})});
-    if(r.ok){var d=await r.json();if(d.token){_sessionToken=d.token;}}
+    if(creds.refreshToken){
+      var rr=await fetch(REFRESH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,refreshToken:creds.refreshToken})});
+      if(rr.ok){
+        var dd=await rr.json();
+        if(dd.token){_sessionToken=dd.token;}
+        if(dd.refreshToken){
+          try{localStorage.setItem(CREDS_KEY,JSON.stringify({name:name,refreshToken:dd.refreshToken}));}catch(e){}
+        }
+        return;
+      }
+      // 401 means token expired or invalid — drop it so the user is forced
+      // back through the password screen on next interaction.
+      if(rr.status===401){try{localStorage.removeItem(CREDS_KEY);}catch(e){}}
+      return;
+    }
+    if(creds.hash){
+      var r=await fetch(AUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,hash:creds.hash})});
+      if(r.ok){
+        var d=await r.json();
+        if(d.token){_sessionToken=d.token;}
+        if(d.refreshToken){
+          // Migration: replace the stored password hash with the new refresh token.
+          try{localStorage.setItem(CREDS_KEY,JSON.stringify({name:name,refreshToken:d.refreshToken}));}catch(e){}
+        }
+      }
+    }
   }catch(e){}
 }
 async function apiSet(key,val){
@@ -1715,8 +1745,8 @@ async function apiSet(key,val){
     if(!r.ok&&r.status!==401){console.warn("Firebase write failed for key "+key+": status "+r.status);}
     if(r.status===401&&_sessionToken){
       var creds=null;try{creds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e2){}
-      if(creds&&creds.name&&creds.hash){
-        await getSessionToken(creds.name,creds.hash);
+      if(creds&&creds.name&&(creds.refreshToken||creds.hash)){
+        await getSessionToken(creds.name,creds);
         if(_sessionToken){
           hdrs["Authorization"]="Bearer "+_sessionToken;
           var r2=await fetch("/api/storage",{method:"POST",headers:hdrs,body:JSON.stringify({key:key,value:str})});
@@ -2456,7 +2486,7 @@ export default function App(){
     Promise.all([loadUsers(),loadBoards(),loadSocial(),loadClasses(),loadAssignments()]).then(function(v){
       setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setClasses(v[3]||[]);setAssignments(v[4]||[]);
       var sessionName=saved||(savedCreds&&savedCreds.name);
-      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){var sh=savedCreds&&savedCreds.hash?savedCreds.hash:null;if(sh){getSessionToken(sessionName,sh);found=Object.assign({},found,{hash:sh});}if(!Array.isArray(found.games))found=Object.assign({},found,{games:[]});setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");identify(found.name);track("user_session_resumed",{isTeacher:role==="teacher",gameCount:(found.games||[]).length});}}
+      if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){if(savedCreds&&(savedCreds.refreshToken||savedCreds.hash)){getSessionToken(sessionName,savedCreds);if(savedCreds.hash)found=Object.assign({},found,{hash:savedCreds.hash});}if(!Array.isArray(found.games))found=Object.assign({},found,{games:[]});setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");identify(found.name);track("user_session_resumed",{isTeacher:role==="teacher",gameCount:(found.games||[]).length});}}
       setAppReady(true);
     });
   },[]);
@@ -2584,7 +2614,10 @@ export default function App(){
     var user={name:nameInput.trim(),hash:hash,games:[],joined:todayKey()};
     var fresh=await loadUsers();setAllUsers(fresh);
     localStorage.setItem("rq-session",user.name);
-    localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,hash:hash}));
+    // Store the refresh token, NOT the password-equivalent SHA-256. A leaked
+    // refresh token grants sessions until expiry / secret rotation; a leaked
+    // password hash grants permanent access until the user changes it.
+    localStorage.setItem(CREDS_KEY,JSON.stringify({name:user.name,refreshToken:d.refreshToken||""}));
     if(isTeacherReg)localStorage.setItem("rq-role-"+user.name,"teacher");
     setCurrentUser(user);setStage(isTeacherReg?"teacherDashboard":"home");
     if(isTeacherReg)setOnboardStep(1);
@@ -2607,7 +2640,9 @@ export default function App(){
     if(!found){setAuthErr(t("stu_authAccountError"));return;}
     found=Object.assign({},found,{hash:sha256,games:Array.isArray(found.games)?found.games:[]});
     localStorage.setItem("rq-session",found.name);
-    localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:sha256}));
+    // Store the refresh token; auto-login uses /api/refresh instead of
+    // re-sending the password hash.
+    localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,refreshToken:d.refreshToken||""}));
     var role=localStorage.getItem("rq-role-"+found.name);
     setCurrentUser(found);setStage(role==="teacher"?"teacherDashboard":"home");
     identify(found.name);
