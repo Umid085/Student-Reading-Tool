@@ -200,6 +200,20 @@ describe("api/generate.js", () => {
     expect(r.statusCode).toBe(200);
   });
 
+  // Abbreviation case: short topic forms must pass via full-substring match,
+  // even when no ≥3-char word from the typed topic appears in the passage.
+  it("Mode 2: accepts passage using abbreviation when Claude reports it via topic_echo", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({ topic_echo: "F1", passage: "F1 is a motor sport. F1 started in 1950.", questions: [{ type: "mcq", q: "?" }] }) }],
+    });
+    const handler = await loadHandler();
+    const r = await runHandler(handler, {
+      method: "POST",
+      body: { level: "B1", topic: "Formula 1", types: ["mcq"], language: "English" },
+    });
+    expect(r.statusCode).toBe(200);
+  });
+
   // Non-English: client translation overrides Claude's lying topic_echo
   it("Mode 2: rejects non-English drift even if Claude's topic_echo matches the passage", async () => {
     mockCreate.mockResolvedValue({

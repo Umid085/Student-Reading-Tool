@@ -169,32 +169,41 @@ ${typeExamples}
       throw new Error("Invalid response structure from Claude");
     }
 
-    // Topic-adherence check: if Claude drifted to a generic passage that does not
-    // actually cover the topic, surface it rather than rendering a mismatched
-    // title/body. Priority order:
-    //   1. `topic_in_language` from the client (independently translated via
-    //      MyMemory — Claude cannot fabricate this), if provided.
-    //   2. `topic_echo` self-reported by Claude — only used as fallback when no
-    //      trusted translation is available.
-    //   3. The original `topic` for English requests.
+    // Topic-adherence check. Candidates checked against the passage:
+    //   - `topic` (user's typed string) — always, even for non-English requests
+    //     since short Latin-script names like "Mars" or "Tesla" may appear
+    //     verbatim in non-English text.
+    //   - `topic_in_language` — trusted, client-provided MyMemory translation.
+    //     When present, we deliberately SKIP `topic_echo` so Claude can't
+    //     fabricate a translation that conveniently matches its drifted output
+    //     (covered by the lying-translation test).
+    //   - `topic_echo` — Claude's self-reported verbatim form, only when no
+    //     trusted translation is available. Lets short topics like "F1" or
+    //     "AI" pass when Claude used the abbreviation in the passage.
+    //
+    // Each candidate accepts the passage if either the full lowercased string
+    // appears as a substring (catches short/abbreviation topics) OR any
+    // ≥3-char word from it appears (catches multi-word topics where Claude
+    // varied wording, e.g. "Formula 1" → "Formula One").
     if (topic && topic !== "General") {
-      const candidates = [];
-      if (language === "English") candidates.push(topic);
+      const candidates = [topic];
       if (topicInLanguage) {
         candidates.push(topicInLanguage);
       } else if (parsed.topic_echo && typeof parsed.topic_echo === "string") {
         candidates.push(parsed.topic_echo);
       }
-      if (candidates.length > 0) {
-        const passageLc = parsed.passage.toLowerCase();
-        const words = candidates
-          .flatMap((c) => c.toLowerCase().split(/\s+/))
-          .filter((w) => w.length >= 3);
-        if (words.length > 0 && !words.some((w) => passageLc.includes(w))) {
-          return res.status(422).json({
-            error: `The model drifted off-topic (no mention of "${topic}"). Please try again.`,
-          });
-        }
+      const passageLc = parsed.passage.toLowerCase();
+      const accepted = candidates.some((c) => {
+        const cLc = c.toLowerCase().trim();
+        if (!cLc) return false;
+        if (cLc.length >= 2 && passageLc.includes(cLc)) return true;
+        const words = cLc.split(/\s+/).filter((w) => w.length >= 3);
+        return words.some((w) => passageLc.includes(w));
+      });
+      if (!accepted) {
+        return res.status(422).json({
+          error: `The model drifted off-topic (no mention of "${topic}"). Please try again.`,
+        });
       }
     }
 
