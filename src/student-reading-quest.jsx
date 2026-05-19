@@ -81,6 +81,23 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Teacher Dashboard",welcomeBack:"Welcome back",createNewClass:"CREATE NEW CLASS",noClassesYet:"No classes yet. Create your first class above.",
     createButton:"+ Create",classNamePlaceholder:"Class name (e.g. B1 Morning Group)",
     qLabels:{mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"},
+    badges:{
+      first_steps:{name:"First Steps",desc:"Complete your first quiz"},
+      story_starter:{name:"Story Starter",desc:"Complete 5 quizzes"},
+      reader:{name:"Reader",desc:"Complete 10 quizzes"},
+      explorer:{name:"Explorer",desc:"Complete 25 quizzes"},
+      bookworm:{name:"Bookworm",desc:"Complete 50 quizzes"},
+      quiz_master:{name:"Quiz Master",desc:"Score 100% on a quiz"},
+      speed_reader:{name:"Speed Reader",desc:"Finish under half the time limit"},
+      vocab_builder:{name:"Vocab Builder",desc:"Save 10 words to your notebook"},
+      word_collector:{name:"Word Collector",desc:"Save 50 words"},
+      on_fire:{name:"On Fire",desc:"Maintain a 3-day reading streak"},
+      week_warrior:{name:"Week Warrior",desc:"Maintain a 7-day reading streak"},
+      daily_champ:{name:"Daily Champ",desc:"Complete a daily challenge"},
+      high_scorer:{name:"High Scorer",desc:"Earn 500+ XP in a single quiz"},
+      all_types:{name:"Complete Player",desc:"Use all 6 question types in one session"},
+      level_5:{name:"Level Up",desc:"Reach player level 5"},
+    },
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -142,6 +159,23 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 O'qituvchi Paneli",welcomeBack:"Qaytib kelganingizdan xursandmiz",createNewClass:"YANGI SINF YARATING",noClassesYet:"Hali sinflar yo'q. Yuqorida birinchi sinfingizni yarating.",
     createButton:"+ Yaratish",classNamePlaceholder:"Sinf nomi (masalan: B1 ertalabki guruh)",
     qLabels:{mcq:"Ko'p tanlovli",gap_word:"Bo'sh joy - So'zlar",gap_sentence:"Bo'sh joy - Gaplar",matching:"Mosligini topish",heading:"Sarlavhalarni moslash",qa:"Erkin javob",tfnm:"To'g'ri/Noto'g'ri/Aytilmagan",ynng:"Ha/Yo'q/Berilmagan"},
+    badges:{
+      first_steps:{name:"Birinchi Qadamlar",desc:"Birinchi testni yakunlang"},
+      story_starter:{name:"Hikoya Boshlovchisi",desc:"5 ta testni yakunlang"},
+      reader:{name:"O'quvchi",desc:"10 ta testni yakunlang"},
+      explorer:{name:"Tadqiqotchi",desc:"25 ta testni yakunlang"},
+      bookworm:{name:"Kitobxo'r",desc:"50 ta testni yakunlang"},
+      quiz_master:{name:"Test Ustasi",desc:"Testdan 100% to'plang"},
+      speed_reader:{name:"Tezkor O'quvchi",desc:"Vaqt yarmidan oldin tugating"},
+      vocab_builder:{name:"Lug'at Quruvchi",desc:"Daftarchaga 10 ta so'z saqlang"},
+      word_collector:{name:"So'z Kolektsioneri",desc:"50 ta so'z saqlang"},
+      on_fire:{name:"Olovda",desc:"3 kunlik seriyani saqlang"},
+      week_warrior:{name:"Haftalik Jangchi",desc:"7 kunlik seriyani saqlang"},
+      daily_champ:{name:"Kunlik Chempion",desc:"Kunlik vazifani yakunlang"},
+      high_scorer:{name:"Yuqori Ball",desc:"Bir testda 500+ XP to'plang"},
+      all_types:{name:"Komplekt O'yinchi",desc:"Bir sessiyada 6 ta savol turidan foydalaning"},
+      level_5:{name:"Daraja Oshirish",desc:"5-darajaga yeting"},
+    },
   },
   ru: {
     appName:"Читальный Квест",
@@ -203,6 +237,23 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Панель преподавателя",welcomeBack:"С возвращением",createNewClass:"СОЗДАТЬ КЛАСС",noClassesYet:"Пока нет классов. Создайте первый класс выше.",
     createButton:"+ Создать",classNamePlaceholder:"Название класса (напр. B1 Утренняя группа)",
     qLabels:{mcq:"Множественный выбор",gap_word:"Пропуск - Слова",gap_sentence:"Пропуск - Предложения",matching:"Соответствие",heading:"Подбор заголовков",qa:"Свободный ответ",tfnm:"Верно/Неверно/Не упоминается",ynng:"Да/Нет/Не указано"},
+    badges:{
+      first_steps:{name:"Первые шаги",desc:"Выполните первый тест"},
+      story_starter:{name:"Начинающий",desc:"Выполните 5 тестов"},
+      reader:{name:"Читатель",desc:"Выполните 10 тестов"},
+      explorer:{name:"Исследователь",desc:"Выполните 25 тестов"},
+      bookworm:{name:"Книгоман",desc:"Выполните 50 тестов"},
+      quiz_master:{name:"Мастер тестов",desc:"Получите 100% за тест"},
+      speed_reader:{name:"Скоростной чтец",desc:"Закончите за половину времени"},
+      vocab_builder:{name:"Лексикон",desc:"Сохраните 10 слов в блокнот"},
+      word_collector:{name:"Коллекционер слов",desc:"Сохраните 50 слов"},
+      on_fire:{name:"В ударе",desc:"Серия 3 дня подряд"},
+      week_warrior:{name:"Недельный воин",desc:"Серия 7 дней подряд"},
+      daily_champ:{name:"Чемпион дня",desc:"Завершите ежедневный вызов"},
+      high_scorer:{name:"Рекордсмен",desc:"Заработайте 500+ XP за один тест"},
+      all_types:{name:"Универсал",desc:"Используйте все 6 типов в одной сессии"},
+      level_5:{name:"Повышение",desc:"Достигните 5-го уровня"},
+    },
   },
   tr: {
     appName:"Okuma Görevi",
@@ -264,6 +315,23 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Öğretmen Paneli",welcomeBack:"Tekrar hoş geldiniz",createNewClass:"YENİ SINIF OLUŞTUR",noClassesYet:"Henüz sınıf yok. İlk sınıfınızı yukarıdan oluşturun.",
     createButton:"+ Oluştur",classNamePlaceholder:"Sınıf adı (örn. B1 Sabah Grubu)",
     qLabels:{mcq:"Çoktan Seçmeli",gap_word:"Boşluk - Kelime",gap_sentence:"Boşluk - Cümle",matching:"Eşleştirme",heading:"Başlık Eşleştir",qa:"Açık Cevap",tfnm:"Doğru/Yanlış/Belirtilmemiş",ynng:"Evet/Hayır/Belirtilmedi"},
+    badges:{
+      first_steps:{name:"İlk Adımlar",desc:"İlk testi tamamla"},
+      story_starter:{name:"Hikaye Başlatıcı",desc:"5 test tamamla"},
+      reader:{name:"Okuyucu",desc:"10 test tamamla"},
+      explorer:{name:"Kaşif",desc:"25 test tamamla"},
+      bookworm:{name:"Kitap Kurdu",desc:"50 test tamamla"},
+      quiz_master:{name:"Test Ustası",desc:"Bir testte %100 al"},
+      speed_reader:{name:"Hızlı Okuyucu",desc:"Süre limitinin yarısında bitir"},
+      vocab_builder:{name:"Kelime Ustası",desc:"Deftere 10 kelime kaydet"},
+      word_collector:{name:"Kelime Koleksiyoncusu",desc:"50 kelime kaydet"},
+      on_fire:{name:"Ateşli",desc:"3 günlük seriyi koru"},
+      week_warrior:{name:"Hafta Savaşçısı",desc:"7 günlük seriyi koru"},
+      daily_champ:{name:"Günün Şampiyonu",desc:"Günlük görevi tamamla"},
+      high_scorer:{name:"Yüksek Skor",desc:"Tek testte 500+ XP kazan"},
+      all_types:{name:"Tam Oyuncu",desc:"Tek oturumda 6 soru türünü kullan"},
+      level_5:{name:"Seviye Atla",desc:"Oyuncu seviyesi 5'e ulaş"},
+    },
   },
   ar: {
     appName:"مهمة القراءة",
@@ -325,6 +393,23 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 لوحة المعلم",welcomeBack:"مرحباً بعودتك",createNewClass:"إنشاء صف جديد",noClassesYet:"لا توجد صفوف بعد. أنشئ صفك الأول أعلاه.",
     createButton:"+ إنشاء",classNamePlaceholder:"اسم الصف (مثل B1 المجموعة الصباحية)",
     qLabels:{mcq:"اختيار من متعدد",gap_word:"ملء الفراغ - كلمات",gap_sentence:"ملء الفراغ - جمل",matching:"المطابقة",heading:"مطابقة العناوين",qa:"إجابة مفتوحة",tfnm:"صحيح/خطأ/غير مذكور",ynng:"نعم/لا/غير محدد"},
+    badges:{
+      first_steps:{name:"الخطوات الأولى",desc:"أكمل اختبارك الأول"},
+      story_starter:{name:"بادئ القصة",desc:"أكمل 5 اختبارات"},
+      reader:{name:"قارئ",desc:"أكمل 10 اختبارات"},
+      explorer:{name:"مستكشف",desc:"أكمل 25 اختباراً"},
+      bookworm:{name:"دودة كتب",desc:"أكمل 50 اختباراً"},
+      quiz_master:{name:"سيد الاختبار",desc:"احصل على 100% في اختبار"},
+      speed_reader:{name:"قارئ سريع",desc:"أنهِ في نصف الوقت المحدد"},
+      vocab_builder:{name:"بناء المفردات",desc:"احفظ 10 كلمات في الدفتر"},
+      word_collector:{name:"جامع الكلمات",desc:"احفظ 50 كلمة"},
+      on_fire:{name:"ملتهب",desc:"حافظ على سلسلة 3 أيام"},
+      week_warrior:{name:"محارب الأسبوع",desc:"حافظ على سلسلة 7 أيام"},
+      daily_champ:{name:"بطل اليوم",desc:"أكمل تحدي اليوم"},
+      high_scorer:{name:"صاحب الأرقام",desc:"اربح 500+ XP في اختبار واحد"},
+      all_types:{name:"لاعب كامل",desc:"استخدم 6 أنواع أسئلة في جلسة"},
+      level_5:{name:"ترقية",desc:"اصل إلى المستوى 5"},
+    },
   },
   de: {
     appName:"Lesewettbewerb",
@@ -386,6 +471,23 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Lehrer-Dashboard",welcomeBack:"Willkommen zurück",createNewClass:"NEUE KLASSE ERSTELLEN",noClassesYet:"Noch keine Klassen. Erstelle oben deine erste Klasse.",
     createButton:"+ Erstellen",classNamePlaceholder:"Klassenname (z.B. B1 Morgengruppe)",
     qLabels:{mcq:"Multiple-Choice",gap_word:"Lückentext - Wörter",gap_sentence:"Lückentext - Sätze",matching:"Zuordnung",heading:"Überschriften zuordnen",qa:"Freie Antwort",tfnm:"Wahr/Falsch/Nicht erwähnt",ynng:"Ja/Nein/Nicht angegeben"},
+    badges:{
+      first_steps:{name:"Erste Schritte",desc:"Schließe deinen ersten Quiz ab"},
+      story_starter:{name:"Geschichten-Starter",desc:"Schließe 5 Quizze ab"},
+      reader:{name:"Leser",desc:"Schließe 10 Quizze ab"},
+      explorer:{name:"Entdecker",desc:"Schließe 25 Quizze ab"},
+      bookworm:{name:"Leseratte",desc:"Schließe 50 Quizze ab"},
+      quiz_master:{name:"Quiz-Meister",desc:"Erreiche 100% in einem Quiz"},
+      speed_reader:{name:"Schnellleser",desc:"Beende in der halben Zeit"},
+      vocab_builder:{name:"Wortschatz-Bauer",desc:"Speichere 10 Wörter ins Notizbuch"},
+      word_collector:{name:"Wortsammler",desc:"Speichere 50 Wörter"},
+      on_fire:{name:"Auf Touren",desc:"Halte eine 3-Tage-Serie"},
+      week_warrior:{name:"Wochen-Krieger",desc:"Halte eine 7-Tage-Serie"},
+      daily_champ:{name:"Tages-Champion",desc:"Schließe einen Tagesquiz ab"},
+      high_scorer:{name:"Spitzenreiter",desc:"Verdiene 500+ XP in einem Quiz"},
+      all_types:{name:"Komplett-Spieler",desc:"Nutze alle 6 Fragetypen in einer Sitzung"},
+      level_5:{name:"Aufstieg",desc:"Erreiche Spieler-Level 5"},
+    },
   },
   es: {
     appName:"Misión Lectora",
@@ -447,6 +549,23 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Panel del profesor",welcomeBack:"Bienvenido de nuevo",createNewClass:"CREAR NUEVA CLASE",noClassesYet:"Aún sin clases. Crea tu primera clase arriba.",
     createButton:"+ Crear",classNamePlaceholder:"Nombre de clase (ej. B1 Grupo matutino)",
     qLabels:{mcq:"Opción múltiple",gap_word:"Huecos - Palabras",gap_sentence:"Huecos - Oraciones",matching:"Emparejar",heading:"Emparejar títulos",qa:"Respuesta abierta",tfnm:"V/F/No mencionado",ynng:"Sí/No/No dado"},
+    badges:{
+      first_steps:{name:"Primeros Pasos",desc:"Completa tu primer quiz"},
+      story_starter:{name:"Iniciador de Historias",desc:"Completa 5 quizzes"},
+      reader:{name:"Lector",desc:"Completa 10 quizzes"},
+      explorer:{name:"Explorador",desc:"Completa 25 quizzes"},
+      bookworm:{name:"Ratón de Biblioteca",desc:"Completa 50 quizzes"},
+      quiz_master:{name:"Maestro del Quiz",desc:"Saca 100% en un quiz"},
+      speed_reader:{name:"Lector Veloz",desc:"Termina en la mitad del tiempo"},
+      vocab_builder:{name:"Constructor de Vocabulario",desc:"Guarda 10 palabras en el cuaderno"},
+      word_collector:{name:"Coleccionista de Palabras",desc:"Guarda 50 palabras"},
+      on_fire:{name:"En Llamas",desc:"Mantén una racha de 3 días"},
+      week_warrior:{name:"Guerrero Semanal",desc:"Mantén una racha de 7 días"},
+      daily_champ:{name:"Campeón Diario",desc:"Completa un reto diario"},
+      high_scorer:{name:"Goleador",desc:"Gana 500+ XP en un quiz"},
+      all_types:{name:"Jugador Completo",desc:"Usa los 6 tipos de pregunta en una sesión"},
+      level_5:{name:"Subir Nivel",desc:"Alcanza el nivel 5"},
+    },
   },
   fr: {
     appName:"Quête de Lecture",
@@ -508,6 +627,23 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Tableau de bord enseignant",welcomeBack:"Bon retour",createNewClass:"CRÉER UNE NOUVELLE CLASSE",noClassesYet:"Pas encore de classes. Créez votre première au-dessus.",
     createButton:"+ Créer",classNamePlaceholder:"Nom de classe (ex. B1 Groupe matin)",
     qLabels:{mcq:"Choix multiple",gap_word:"Texte à trous - Mots",gap_sentence:"Texte à trous - Phrases",matching:"Appariement",heading:"Apparier titres",qa:"Réponse libre",tfnm:"Vrai/Faux/Non mentionné",ynng:"Oui/Non/Non donné"},
+    badges:{
+      first_steps:{name:"Premiers Pas",desc:"Termine ton premier quiz"},
+      story_starter:{name:"Démarreur d'Histoire",desc:"Termine 5 quizz"},
+      reader:{name:"Lecteur",desc:"Termine 10 quizz"},
+      explorer:{name:"Explorateur",desc:"Termine 25 quizz"},
+      bookworm:{name:"Rat de Bibliothèque",desc:"Termine 50 quizz"},
+      quiz_master:{name:"Maître du Quiz",desc:"Obtiens 100% à un quiz"},
+      speed_reader:{name:"Lecteur Rapide",desc:"Termine en moins de la moitié du temps"},
+      vocab_builder:{name:"Bâtisseur de Vocabulaire",desc:"Enregistre 10 mots dans le carnet"},
+      word_collector:{name:"Collectionneur de Mots",desc:"Enregistre 50 mots"},
+      on_fire:{name:"En Feu",desc:"Maintiens une série de 3 jours"},
+      week_warrior:{name:"Guerrier de la Semaine",desc:"Maintiens une série de 7 jours"},
+      daily_champ:{name:"Champion du Jour",desc:"Termine un défi quotidien"},
+      high_scorer:{name:"Top Score",desc:"Gagne 500+ XP en un quiz"},
+      all_types:{name:"Joueur Complet",desc:"Utilise les 6 types de question en une session"},
+      level_5:{name:"Niveau Supérieur",desc:"Atteins le niveau joueur 5"},
+    },
   },
 };
 
@@ -1908,6 +2044,9 @@ export default function App(){
   // multiple"). Falls back to the English table Q_LABELS when the language
   // doesn't define the lookup, then to the raw type key as a last resort.
   function qLabel(type){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].qLabels;if(tbl&&tbl[type])return tbl[type];return Q_LABELS[type]||type;}
+  // Localized badge name + description with fallback to the English BADGES table.
+  function badgeName(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].badges;if(tbl&&tbl[id]&&tbl[id].name)return tbl[id].name;var b=BADGES.find(function(x){return x.id===id;});return b?b.name:id;}
+  function badgeDesc(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].badges;if(tbl&&tbl[id]&&tbl[id].desc)return tbl[id].desc;var b=BADGES.find(function(x){return x.id===id;});return b?b.desc:"";}
 
   // Keep passageLang in sync with uiLang: switching UI to Russian also makes
   // AI-generated passages Russian by default. User can still override per
@@ -5239,7 +5378,7 @@ export default function App(){
                     if(!b)return null;
                     return(<div key={id} className="rq-pop" style={{display:"flex",alignItems:"center",gap:8,background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.25)",borderRadius:10,padding:"8px 12px",flex:"1 1 auto",animationDelay:i*0.12+"s"}}>
                       <span style={{fontSize:22}}>{b.icon}</span>
-                      <div style={{textAlign:"left"}}><div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{b.name}</div><div style={{fontSize:11,color:"#9ca3af"}}>{b.desc}</div></div>
+                      <div style={{textAlign:"left"}}><div style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{badgeName(b.id)}</div><div style={{fontSize:11,color:"#9ca3af"}}>{badgeDesc(b.id)}</div></div>
                     </div>);
                   })}
                 </div>
@@ -6580,8 +6719,8 @@ export default function App(){
                     <div key={b.id} style={{...CARD,padding:14,display:"flex",gap:10,alignItems:"flex-start",opacity:earned?1:0.45,border:"1px solid "+(earned?"rgba(251,191,36,0.35)":"rgba(255,255,255,0.08)"),background:earned?"rgba(251,191,36,0.06)":"rgba(255,255,255,0.03)"}}>
                       <span style={{fontSize:26,flexShrink:0,filter:earned?"none":"grayscale(1)"}}>{b.icon}</span>
                       <div>
-                        <div style={{fontSize:13,fontWeight:700,color:earned?"#fbbf24":"#6b7280",marginBottom:2}}>{b.name}</div>
-                        <div style={{fontSize:11,color:"#4b5563",lineHeight:1.4}}>{b.desc}</div>
+                        <div style={{fontSize:13,fontWeight:700,color:earned?"#fbbf24":"#6b7280",marginBottom:2}}>{badgeName(b.id)}</div>
+                        <div style={{fontSize:11,color:"#4b5563",lineHeight:1.4}}>{badgeDesc(b.id)}</div>
                         {earned&&<div style={{fontSize:10,color:"#22c55e",marginTop:4,fontWeight:700}}>✓ Unlocked</div>}
                       </div>
                     </div>
