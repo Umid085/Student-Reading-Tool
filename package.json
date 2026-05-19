@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "smoke": "RUN_SMOKE=1 vitest run tests/smoke.live.test.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
