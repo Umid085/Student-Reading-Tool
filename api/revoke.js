@@ -1,30 +1,10 @@
-// POST /api/refresh — exchange a long-lived refresh token for a fresh
-// access token (and rotated refresh token). See netlify/functions/refresh.js
-// for the full explanation; this is the Vercel-shape mirror.
+// POST /api/revoke — Vercel mirror. See netlify/functions/revoke.js for
+// the full explanation.
 
-import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
-import { issueRefreshToken, verifyRefreshToken, refreshTokenId } from "./_refreshToken.js";
+import { verifyRefreshToken, refreshTokenId } from "./_refreshToken.js";
 
-async function isRevoked(DB, tokenId) {
-  if (!DB || !tokenId) return false;
-  try {
-    const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
-    const r = await fetch(`${DB}/rq/rq-revoked-v1.json${fbAuth}`);
-    const data = await r.json();
-    if (!data || typeof data !== "object") return false;
-    return typeof data[tokenId] === "number";
-  } catch (e) {
-    return false;
-  }
-}
-
-function issueAccessToken(name, secret) {
-  const expires = Date.now() + 48 * 60 * 60 * 1000;
-  const payload = `${name}:${expires}`;
-  const sig = createHmac("sha256", secret).update(payload).digest("hex");
-  return `${payload}:${sig}`;
-}
+const PRUNE_HORIZON_MS = 31 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -37,12 +17,14 @@ export default async function handler(req, res) {
   const secret = process.env.SESSION_SECRET || process.env.SESSIONS_SECRET || process.env.FIREBASE_DB_SECRET || "";
   if (!secret) return res.status(503).json({ error: "Auth not configured" });
 
+  const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+  if (!DB) return res.status(503).json({ error: "DB not configured" });
+
   const { name, refreshToken } = req.body || {};
   if (!name || !refreshToken) {
     return res.status(400).json({ error: "Missing credentials" });
   }
 
-  const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
   const ip = ((req.headers["x-forwarded-for"] || req.headers["client-ip"] || "").split(",")[0]).trim();
   const rl = await checkRateLimit(DB, ip);
   if (rl.limited) {
@@ -56,12 +38,30 @@ export default async function handler(req, res) {
   }
 
   const tokenId = refreshTokenId(refreshToken);
-  if (tokenId && (await isRevoked(DB, tokenId))) {
-    return res.status(401).json({ error: "Refresh token revoked" });
+  if (!tokenId) {
+    return res.status(400).json({ error: "Token id not derivable" });
   }
 
-  return res.status(200).json({
-    token: issueAccessToken(v.name, secret),
-    refreshToken: issueRefreshToken(v.name, secret),
-  });
+  try {
+    const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
+    const r = await fetch(`${DB}/rq/rq-revoked-v1.json${fbAuth}`);
+    const existing = await r.json();
+    const list = (existing && typeof existing === "object") ? existing : {};
+    const now = Date.now();
+    for (const k of Object.keys(list)) {
+      if (typeof list[k] !== "number" || list[k] < now - PRUNE_HORIZON_MS) {
+        delete list[k];
+      }
+    }
+    list[tokenId] = v.expiresAt || (now + 30 * 24 * 60 * 60 * 1000);
+    await fetch(`${DB}/rq/rq-revoked-v1.json${fbAuth}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list),
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+
+  return res.status(200).json({ ok: true });
 }

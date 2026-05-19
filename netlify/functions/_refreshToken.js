@@ -10,9 +10,21 @@
 //
 // Token format: "r:<name>:<expiresAt>:<sigHex>".
 
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual, createHash } from "crypto";
 
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// Stable identifier for a refresh token. The signature portion is already
+// unique per token, so we use a short hash of it as the blacklist key.
+export function refreshTokenId(token) {
+  if (typeof token !== "string" || !token.startsWith("r:")) return null;
+  const rest = token.slice(2);
+  const lastColon = rest.lastIndexOf(":");
+  if (lastColon <= 0) return null;
+  const sig = rest.slice(lastColon + 1);
+  if (!sig) return null;
+  return createHash("sha256").update(sig).digest("hex").slice(0, 32);
+}
 
 function refreshSecret(baseSecret) {
   return String(baseSecret || "") + "/refresh-v1";

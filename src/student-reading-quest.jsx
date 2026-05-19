@@ -6,6 +6,7 @@ var API        = "/api/generate";
 var AUTH       = "/api/auth";
 var REGISTER   = "/api/register";
 var REFRESH    = "/api/refresh";
+var REVOKE     = "/api/revoke";
 var USERS_API  = "/api/users";
 var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
@@ -1516,6 +1517,18 @@ async function apiGet(key){
 // every call) and falls back to the legacy password-hash flow for users
 // whose localStorage was written before the token swap. On a successful
 // hash-fallback we upgrade their stored credentials to the new shape.
+// Fire-and-forget refresh-token revocation. We don't block logout on the
+// network round-trip — even if the call fails, the local credential cache
+// is wiped, so the user is logged out on this device. The blacklist write
+// is purely defensive (other-device revocation).
+async function revokeStoredRefreshToken(){
+  var creds=null;try{creds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
+  if(!creds||!creds.name||!creds.refreshToken)return;
+  try{
+    await fetch(REVOKE,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:creds.name,refreshToken:creds.refreshToken}),keepalive:true});
+  }catch(e){}
+}
+
 async function getSessionToken(name,creds){
   if(!creds)return;
   try{
@@ -4049,7 +4062,7 @@ export default function App(){
                   <h2 style={{margin:"0 0 4px",fontSize:22,fontWeight:900,color:"#a78bfa"}}>{t("teacherDashboard")}</h2>
                   <p style={{margin:0,fontSize:13,color:"#6b7280"}}>{t("welcomeBack")}, {currentUser.name}</p>
                 </div>
-                <button onClick={function(){track("user_logout");resetIdentity();localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>{t("logOut")}</button>
+                <button onClick={function(){track("user_logout");revokeStoredRefreshToken();resetIdentity();_sessionToken=null;localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>{t("logOut")}</button>
               </div>
 
               <div style={{...CARD,marginBottom:14}}>
@@ -6656,7 +6669,7 @@ export default function App(){
             })()}
             <div style={{display:"flex",gap:7}}>
               <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
-              <button onClick={function(){track("user_logout");resetIdentity();localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>{t("logOut")}</button>
+              <button onClick={function(){track("user_logout");revokeStoredRefreshToken();resetIdentity();_sessionToken=null;localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>{t("logOut")}</button>
             </div>
           </div>);
         })()}

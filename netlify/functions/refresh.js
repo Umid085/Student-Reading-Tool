@@ -7,7 +7,29 @@
 
 import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
-import { issueRefreshToken, verifyRefreshToken } from "./_refreshToken.js";
+import { issueRefreshToken, verifyRefreshToken, refreshTokenId } from "./_refreshToken.js";
+
+// One Firebase fetch per refresh to read the revoked-token list. The list
+// is bounded by the 30-day token TTL (entries drop off automatically) and
+// by total user count, so it stays small in practice.
+async function isRevoked(DB, tokenId) {
+  if (!DB || !tokenId) return false;
+  try {
+    const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
+    const r = await fetch(`${DB}/rq/rq-revoked-v1.json${fbAuth}`);
+    const data = await r.json();
+    if (!data || typeof data !== "object") return false;
+    const expiresAt = data[tokenId];
+    if (typeof expiresAt !== "number") return false;
+    // Past-expiry entries are effectively no longer needed but we still
+    // honour them (cheap to check, defence in depth).
+    return true;
+  } catch (e) {
+    // Fail-open on revocation lookup so a brief Firebase outage doesn't
+    // lock out every user. The token is still cryptographically signed.
+    return false;
+  }
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +73,13 @@ export const handler = async function (event) {
   const v = verifyRefreshToken(refreshToken, secret);
   if (!v.ok || v.name.toLowerCase() !== String(name).toLowerCase()) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Invalid refresh token" }) };
+  }
+
+  // Revocation check: if the user logged out (or an admin explicitly
+  // invalidated this token), the token ID will be on the blacklist.
+  const tokenId = refreshTokenId(refreshToken);
+  if (tokenId && (await isRevoked(DB, tokenId))) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Refresh token revoked" }) };
   }
 
   // Rotate: every refresh issues a fresh refresh token. This shortens the
