@@ -63,6 +63,9 @@ var STRINGS = {
     breakdown:"BREAKDOWN",playAgain:"Play Again",newBadgeUnlocked:"NEW BADGE UNLOCKED!",
     allCaughtUp:"All caught up!",reviewComplete:"Review complete!",
     back:"Back",readingHistory:"Reading History",sessions:"Sessions",totalXp:"Total XP",avgScore:"Avg Score",dailyBoard:"Daily Board",
+    myProfile:"My Profile",storyLibrary:"Story Library",allTopics:"All Topics",myFavorites:"MY FAVORITES",
+    gamesLabel:"Games",avgTime:"Avg Time",recentGames:"RECENT GAMES",accuracyByType:"ACCURACY BY TYPE",xpHistory:"XP HISTORY",
+    joinedLabel:"Joined",bestLabel:"Best",likesLabel:"Likes",levelProgress:"LEVEL PROGRESS",xpToNext:"XP to next",
   },
   uz: {
     appName:"O'qish Vazifasi",
@@ -106,6 +109,9 @@ var STRINGS = {
     breakdown:"TAFSILOTLAR",playAgain:"Yana o'ynash",newBadgeUnlocked:"YANGI NISHON OCHILDI!",
     allCaughtUp:"Hammasi qilingan!",reviewComplete:"Ko'rib chiqish yakunlandi!",
     back:"Orqaga",readingHistory:"O'qish Tarixi",sessions:"Mashg'ulotlar",totalXp:"Jami XP",avgScore:"O'rtacha Ball",dailyBoard:"Kunlik Doska",
+    myProfile:"Mening Profilim",storyLibrary:"Hikoyalar Kutubxonasi",allTopics:"Barcha Mavzular",myFavorites:"SEVIMLILARIM",
+    gamesLabel:"O'yinlar",avgTime:"O'rtacha Vaqt",recentGames:"SO'NGGI O'YINLAR",accuracyByType:"TUR BO'YICHA ANIQLIK",xpHistory:"XP TARIXI",
+    joinedLabel:"Qo'shilgan",bestLabel:"Eng yaxshi",likesLabel:"Yoqdi",levelProgress:"DARAJA TARAQQIYOTI",xpToNext:"keyingisiga XP",
   },
   ru: {
     appName:"Читальный Квест",
@@ -149,6 +155,9 @@ var STRINGS = {
     breakdown:"ПОДРОБНО",playAgain:"Играть снова",newBadgeUnlocked:"ПОЛУЧЕНА НОВАЯ НАГРАДА!",
     allCaughtUp:"Всё готово!",reviewComplete:"Повторение завершено!",
     back:"Назад",readingHistory:"История чтения",sessions:"Сессий",totalXp:"Всего XP",avgScore:"Средний результат",dailyBoard:"Дневная доска",
+    myProfile:"Мой профиль",storyLibrary:"Библиотека историй",allTopics:"Все темы",myFavorites:"ИЗБРАННОЕ",
+    gamesLabel:"Игр",avgTime:"Среднее время",recentGames:"ПОСЛЕДНИЕ ИГРЫ",accuracyByType:"ТОЧНОСТЬ ПО ТИПУ",xpHistory:"ИСТОРИЯ XP",
+    joinedLabel:"Регистрация",bestLabel:"Лучший",likesLabel:"Лайков",levelProgress:"ПРОГРЕСС УРОВНЯ",xpToNext:"XP до следующего",
   },
   tr: {
     appName:"Okuma Görevi",
@@ -192,6 +201,9 @@ var STRINGS = {
     breakdown:"DETAYLAR",playAgain:"Tekrar oyna",newBadgeUnlocked:"YENİ ROZET KAZANILDI!",
     allCaughtUp:"Her şey tamam!",reviewComplete:"İnceleme tamamlandı!",
     back:"Geri",readingHistory:"Okuma Geçmişi",sessions:"Oturum",totalXp:"Toplam XP",avgScore:"Ort. Skor",dailyBoard:"Günlük Tablo",
+    myProfile:"Profilim",storyLibrary:"Hikaye Kütüphanesi",allTopics:"Tüm Konular",myFavorites:"FAVORİLERİM",
+    gamesLabel:"Oyun",avgTime:"Ort. Süre",recentGames:"SON OYUNLAR",accuracyByType:"TÜRE GÖRE DOĞRULUK",xpHistory:"XP GEÇMİŞİ",
+    joinedLabel:"Katıldı",bestLabel:"En iyi",likesLabel:"Beğeni",levelProgress:"SEVİYE İLERLEMESİ",xpToNext:"sonraki için XP",
   },
   ar: {
     appName:"مهمة القراءة",
@@ -235,6 +247,9 @@ var STRINGS = {
     breakdown:"التفاصيل",playAgain:"العب مرة أخرى",newBadgeUnlocked:"تم فتح شارة جديدة!",
     allCaughtUp:"كل شيء جاهز!",reviewComplete:"اكتملت المراجعة!",
     back:"رجوع",readingHistory:"سجل القراءة",sessions:"جلسات",totalXp:"مجموع XP",avgScore:"متوسط النتيجة",dailyBoard:"لوحة اليوم",
+    myProfile:"ملفي الشخصي",storyLibrary:"مكتبة القصص",allTopics:"جميع المواضيع",myFavorites:"المفضلة",
+    gamesLabel:"ألعاب",avgTime:"متوسط الوقت",recentGames:"الألعاب الأخيرة",accuracyByType:"الدقة حسب النوع",xpHistory:"سجل XP",
+    joinedLabel:"انضم في",bestLabel:"الأفضل",likesLabel:"إعجابات",levelProgress:"تقدم المستوى",xpToNext:"XP للمستوى التالي",
   },
   de: {
     appName:"Lesewettbewerb",
@@ -278,6 +293,9 @@ var STRINGS = {
     breakdown:"ÜBERSICHT",playAgain:"Nochmal spielen",newBadgeUnlocked:"NEUES ABZEICHEN FREIGESCHALTET!",
     allCaughtUp:"Alles erledigt!",reviewComplete:"Wiederholung abgeschlossen!",
     back:"Zurück",readingHistory:"Leseverlauf",sessions:"Sitzungen",totalXp:"Gesamt-XP",avgScore:"Ø Ergebnis",dailyBoard:"Tagestabelle",
+    myProfile:"Mein Profil",storyLibrary:"Geschichtenbibliothek",allTopics:"Alle Themen",myFavorites:"MEINE FAVORITEN",
+    gamesLabel:"Spiele",avgTime:"Ø Zeit",recentGames:"LETZTE SPIELE",accuracyByType:"GENAUIGKEIT NACH TYP",xpHistory:"XP-VERLAUF",
+    joinedLabel:"Beigetreten",bestLabel:"Bestes",likesLabel:"Likes",levelProgress:"LEVEL-FORTSCHRITT",xpToNext:"XP zum Nächsten",
   },
   es: {
     appName:"Misión Lectora",
@@ -321,6 +339,9 @@ var STRINGS = {
     breakdown:"DESGLOSE",playAgain:"Jugar de nuevo",newBadgeUnlocked:"¡NUEVA INSIGNIA DESBLOQUEADA!",
     allCaughtUp:"¡Todo al día!",reviewComplete:"¡Repaso completado!",
     back:"Atrás",readingHistory:"Historial de lectura",sessions:"Sesiones",totalXp:"XP Total",avgScore:"Puntuación med.",dailyBoard:"Tabla diaria",
+    myProfile:"Mi Perfil",storyLibrary:"Biblioteca de historias",allTopics:"Todos los temas",myFavorites:"MIS FAVORITOS",
+    gamesLabel:"Partidas",avgTime:"Tiempo med.",recentGames:"PARTIDAS RECIENTES",accuracyByType:"PRECISIÓN POR TIPO",xpHistory:"HISTORIAL DE XP",
+    joinedLabel:"Se unió",bestLabel:"Mejor",likesLabel:"Me gusta",levelProgress:"PROGRESO DEL NIVEL",xpToNext:"XP al siguiente",
   },
   fr: {
     appName:"Quête de Lecture",
@@ -364,6 +385,9 @@ var STRINGS = {
     breakdown:"DÉTAILS",playAgain:"Rejouer",newBadgeUnlocked:"NOUVEAU BADGE DÉBLOQUÉ !",
     allCaughtUp:"Tout est à jour !",reviewComplete:"Révision terminée !",
     back:"Retour",readingHistory:"Historique de lecture",sessions:"Sessions",totalXp:"XP Total",avgScore:"Score moyen",dailyBoard:"Tableau du jour",
+    myProfile:"Mon Profil",storyLibrary:"Bibliothèque d'histoires",allTopics:"Tous les sujets",myFavorites:"MES FAVORIS",
+    gamesLabel:"Parties",avgTime:"Temps moyen",recentGames:"PARTIES RÉCENTES",accuracyByType:"PRÉCISION PAR TYPE",xpHistory:"HISTORIQUE XP",
+    joinedLabel:"Inscrit",bestLabel:"Meilleur",likesLabel:"J'aime",levelProgress:"PROGRESSION DU NIVEAU",xpToNext:"XP au suivant",
   },
 };
 
@@ -5882,7 +5906,7 @@ export default function App(){
             {/* game history chart */}
             {fuGames.length>0&&(
               <div style={{marginBottom:12}}>
-                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>XP HISTORY</p>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>{t("xpHistory")}</p>
                 <GameChart games={fuGames}/>
               </div>
             )}
@@ -5890,7 +5914,7 @@ export default function App(){
             {/* recent games */}
             {fuGames.length>0&&(
               <div style={{...CARD,marginBottom:12}}>
-                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>RECENT GAMES</p>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>{t("recentGames")}</p>
                 {fuGames.slice().reverse().slice(0,6).map(function(g,i){
                   var glv=getLv(g.level);
                   return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:i<5?"1px solid rgba(255,255,255,0.05)":"none"}}>
@@ -5915,7 +5939,7 @@ export default function App(){
           var lvlInfo=getLevelProgress(totalXp);
           return(<div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>My Profile</h2>
+              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>{t("myProfile")}</h2>
               <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
             </div>
             <div style={{...CARD,marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
@@ -5925,12 +5949,12 @@ export default function App(){
                   <div style={{fontSize:18,fontWeight:900,color:"#f9fafb"}}>{currentUser.name}</div>
                   <div style={{background:"linear-gradient(135deg,#fbbf24,#f59e0b)",padding:"2px 8px",borderRadius:999,fontSize:12,fontWeight:900,color:"#0d0d1a"}}>⭐ Lvl {lvlInfo.level}</div>
                 </div>
-                <div style={{fontSize:11,color:"#6b7280"}}>Joined {currentUser.joined}</div>
+                <div style={{fontSize:11,color:"#6b7280"}}>{t("joinedLabel")} {currentUser.joined}</div>
                 <div style={{display:"flex",gap:7,flexWrap:"wrap",marginTop:4}}>
                   <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {myStreak} day streak</span>
-                  <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>Friends: {myData.friends.length}</span>
-                  <span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes||0}</span>
-                  <span style={pill("rgba(99,102,241,0.15)","#818cf8")}>Best: {myBestLevel}</span>
+                  <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>{t("friends")}: {myData.friends.length}</span>
+                  <span style={pill("rgba(236,72,153,0.15)","#f472b6")}>{t("likesLabel")}: {myData.likes||0}</span>
+                  <span style={pill("rgba(99,102,241,0.15)","#818cf8")}>{t("bestLabel")}: {myBestLevel}</span>
                 </div>
               </div>
             </div>
@@ -5944,13 +5968,13 @@ export default function App(){
               </div>
             </div>
             <div style={{display:"flex",gap:7,marginBottom:10}}>
-              {[{v:games.length,l:"Games",c:"#34d399"},{v:totalXp,l:"Total XP",c:"#fbbf24"},{v:avgPct+"%",l:"Avg Score",c:pctColor(avgPct)},{v:formatTime(avgTime),l:"Avg Time",c:"#a78bfa"}].map(function(s){
+              {[{v:games.length,l:t("gamesLabel"),c:"#34d399"},{v:totalXp,l:t("totalXp"),c:"#fbbf24"},{v:avgPct+"%",l:t("avgScore"),c:pctColor(avgPct)},{v:formatTime(avgTime),l:t("avgTime"),c:"#a78bfa"}].map(function(s){
                 return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:14,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;
               })}
             </div>
             {games.length>0&&(
               <div style={{marginBottom:10}}>
-                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>XP HISTORY</p>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>{t("xpHistory")}</p>
                 <GameChart games={games}/>
               </div>
             )}
@@ -5960,7 +5984,7 @@ export default function App(){
               var types=Object.keys(typeAgg);
               if(!types.length)return null;
               return(<div style={{...CARD,marginBottom:10}}>
-                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:10}}>ACCURACY BY TYPE</p>
+                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:10}}>{t("accuracyByType")}</p>
                 {types.map(function(t){
                   var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
                   return(<div key={t} style={{marginBottom:8}}>
@@ -5976,7 +6000,7 @@ export default function App(){
               </div>);
             })()}
             {games.length>0&&(<div style={{...CARD,marginBottom:10}}>
-              <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>RECENT GAMES</p>
+              <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>{t("recentGames")}</p>
               {games.slice().reverse().slice(0,8).map(function(g,i){
                 var glv=getLv(g.level);
                 return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:i<7?"1px solid rgba(255,255,255,0.05)":"none"}}>
@@ -6335,13 +6359,13 @@ export default function App(){
           return(
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>Story Library</h2>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>{t("storyLibrary")}</h2>
                 <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
               </div>
               <p style={{color:"#6b7280",fontSize:12,marginBottom:10,lineHeight:1.5}}>Pre-written stories — instant play. Unlock more by completing quizzes.</p>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
                 {["","life","science","tech","mind","humanities"].map(function(key){
-                  var label=key?SUBJECT_LABELS[key]:"All Topics";
+                  var label=key?SUBJECT_LABELS[key]:t("allTopics");
                   var col=key?SUBJECT_COLORS[key]:"#9ca3af";
                   var active=libSubjectFilter===key;
                   return(<button key={key} onClick={function(){setLibSubjectFilter(key);}} style={{padding:"5px 12px",borderRadius:99,border:"1.5px solid "+(active?col:"rgba(255,255,255,0.1)"),background:active?col+"22":"transparent",color:active?col:"#6b7280",fontFamily:"inherit",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s"}}>{label}</button>);
@@ -6349,7 +6373,7 @@ export default function App(){
               </div>
               {favs.length>0&&(
                 <div style={{marginBottom:16}}>
-                  <p style={{fontSize:11,fontWeight:700,color:"#f472b6",letterSpacing:0.5,margin:"0 0 8px"}}>❤️ MY FAVORITES</p>
+                  <p style={{fontSize:11,fontWeight:700,color:"#f472b6",letterSpacing:0.5,margin:"0 0 8px"}}>❤️ {t("myFavorites")}</p>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                     {favs.map(function(f){
                       var story=STORY_LIBRARY.find(function(s){return s.id===f.id;});
