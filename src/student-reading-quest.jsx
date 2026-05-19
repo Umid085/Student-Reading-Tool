@@ -92,6 +92,10 @@ var STRINGS = {
     tch_noAssignments:"No assignments yet. Create one above.",tch_completed:"completed",tch_classAvg:"Class avg:",tch_due:"due",
     tch_analytics:"📊 Analytics",tch_csvExport:"⬇ CSV",
     tch_studentAssignments:"📋 ASSIGNMENTS",tch_start:"Start →",
+    stu_authNamePassRequired:"Name and password required.",stu_authNameRules:"Username must be 2–30 characters: letters, numbers, underscores only.",stu_authPasswordTooShort:"Password must be at least 4 characters.",stu_authServerError:"Server error: invalid response.",stu_authTooManyAttempts:"Too many attempts. Please wait 15 minutes.",stu_authEnterNameAndPass:"Please enter name and password.",stu_authTooManyLogins:"Too many login attempts. Please wait 15 minutes.",stu_authWrongPassword:"User not found or wrong password.",stu_authAccountError:"Account error. Please try again.",
+    stu_errPickLevel:"Pick a level first!",stu_errTopicEmpty:"Topic is empty after sanitising.",stu_errCustomTextLevel:"Pick a CEFR level first so scoring matches your text's difficulty.",stu_errCustomTextTooShort:"Please paste at least 150 characters of text so the AI can generate a full quiz.",stu_errReportNotYours:"This report is not for your account.",
+    stu_translationUnavailable:"Translation unavailable.",stu_noDefinition:"No definition found for this word.",
+    stu_socialRequestSent:"Request sent to {name}!",stu_socialFriendsNow:"You and {name} are now friends!",stu_socialDeclined:"Request declined.",stu_socialRemoved:"{name} removed from friends.",stu_socialLiked:"Liked {name}'s profile!",stu_socialChallengeSent:"Challenge sent to {name}!",stu_socialUserListRefreshed:"User list refreshed!",stu_socialRefreshBtn:"Refresh User List",
     qLabels:{mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"},
     badgeNames:{
       first_steps:{name:"First Steps",desc:"Complete your first quiz"},
@@ -209,6 +213,10 @@ var STRINGS = {
     tch_noAssignments:"Hali vazifalar yo'q. Yuqorida yarating.",tch_completed:"bajarildi",tch_classAvg:"Sinf o'rt.:",tch_due:"muddati",
     tch_analytics:"📊 Tahlil",tch_csvExport:"⬇ CSV",
     tch_studentAssignments:"📋 VAZIFALAR",tch_start:"Boshlash →",
+    stu_authNamePassRequired:"Foydalanuvchi nomi va parol kerak.",stu_authNameRules:"Foydalanuvchi nomi 2–30 belgi: harflar, raqamlar, pastki chiziq.",stu_authPasswordTooShort:"Parol kamida 4 belgidan iborat bo'lishi kerak.",stu_authServerError:"Server xatosi: noto'g'ri javob.",stu_authTooManyAttempts:"Juda ko'p urinishlar. 15 daqiqa kuting.",stu_authEnterNameAndPass:"Ism va parolingizni kiriting.",stu_authTooManyLogins:"Juda ko'p kirish urinishlari. 15 daqiqa kuting.",stu_authWrongPassword:"Foydalanuvchi topilmadi yoki parol noto'g'ri.",stu_authAccountError:"Hisob xatosi. Qaytadan urinib ko'ring.",
+    stu_errPickLevel:"Avval darajani tanlang!",stu_errTopicEmpty:"Tozalashdan keyin mavzu bo'sh qoldi.",stu_errCustomTextLevel:"Avval CEFR darajasini tanlang.",stu_errCustomTextTooShort:"AI to'liq test yaratishi uchun kamida 150 belgi kiriting.",stu_errReportNotYours:"Bu hisobot sizning hisobingizga tegishli emas.",
+    stu_translationUnavailable:"Tarjima mavjud emas.",stu_noDefinition:"Bu so'z uchun ta'rif topilmadi.",
+    stu_socialRequestSent:"{name}ga so'rov yuborildi!",stu_socialFriendsNow:"Siz va {name} endi do'stlarsiz!",stu_socialDeclined:"So'rov rad etildi.",stu_socialRemoved:"{name} do'stlardan o'chirildi.",stu_socialLiked:"{name}ning profili yoqdi!",stu_socialChallengeSent:"{name}ga chaqiruv yuborildi!",stu_socialUserListRefreshed:"Foydalanuvchilar ro'yxati yangilandi!",stu_socialRefreshBtn:"Ro'yxatni Yangilash",
     qLabels:{mcq:"Ko'p tanlovli",gap_word:"Bo'sh joy - So'zlar",gap_sentence:"Bo'sh joy - Gaplar",matching:"Mosligini topish",heading:"Sarlavhalarni moslash",qa:"Erkin javob",tfnm:"To'g'ri/Noto'g'ri/Aytilmagan",ynng:"Ha/Yo'q/Berilmagan"},
     badgeNames:{
       first_steps:{name:"Birinchi Qadamlar",desc:"Birinchi testni yakunlang"},
@@ -326,6 +334,10 @@ var STRINGS = {
     tch_noAssignments:"Пока нет заданий. Создайте выше.",tch_completed:"выполнено",tch_classAvg:"Средн. класса:",tch_due:"до",
     tch_analytics:"📊 Аналитика",tch_csvExport:"⬇ CSV",
     tch_studentAssignments:"📋 ЗАДАНИЯ",tch_start:"Начать →",
+    stu_authNamePassRequired:"Требуется имя и пароль.",stu_authNameRules:"Имя пользователя: 2–30 символов (буквы, цифры, подчёркивания).",stu_authPasswordTooShort:"Пароль должен быть не менее 4 символов.",stu_authServerError:"Ошибка сервера: неверный ответ.",stu_authTooManyAttempts:"Слишком много попыток. Подождите 15 минут.",stu_authEnterNameAndPass:"Введите имя и пароль.",stu_authTooManyLogins:"Слишком много попыток входа. Подождите 15 минут.",stu_authWrongPassword:"Пользователь не найден или неверный пароль.",stu_authAccountError:"Ошибка учётной записи. Попробуйте снова.",
+    stu_errPickLevel:"Сначала выберите уровень!",stu_errTopicEmpty:"После очистки тема пустая.",stu_errCustomTextLevel:"Сначала выберите уровень CEFR.",stu_errCustomTextTooShort:"Вставьте не менее 150 символов, чтобы ИИ составил полный тест.",stu_errReportNotYours:"Этот отчёт не для вашего аккаунта.",
+    stu_translationUnavailable:"Перевод недоступен.",stu_noDefinition:"Определение для этого слова не найдено.",
+    stu_socialRequestSent:"Запрос отправлен пользователю {name}!",stu_socialFriendsNow:"Вы и {name} теперь друзья!",stu_socialDeclined:"Запрос отклонён.",stu_socialRemoved:"{name} удалён из друзей.",stu_socialLiked:"Профиль {name} понравился!",stu_socialChallengeSent:"Вызов отправлен пользователю {name}!",stu_socialUserListRefreshed:"Список пользователей обновлён!",stu_socialRefreshBtn:"Обновить список",
     qLabels:{mcq:"Множественный выбор",gap_word:"Пропуск - Слова",gap_sentence:"Пропуск - Предложения",matching:"Соответствие",heading:"Подбор заголовков",qa:"Свободный ответ",tfnm:"Верно/Неверно/Не упоминается",ynng:"Да/Нет/Не указано"},
     badgeNames:{
       first_steps:{name:"Первые шаги",desc:"Выполните первый тест"},
@@ -443,6 +455,10 @@ var STRINGS = {
     tch_noAssignments:"Henüz ödev yok. Yukarıda oluştur.",tch_completed:"tamamlandı",tch_classAvg:"Sınıf ort.:",tch_due:"tarih",
     tch_analytics:"📊 Analiz",tch_csvExport:"⬇ CSV",
     tch_studentAssignments:"📋 ÖDEVLER",tch_start:"Başla →",
+    stu_authNamePassRequired:"İsim ve şifre gerekli.",stu_authNameRules:"Kullanıcı adı 2–30 karakter: harf, rakam, alt çizgi.",stu_authPasswordTooShort:"Şifre en az 4 karakter olmalı.",stu_authServerError:"Sunucu hatası: geçersiz yanıt.",stu_authTooManyAttempts:"Çok fazla deneme. 15 dakika bekleyin.",stu_authEnterNameAndPass:"Lütfen isim ve şifre girin.",stu_authTooManyLogins:"Çok fazla giriş denemesi. 15 dakika bekleyin.",stu_authWrongPassword:"Kullanıcı bulunamadı veya şifre yanlış.",stu_authAccountError:"Hesap hatası. Tekrar deneyin.",
+    stu_errPickLevel:"Önce bir seviye seç!",stu_errTopicEmpty:"Temizlemeden sonra konu boş kaldı.",stu_errCustomTextLevel:"Önce bir CEFR seviyesi seçin.",stu_errCustomTextTooShort:"AI tam bir test oluşturabilmesi için en az 150 karakter yapıştırın.",stu_errReportNotYours:"Bu rapor hesabınıza ait değil.",
+    stu_translationUnavailable:"Çeviri mevcut değil.",stu_noDefinition:"Bu kelime için tanım bulunamadı.",
+    stu_socialRequestSent:"{name} kullanıcısına istek gönderildi!",stu_socialFriendsNow:"Sen ve {name} artık arkadaşsınız!",stu_socialDeclined:"İstek reddedildi.",stu_socialRemoved:"{name} arkadaşlardan çıkarıldı.",stu_socialLiked:"{name} profilini beğendin!",stu_socialChallengeSent:"{name} kullanıcısına meydan okuma gönderildi!",stu_socialUserListRefreshed:"Kullanıcı listesi yenilendi!",stu_socialRefreshBtn:"Listeyi Yenile",
     qLabels:{mcq:"Çoktan Seçmeli",gap_word:"Boşluk - Kelime",gap_sentence:"Boşluk - Cümle",matching:"Eşleştirme",heading:"Başlık Eşleştir",qa:"Açık Cevap",tfnm:"Doğru/Yanlış/Belirtilmemiş",ynng:"Evet/Hayır/Belirtilmedi"},
     badgeNames:{
       first_steps:{name:"İlk Adımlar",desc:"İlk testi tamamla"},
@@ -560,6 +576,10 @@ var STRINGS = {
     tch_noAssignments:"لا واجبات بعد. أنشئ واحداً أعلاه.",tch_completed:"مكتمل",tch_classAvg:"متوسط الصف:",tch_due:"حتى",
     tch_analytics:"📊 تحليلات",tch_csvExport:"⬇ CSV",
     tch_studentAssignments:"📋 الواجبات",tch_start:"ابدأ ←",
+    stu_authNamePassRequired:"الاسم وكلمة المرور مطلوبان.",stu_authNameRules:"اسم المستخدم: 2–30 حرفاً (أحرف، أرقام، شرطات سفلية).",stu_authPasswordTooShort:"كلمة المرور يجب أن تكون 4 أحرف على الأقل.",stu_authServerError:"خطأ في الخادم: استجابة غير صالحة.",stu_authTooManyAttempts:"محاولات كثيرة جداً. انتظر 15 دقيقة.",stu_authEnterNameAndPass:"أدخل الاسم وكلمة المرور.",stu_authTooManyLogins:"محاولات تسجيل دخول كثيرة جداً. انتظر 15 دقيقة.",stu_authWrongPassword:"المستخدم غير موجود أو كلمة المرور خاطئة.",stu_authAccountError:"خطأ في الحساب. حاول مرة أخرى.",
+    stu_errPickLevel:"اختر مستوى أولاً!",stu_errTopicEmpty:"الموضوع فارغ بعد التنقية.",stu_errCustomTextLevel:"اختر مستوى CEFR أولاً.",stu_errCustomTextTooShort:"الصق 150 حرفاً على الأقل لإنشاء اختبار كامل.",stu_errReportNotYours:"هذا التقرير ليس لحسابك.",
+    stu_translationUnavailable:"الترجمة غير متاحة.",stu_noDefinition:"لم يتم العثور على تعريف لهذه الكلمة.",
+    stu_socialRequestSent:"تم إرسال طلب إلى {name}!",stu_socialFriendsNow:"أنت و{name} أصدقاء الآن!",stu_socialDeclined:"تم رفض الطلب.",stu_socialRemoved:"تمت إزالة {name} من الأصدقاء.",stu_socialLiked:"أعجبك ملف {name}!",stu_socialChallengeSent:"تم إرسال تحدٍّ إلى {name}!",stu_socialUserListRefreshed:"تم تحديث قائمة المستخدمين!",stu_socialRefreshBtn:"تحديث القائمة",
     qLabels:{mcq:"اختيار من متعدد",gap_word:"ملء الفراغ - كلمات",gap_sentence:"ملء الفراغ - جمل",matching:"المطابقة",heading:"مطابقة العناوين",qa:"إجابة مفتوحة",tfnm:"صحيح/خطأ/غير مذكور",ynng:"نعم/لا/غير محدد"},
     badgeNames:{
       first_steps:{name:"الخطوات الأولى",desc:"أكمل اختبارك الأول"},
@@ -677,6 +697,10 @@ var STRINGS = {
     tch_noAssignments:"Noch keine Aufgaben. Erstelle oben eine.",tch_completed:"erledigt",tch_classAvg:"Klassen-Ø:",tch_due:"fällig",
     tch_analytics:"📊 Analyse",tch_csvExport:"⬇ CSV",
     tch_studentAssignments:"📋 AUFGABEN",tch_start:"Start →",
+    stu_authNamePassRequired:"Name und Passwort erforderlich.",stu_authNameRules:"Benutzername: 2–30 Zeichen (Buchstaben, Zahlen, Unterstriche).",stu_authPasswordTooShort:"Passwort muss mindestens 4 Zeichen lang sein.",stu_authServerError:"Serverfehler: ungültige Antwort.",stu_authTooManyAttempts:"Zu viele Versuche. Bitte 15 Minuten warten.",stu_authEnterNameAndPass:"Bitte Name und Passwort eingeben.",stu_authTooManyLogins:"Zu viele Login-Versuche. Bitte 15 Minuten warten.",stu_authWrongPassword:"Benutzer nicht gefunden oder falsches Passwort.",stu_authAccountError:"Kontofehler. Bitte erneut versuchen.",
+    stu_errPickLevel:"Wähle zuerst eine Stufe!",stu_errTopicEmpty:"Thema ist nach Bereinigung leer.",stu_errCustomTextLevel:"Wähle zuerst eine CEFR-Stufe.",stu_errCustomTextTooShort:"Füge mindestens 150 Zeichen ein, damit die KI ein Quiz erstellen kann.",stu_errReportNotYours:"Dieser Bericht gehört nicht zu deinem Konto.",
+    stu_translationUnavailable:"Übersetzung nicht verfügbar.",stu_noDefinition:"Keine Definition für dieses Wort gefunden.",
+    stu_socialRequestSent:"Anfrage an {name} gesendet!",stu_socialFriendsNow:"Du und {name} seid jetzt Freunde!",stu_socialDeclined:"Anfrage abgelehnt.",stu_socialRemoved:"{name} von Freunden entfernt.",stu_socialLiked:"{name}s Profil gefällt dir!",stu_socialChallengeSent:"Herausforderung an {name} gesendet!",stu_socialUserListRefreshed:"Benutzerliste aktualisiert!",stu_socialRefreshBtn:"Liste aktualisieren",
     qLabels:{mcq:"Multiple-Choice",gap_word:"Lückentext - Wörter",gap_sentence:"Lückentext - Sätze",matching:"Zuordnung",heading:"Überschriften zuordnen",qa:"Freie Antwort",tfnm:"Wahr/Falsch/Nicht erwähnt",ynng:"Ja/Nein/Nicht angegeben"},
     badgeNames:{
       first_steps:{name:"Erste Schritte",desc:"Schließe deinen ersten Quiz ab"},
@@ -794,6 +818,10 @@ var STRINGS = {
     tch_noAssignments:"Aún no hay tareas. Crea una arriba.",tch_completed:"completado",tch_classAvg:"Prom. clase:",tch_due:"vence",
     tch_analytics:"📊 Análisis",tch_csvExport:"⬇ CSV",
     tch_studentAssignments:"📋 TAREAS",tch_start:"Iniciar →",
+    stu_authNamePassRequired:"Nombre y contraseña requeridos.",stu_authNameRules:"Nombre de usuario: 2–30 caracteres (letras, números, guiones bajos).",stu_authPasswordTooShort:"La contraseña debe tener al menos 4 caracteres.",stu_authServerError:"Error del servidor: respuesta inválida.",stu_authTooManyAttempts:"Demasiados intentos. Espera 15 minutos.",stu_authEnterNameAndPass:"Por favor, introduce nombre y contraseña.",stu_authTooManyLogins:"Demasiados intentos de inicio. Espera 15 minutos.",stu_authWrongPassword:"Usuario no encontrado o contraseña incorrecta.",stu_authAccountError:"Error de cuenta. Inténtalo de nuevo.",
+    stu_errPickLevel:"¡Selecciona un nivel primero!",stu_errTopicEmpty:"El tema está vacío tras la limpieza.",stu_errCustomTextLevel:"Selecciona primero un nivel CEFR.",stu_errCustomTextTooShort:"Pega al menos 150 caracteres para que la IA genere un quiz completo.",stu_errReportNotYours:"Este informe no es para tu cuenta.",
+    stu_translationUnavailable:"Traducción no disponible.",stu_noDefinition:"No se encontró definición para esta palabra.",
+    stu_socialRequestSent:"¡Solicitud enviada a {name}!",stu_socialFriendsNow:"¡Tú y {name} ahora sois amigos!",stu_socialDeclined:"Solicitud rechazada.",stu_socialRemoved:"{name} eliminado de amigos.",stu_socialLiked:"¡Te gustó el perfil de {name}!",stu_socialChallengeSent:"¡Desafío enviado a {name}!",stu_socialUserListRefreshed:"¡Lista de usuarios actualizada!",stu_socialRefreshBtn:"Actualizar lista",
     qLabels:{mcq:"Opción múltiple",gap_word:"Huecos - Palabras",gap_sentence:"Huecos - Oraciones",matching:"Emparejar",heading:"Emparejar títulos",qa:"Respuesta abierta",tfnm:"V/F/No mencionado",ynng:"Sí/No/No dado"},
     badgeNames:{
       first_steps:{name:"Primeros Pasos",desc:"Completa tu primer quiz"},
@@ -911,6 +939,10 @@ var STRINGS = {
     tch_noAssignments:"Pas encore de devoirs. Créez-en un.",tch_completed:"terminé",tch_classAvg:"Moy. classe :",tch_due:"échéance",
     tch_analytics:"📊 Analyse",tch_csvExport:"⬇ CSV",
     tch_studentAssignments:"📋 DEVOIRS",tch_start:"Démarrer →",
+    stu_authNamePassRequired:"Nom et mot de passe requis.",stu_authNameRules:"Nom d'utilisateur : 2–30 caractères (lettres, chiffres, tirets bas).",stu_authPasswordTooShort:"Le mot de passe doit faire au moins 4 caractères.",stu_authServerError:"Erreur serveur : réponse invalide.",stu_authTooManyAttempts:"Trop de tentatives. Attendez 15 minutes.",stu_authEnterNameAndPass:"Veuillez saisir un nom et un mot de passe.",stu_authTooManyLogins:"Trop de tentatives de connexion. Attendez 15 minutes.",stu_authWrongPassword:"Utilisateur introuvable ou mot de passe incorrect.",stu_authAccountError:"Erreur de compte. Réessayez.",
+    stu_errPickLevel:"Choisissez un niveau d'abord !",stu_errTopicEmpty:"Le sujet est vide après nettoyage.",stu_errCustomTextLevel:"Choisissez d'abord un niveau CEFR.",stu_errCustomTextTooShort:"Collez au moins 150 caractères pour que l'IA génère un quiz complet.",stu_errReportNotYours:"Ce rapport ne vous appartient pas.",
+    stu_translationUnavailable:"Traduction indisponible.",stu_noDefinition:"Aucune définition trouvée pour ce mot.",
+    stu_socialRequestSent:"Demande envoyée à {name} !",stu_socialFriendsNow:"Toi et {name} êtes maintenant amis !",stu_socialDeclined:"Demande refusée.",stu_socialRemoved:"{name} retiré des amis.",stu_socialLiked:"Vous avez aimé le profil de {name} !",stu_socialChallengeSent:"Défi envoyé à {name} !",stu_socialUserListRefreshed:"Liste d'utilisateurs actualisée !",stu_socialRefreshBtn:"Actualiser la liste",
     qLabels:{mcq:"Choix multiple",gap_word:"Texte à trous - Mots",gap_sentence:"Texte à trous - Phrases",matching:"Appariement",heading:"Apparier titres",qa:"Réponse libre",tfnm:"Vrai/Faux/Non mentionné",ynng:"Oui/Non/Non donné"},
     badgeNames:{
       first_steps:{name:"Premiers Pas",desc:"Termine ton premier quiz"},
@@ -2411,7 +2443,7 @@ export default function App(){
       setReportData(pendingReportData);
       setStage("report");
     } else {
-      setError("This report is not for your account.");
+      setError(t("stu_errReportNotYours"));
     }
     setPendingReportData(null);
   },[currentUser,pendingReportData]);
@@ -2539,14 +2571,14 @@ export default function App(){
   // ── auth ──────────────────────────────────────────────────
   async function doRegister(){
     setAuthErr("");
-    if(!nameInput.trim()||!passInput.trim()){setAuthErr("Name and password required.");return;}
-    if(!/^[a-zA-Z0-9_]{2,30}$/.test(nameInput.trim())){setAuthErr("Username must be 2–30 characters: letters, numbers, underscores only.");return;}
-    if(passInput.length<4){setAuthErr("Password must be at least 4 characters.");return;}
+    if(!nameInput.trim()||!passInput.trim()){setAuthErr(t("stu_authNamePassRequired"));return;}
+    if(!/^[a-zA-Z0-9_]{2,30}$/.test(nameInput.trim())){setAuthErr(t("stu_authNameRules"));return;}
+    if(passInput.length<4){setAuthErr(t("stu_authPasswordTooShort"));return;}
     var hash=await enc(passInput);
     var r=await fetch(REGISTER,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:hash})});
     var d=await r.json();
-    if(!d){setAuthErr("Server error: invalid response.");return;}
-    if(r.status===429){setAuthErr("Too many attempts. Please wait 15 minutes.");return;}
+    if(!d){setAuthErr(t("stu_authServerError"));return;}
+    if(r.status===429){setAuthErr(t("stu_authTooManyAttempts"));return;}
     if(!r.ok){setAuthErr(d.error==="Username taken"?"Username taken.":(d.error||"Registration failed. Try again."));return;}
     _sessionToken=d.token;
     var user={name:nameInput.trim(),hash:hash,games:[],joined:todayKey()};
@@ -2562,17 +2594,17 @@ export default function App(){
 
   async function doLogin(){
     setAuthErr("");
-    if(!nameInput.trim()||!passInput.trim()){setAuthErr("Please enter name and password.");return;}
+    if(!nameInput.trim()||!passInput.trim()){setAuthErr(t("stu_authEnterNameAndPass"));return;}
     var sha256=await enc(passInput);
     var r=await fetch(AUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:nameInput.trim(),hash:sha256})});
     var d=await r.json();
-    if(!d){setAuthErr("Server error: invalid response.");return;}
-    if(r.status===429){setAuthErr("Too many login attempts. Please wait 15 minutes.");return;}
-    if(!r.ok){setAuthErr("User not found or wrong password.");return;}
+    if(!d){setAuthErr(t("stu_authServerError"));return;}
+    if(r.status===429){setAuthErr(t("stu_authTooManyLogins"));return;}
+    if(!r.ok){setAuthErr(t("stu_authWrongPassword"));return;}
     _sessionToken=d.token;
     var fresh=await loadUsers();setAllUsers(fresh);
     var found=null;for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===nameInput.trim().toLowerCase()){found=fresh[i];break;}}
-    if(!found){setAuthErr("Account error. Please try again.");return;}
+    if(!found){setAuthErr(t("stu_authAccountError"));return;}
     found=Object.assign({},found,{hash:sha256,games:Array.isArray(found.games)?found.games:[]});
     localStorage.setItem("rq-session",found.name);
     localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,hash:sha256}));
@@ -2788,36 +2820,36 @@ export default function App(){
     if(!currentUser||to===currentUser.name)return;
     var r=doSendRequest(social,currentUser.name,to);
     if(!r.ok){setSocialMsg(r.err);return;}
-    await saveSocial(r.social);setSocial(r.social);setSocialMsg("Request sent to "+to+"!");
+    await saveSocial(r.social);setSocial(r.social);setSocialMsg(t("stu_socialRequestSent").replace("{name}",to));
   }
 
   async function acceptRequest(from){
     var n=doAcceptRequest(social,currentUser.name,from);
-    await saveSocial(n);setSocial(n);setSocialMsg("You and "+from+" are now friends!");
+    await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialFriendsNow").replace("{name}",from));
   }
 
   async function declineRequest(from){
     var n=doDeclineRequest(social,currentUser.name,from);
-    await saveSocial(n);setSocial(n);setSocialMsg("Request declined.");
+    await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialDeclined"));
   }
 
   async function removeFriend(friend){
     var n=doRemoveFriend(social,currentUser.name,friend);
-    await saveSocial(n);setSocial(n);setSocialMsg(friend+" removed from friends.");
+    await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialRemoved").replace("{name}",friend));
   }
 
   async function likeProfile(target){
     if(!currentUser||target===currentUser.name)return;
     var r=doLikeProfile(social,currentUser.name,target);
     if(!r.ok){setSocialMsg(r.err);return;}
-    await saveSocial(r.social);setSocial(r.social);setSocialMsg("Liked "+target+"'s profile!");
+    await saveSocial(r.social);setSocial(r.social);setSocialMsg(t("stu_socialLiked").replace("{name}",target));
   }
 
   async function sendChallenge(){
     if(!challengeTarget||!currentUser)return;
     var n=doSendChallenge(social,currentUser.name,challengeTarget,challengeLevel,challengeTypes);
     await saveSocial(n);setSocial(n);
-    setSocialMsg("Challenge sent to "+challengeTarget+"!");
+    setSocialMsg(t("stu_socialChallengeSent").replace("{name}",challengeTarget));
     setChallengeTarget(null);
   }
 
@@ -2899,8 +2931,8 @@ export default function App(){
       var ctl=new AbortController();var tid=setTimeout(function(){ctl.abort();},8000);
       var r=await fetch(url,{signal:ctl.signal});clearTimeout(tid);
       var d=await r.json();
-      setTranslation(d.responseData&&d.responseData.translatedText?d.responseData.translatedText:"Translation unavailable.");
-    }catch(e){setTranslation("Translation unavailable.");}
+      setTranslation(d.responseData&&d.responseData.translatedText?d.responseData.translatedText:t("stu_translationUnavailable"));
+    }catch(e){setTranslation(t("stu_translationUnavailable"));}
     setTranslating(false);
   }
 
@@ -2926,7 +2958,7 @@ export default function App(){
       var meaning=entry.meanings&&entry.meanings[0]&&entry.meanings[0].definitions&&entry.meanings[0].definitions[0];
       setWordDef({phonetic:phonetic,audio:audio,def:meaning?meaning.definition:"",example:meaning&&meaning.example?meaning.example:""});
     }catch(e){
-      setWordDef({phonetic:"",audio:"",def:"No definition found for this word.",example:""});
+      setWordDef({phonetic:"",audio:"",def:t("stu_noDefinition"),example:""});
     }
     setWordDefLoading(false);
   }
@@ -2935,7 +2967,7 @@ export default function App(){
   function shuffleArr(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
   async function generate(){
-    if(!level){setError("Pick a level first!");return;}
+    if(!level){setError(t("stu_errPickLevel"));return;}
     setError("");
 
     if(customTopic.trim()){
@@ -2947,7 +2979,7 @@ export default function App(){
         var types=selectedTypes.filter(function(t){return AI_TYPES.indexOf(t)!==-1;});
         if(!types.length)types=["mcq","gap_word","qa","tfnm"];
         var safeTopic=customTopic.trim().replace(/[\r\n"]+/g," ").replace(/\s+/g," ").slice(0,120);
-        if(!safeTopic){setError("Topic is empty after sanitising.");setGenLoading(false);return;}
+        if(!safeTopic){setError(t("stu_errTopicEmpty"));setGenLoading(false);return;}
         // Independent topic translation (via MyMemory) so the backend can verify
         // Claude wrote about the right thing instead of trusting Claude's own
         // self-reported topic_echo. Skipped for English and on translation
@@ -3705,8 +3737,8 @@ export default function App(){
 
   // ── Feature 7: Custom Text Quiz ───────────────────────────────
   async function doCustomTextQuiz(){
-    if(!customText.trim()||customText.trim().length<150){setCustomTextError("Please paste at least 150 characters of text so the AI can generate a full quiz.");return;}
-    if(!level){setCustomTextError("Pick a CEFR level first so scoring matches your text's difficulty.");return;}
+    if(!customText.trim()||customText.trim().length<150){setCustomTextError(t("stu_errCustomTextTooShort"));return;}
+    if(!level){setCustomTextError(t("stu_errCustomTextLevel"));return;}
     setCustomTextError("");setCustomTextLoading(true);
     try{
       var r=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:customText.trim(),level:level,types:selectedTypes.slice(0,3)})});
@@ -6407,7 +6439,7 @@ export default function App(){
                   <input style={{...INP,paddingLeft:36}} placeholder="Search by username (min 2 chars)..." value={searchQuery} onChange={function(e){setSearchQuery(e.target.value);}}/>
                   <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,opacity:0.5}}>🔍</span>
                 </div>
-                <button onClick={function(){loadUsers().then(function(u){setAllUsers(u);setSocialMsg("User list refreshed!");});}} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>Refresh User List</button>
+                <button onClick={function(){loadUsers().then(function(u){setAllUsers(u);setSocialMsg(t("stu_socialUserListRefreshed"));});}} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>{t("stu_socialRefreshBtn")}</button>
                 {getSearchResults().map(function(u){
                   var isFriend=myData.friends.indexOf(u.name)!==-1;
                   var requested=(getSocial(social,u.name).requests||[]).indexOf(currentUser.name)!==-1;
