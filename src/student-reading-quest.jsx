@@ -2903,9 +2903,20 @@ export default function App(){
 
     // Library path: pick a random pre-written story (no API call)
     var levelStories=STORY_LIBRARY.filter(function(s){return s.level===level;});
-    var played=new Set((currentUser&&currentUser.games||[]).map(function(g){return g.storyId;}));
+    var gameList=(currentUser&&currentUser.games)||[];
+    var played=new Set(gameList.map(function(g){return g.storyId;}));
     var unplayed=levelStories.filter(function(s){return !played.has(s.id);});
-    var pool=unplayed.length>0?unplayed:levelStories;
+    var pool;
+    if(unplayed.length>0){pool=unplayed;}
+    else {
+      // Every story at this level has been played at least once — fall back to
+      // the full pool but exclude the most recently played story so we don't
+      // immediately repeat it.
+      var lastStoryId=null;
+      for(var gi=gameList.length-1;gi>=0;gi--){if(gameList[gi].storyId){lastStoryId=gameList[gi].storyId;break;}}
+      pool=lastStoryId?levelStories.filter(function(s){return s.id!==lastStoryId;}):levelStories;
+      if(!pool.length)pool=levelStories;
+    }
     var randomIdx=Math.floor(Math.random()*pool.length);
     var story=pool[randomIdx];
     setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);setCurrentStoryId(story.id);
@@ -4081,7 +4092,9 @@ export default function App(){
             var recentAvg=recent3.length?recent3.reduce(function(s,g){return s+g.pct;},0)/recent3.length:null;
             var prevAvg=prev3.length?prev3.reduce(function(s,g){return s+g.pct;},0)/prev3.length:null;
             var trend=recentAvg===null?"new":prevAvg===null?"new":recentAvg-prevAvg>5?"up":recentAvg-prevAvg<-5?"down":"stable";
-            var isStruggling=recentAvg!==null&&recentAvg<50;
+            // Need ≥2 recent sub-50% games before flagging — a single bad day
+            // shouldn't tag a student with "Needs help" on the teacher's view.
+            var isStruggling=recent3.length>=2&&recentAvg!==null&&recentAvg<50;
             return{name:sName,gameCount:games.length,avgPct:avgPct,avgWpm:avgWpm,bestLv:bestLv,lastDate:lastGame?lastGame.date:"Never",trend:trend,isStruggling:isStruggling};
           });
           var activeStudents=stuData.filter(function(d){return d.gameCount>0;});
@@ -4299,7 +4312,7 @@ export default function App(){
                 var plv=getBestLevel(pg);
                 var Q_TYPES_PR=["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"];
                 return(
-                  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={function(){setPrintStudent(null);}}>
+                  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={function(){setPrintStudent(null);setShareLink("");setShareLinkCopied(false);}}>
                     <div style={{background:"#1e1e2e",border:"1px solid rgba(255,255,255,0.15)",borderRadius:16,padding:24,maxWidth:420,width:"100%",maxHeight:"90vh",overflowY:"auto"}} onClick={function(e){e.stopPropagation();}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
                         <div>
@@ -5762,7 +5775,7 @@ export default function App(){
             )}
             <div style={{...CARD,marginBottom:10,textAlign:"left"}}>
               <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>{t("breakdown")}</p>
-              {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||("Q "+(i+1)):""}</span></div>;}):null}
+              {result.answers&&result.answers.map?result.answers.map(function(ok,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:6}}><span style={{fontSize:13,color:ok?"#34d399":"#ef4444"}}>{ok?"✓":"✕"}</span><span style={{fontSize:12,color:"#d1d5db",flex:1}}>{questions[i]?questions[i].q||questions[i].instruction||questions[i].sentence||qLabel(questions[i].type)||("Q "+(i+1)):""}</span></div>;}):null}
             </div>
             {result.typeStats&&Object.keys(result.typeStats).length>1&&(
               <div style={{...CARD,marginBottom:10,textAlign:"left"}}>

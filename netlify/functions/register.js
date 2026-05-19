@@ -58,7 +58,9 @@ export const handler = async function (event) {
       return { statusCode: 409, headers: CORS, body: JSON.stringify({ error: "Username taken" }) };
     }
 
-    const joined = new Date().toLocaleDateString();
+    // ISO yyyy-mm-dd so display and comparisons are locale-stable
+    // (front-end keys all dates the same way).
+    const joined = new Date().toISOString().slice(0, 10);
 
     // Write profile (no hash) to rq-users-v6
     const newProfiles = profileList.concat([{ name, games: [], joined }]);
