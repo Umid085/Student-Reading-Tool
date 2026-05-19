@@ -4,7 +4,7 @@
 
   <!-- Home page -->
   <url>
-    <loc>https://student-reading-tool.netlify.app/</loc>
+    <loc>https://student-reading-tool.vercel.app/</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -13,7 +13,7 @@
 
   <!-- Auth pages (if indexable) -->
   <url>
-    <loc>https://student-reading-tool.netlify.app/login</loc>
+    <loc>https://student-reading-tool.vercel.app/login</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -21,7 +21,7 @@
   </url>
 
   <url>
-    <loc>https://student-reading-tool.netlify.app/register</loc>
+    <loc>https://student-reading-tool.vercel.app/register</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -30,7 +30,7 @@
 
   <!-- CEFR level landing pages (if implemented) -->
   <url>
-    <loc>https://student-reading-tool.netlify.app/level/a1</loc>
+    <loc>https://student-reading-tool.vercel.app/level/a1</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -38,7 +38,7 @@
   </url>
 
   <url>
-    <loc>https://student-reading-tool.netlify.app/level/a2</loc>
+    <loc>https://student-reading-tool.vercel.app/level/a2</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -46,7 +46,7 @@
   </url>
 
   <url>
-    <loc>https://student-reading-tool.netlify.app/level/b1</loc>
+    <loc>https://student-reading-tool.vercel.app/level/b1</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -54,7 +54,7 @@
   </url>
 
   <url>
-    <loc>https://student-reading-tool.netlify.app/level/b2</loc>
+    <loc>https://student-reading-tool.vercel.app/level/b2</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -62,7 +62,7 @@
   </url>
 
   <url>
-    <loc>https://student-reading-tool.netlify.app/level/c1</loc>
+    <loc>https://student-reading-tool.vercel.app/level/c1</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -70,7 +70,7 @@
   </url>
 
   <url>
-    <loc>https://student-reading-tool.netlify.app/level/c2</loc>
+    <loc>https://student-reading-tool.vercel.app/level/c2</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
