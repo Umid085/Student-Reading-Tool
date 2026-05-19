@@ -81,7 +81,7 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Teacher Dashboard",welcomeBack:"Welcome back",createNewClass:"CREATE NEW CLASS",noClassesYet:"No classes yet. Create your first class above.",
     createButton:"+ Create",classNamePlaceholder:"Class name (e.g. B1 Morning Group)",
     qLabels:{mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"},
-    badges:{
+    badgeNames:{
       first_steps:{name:"First Steps",desc:"Complete your first quiz"},
       story_starter:{name:"Story Starter",desc:"Complete 5 quizzes"},
       reader:{name:"Reader",desc:"Complete 10 quizzes"},
@@ -97,6 +97,12 @@ var STRINGS = {
       high_scorer:{name:"High Scorer",desc:"Earn 500+ XP in a single quiz"},
       all_types:{name:"Complete Player",desc:"Use all 6 question types in one session"},
       level_5:{name:"Level Up",desc:"Reach player level 5"},
+    },
+    goalDefs:{
+      weekly_games:{label:"Games this week",unit:"games"},
+      weekly_xp:{label:"XP this week",unit:"XP"},
+      avg_score:{label:"Avg score (next 5 games)",unit:"%"},
+      streak:{label:"Streak target",unit:"days"},
     },
   },
   uz: {
@@ -159,7 +165,7 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 O'qituvchi Paneli",welcomeBack:"Qaytib kelganingizdan xursandmiz",createNewClass:"YANGI SINF YARATING",noClassesYet:"Hali sinflar yo'q. Yuqorida birinchi sinfingizni yarating.",
     createButton:"+ Yaratish",classNamePlaceholder:"Sinf nomi (masalan: B1 ertalabki guruh)",
     qLabels:{mcq:"Ko'p tanlovli",gap_word:"Bo'sh joy - So'zlar",gap_sentence:"Bo'sh joy - Gaplar",matching:"Mosligini topish",heading:"Sarlavhalarni moslash",qa:"Erkin javob",tfnm:"To'g'ri/Noto'g'ri/Aytilmagan",ynng:"Ha/Yo'q/Berilmagan"},
-    badges:{
+    badgeNames:{
       first_steps:{name:"Birinchi Qadamlar",desc:"Birinchi testni yakunlang"},
       story_starter:{name:"Hikoya Boshlovchisi",desc:"5 ta testni yakunlang"},
       reader:{name:"O'quvchi",desc:"10 ta testni yakunlang"},
@@ -175,6 +181,12 @@ var STRINGS = {
       high_scorer:{name:"Yuqori Ball",desc:"Bir testda 500+ XP to'plang"},
       all_types:{name:"Komplekt O'yinchi",desc:"Bir sessiyada 6 ta savol turidan foydalaning"},
       level_5:{name:"Daraja Oshirish",desc:"5-darajaga yeting"},
+    },
+    goalDefs:{
+      weekly_games:{label:"Bu haftadagi o'yinlar",unit:"o'yin"},
+      weekly_xp:{label:"Bu haftadagi XP",unit:"XP"},
+      avg_score:{label:"O'rtacha ball (keyingi 5 o'yin)",unit:"%"},
+      streak:{label:"Seriya maqsadi",unit:"kun"},
     },
   },
   ru: {
@@ -237,7 +249,7 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Панель преподавателя",welcomeBack:"С возвращением",createNewClass:"СОЗДАТЬ КЛАСС",noClassesYet:"Пока нет классов. Создайте первый класс выше.",
     createButton:"+ Создать",classNamePlaceholder:"Название класса (напр. B1 Утренняя группа)",
     qLabels:{mcq:"Множественный выбор",gap_word:"Пропуск - Слова",gap_sentence:"Пропуск - Предложения",matching:"Соответствие",heading:"Подбор заголовков",qa:"Свободный ответ",tfnm:"Верно/Неверно/Не упоминается",ynng:"Да/Нет/Не указано"},
-    badges:{
+    badgeNames:{
       first_steps:{name:"Первые шаги",desc:"Выполните первый тест"},
       story_starter:{name:"Начинающий",desc:"Выполните 5 тестов"},
       reader:{name:"Читатель",desc:"Выполните 10 тестов"},
@@ -253,6 +265,12 @@ var STRINGS = {
       high_scorer:{name:"Рекордсмен",desc:"Заработайте 500+ XP за один тест"},
       all_types:{name:"Универсал",desc:"Используйте все 6 типов в одной сессии"},
       level_5:{name:"Повышение",desc:"Достигните 5-го уровня"},
+    },
+    goalDefs:{
+      weekly_games:{label:"Игр на этой неделе",unit:"игр"},
+      weekly_xp:{label:"XP на этой неделе",unit:"XP"},
+      avg_score:{label:"Средний балл (следующие 5 игр)",unit:"%"},
+      streak:{label:"Цель серии",unit:"дней"},
     },
   },
   tr: {
@@ -315,7 +333,7 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Öğretmen Paneli",welcomeBack:"Tekrar hoş geldiniz",createNewClass:"YENİ SINIF OLUŞTUR",noClassesYet:"Henüz sınıf yok. İlk sınıfınızı yukarıdan oluşturun.",
     createButton:"+ Oluştur",classNamePlaceholder:"Sınıf adı (örn. B1 Sabah Grubu)",
     qLabels:{mcq:"Çoktan Seçmeli",gap_word:"Boşluk - Kelime",gap_sentence:"Boşluk - Cümle",matching:"Eşleştirme",heading:"Başlık Eşleştir",qa:"Açık Cevap",tfnm:"Doğru/Yanlış/Belirtilmemiş",ynng:"Evet/Hayır/Belirtilmedi"},
-    badges:{
+    badgeNames:{
       first_steps:{name:"İlk Adımlar",desc:"İlk testi tamamla"},
       story_starter:{name:"Hikaye Başlatıcı",desc:"5 test tamamla"},
       reader:{name:"Okuyucu",desc:"10 test tamamla"},
@@ -331,6 +349,12 @@ var STRINGS = {
       high_scorer:{name:"Yüksek Skor",desc:"Tek testte 500+ XP kazan"},
       all_types:{name:"Tam Oyuncu",desc:"Tek oturumda 6 soru türünü kullan"},
       level_5:{name:"Seviye Atla",desc:"Oyuncu seviyesi 5'e ulaş"},
+    },
+    goalDefs:{
+      weekly_games:{label:"Bu haftaki oyunlar",unit:"oyun"},
+      weekly_xp:{label:"Bu haftaki XP",unit:"XP"},
+      avg_score:{label:"Ort. skor (sonraki 5 oyun)",unit:"%"},
+      streak:{label:"Seri hedefi",unit:"gün"},
     },
   },
   ar: {
@@ -393,7 +417,7 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 لوحة المعلم",welcomeBack:"مرحباً بعودتك",createNewClass:"إنشاء صف جديد",noClassesYet:"لا توجد صفوف بعد. أنشئ صفك الأول أعلاه.",
     createButton:"+ إنشاء",classNamePlaceholder:"اسم الصف (مثل B1 المجموعة الصباحية)",
     qLabels:{mcq:"اختيار من متعدد",gap_word:"ملء الفراغ - كلمات",gap_sentence:"ملء الفراغ - جمل",matching:"المطابقة",heading:"مطابقة العناوين",qa:"إجابة مفتوحة",tfnm:"صحيح/خطأ/غير مذكور",ynng:"نعم/لا/غير محدد"},
-    badges:{
+    badgeNames:{
       first_steps:{name:"الخطوات الأولى",desc:"أكمل اختبارك الأول"},
       story_starter:{name:"بادئ القصة",desc:"أكمل 5 اختبارات"},
       reader:{name:"قارئ",desc:"أكمل 10 اختبارات"},
@@ -409,6 +433,12 @@ var STRINGS = {
       high_scorer:{name:"صاحب الأرقام",desc:"اربح 500+ XP في اختبار واحد"},
       all_types:{name:"لاعب كامل",desc:"استخدم 6 أنواع أسئلة في جلسة"},
       level_5:{name:"ترقية",desc:"اصل إلى المستوى 5"},
+    },
+    goalDefs:{
+      weekly_games:{label:"ألعاب هذا الأسبوع",unit:"ألعاب"},
+      weekly_xp:{label:"XP هذا الأسبوع",unit:"XP"},
+      avg_score:{label:"متوسط النتيجة (5 ألعاب قادمة)",unit:"%"},
+      streak:{label:"هدف السلسلة",unit:"أيام"},
     },
   },
   de: {
@@ -471,7 +501,7 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Lehrer-Dashboard",welcomeBack:"Willkommen zurück",createNewClass:"NEUE KLASSE ERSTELLEN",noClassesYet:"Noch keine Klassen. Erstelle oben deine erste Klasse.",
     createButton:"+ Erstellen",classNamePlaceholder:"Klassenname (z.B. B1 Morgengruppe)",
     qLabels:{mcq:"Multiple-Choice",gap_word:"Lückentext - Wörter",gap_sentence:"Lückentext - Sätze",matching:"Zuordnung",heading:"Überschriften zuordnen",qa:"Freie Antwort",tfnm:"Wahr/Falsch/Nicht erwähnt",ynng:"Ja/Nein/Nicht angegeben"},
-    badges:{
+    badgeNames:{
       first_steps:{name:"Erste Schritte",desc:"Schließe deinen ersten Quiz ab"},
       story_starter:{name:"Geschichten-Starter",desc:"Schließe 5 Quizze ab"},
       reader:{name:"Leser",desc:"Schließe 10 Quizze ab"},
@@ -487,6 +517,12 @@ var STRINGS = {
       high_scorer:{name:"Spitzenreiter",desc:"Verdiene 500+ XP in einem Quiz"},
       all_types:{name:"Komplett-Spieler",desc:"Nutze alle 6 Fragetypen in einer Sitzung"},
       level_5:{name:"Aufstieg",desc:"Erreiche Spieler-Level 5"},
+    },
+    goalDefs:{
+      weekly_games:{label:"Spiele diese Woche",unit:"Spiele"},
+      weekly_xp:{label:"XP diese Woche",unit:"XP"},
+      avg_score:{label:"Ø Punkte (nächste 5 Spiele)",unit:"%"},
+      streak:{label:"Serien-Ziel",unit:"Tage"},
     },
   },
   es: {
@@ -549,7 +585,7 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Panel del profesor",welcomeBack:"Bienvenido de nuevo",createNewClass:"CREAR NUEVA CLASE",noClassesYet:"Aún sin clases. Crea tu primera clase arriba.",
     createButton:"+ Crear",classNamePlaceholder:"Nombre de clase (ej. B1 Grupo matutino)",
     qLabels:{mcq:"Opción múltiple",gap_word:"Huecos - Palabras",gap_sentence:"Huecos - Oraciones",matching:"Emparejar",heading:"Emparejar títulos",qa:"Respuesta abierta",tfnm:"V/F/No mencionado",ynng:"Sí/No/No dado"},
-    badges:{
+    badgeNames:{
       first_steps:{name:"Primeros Pasos",desc:"Completa tu primer quiz"},
       story_starter:{name:"Iniciador de Historias",desc:"Completa 5 quizzes"},
       reader:{name:"Lector",desc:"Completa 10 quizzes"},
@@ -565,6 +601,12 @@ var STRINGS = {
       high_scorer:{name:"Goleador",desc:"Gana 500+ XP en un quiz"},
       all_types:{name:"Jugador Completo",desc:"Usa los 6 tipos de pregunta en una sesión"},
       level_5:{name:"Subir Nivel",desc:"Alcanza el nivel 5"},
+    },
+    goalDefs:{
+      weekly_games:{label:"Partidas esta semana",unit:"partidas"},
+      weekly_xp:{label:"XP esta semana",unit:"XP"},
+      avg_score:{label:"Puntuación med. (próximas 5)",unit:"%"},
+      streak:{label:"Objetivo de racha",unit:"días"},
     },
   },
   fr: {
@@ -627,7 +669,7 @@ var STRINGS = {
     teacherDashboard:"👩‍🏫 Tableau de bord enseignant",welcomeBack:"Bon retour",createNewClass:"CRÉER UNE NOUVELLE CLASSE",noClassesYet:"Pas encore de classes. Créez votre première au-dessus.",
     createButton:"+ Créer",classNamePlaceholder:"Nom de classe (ex. B1 Groupe matin)",
     qLabels:{mcq:"Choix multiple",gap_word:"Texte à trous - Mots",gap_sentence:"Texte à trous - Phrases",matching:"Appariement",heading:"Apparier titres",qa:"Réponse libre",tfnm:"Vrai/Faux/Non mentionné",ynng:"Oui/Non/Non donné"},
-    badges:{
+    badgeNames:{
       first_steps:{name:"Premiers Pas",desc:"Termine ton premier quiz"},
       story_starter:{name:"Démarreur d'Histoire",desc:"Termine 5 quizz"},
       reader:{name:"Lecteur",desc:"Termine 10 quizz"},
@@ -643,6 +685,12 @@ var STRINGS = {
       high_scorer:{name:"Top Score",desc:"Gagne 500+ XP en un quiz"},
       all_types:{name:"Joueur Complet",desc:"Utilise les 6 types de question en une session"},
       level_5:{name:"Niveau Supérieur",desc:"Atteins le niveau joueur 5"},
+    },
+    goalDefs:{
+      weekly_games:{label:"Parties cette semaine",unit:"parties"},
+      weekly_xp:{label:"XP cette semaine",unit:"XP"},
+      avg_score:{label:"Score moyen (5 prochaines parties)",unit:"%"},
+      streak:{label:"Objectif de série",unit:"jours"},
     },
   },
 };
@@ -2045,8 +2093,12 @@ export default function App(){
   // doesn't define the lookup, then to the raw type key as a last resort.
   function qLabel(type){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].qLabels;if(tbl&&tbl[type])return tbl[type];return Q_LABELS[type]||type;}
   // Localized badge name + description with fallback to the English BADGES table.
-  function badgeName(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].badges;if(tbl&&tbl[id]&&tbl[id].name)return tbl[id].name;var b=BADGES.find(function(x){return x.id===id;});return b?b.name:id;}
-  function badgeDesc(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].badges;if(tbl&&tbl[id]&&tbl[id].desc)return tbl[id].desc;var b=BADGES.find(function(x){return x.id===id;});return b?b.desc:"";}
+  function badgeName(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].badgeNames;if(tbl&&tbl[id]&&tbl[id].name)return tbl[id].name;var b=BADGES.find(function(x){return x.id===id;});return b?b.name:id;}
+  function badgeDesc(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].badgeNames;if(tbl&&tbl[id]&&tbl[id].desc)return tbl[id].desc;var b=BADGES.find(function(x){return x.id===id;});return b?b.desc:"";}
+  // Localized goal label/unit (e.g. "Games this week" / "games") with fallback
+  // to the English GOAL_DEFS table.
+  function goalLabel(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].goalDefs;if(tbl&&tbl[id]&&tbl[id].label)return tbl[id].label;var d=GOAL_DEFS.find(function(x){return x.id===id;});return d?d.label:id;}
+  function goalUnit(id){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].goalDefs;if(tbl&&tbl[id]&&tbl[id].unit)return tbl[id].unit;var d=GOAL_DEFS.find(function(x){return x.id===id;});return d?d.unit:"";}
 
   // Keep passageLang in sync with uiLang: switching UI to Russian also makes
   // AI-generated passages Russian by default. User can still override per
@@ -4578,8 +4630,8 @@ export default function App(){
                     return(
                       <div key={def.id} style={{marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                          <span style={{color:"#9ca3af"}}>{def.icon} {def.label}</span>
-                          <span style={{color:prog.done?"#34d399":"#a78bfa",fontWeight:700}}>{prog.done?"✓ Done!":prog.current+(def.id==="avg_score"?" avg":"")+"/"+prog.target+" "+def.unit}</span>
+                          <span style={{color:"#9ca3af"}}>{def.icon} {goalLabel(def.id)}</span>
+                          <span style={{color:prog.done?"#34d399":"#a78bfa",fontWeight:700}}>{prog.done?"✓ "+t("doneLabel"):prog.current+(def.id==="avg_score"?" avg":"")+"/"+prog.target+" "+goalUnit(def.id)}</span>
                         </div>
                         <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
                           <div style={{height:"100%",width:prog.pct+"%",background:prog.done?"#34d399":"#6366f1",borderRadius:999,transition:"width 0.4s ease"}}/>
@@ -5403,7 +5455,7 @@ export default function App(){
                   return def?(
                     <div key={id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                       <span style={{fontSize:16}}>{def.icon}</span>
-                      <span style={{fontSize:13,color:"#c7d2fe",fontWeight:600}}>{def.label}</span>
+                      <span style={{fontSize:13,color:"#c7d2fe",fontWeight:600}}>{goalLabel(def.id)}</span>
                       <span style={{marginLeft:"auto",fontSize:12,color:"#34d399",fontWeight:700}}>✓</span>
                     </div>
                   ):null;
@@ -6318,11 +6370,11 @@ export default function App(){
                       <div key={def.id} style={{marginBottom:14,padding:"12px 14px",background:"rgba(255,255,255,0.03)",borderRadius:12,border:"1px solid "+(prog.done?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.07)")}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                           <div>
-                            <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{def.icon} {def.label}</div>
+                            <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{def.icon} {goalLabel(def.id)}</div>
                             {detail&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{detail}</div>}
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginLeft:10}}>
-                            <div style={{fontSize:15,fontWeight:900,color:prog.done?"#34d399":"#a78bfa"}}>{prog.done?"✓ "+t("doneLabel"):prog.current+(def.id==="avg_score"?" avg%":"")+"/"+prog.target+" "+def.unit}</div>
+                            <div style={{fontSize:15,fontWeight:900,color:prog.done?"#34d399":"#a78bfa"}}>{prog.done?"✓ "+t("doneLabel"):prog.current+(def.id==="avg_score"?" avg%":"")+"/"+prog.target+" "+goalUnit(def.id)}</div>
                           </div>
                         </div>
                         <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:7,overflow:"hidden",marginBottom:8}}>
@@ -6341,10 +6393,10 @@ export default function App(){
                 {GOAL_DEFS.filter(function(d){return!goals[d.id];}).map(function(def){
                   return(
                     <div key={def.id} style={{marginBottom:14}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",marginBottom:7}}>{def.icon} {def.label}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",marginBottom:7}}>{def.icon} {goalLabel(def.id)}</div>
                       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                         {def.opts.map(function(opt){
-                          return<button key={opt} onClick={function(){setGoal(def.id,opt);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",color:"#c7d2fe",borderRadius:999,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{opt} {def.unit}</button>;
+                          return<button key={opt} onClick={function(){setGoal(def.id,opt);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",color:"#c7d2fe",borderRadius:999,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{opt} {goalUnit(def.id)}</button>;
                         })}
                       </div>
                     </div>
