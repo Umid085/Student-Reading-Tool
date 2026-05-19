@@ -2661,8 +2661,68 @@ export default function App(){
       }
     }catch(e){}
   }
+  // Curated royalty-free / public-domain tracks hosted by Internet Archive
+  // (CORS-enabled, stable URLs). Player picks one at random per session,
+  // auto-advances when finished, falls back to synthesised audio if every
+  // URL in a genre fails to load.
+  var MUSIC_TRACKS={
+    classical:[
+      "https://archive.org/download/100ClassicalMusicMasterpieces/1685%20Purcell%20%2C%20Trumpet%20Tune%20and%20Air.mp3",
+      "https://archive.org/download/100ClassicalMusicMasterpieces/1698%20Pachelbel%20%2C%20Canon%20in%20D.mp3",
+      "https://archive.org/download/100ClassicalMusicMasterpieces/1709%20Bach%20%2C%20Toccata%20in%20D%20minor.mp3"
+    ],
+    lofi:[
+      "https://archive.org/download/loffaiii/Atlas%20-%20e%5Bu%5D.logy%20%28prod.%20Purpan%29.mp3",
+      "https://archive.org/download/loffaiii/jinsang%20-%20affection..mp3",
+      "https://archive.org/download/loffaiii/jinsang%20-%20egyptian%20pools.mp3"
+    ],
+    jazz:[
+      "https://archive.org/download/Free_20s_Jazz_Collection/Bennie_Moten_Kater_St._Rag.mp3",
+      "https://archive.org/download/Free_20s_Jazz_Collection/Raderman_Jazz_Orch-Dardanella.mp3"
+    ],
+    nature:[
+      "https://archive.org/download/relaxingrainsounds/Rain%20Sounds.mp3",
+      "https://archive.org/download/relaxingrainsounds/Tropical%20Rain.mp3"
+    ]
+  };
+
   function startMusic(genre){
-    if(musicStopRef.current){musicStopRef.current();}
+    if(musicStopRef.current){musicStopRef.current();musicStopRef.current=null;}
+    var tracks=MUSIC_TRACKS[genre];
+    if(tracks&&tracks.length>0){
+      var stopped=false;
+      var idx=Math.floor(Math.random()*tracks.length);
+      var failCount=0;
+      var audio=null;
+      var playNext=function(){
+        if(stopped)return;
+        if(failCount>=tracks.length){
+          // Every URL failed (offline / archive.org down) — fall back to synth.
+          startMusicSynth(genre);
+          return;
+        }
+        audio=new Audio(tracks[idx]);
+        audio.volume=0.22;
+        audio.crossOrigin="anonymous";
+        audio.preload="auto";
+        audio.onended=function(){failCount=0;idx=(idx+1)%tracks.length;playNext();};
+        audio.onerror=function(){failCount++;idx=(idx+1)%tracks.length;playNext();};
+        var p=audio.play();
+        if(p&&p.catch)p.catch(function(){/* autoplay blocked — wait for user gesture */});
+      };
+      musicStopRef.current=function(){
+        stopped=true;
+        if(audio){try{audio.pause();audio.src="";}catch(e){}}
+      };
+      playNext();
+      return;
+    }
+    startMusicSynth(genre);
+  }
+
+  // Fallback synth (original implementation). Used only when no playlist exists
+  // for the genre or every remote URL fails to load.
+  function startMusicSynth(genre){
     try{
       var ctx=getACtx();
       var SCALES={
