@@ -19,6 +19,10 @@ const TYPE_EXAMPLES = {
 // matching and heading require complex structured formats — excluded from AI generation
 const SUPPORTED_AI_TYPES = new Set(Object.keys(TYPE_EXAMPLES));
 
+// Question count scales with CEFR difficulty. Higher levels = longer passages
+// and stronger learners, so they get more comprehension items per session.
+const QUESTIONS_PER_LEVEL = { A1: 5, A2: 6, B1: 8, B2: 10, C1: 12, C2: 15 };
+
 const LEVEL_CONFIG = {
   A1: {
     words: "80-100",
@@ -122,12 +126,22 @@ export default async function handler(req, res) {
     : [];
 
   const lc = LEVEL_CONFIG[level] || LEVEL_CONFIG["B1"];
-  const validTypes = types.filter((t) => SUPPORTED_AI_TYPES.has(t)).slice(0, 4);
-  if (!validTypes.length) {
+  const baseTypes = types.filter((t) => SUPPORTED_AI_TYPES.has(t));
+  if (!baseTypes.length) {
     return res.status(400).json({ error: "No valid question types provided" });
   }
 
-  const typeExamples = validTypes.map((t) => "  " + TYPE_EXAMPLES[t]).join(",\n");
+  // Expand the requested types to the level-appropriate question count by
+  // cycling through them in order. e.g. C2 + [mcq, gap_word, qa, tfnm] → 15
+  // items, with each type appearing 3–4 times.
+  const targetCount = QUESTIONS_PER_LEVEL[level] || 6;
+  const validTypes = [];
+  for (let i = 0; i < targetCount; i++) {
+    validTypes.push(baseTypes[i % baseTypes.length]);
+  }
+
+  const uniqueTypes = Array.from(new Set(validTypes));
+  const typeShapes = uniqueTypes.map((t) => `  ${t}: ${TYPE_EXAMPLES[t]}`).join("\n");
 
   const prompt = `Write a ${lc.words}-word reading passage in ${language} about: "${topic}"
 
@@ -148,25 +162,29 @@ VOCAB INTEGRATION (best effort — never break the CEFR rules above):
 - Naturally weave AT LEAST 3 of them into the passage in a way that fits the topic and the CEFR level.
 - If a word would force vocabulary or grammar above CEFR ${level}, OMIT it rather than warp the passage. The CEFR profile takes priority over vocab inclusion.
 ` : ''}
-After the passage, write exactly ${validTypes.length} comprehension question(s) in this order: ${validTypes.join(", ")}
+After the passage, write exactly ${validTypes.length} comprehension questions, one per slot in this exact order: ${validTypes.join(", ")}
+
+Each question object must follow the JSON shape for its type:
+${typeShapes}
 
 Return ONLY this JSON, no markdown, no explanation:
 {
   "topic_echo": "the word(s) for \\"${topic}\\" exactly as you wrote them in ${language} (e.g. \\"Mars\\" → \\"Марс\\" for Russian, \\"المريخ\\" for Arabic, \\"Mars\\" for English). This must appear verbatim in your passage.",
   "passage": "your passage about ${topic}",
-  "questions": [
-${typeExamples}
-  ]
+  "questions": [ ${validTypes.length} question objects in the order listed above ]
 }
 
 - Every question must be answerable from the passage alone.
 - answer = 0-based index of the correct option (mcq/gap_word/gap_sentence).
+- When the same type appears multiple times, each occurrence MUST ask about a DIFFERENT detail from the passage — no repeated stems, no rephrased duplicates.
 - topic_echo MUST appear in the passage — this is how topic adherence is verified.`;
 
   try {
     const msg = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 2048,
+      // Passage (up to ~700 tokens at C2) + up to 15 question objects (~150
+      // tokens each ≈ 2.3K) + JSON scaffolding. 4096 is the safe ceiling.
+      max_tokens: 4096,
       system: `You are a CEFR-aligned language learning exercise generator for level ${level} (${language}). You write reading passages about the exact topic the user specifies, never drifting. You match the CEFR level on BOTH dimensions equally: vocabulary AND grammar/sentence structures. A passage with level-appropriate vocab but mid-complexity SVO sentences is incorrect output and must not be returned. At ${level}, the grammatical structures listed in the user prompt are mandatory minimums — at least one occurrence of each required structure must appear in the passage.`,
       messages: [{ role: "user", content: prompt }],
     });
