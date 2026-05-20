@@ -17,3 +17,7 @@ dist/
 # Vite cache
 .vite/
 .vercel
+
+# Design mockups (not source)
+mockups/
+stitch_github_design_assistant.zip

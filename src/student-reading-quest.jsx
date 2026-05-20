@@ -1330,6 +1330,7 @@ export default function App(){
   var [pmtResult,setPmtResult]=useState(null);
   var [onboardClassCode,setOnboardClassCode]=useState("");
   var [libSubjectFilter,setLibSubjectFilter]=useState("");
+  var [librarySearch,setLibrarySearch]=useState("");
   var [reportData,setReportData]=useState(null);
   var [pendingReportData,setPendingReportData]=useState(null);
   var [shareLink,setShareLink]=useState("");
@@ -2410,13 +2411,13 @@ export default function App(){
   }
 
   // ── style helpers ─────────────────────────────────────────
-  var _accent=appTheme?appTheme.accent:"#6366f1";
-  var _secondary=appTheme?appTheme.secondary:"#34d399";
-  var BG="linear-gradient(160deg,#0d0d1a 0%,#111827 55%,#0d1f12 100%)";
-  var CARD={background:"rgba(255,255,255,0.05)",border:"1px solid var(--rq-accent-border)",borderRadius:18,padding:20,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 8px 32px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.07),0 0 0 1px rgba(255,255,255,0.03)"};
-  var GHOST={background:"transparent",border:"1px solid rgba(255,255,255,0.10)",color:"#9ca3af",borderRadius:12,padding:"8px 16px",fontFamily:"inherit",fontSize:13,cursor:"pointer",fontWeight:700,transition:"all 0.15s ease"};
-  var INP={width:"100%",background:"rgba(0,0,0,0.30)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#f3f4f6",fontSize:14,padding:"12px 16px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",boxShadow:"inset 0 2px 4px rgba(0,0,0,0.2)",transition:"border-color 0.2s,box-shadow 0.2s"};
-  function mkBtn(bg,fg,size){var pad=size==="sm"?"7px 14px":size==="lg"?"15px 28px":"13px 22px";var fs=size==="sm"?12:size==="lg"?17:15;var glow=bg&&bg.startsWith("#")?bg+"55":"var(--rq-accent-glow)";return{background:bg,color:fg||"#fff",border:"none",borderRadius:12,padding:pad,fontWeight:700,fontSize:fs,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 22px "+glow,transition:"all 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
+  var _accent=appTheme?appTheme.accent:"#5af0b3";
+  var _secondary=appTheme?appTheme.secondary:"#a78bfa";
+  var BG="linear-gradient(160deg,#0d0d1a 0%,#12121f 55%,#0d0d1a 100%)";
+  var CARD={background:"rgba(30,30,44,0.45)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:18,padding:20,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",boxShadow:"0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.05)"};
+  var GHOST={background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.10)",color:"rgba(227,224,244,0.75)",borderRadius:12,padding:"8px 16px",fontFamily:"inherit",fontSize:13,cursor:"pointer",fontWeight:700,transition:"all 0.15s ease"};
+  var INP={width:"100%",background:"rgba(13,13,26,0.7)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:12,color:"#e3e0f4",fontSize:14,padding:"12px 16px",outline:"none",fontFamily:"inherit",boxSizing:"border-box",boxShadow:"inset 0 2px 4px rgba(0,0,0,0.3)",transition:"border-color 0.2s,box-shadow 0.2s"};
+  function mkBtn(bg,fg,size){var pad=size==="sm"?"7px 14px":size==="lg"?"15px 28px":"13px 22px";var fs=size==="sm"?12:size==="lg"?17:15;var glow=bg&&bg.startsWith("#")?bg+"40":"var(--rq-accent-glow)";return{background:bg,color:fg||"#003825",border:"none",borderRadius:12,padding:pad,fontWeight:700,fontSize:fs,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 6px 18px "+glow,transition:"all 0.15s ease,box-shadow 0.15s ease,filter 0.15s ease"};}
   function pill(bg,col){return{background:bg,color:col||"#fff",borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700};}
   function ErrorBanner(props){var msg=props.message||props.children;if(!msg)return null;return(<div style={{...CARD,background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.3)",padding:14,display:"flex",alignItems:"flex-start",gap:10,marginBottom:props.marginBottom||12}}>
     <span style={{fontSize:18,flexShrink:0}}>⚠️</span>
@@ -2824,10 +2825,10 @@ export default function App(){
       :root{
         --rq-accent:${_accent};
         --rq-secondary:${_secondary};
-        --rq-accent-rgb:${appTheme?hex2rgb(_accent):"99,102,241"};
-        --rq-secondary-rgb:${appTheme?hex2rgb(_secondary):"52,211,153"};
-        --rq-accent-border:rgba(${appTheme?hex2rgb(_accent):"99,102,241"},0.22);
-        --rq-accent-glow:rgba(${appTheme?hex2rgb(_accent):"99,102,241"},0.35);
+        --rq-accent-rgb:${hex2rgb(_accent)};
+        --rq-secondary-rgb:${hex2rgb(_secondary)};
+        --rq-accent-border:rgba(${hex2rgb(_accent)},0.30);
+        --rq-accent-glow:rgba(${hex2rgb(_accent)},0.35);
         --rq-transition:all 0.15s ease;
         --rq-card-radius:18px;
       }
@@ -2846,8 +2847,8 @@ export default function App(){
         100%{background-position:-200% center}
       }
       @keyframes rqFadeIn{
-        from{opacity:0;transform:translateY(10px)}
-        to{opacity:1;transform:translateY(0)}
+        from{opacity:0}
+        to{opacity:1}
       }
       @keyframes rqSkeleton{
         0%{background-position:-400px 0}
@@ -3102,43 +3103,125 @@ export default function App(){
 
         {/* ── AUTH ──────────────────────────────────────────── */}
         {stage==="auth"&&(
-          <div style={{paddingTop:46,textAlign:"center"}}>
-            <div style={{fontSize:52,marginBottom:8}}>📖</div>
-            <h1 style={{fontSize:32,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399",margin:"0 0 6px"}}>Reading Quest</h1>
-            <p style={{color:"#6b7280",marginBottom:16,fontSize:15}}>6 question types · Friends · Compete</p>
-            <div style={{display:"flex",justifyContent:"center",gap:4,flexWrap:"wrap",marginBottom:20}}>
-              {[{c:"en",f:"🇬🇧"},{c:"uz",f:"🇺🇿"},{c:"ru",f:"🇷🇺"},{c:"tr",f:"🇹🇷"},{c:"ar",f:"🇦🇪"},{c:"de",f:"🇩🇪"},{c:"es",f:"🇪🇸"},{c:"fr",f:"🇫🇷"}].map(function(opt){
-                var active=uiLang===opt.c;
-                return<button key={opt.c} onClick={function(){setUiLang(opt.c);try{localStorage.setItem("rq-uilang",opt.c);}catch(e){}}} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 10px",fontSize:12,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,transition:"all 0.15s"}}>{opt.f} {opt.c.toUpperCase()}</button>;
-              })}
-            </div>
-            <div style={CARD}>
-              <div style={{display:"flex",gap:4,marginBottom:18,background:"rgba(0,0,0,0.2)",borderRadius:10,padding:4}}>
-                {["register","login"].map(function(m){return<button key={m} onClick={function(){setAuthMode(m);setAuthErr("");}} style={{...GHOST,flex:1,padding:"10px 0",borderRadius:8,fontSize:15,...(authMode===m?{background:"#34d399",color:"#0d0d1a",borderColor:"#34d399"}:{})}}>{m==="login"?t("login"):t("register")}</button>;})}
+          <>
+            <style>{`
+              .lq-auth-wrap{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 0}
+              .lq-brand{font-family:'Outfit',sans-serif;font-weight:700;font-size:34px;letter-spacing:-0.02em;color:#5af0b3;line-height:1.05;margin:0;text-shadow:0 0 15px rgba(52,211,153,0.7),0 0 30px rgba(52,211,153,0.45),0 0 60px rgba(52,211,153,0.25)}
+              @media(min-width:480px){.lq-brand{font-size:42px}}
+              .lq-tagline{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:rgba(227,224,244,0.55);letter-spacing:0.22em;text-transform:uppercase;margin:14px 0 0;text-align:center}
+              .lq-langrow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:28px 0 24px;max-width:340px}
+              .lq-lang-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:500;color:rgba(227,224,244,0.65);cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.04em;transition:all 0.2s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+              .lq-lang-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18);color:#e3e0f4}
+              .lq-lang-btn:active{transform:scale(0.95)}
+              .lq-lang-btn.is-active{background:rgba(52,211,153,0.14);border-color:rgba(52,211,153,0.45);color:#5af0b3}
+              .lq-glass{position:relative;width:100%;max-width:440px;background:rgba(18,18,31,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:32px;padding:28px 24px 24px;backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);box-shadow:0 20px 50px rgba(0,0,0,0.5),inset 0 1px 1px rgba(255,255,255,0.05);overflow:hidden}
+              .lq-glass::before,.lq-glass::after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0}
+              .lq-glass::before{top:-40px;right:-40px;background:rgba(99,102,241,0.18)}
+              .lq-glass::after{bottom:-40px;left:-40px;background:rgba(52,211,153,0.12)}
+              .lq-glass>*{position:relative;z-index:1}
+              .lq-toggle{position:relative;display:flex;background:rgba(13,13,26,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:6px;margin-bottom:24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+              .lq-toggle-pill{position:absolute;top:6px;bottom:6px;left:6px;width:calc(50% - 6px);background:#5af0b3;border-radius:12px;box-shadow:0 0 18px rgba(52,211,153,0.45);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);z-index:0}
+              .lq-toggle-pill.is-login{transform:translateX(100%)}
+              .lq-toggle-btn{position:relative;flex:1;padding:11px 12px;border:none;background:transparent;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.02em;color:rgba(227,224,244,0.55);cursor:pointer;border-radius:12px;transition:color 0.3s;z-index:1}
+              .lq-toggle-btn.is-active{color:#003825}
+              .lq-roles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+              .lq-role{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 12px;border-radius:20px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.10);cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.4s cubic-bezier(0.23,1,0.32,1)}
+              .lq-role:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18)}
+              .lq-role.is-student-active{background:rgba(99,102,241,0.14);border-color:#6366F1;transform:translateY(-3px);box-shadow:0 12px 28px -10px rgba(99,102,241,0.45)}
+              .lq-role.is-teacher-active{background:rgba(14,165,233,0.14);border-color:#0EA5E9;transform:translateY(-3px);box-shadow:0 12px 28px -10px rgba(14,165,233,0.45)}
+              .lq-role-ico{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:rgba(255,255,255,0.06);font-size:24px;margin-bottom:10px;transition:all 0.3s}
+              .lq-role.is-student-active .lq-role-ico{background:rgba(99,102,241,0.22)}
+              .lq-role.is-teacher-active .lq-role-ico{background:rgba(14,165,233,0.22)}
+              .lq-role-label{font-size:13px;font-weight:600;letter-spacing:0.04em;color:rgba(227,224,244,0.6);text-transform:none}
+              .lq-role.is-student-active .lq-role-label,.lq-role.is-teacher-active .lq-role-label{color:#e3e0f4}
+              .lq-role-check{position:absolute;top:8px;right:8px;font-size:14px;opacity:0;transition:opacity 0.2s}
+              .lq-role.is-student-active .lq-role-check,.lq-role.is-teacher-active .lq-role-check{opacity:1}
+              .lq-field{margin-bottom:16px}
+              .lq-field-label{display:block;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:rgba(227,224,244,0.6);margin:0 0 8px 4px;letter-spacing:0.02em}
+              .lq-input-wrap{position:relative}
+              .lq-input-wrap>svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(227,224,244,0.4);pointer-events:none}
+              .lq-input{width:100%;background:rgba(13,13,26,0.8);border:1px solid rgba(255,255,255,0.10);border-radius:16px;padding:14px 16px 14px 44px;color:#e3e0f4;font-family:'Inter',sans-serif;font-size:15px;outline:none;box-sizing:border-box;transition:all 0.3s ease}
+              .lq-input::placeholder{color:rgba(227,224,244,0.25)}
+              .lq-input:focus{border-color:#34D399;box-shadow:0 0 0 3px rgba(52,211,153,0.12),inset 0 2px 4px rgba(0,0,0,0.4);background:rgba(13,13,26,0.95)}
+              .lq-input.has-eye{padding-right:48px}
+              .lq-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(227,224,244,0.5);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:8px;transition:color 0.15s,background 0.15s}
+              .lq-eye:hover{color:#e3e0f4;background:rgba(255,255,255,0.06)}
+              .lq-submit{width:100%;padding:16px 20px;margin-top:8px;border:none;border-radius:18px;background:#5af0b3;color:#003825;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(52,211,153,0.28),0 0 30px rgba(52,211,153,0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
+              .lq-submit:hover{filter:brightness(1.08);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(52,211,153,0.4),0 0 40px rgba(52,211,153,0.3)}
+              .lq-submit:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
+              .lq-submit:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+              .lq-fineprint{text-align:center;margin:22px 0 0;font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.45)}
+              .lq-fineprint a{color:#5af0b3;text-decoration:underline}
+              .lq-footer{display:flex;align-items:center;justify-content:center;gap:18px;margin:32px 0 8px;opacity:0.25}
+              .lq-footer-line{height:1px;width:56px;background:linear-gradient(90deg,transparent,rgba(227,224,244,0.5),transparent)}
+              .lq-footer-icons{display:flex;gap:18px;font-size:16px}
+            `}</style>
+            <div className="lq-auth-wrap">
+              <h1 className="lq-brand">Reading Quest</h1>
+              <p className="lq-tagline">6 Question Types · Friends · Compete</p>
+              <div className="lq-langrow">
+                {[{c:"en",f:"🇬🇧"},{c:"uz",f:"🇺🇿"},{c:"ru",f:"🇷🇺"},{c:"tr",f:"🇹🇷"},{c:"ar",f:"🇦🇪"},{c:"de",f:"🇩🇪"},{c:"es",f:"🇪🇸"},{c:"fr",f:"🇫🇷"}].map(function(opt){
+                  var active=uiLang===opt.c;
+                  return<button key={opt.c} type="button" onClick={function(){setUiLang(opt.c);try{localStorage.setItem("rq-uilang",opt.c);}catch(e){}}} className={"lq-lang-btn"+(active?" is-active":"")}><span>{opt.f}</span><span>{opt.c.toUpperCase()}</span></button>;
+                })}
               </div>
-              {authMode==="register"&&(
-                <div style={{display:"flex",gap:6,marginBottom:4}}>
-                  {[{v:false,label:"👨‍🎓 Student"},{v:true,label:"👩‍🏫 Teacher"}].map(function(r){return(
-                    <button key={String(r.v)} onClick={function(){setIsTeacherReg(r.v);}} style={{flex:1,padding:"8px 0",borderRadius:10,border:"2px solid "+(isTeacherReg===r.v?"#6366f1":"rgba(255,255,255,0.1)"),background:isTeacherReg===r.v?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.03)",color:isTeacherReg===r.v?"#a78bfa":"#9ca3af",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{r.label}</button>
-                  );})}
+              <section className="lq-glass">
+                <div className="lq-toggle">
+                  <div className={"lq-toggle-pill"+(authMode==="login"?" is-login":"")}/>
+                  {["register","login"].map(function(m){return<button key={m} type="button" onClick={function(){setAuthMode(m);setAuthErr("");}} className={"lq-toggle-btn"+(authMode===m?" is-active":"")}>{m==="login"?t("login"):t("register")}</button>;})}
                 </div>
-              )}
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <input style={INP} placeholder={t("username")} value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
-                <div className="rq-pass-wrap">
-                  <input style={INP} type={showPass?"text":"password"} placeholder={t("password")} value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
-                  <button type="button" className="rq-eye-btn" onClick={function(){setShowPass(function(p){return!p;});}} title={showPass?"Hide password":"Show password"}>
-                    {showPass
-                      ? <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                      : <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    }
-                  </button>
+
+                {authMode==="register"&&(
+                  <div className="lq-roles">
+                    <button type="button" onClick={function(){setIsTeacherReg(false);}} className={"lq-role"+(!isTeacherReg?" is-student-active":"")}>
+                      <span className="lq-role-check" style={{color:"#a5b4fc"}}>✓</span>
+                      <div className="lq-role-ico">🎓</div>
+                      <span className="lq-role-label">Student</span>
+                    </button>
+                    <button type="button" onClick={function(){setIsTeacherReg(true);}} className={"lq-role"+(isTeacherReg?" is-teacher-active":"")}>
+                      <span className="lq-role-check" style={{color:"#7dd3fc"}}>✓</span>
+                      <div className="lq-role-ico">📡</div>
+                      <span className="lq-role-label">Teacher</span>
+                    </button>
+                  </div>
+                )}
+
+                <div className="lq-field">
+                  <label className="lq-field-label">{t("username")}</label>
+                  <div className="lq-input-wrap">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <input className="lq-input" type="text" placeholder="QuestMaster42" value={nameInput} onChange={function(e){setNameInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
+                  </div>
                 </div>
+
+                <div className="lq-field">
+                  <label className="lq-field-label">{t("password")}</label>
+                  <div className="lq-input-wrap">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <input className="lq-input has-eye" type={showPass?"text":"password"} placeholder="••••••••" value={passInput} onChange={function(e){setPassInput(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")authMode==="login"?doLogin():doRegister();}}/>
+                    <button type="button" className="lq-eye" onClick={function(){setShowPass(function(p){return!p;});}} title={showPass?"Hide password":"Show password"} aria-label={showPass?"Hide password":"Show password"}>
+                      {showPass
+                        ? <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        : <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      }
+                    </button>
+                  </div>
+                </div>
+
+                {authErr&&<ErrorBanner message={authErr} marginBottom={12}/>}
+
+                <button type="button" onClick={authMode==="login"?doLogin:doRegister} className="lq-submit">{authMode==="login"?t("login"):t("register")}</button>
+
+                <p className="lq-fineprint">By joining, you agree to the <a href="#" onClick={function(e){e.preventDefault();}}>Quest Rules</a></p>
+              </section>
+
+              <div className="lq-footer">
+                <div className="lq-footer-line"/>
+                <div className="lq-footer-icons"><span>⭐</span><span>📖</span><span>🏆</span></div>
+                <div className="lq-footer-line"/>
               </div>
-              {authErr&&<ErrorBanner message={authErr} marginBottom={10}/>}
-              <button onClick={authMode==="login"?doLogin:doRegister} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:14}}>{authMode==="login"?t("login"):t("register")}</button>
             </div>
-          </div>
+          </>
         )}
 
         {/* ── TEACHER DASHBOARD ────────────────────────────── */}
@@ -3950,274 +4033,224 @@ export default function App(){
         })()}
 
         {/* ── HOME ──────────────────────────────────────────── */}
-        {stage==="home"&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"center",gap:4,flexWrap:"wrap",marginBottom:14}}>
-              {[{c:"en",f:"🇬🇧"},{c:"uz",f:"🇺🇿"},{c:"ru",f:"🇷🇺"},{c:"tr",f:"🇹🇷"},{c:"ar",f:"🇦🇪"},{c:"de",f:"🇩🇪"},{c:"es",f:"🇪🇸"},{c:"fr",f:"🇫🇷"}].map(function(opt){
-                var active=uiLang===opt.c;
-                return<button key={opt.c} onClick={function(){setUiLang(opt.c);try{localStorage.setItem("rq-uilang",opt.c);}catch(e){}}} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 10px",fontSize:12,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,transition:"all 0.15s"}}>{opt.f} {opt.c.toUpperCase()}</button>;
-              })}
-            </div>
-            <div className="rq-home-hdr">
-              <div>
-                <h2 style={{margin:0,fontSize:18,fontWeight:900,color:"#34d399"}}>{t("hey")}, {currentUser?currentUser.name:""}!</h2>
-                <div className="rq-pills">
-                  <span style={pill(streakAtRisk?"rgba(239,68,68,0.2)":"rgba(251,191,36,0.15)",streakAtRisk?"#f87171":"#fbbf24")}>{streakAtRisk?"⚠️":"🔥"} {myStreak} day streak{shields>0?" · "+"🛡️".repeat(shields):""}</span>
-                  <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>{t("friends")}: {myData.friends.length}</span>
-                  {myData.likes>0&&<span style={pill("rgba(236,72,153,0.15)","#f472b6")}>Likes: {myData.likes}</span>}
-                  {pendingChallenges.length>0&&<span style={pill("rgba(239,68,68,0.2)","#f87171")}>!{pendingChallenges.length} challenge</span>}
+        {stage==="home"&&currentUser&&(function(){
+          var today=todayKey();
+          var dailyDoneTodayHome=dailyDone&&dailyDone.date===today;
+          var pendingReviews=reviewQueue.filter(function(r){return r.nextReview<=today;});
+          var dueVocab=vocab.filter(srsDueToday);
+          var myClasses4=classes.filter(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;});
+          var myClassIdsHome=myClasses4.map(function(c){return c.id;});
+          var pendingAsgnHome=myClassIdsHome.length?assignments.filter(function(a){return myClassIdsHome.indexOf(a.classId)!==-1&&(!a.completions||!a.completions[currentUser.name])&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
+          var annClasses=myClasses4.filter(function(c){return c.announcement;});
+          var liveChallenges=pendingChallenges.filter(function(c){return!c.expiresAt||c.expiresAt>Date.now();});
+          var completedSentChallenges=(myData.sent||[]).filter(function(s){return s.status==="completed";});
+          var doy=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(864e5));
+          var wotd=WORD_OF_DAY[doy%WORD_OF_DAY.length];
+          var recs=getRecommendations(currentUser.games||[],3);
+          var todayGamesHome=(currentUser.games||[]).filter(function(g){return g.date===today;});
+          var doneCountHome=dailyQuests.filter(function(q){return questsDone[q.id];}).length;
+          var allDoneHome=dailyQuests.length>0&&dailyQuests.every(function(q){return questsDone[q.id]||checkQuest(q.id,todayGamesHome,vocab.length,{dailyDone:dailyDoneTodayHome,streak:myStreak});});
+          var showPmtPrompt=(currentUser.games||[]).length===0&&!localStorage.getItem("rq-pmt-"+currentUser.name);
+          var myClassBanner=myClasses4[0]||null;
+          // Pick top 2 quick actions from highest-priority items
+          var quickActions=[];
+          if(streakAtRisk&&shields>0){quickActions.push({key:"shield",icon:"🛡️",label:"Save Streak",sub:"Use shield",color:"#f87171",bg:"rgba(239,68,68,0.12)",border:"rgba(239,68,68,0.4)",onClick:useShield});}
+          if(!dailyDoneTodayHome){quickActions.push({key:"daily",icon:"🎯",label:t("todaysDailyChallenge"),sub:dailyChallenge&&dailyChallenge.date===today?dailyChallenge.topic+" · B1":"B1 · All types",color:"#06b6d4",bg:"rgba(6,182,212,0.10)",border:"rgba(6,182,212,0.4)",onClick:startDailyChallenge,disabled:dailyLoading});}
+          if(pendingReviews.length>0){quickActions.push({key:"review",icon:"🔁",label:"Review",sub:pendingReviews.length+" missed question"+(pendingReviews.length!==1?"s":""),color:"#c084fc",bg:"rgba(168,85,247,0.10)",border:"rgba(168,85,247,0.4)",onClick:function(){setReviewIdx(0);setReviewAns(null);setReviewConfirmed(false);setStage("review");}});}
+          if(dueVocab.length>0){quickActions.push({key:"vocab",icon:"📚",label:"Vocab review",sub:dueVocab.length+" word"+(dueVocab.length!==1?"s":""),color:"#22d3ee",bg:"rgba(6,182,212,0.10)",border:"rgba(6,182,212,0.4)",onClick:function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}});}
+          if(!playedToday&&quickActions.length<2){quickActions.push({key:"play",icon:"📖",label:"Play today",sub:myStreak>0?"Keep "+myStreak+"-day streak":"Start your streak",color:"#818cf8",bg:"rgba(99,102,241,0.10)",border:"rgba(99,102,241,0.4)",onClick:function(){setStage("library");}});}
+          quickActions=quickActions.slice(0,2);
+          var initial=(currentUser.name||"?")[0].toUpperCase();
+          return(
+          <>
+            <style>{`
+              .lq-home{padding:0 0 96px;margin:-18px -20px -64px}
+              @media(min-width:480px){.lq-home{margin:-22px -28px -72px}}
+              .lq-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+              .lq-avatar{width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,#5af0b3,#6366F1);display:flex;align-items:center;justify-content:center;color:#003825;font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;cursor:pointer;flex-shrink:0;border:none;box-shadow:0 0 14px rgba(52,211,153,0.35),inset 0 1px 0 rgba(255,255,255,0.2)}
+              .lq-greet{flex:1;min-width:0}
+              .lq-greet-h{margin:0;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:#5af0b3;line-height:1.15;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+              .lq-greet-sub{margin:1px 0 0;font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.5);letter-spacing:0.04em}
+              .lq-icon-btn{background:none;border:none;color:rgba(227,224,244,0.6);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:10px;transition:all 0.15s;position:relative}
+              .lq-icon-btn:hover{background:rgba(255,255,255,0.06);color:#5af0b3}
+              .lq-icon-btn:active{transform:scale(0.92)}
+              .lq-icon-dot{position:absolute;top:5px;right:5px;min-width:14px;height:14px;padding:0 4px;border-radius:999px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1}
+              .lq-h-content{padding:18px 16px 0}
+              .lq-pills{display:flex;gap:6px;overflow-x:auto;margin-bottom:18px;scrollbar-width:none}
+              .lq-pills::-webkit-scrollbar{display:none}
+              .lq-pill{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.04em;white-space:nowrap;flex-shrink:0}
+              .lq-streak-hero{position:relative;padding:20px;background:linear-gradient(135deg,rgba(251,191,36,0.10),rgba(251,191,36,0.04));border:1px solid rgba(251,191,36,0.3);border-radius:24px;margin-bottom:14px;overflow:hidden}
+              .lq-streak-hero.at-risk{background:linear-gradient(135deg,rgba(239,68,68,0.10),rgba(239,68,68,0.04));border-color:rgba(239,68,68,0.35)}
+              .lq-streak-hero::before{content:"";position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(251,191,36,0.10);filter:blur(60px);pointer-events:none}
+              .lq-streak-hero.at-risk::before{background:rgba(239,68,68,0.10)}
+              .lq-streak-row{position:relative;z-index:1;display:flex;align-items:center;gap:14px;margin-bottom:16px}
+              .lq-streak-emoji{font-size:48px;line-height:1;flex-shrink:0;filter:drop-shadow(0 0 16px rgba(251,191,36,0.6))}
+              .lq-streak-hero.at-risk .lq-streak-emoji{filter:drop-shadow(0 0 16px rgba(239,68,68,0.6))}
+              .lq-streak-num{font-family:'Outfit',sans-serif;font-size:42px;font-weight:800;color:#fbbf24;line-height:1;letter-spacing:-0.02em;text-shadow:0 0 12px rgba(251,191,36,0.5)}
+              .lq-streak-hero.at-risk .lq-streak-num{color:#f87171;text-shadow:0 0 12px rgba(239,68,68,0.5)}
+              .lq-streak-lbl{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:rgba(227,224,244,0.7);margin-top:2px;letter-spacing:0.02em}
+              .lq-streak-best{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.5);margin-top:3px}
+              .lq-streak-warn{font-family:'Inter',sans-serif;font-size:12px;color:#f87171;font-weight:600;margin-top:6px}
+              .lq-streak-shield{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+              .lq-shield-icons{font-size:14px;color:#a78bfa;font-weight:700}
+              .lq-shield-btn{background:#6366F1;color:#fff;border:none;border-radius:12px;padding:8px 14px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(99,102,241,0.4)}
+              .lq-week-dots{position:relative;z-index:1;display:flex;justify-content:space-between;gap:4px}
+              .lq-dot{display:flex;flex-direction:column;align-items:center;gap:4px}
+              .lq-dot-circle{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.06);border:2px solid transparent;transition:all 0.2s}
+              .lq-dot-circle.played{background:#fbbf24;box-shadow:0 0 10px rgba(251,191,36,0.5)}
+              .lq-dot-circle.today{background:rgba(251,191,36,0.2);border-color:#fbbf24}
+              .lq-dot-lbl{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:rgba(227,224,244,0.4);letter-spacing:0.04em}
+              .lq-dot-lbl.today{color:#fbbf24}
+              .lq-banner{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:18px;margin-bottom:12px;border:1px solid;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+              .lq-banner .ico{font-size:24px;line-height:1;flex-shrink:0}
+              .lq-banner .meta{flex:1;min-width:0}
+              .lq-banner-t{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;margin:0 0 3px}
+              .lq-banner-d{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.65);margin:0;line-height:1.5}
+              .lq-banner-action{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+              .lq-actions-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+              .lq-action-card{background:rgba(30,30,44,0.5);border:1px solid;border-radius:18px;padding:14px;cursor:pointer;text-align:left;font-family:inherit;color:inherit;transition:transform 0.15s,background 0.15s;display:flex;flex-direction:column;gap:8px;min-height:96px}
+              .lq-action-card:hover{background:rgba(30,30,44,0.7)}
+              .lq-action-card:active{transform:scale(0.97)}
+              .lq-action-card:disabled{opacity:0.6;cursor:not-allowed}
+              .lq-action-top{display:flex;align-items:center;gap:8px}
+              .lq-action-ico{font-size:22px;line-height:1}
+              .lq-action-lbl{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;line-height:1.2}
+              .lq-action-sub{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#e3e0f4;line-height:1.25;margin-top:auto}
+              .lq-section-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 14px;font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:#e3e0f4}
+              .lq-section-h .h-lbl{display:flex;align-items:center;gap:8px}
+              .lq-section-h .h-ico{color:#5af0b3;font-size:18px;line-height:1}
+              .lq-section-h .h-link{background:none;border:none;color:#5af0b3;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.04em;cursor:pointer;padding:4px 8px;border-radius:8px}
+              .lq-section-h .h-link:hover{background:rgba(52,211,153,0.08)}
+              .lq-levels{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+              .lq-level{position:relative;display:flex;align-items:center;gap:14px;padding:14px;background:rgba(30,30,44,0.5);border:2px solid rgba(255,255,255,0.08);border-radius:18px;cursor:pointer;text-align:left;font-family:inherit;transition:all 0.2s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+              .lq-level:hover{background:rgba(30,30,44,0.7);border-color:rgba(255,255,255,0.15)}
+              .lq-level.is-active{background:rgba(255,255,255,0.07);transform:translateY(-1px)}
+              .lq-level-badge{width:52px;height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:14px}
+              .lq-level-meta{flex:1;min-width:0}
+              .lq-level-top{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+              .lq-level-key{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.01em}
+              .lq-level-mult{padding:2px 8px;border-radius:999px;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;background:rgba(255,255,255,0.10);color:#d1d5db}
+              .lq-level-desc{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.55);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+              .lq-level-time{font-family:'Inter',sans-serif;font-size:10px;color:rgba(227,224,244,0.4);letter-spacing:0.04em}
+              .lq-level-arrow{font-size:18px;color:rgba(227,224,244,0.4);flex-shrink:0;transition:transform 0.2s,color 0.2s}
+              .lq-level.is-active .lq-level-arrow{color:#5af0b3;transform:translateX(2px)}
+              .lq-cta{width:100%;padding:16px 20px;margin-bottom:14px;border:none;border-radius:18px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(52,211,153,0.28)}
+              .lq-cta:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
+              .lq-cta:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:0 4px 0 0 rgba(0,0,0,0.3)}
+              .lq-card-glass{background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:16px;margin-bottom:14px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+              .lq-card-glass.tinted{border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.04)}
+              .lq-card-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+              .lq-card-lbl{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin:0}
+              .lq-rec-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);cursor:pointer;margin-bottom:6px;transition:background 0.15s}
+              .lq-rec-row:hover{background:rgba(255,255,255,0.06)}
+              .lq-rec-emoji{font-size:20px;line-height:1}
+              .lq-rec-meta{flex:1;min-width:0}
+              .lq-rec-t{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#e3e0f4;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+              .lq-rec-s{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.5);margin:0}
+              .lq-rec-lvl{font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;flex-shrink:0}
+              .lq-quest-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+              .lq-quest-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+              .lq-quest-check.done{background:#5af0b3;border-color:#5af0b3;color:#003825;font-weight:900;font-size:12px}
+              .lq-quest-text{flex:1;font-family:'Inter',sans-serif;font-size:13px;color:#e3e0f4;line-height:1.3}
+              .lq-quest-text.done{color:rgba(227,224,244,0.4);text-decoration:line-through}
+              .lq-quest-text small{display:block;color:rgba(227,224,244,0.45);font-size:11px;margin-top:1px}
+              .lq-quest-xp{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5af0b3;flex-shrink:0}
+              .lq-quest-xp.done{color:rgba(227,224,244,0.35)}
+              .lq-wotd{background:linear-gradient(135deg,rgba(167,139,250,0.10),rgba(167,139,250,0.03));border-color:rgba(167,139,250,0.3)}
+              .lq-wotd-word{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:#c4b5fd;letter-spacing:-0.01em;line-height:1.1}
+              .lq-wotd-phon{font-family:'JetBrains Mono',monospace;font-size:12px;color:#a78bfa;margin-left:10px}
+              .lq-wotd-def{font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.85);margin:6px 0 4px;line-height:1.5}
+              .lq-wotd-ex{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.5);font-style:italic;margin:0}
+              .lq-wotd-type{padding:3px 9px;border-radius:999px;background:rgba(167,139,250,0.18);color:#c4b5fd;font-family:'Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase}
+              .lq-details{margin-bottom:14px;border:1px solid rgba(255,255,255,0.08);border-radius:18px;background:rgba(30,30,44,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);overflow:hidden}
+              .lq-details summary{padding:14px 16px;cursor:pointer;list-style:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:#e3e0f4;display:flex;justify-content:space-between;align-items:center;user-select:none}
+              .lq-details summary::-webkit-details-marker{display:none}
+              .lq-details summary::after{content:"⌄";color:rgba(227,224,244,0.5);font-size:14px;transition:transform 0.2s}
+              .lq-details[open] summary::after{transform:rotate(180deg)}
+              .lq-details-body{padding:0 16px 16px;display:flex;flex-direction:column;gap:14px}
+              .lq-details-sub{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:rgba(227,224,244,0.55);letter-spacing:0.08em;text-transform:uppercase;margin:0 0 8px}
+              .lq-chips{display:flex;flex-wrap:wrap;gap:6px}
+              .lq-mini-chip{padding:5px 11px;border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.55)}
+              .lq-mini-chip.active{background:rgba(52,211,153,0.18);border-color:#5af0b3;color:#5af0b3}
+              .lq-text-input{width:100%;background:rgba(13,13,26,0.7);border:1px solid rgba(255,255,255,0.10);border-radius:12px;padding:11px 13px;color:#e3e0f4;font-family:'Inter',sans-serif;font-size:13px;outline:none;box-sizing:border-box;transition:all 0.2s}
+              .lq-text-input:focus{border-color:#5af0b3;box-shadow:0 0 0 3px rgba(52,211,153,0.12)}
+              .lq-textarea{width:100%;min-height:96px;background:rgba(13,13,26,0.7);border:1px solid rgba(255,255,255,0.10);border-radius:12px;padding:11px 13px;color:#e3e0f4;font-family:'Inter',sans-serif;font-size:13px;outline:none;box-sizing:border-box;resize:vertical;transition:all 0.2s}
+              .lq-textarea:focus{border-color:#5af0b3;box-shadow:0 0 0 3px rgba(52,211,153,0.12)}
+              .lq-ghost-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.8);border-radius:12px;padding:9px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;transition:all 0.15s}
+              .lq-ghost-btn:hover{background:rgba(255,255,255,0.08);border-color:rgba(52,211,153,0.5);color:#e3e0f4}
+              .lq-ghost-btn:active{transform:scale(0.97)}
+              .lq-nav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+              .lq-nav-grid button{padding:10px 8px;font-size:12px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+              .lq-asgn-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid rgba(245,158,11,0.15)}
+              .lq-chal-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.08)}
+              .lq-chal-mini-btn{padding:5px 10px;border-radius:8px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#0d0d1a}
+              .lq-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+              .lq-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
+              .lq-nav-btn:hover{color:#e3e0f4}
+              .lq-nav-btn .ico{font-size:22px;line-height:1}
+              .lq-nav-btn.is-active{color:#5af0b3}
+              .lq-nav-btn.is-active::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:999px;background:#5af0b3;box-shadow:0 0 8px rgba(52,211,153,0.9)}
+            `}</style>
+            <div className="lq-home">
+              <header className="lq-topbar">
+                <button type="button" className="lq-avatar" onClick={function(){setStage("profile");}} aria-label="Profile">{initial}</button>
+                <div className="lq-greet">
+                  <h1 className="lq-greet-h">{t("hey")}, {currentUser.name}!</h1>
+                  <p className="lq-greet-sub">{playedToday?"You're on fire today 🔥":"Ready for today's quest?"}</p>
                 </div>
-              </div>
-              <div className="rq-home-nav">
-                <button onClick={function(){setStage("friends");}} style={GHOST}>{t("friends")}</button>
-                <button onClick={function(){setStage("analytics");}} style={GHOST}>{t("stats")}</button>
-                <button onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} style={GHOST}>{t("vocab")}</button>
-                <button onClick={function(){setHistoryLevel("");setStage("history");}} style={GHOST}>{t("history")}</button>
-                <button onClick={function(){setStage("goals");}} style={GHOST}>{t("goals")}</button>
-                <button onClick={function(){setStage("library");}} style={GHOST}>{t("library")}</button>
-                <button onClick={function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}} style={GHOST}>{t("portfolio")}</button>
-                <button onClick={function(){setStage("weekly");}} style={GHOST}>{t("weekly")}</button>
-                <button onClick={function(){setStage("profile");}} style={GHOST}>{t("profile")}</button>
-                <button onClick={function(){setLbLevel("A1");setStage("leaderboard");}} style={GHOST}>{t("leaderboard")}</button>
-                {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={GHOST}>{t("quotes")}</button>}
-              </div>
-            </div>
+                {liveChallenges.length>0&&(
+                  <button type="button" className="lq-icon-btn" onClick={function(){setStage("friends");}} aria-label="Challenges">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span className="lq-icon-dot">{liveChallenges.length}</span>
+                  </button>
+                )}
+                <button type="button" className="lq-icon-btn" onClick={function(){var langs=["en","uz","ru","tr","ar","de","es","fr"];var i=langs.indexOf(uiLang);var nx=langs[(i+1)%langs.length];setUiLang(nx);try{localStorage.setItem("rq-uilang",nx);}catch(e){}}} aria-label="Language">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+                </button>
+              </header>
 
-            {/* streak card */}
-            {currentUser&&(myStreak>=1||streakAtRisk)&&(
-              <div style={{...CARD,marginBottom:12,padding:14,borderColor:streakAtRisk?"rgba(239,68,68,0.35)":"rgba(251,191,36,0.3)",background:streakAtRisk?"rgba(239,68,68,0.06)":"rgba(251,191,36,0.05)"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-                  <div style={{display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{fontSize:36,lineHeight:1}}>{streakAtRisk?"🛡️":"🔥"}</div>
-                    <div>
-                      <div className={streakAtRisk?"rq-glow-red":"rq-glow-amber"} style={{fontSize:22,fontWeight:900,color:streakAtRisk?"#f87171":"#fbbf24",lineHeight:1}}>{myStreak} <span style={{fontSize:13,fontWeight:600}}>day streak</span></div>
-                      {longestStreak>0&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Best: {longestStreak} days</div>}
-                      {streakAtRisk&&<div style={{fontSize:11,color:"#f87171",marginTop:2,fontWeight:600}}>You missed yesterday — use a shield to save it!</div>}
+              <div className="lq-h-content">
+                <div className="lq-pills">
+                  <span className="lq-pill" style={{background:streakAtRisk?"rgba(239,68,68,0.18)":"rgba(251,191,36,0.15)",color:streakAtRisk?"#f87171":"#fbbf24",border:"1px solid "+(streakAtRisk?"rgba(239,68,68,0.4)":"rgba(251,191,36,0.3)")}}>{streakAtRisk?"⚠️":"🔥"} {myStreak} day{shields>0?" · "+"🛡️".repeat(shields):""}</span>
+                  <span className="lq-pill" style={{background:"rgba(167,139,250,0.15)",color:"#c4b5fd",border:"1px solid rgba(167,139,250,0.3)"}}>👥 {myData.friends.length}</span>
+                  {myData.likes>0&&<span className="lq-pill" style={{background:"rgba(236,72,153,0.15)",color:"#f472b6",border:"1px solid rgba(236,72,153,0.3)"}}>❤️ {myData.likes}</span>}
+                  <span className="lq-pill" style={{background:"rgba(52,211,153,0.15)",color:"#5af0b3",border:"1px solid rgba(52,211,153,0.3)"}}>⚡ {currentUser.totalXp||0} XP</span>
+                </div>
+
+                {milestoneToShow&&(
+                  <div className="lq-banner" style={{borderColor:"rgba(251,191,36,0.5)",background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.04))"}}>
+                    <div className="ico">🎉</div>
+                    <div className="meta">
+                      <p className="lq-banner-t" style={{color:"#fbbf24"}}>{myStreak}-Day Streak!</p>
+                      <p className="lq-banner-d">{milestoneToShow}</p>
                     </div>
+                    <button type="button" onClick={function(){localStorage.setItem("rq-ms-"+currentUser.name+"-"+myStreak,"1");setMilestoneSeen(true);}} className="lq-icon-btn" aria-label="Dismiss">×</button>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-                    {shields>0&&<div style={{fontSize:13,color:"#a78bfa",fontWeight:700}}>{"🛡️".repeat(shields)}</div>}
-                    {streakAtRisk&&shields>0&&<button onClick={useShield} style={{...mkBtn("#6366f1"),padding:"8px 14px",fontSize:12}}>Use Shield</button>}
-                  </div>
-                </div>
-                {!streakAtRisk&&shields<3&&myStreak>0&&myStreak%7!==0&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Earn a shield at {Math.ceil(myStreak/7)*7}-day streak milestone</div>}
-                {!streakAtRisk&&shields===3&&<div style={{fontSize:11,color:"#6b7280",marginTop:8}}>🛡️ Max shields (3) — keep going!</div>}
-                {/* weekly activity dots */}
-                <div style={{display:"flex",gap:4,marginTop:10,justifyContent:"space-between"}}>
-                  {weekDots.map(function(dot,i){return(
-                    <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                      <div style={{width:22,height:22,borderRadius:"50%",background:dot.played?"#fbbf24":dot.today?"rgba(251,191,36,0.2)":"rgba(255,255,255,0.07)",border:dot.today?"2px solid #fbbf24":"2px solid transparent",transition:"all 0.2s"}}/>
-                      <div style={{fontSize:9,color:dot.today?"#fbbf24":"#6b7280",fontWeight:dot.today?700:400}}>{dot.day}</div>
-                    </div>
-                  );})}
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* milestone celebration banner */}
-            {milestoneToShow&&(
-              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(251,191,36,0.5)",background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.04))",textAlign:"center",position:"relative"}}>
-                <button onClick={function(){localStorage.setItem("rq-ms-"+currentUser.name+"-"+myStreak,"1");setMilestoneSeen(true);}} style={{position:"absolute",top:8,right:8,background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>
-                <div style={{fontSize:32,marginBottom:4}}>🎉</div>
-                <div style={{fontSize:15,fontWeight:800,color:"#fbbf24",marginBottom:4}}>{myStreak}-Day Streak!</div>
-                <div style={{fontSize:12,color:"#d1d5db"}}>{milestoneToShow}</div>
-              </div>
-            )}
-
-            {/* play today nudge */}
-            {currentUser&&!playedToday&&(
-              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.05)"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{fontSize:28}}>📖</span>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#818cf8"}}>Play today!</div>
-                      <div style={{fontSize:11,color:"#6b7280"}}>{myStreak>0?"Keep your "+myStreak+"-day streak alive":"Start your streak today"}</div>
-                    </div>
-                  </div>
-                  <button onClick={function(){setStage("library");}} style={{...mkBtn("#6366f1"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Read Now</button>
-                </div>
-              </div>
-            )}
-
-            {/* missed-question review nudge */}
-            {currentUser&&(function(){
-              var todayL=todayKey();
-              var due=reviewQueue.filter(function(r){return r.nextReview<=todayL;});
-              if(!due.length)return null;
-              return(
-                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(168,85,247,0.35)",background:"rgba(168,85,247,0.05)"}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <span style={{fontSize:26}}>🔁</span>
-                      <div>
-                        <div style={{fontSize:13,fontWeight:700,color:"#c084fc"}}>Review due</div>
-                        <div style={{fontSize:11,color:"#6b7280"}}>{due.length} missed question{due.length!==1?"s":""} from past quizzes</div>
-                      </div>
-                    </div>
-                    <button onClick={function(){setReviewIdx(0);setReviewAns(null);setReviewConfirmed(false);setStage("review");}} style={{...mkBtn("#a855f7","#0d0d1a"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Review</button>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* vocab SRS nudge */}
-            {currentUser&&(function(){
-              var due=vocab.filter(srsDueToday);
-              if(!due.length)return null;
-              return(
-                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(6,182,212,0.35)",background:"rgba(6,182,212,0.05)"}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <span style={{fontSize:26}}>📚</span>
-                      <div>
-                        <div style={{fontSize:13,fontWeight:700,color:"#06b6d4"}}>Vocab review due</div>
-                        <div style={{fontSize:11,color:"#6b7280"}}>{due.length} word{due.length!==1?"s":""} ready for review today</div>
-                      </div>
-                    </div>
-                    <button onClick={function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}} style={{...mkBtn("#06b6d4","#0d0d1a"),padding:"8px 14px",fontSize:12,flexShrink:0}}>Review</button>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* reading goals summary */}
-            {currentUser&&Object.keys(goals).length>0&&(function(){
-              var activeGoals=GOAL_DEFS.filter(function(d){return goals[d.id];});
-              return(
-                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.04)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#818cf8",margin:0}}>🎯 READING GOALS</p>
-                    <button onClick={function(){setStage("goals");}} style={{background:"none",border:"none",color:"#6366f1",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>Manage →</button>
-                  </div>
-                  {activeGoals.map(function(def){
-                    var g=goals[def.id];
-                    var prog=getGoalProgress(def.id,g,currentUser.games,myStreak);
-                    return(
-                      <div key={def.id} style={{marginBottom:8}}>
-                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                          <span style={{color:"#9ca3af"}}>{def.icon} {goalLabel(def.id)}</span>
-                          <span style={{color:prog.done?"#34d399":"#a78bfa",fontWeight:700}}>{prog.done?"✓ "+t("doneLabel"):prog.current+(def.id==="avg_score"?" avg":"")+"/"+prog.target+" "+goalUnit(def.id)}</span>
-                        </div>
-                        <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:prog.pct+"%",background:prog.done?"#34d399":"#6366f1",borderRadius:999,transition:"width 0.4s ease"}}/>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-
-            {/* pending challenges */}
-            {currentUser&&(function(){
-              var live=pendingChallenges.filter(function(c){return!c.expiresAt||c.expiresAt>Date.now();});
-              var completedSent=(myData.sent||[]).filter(function(s){return s.status==="completed";});
-              if(!live.length&&!completedSent.length)return null;
-              return(
-                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(245,158,11,0.35)",background:"rgba(245,158,11,0.04)"}}>
-                  {live.length>0&&(
-                    <>
-                      <p style={{fontSize:11,color:"#f59e0b",fontWeight:700,marginBottom:8}}>⚔️ CHALLENGES RECEIVED</p>
-                      {live.map(function(c,idx){
-                        var realIdx=myData.challenges.indexOf(c);
-                        var tl=challengeTimeLeft(c.expiresAt);
-                        var lvC=getLv(c.level);
-                        return(<div key={idx} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid "+(c.storyId?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.07)")}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:12,color:"#f3f4f6",fontWeight:600}}><strong>{c.from}</strong> → <span style={{color:lvC.color}}>{c.level}</span>{c.storyId&&<span style={{color:"#f87171",marginLeft:5}}>⚔️ story</span>}</div>
-                            {c.storyTitle&&<div style={{fontSize:11,color:"#e9d5ff",marginTop:1}}>"{c.storyTitle}"</div>}
-                            {c.senderPct!=null&&<div style={{fontSize:10,color:"#fbbf24",marginTop:1}}>Their score: {c.senderPct}% — can you beat it?</div>}
-                            {tl&&<div style={{fontSize:10,color:tl==="expired"?"#f87171":"#6b7280",marginTop:1}}>⏱ {tl}</div>}
-                          </div>
-                          <button onClick={function(){respondChallenge(realIdx,"accepted",c);}} style={{...mkBtn("#22c55e","#0d0d1a"),padding:"5px 10px",fontSize:11}}>Accept</button>
-                          <button onClick={function(){respondChallenge(realIdx,"declined",null);}} style={{...mkBtn("#374151"),padding:"5px 10px",fontSize:11}}>✕</button>
-                        </div>);
-                      })}
-                    </>
-                  )}
-                  {completedSent.length>0&&(
-                    <>
-                      <p style={{fontSize:11,color:"#34d399",fontWeight:700,marginBottom:8,marginTop:live.length?10:0}}>✅ CHALLENGE RESULTS</p>
-                      {completedSent.map(function(s,i){
-                        var isStory=!!s.storyId;
-                        var theirPct=s.result.pct;
-                        var myPct=s.result.senderPct!=null?s.result.senderPct:(s.senderPct!=null?s.senderPct:null);
-                        var won=myPct!=null&&theirPct<myPct;
-                        var tied=myPct!=null&&theirPct===myPct;
-                        return(<div key={i} style={{marginBottom:8,padding:"8px 10px",background:"rgba(255,255,255,0.02)",borderRadius:8,border:"1px solid "+(won?"rgba(34,197,94,0.25)":tied?"rgba(251,191,36,0.2)":"rgba(239,68,68,0.2)")}}>
-                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:myPct!=null?5:0}}>
-                            <span style={{fontSize:12,color:"#f3f4f6",flex:1}}><strong>{s.to}</strong> scored <strong style={{color:pctColor(theirPct)}}>{theirPct}%</strong>{isStory&&s.storyTitle?<span style={{color:"#9ca3af",fontSize:11}}> · "{s.storyTitle}"</span>:" on your "+s.level+" challenge"}</span>
-                            <span style={{color:"#fbbf24",fontWeight:700,fontSize:11}}>{s.result.xp} XP</span>
-                          </div>
-                          {myPct!=null&&(
-                            <div style={{display:"flex",gap:12,fontSize:11}}>
-                              <span style={{color:"#a78bfa"}}>You: <strong style={{color:"#e9d5ff"}}>{myPct}%</strong></span>
-                              <span style={{color:"#9ca3af"}}>vs</span>
-                              <span style={{color:"#f87171"}}>{s.to}: <strong style={{color:pctColor(theirPct)}}>{theirPct}%</strong></span>
-                              <span style={{fontWeight:700,color:won?"#22c55e":tied?"#fbbf24":"#f87171"}}>{won?"🏆 You won!":tied?"🤝 Tie!":"😤 They beat you"}</span>
-                            </div>
-                          )}
-                        </div>);
-                      })}
-                    </>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* placement-test prompt — only for brand-new users who haven't
-                played anything yet and haven't already taken the test */}
-            {currentUser&&(currentUser.games||[]).length===0&&!localStorage.getItem("rq-pmt-"+currentUser.name)&&(
-              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(167,139,250,0.4)",background:"rgba(167,139,250,0.06)"}}>
-                <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-                  <div style={{fontSize:28,flexShrink:0,lineHeight:1}}>🎯</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <p style={{margin:"0 0 4px",fontSize:14,fontWeight:800,color:"#e9d5ff"}}>Not sure where to start?</p>
-                    <p style={{margin:"0 0 10px",fontSize:12,color:"#9ca3af",lineHeight:1.5}}>Take a 12-question placement test and we'll recommend a CEFR level that matches your English right now.</p>
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      <button onClick={function(){setPmtIdx(0);setPmtAnswers({});setPmtResult(null);setStage("placementTest");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"7px 14px",fontSize:12}}>Start placement test</button>
-                      <button onClick={function(){try{localStorage.setItem("rq-pmt-"+currentUser.name,"skipped");}catch(e){}setCurrentUser(Object.assign({},currentUser));}} style={{...GHOST,padding:"7px 12px",fontSize:12}}>No thanks, I'll pick myself</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* word of the day card */}
-            {(function(){
-              var doy=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(864e5));
-              var wotd=WORD_OF_DAY[doy%WORD_OF_DAY.length];
-              var myClasses3=currentUser?classes.filter(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;}):[];
-              var myClassIds3=myClasses3.map(function(c){return c.id;});
-              var pendingAssignments=myClassIds3.length?assignments.filter(function(a){return myClassIds3.indexOf(a.classId)!==-1&&(!a.completions||!a.completions[currentUser.name])&&(!a.dueDate||a.dueDate>=new Date().toISOString().slice(0,10));}):[];
-              var classesWithAnnouncement=myClasses3.filter(function(c){return c.announcement;});
-              return(
-                <div>
-                {classesWithAnnouncement.map(function(c){return(
-                  <div key={"ann-"+c.id} style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(167,139,250,0.4)",background:"rgba(99,102,241,0.07)"}}>
-                    <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                      <div style={{fontSize:20,flexShrink:0}}>📢</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:3}}>{c.name} · {c.announcement.teacherName}</div>
-                        <div style={{fontSize:13,color:"#e9d5ff",lineHeight:1.5}}>{c.announcement.text}</div>
-                      </div>
+                {annClasses.map(function(c){return(
+                  <div key={"ann-"+c.id} className="lq-banner" style={{borderColor:"rgba(167,139,250,0.4)",background:"rgba(99,102,241,0.07)"}}>
+                    <div className="ico">📢</div>
+                    <div className="meta">
+                      <p className="lq-banner-t" style={{color:"#c4b5fd",fontSize:11,letterSpacing:0.04}}>{c.name} · {c.announcement.teacherName}</p>
+                      <p className="lq-banner-d" style={{color:"#e9d5ff",marginTop:3}}>{c.announcement.text}</p>
                     </div>
                   </div>
                 );})}
-                {pendingAssignments.length>0&&(
-                  <div style={{...CARD,marginBottom:12,padding:12,borderColor:"rgba(245,158,11,0.5)",background:"rgba(245,158,11,0.07)"}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#fcd34d",letterSpacing:0.6,margin:"0 0 10px"}}>{t("tch_studentAssignments")}</p>
-                    {pendingAssignments.map(function(asgn){
+
+                {pendingAsgnHome.length>0&&(
+                  <div className="lq-card-glass" style={{borderColor:"rgba(245,158,11,0.5)",background:"rgba(245,158,11,0.07)"}}>
+                    <p className="lq-card-lbl" style={{color:"#fcd34d",marginBottom:8}}>{t("tch_studentAssignments")}</p>
+                    {pendingAsgnHome.map(function(asgn){
                       var story=asgn.storyId?STORY_LIBRARY.find(function(s){return s.id===asgn.storyId;}):null;
-                      var fromClass=myClasses3.find(function(c){return c.id===asgn.classId;});
+                      var fromClass=myClasses4.find(function(c){return c.id===asgn.classId;});
                       return(
-                        <div key={asgn.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid rgba(245,158,11,0.15)"}}>
+                        <div key={asgn.id} className="lq-asgn-row">
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{asgn.topic}</div>
-                            <div style={{fontSize:11,color:"#9ca3af"}}>{fromClass?fromClass.name+" · ":""}{asgn.level}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#e3e0f4",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{asgn.topic}</div>
+                            <div style={{fontSize:11,color:"rgba(227,224,244,0.5)"}}>{fromClass?fromClass.name+" · ":""}{asgn.level}{asgn.dueDate?" · due "+asgn.dueDate:""}</div>
                           </div>
-                          <button onClick={function(){
+                          <button type="button" onClick={function(){
                             setActiveAssignmentId(asgn.id);
                             if(story){startStoryFromLibrary(story);}
                             else if(asgn.passage&&asgn.questions){
@@ -4229,284 +4262,340 @@ export default function App(){
                               setIsDailyGame(false);setCurrentStoryId(null);setActiveSentence(null);setTranslation(null);setHeatmapOn(false);
                               setStage("reading");
                             }
-                          }} style={{...mkBtn("#f59e0b","#0d0d1a"),fontSize:12,padding:"6px 14px",whiteSpace:"nowrap",flexShrink:0}}>{t("tch_start")}</button>
+                          }} className="lq-ghost-btn" style={{background:"#f59e0b",color:"#0d0d1a",border:"none",fontSize:12,whiteSpace:"nowrap"}}>{t("tch_start")}</button>
                         </div>
                       );
                     })}
                   </div>
                 )}
-                <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(167,139,250,0.3)",background:"rgba(167,139,250,0.05)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.6,margin:0}}>📖 WORD OF THE DAY</p>
-                    <span style={{fontSize:10,color:"#6b7280",background:"rgba(255,255,255,0.06)",borderRadius:999,padding:"2px 8px",fontWeight:700,textTransform:"uppercase"}}>{wotd.type}</span>
-                  </div>
-                  <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:4}}>
-                    <span style={{fontSize:20,fontWeight:900,color:"#e9d5ff"}}>{wotd.word}</span>
-                    <span style={{fontSize:12,color:"#7c3aed",fontFamily:"'JetBrains Mono',monospace"}}>{wotd.phonetic}</span>
-                  </div>
-                  <p style={{fontSize:13,color:"#d1d5db",margin:"0 0 4px",lineHeight:1.5}}>{wotd.def}</p>
-                  <p style={{fontSize:12,color:"#6b7280",margin:0,fontStyle:"italic"}}>"{wotd.ex}"</p>
-                </div>
-                </div>
-              );
-            })()}
 
-            {/* sound & music controls */}
-            <div style={{...CARD,marginBottom:12,padding:14}}>
-              <p style={{fontSize:11,color:"#06b6d4",fontWeight:700,letterSpacing:0.6,margin:"0 0 10px"}}>🎵 AUDIO SETTINGS</p>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-                <button onClick={function(){setSfxOn(function(v){var n=!v;try{localStorage.setItem("rq-sfx",n?"on":"off");}catch(e){}return n;});}} style={{background:sfxOn?"rgba(52,211,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(sfxOn?"rgba(52,211,153,0.4)":"rgba(255,255,255,0.1)"),color:sfxOn?"#34d399":"#9ca3af",borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all 0.15s ease"}}>
-                  {sfxOn?"🔊 SFX On":"🔇 SFX Off"}
+                {showPmtPrompt&&(
+                  <div className="lq-banner" style={{borderColor:"rgba(167,139,250,0.4)",background:"rgba(167,139,250,0.06)"}}>
+                    <div className="ico">🎯</div>
+                    <div className="meta">
+                      <p className="lq-banner-t" style={{color:"#e9d5ff",fontSize:14}}>Not sure where to start?</p>
+                      <p className="lq-banner-d">Take a 12-question placement test and we'll recommend a CEFR level.</p>
+                      <div className="lq-banner-action">
+                        <button type="button" onClick={function(){setPmtIdx(0);setPmtAnswers({});setPmtResult(null);setStage("placementTest");}} className="lq-ghost-btn" style={{background:"#a78bfa",color:"#0d0d1a",border:"none"}}>Start placement test</button>
+                        <button type="button" onClick={function(){try{localStorage.setItem("rq-pmt-"+currentUser.name,"skipped");}catch(e){}setCurrentUser(Object.assign({},currentUser));}} className="lq-ghost-btn">No thanks</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {(myStreak>=1||streakAtRisk)&&(
+                  <div className={"lq-streak-hero"+(streakAtRisk?" at-risk":"")}>
+                    <div className="lq-streak-row">
+                      <div className="lq-streak-emoji">{streakAtRisk?"🛡️":"🔥"}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+                          <span className="lq-streak-num">{myStreak}</span>
+                          <span className="lq-streak-lbl">day streak</span>
+                        </div>
+                        {longestStreak>0&&<div className="lq-streak-best">Best: {longestStreak} days</div>}
+                        {streakAtRisk&&<div className="lq-streak-warn">Missed yesterday — use a shield!</div>}
+                        {!streakAtRisk&&shields<3&&myStreak>0&&myStreak%7!==0&&<div className="lq-streak-best">🛡️ Earn shield at {Math.ceil(myStreak/7)*7}-day milestone</div>}
+                      </div>
+                      <div className="lq-streak-shield">
+                        {shields>0&&<div className="lq-shield-icons">{"🛡️".repeat(shields)}</div>}
+                        {streakAtRisk&&shields>0&&<button type="button" onClick={useShield} className="lq-shield-btn">Use Shield</button>}
+                      </div>
+                    </div>
+                    <div className="lq-week-dots">
+                      {weekDots.map(function(dot,i){return(
+                        <div key={i} className="lq-dot">
+                          <div className={"lq-dot-circle"+(dot.played?" played":"")+(dot.today?" today":"")}/>
+                          <div className={"lq-dot-lbl"+(dot.today?" today":"")}>{dot.day}</div>
+                        </div>
+                      );})}
+                    </div>
+                  </div>
+                )}
+
+                {(liveChallenges.length>0||completedSentChallenges.length>0)&&(
+                  <div className="lq-card-glass" style={{borderColor:"rgba(245,158,11,0.35)",background:"rgba(245,158,11,0.04)"}}>
+                    {liveChallenges.length>0&&(
+                      <>
+                        <p className="lq-card-lbl" style={{color:"#f59e0b"}}>⚔️ Challenges received</p>
+                        {liveChallenges.map(function(c,idx){
+                          var realIdx=myData.challenges.indexOf(c);
+                          var tl=challengeTimeLeft(c.expiresAt);
+                          var lvC=getLv(c.level);
+                          return(<div key={idx} className="lq-chal-row" style={{borderColor:c.storyId?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.08)"}}>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:12,color:"#e3e0f4",fontWeight:600}}><strong>{c.from}</strong> → <span style={{color:lvC.color}}>{c.level}</span>{c.storyId&&<span style={{color:"#f87171",marginLeft:5}}>⚔️</span>}</div>
+                              {c.storyTitle&&<div style={{fontSize:11,color:"#e9d5ff",marginTop:1}}>"{c.storyTitle}"</div>}
+                              {c.senderPct!=null&&<div style={{fontSize:10,color:"#fbbf24",marginTop:1}}>Their score: {c.senderPct}%</div>}
+                              {tl&&<div style={{fontSize:10,color:tl==="expired"?"#f87171":"rgba(227,224,244,0.5)",marginTop:1}}>⏱ {tl}</div>}
+                            </div>
+                            <button type="button" onClick={function(){respondChallenge(realIdx,"accepted",c);}} className="lq-chal-mini-btn" style={{background:"#5af0b3"}}>Accept</button>
+                            <button type="button" onClick={function(){respondChallenge(realIdx,"declined",null);}} className="lq-chal-mini-btn" style={{background:"#374151",color:"#9ca3af"}}>✕</button>
+                          </div>);
+                        })}
+                      </>
+                    )}
+                    {completedSentChallenges.length>0&&(
+                      <>
+                        <p className="lq-card-lbl" style={{color:"#5af0b3",marginTop:liveChallenges.length?10:0}}>✅ Challenge results</p>
+                        {completedSentChallenges.map(function(s,i){
+                          var theirPct=s.result.pct;
+                          var myPct=s.result.senderPct!=null?s.result.senderPct:(s.senderPct!=null?s.senderPct:null);
+                          var won=myPct!=null&&theirPct<myPct;
+                          var tied=myPct!=null&&theirPct===myPct;
+                          return(<div key={i} style={{marginBottom:8,padding:"10px 12px",background:"rgba(255,255,255,0.02)",borderRadius:12,border:"1px solid "+(won?"rgba(34,197,94,0.25)":tied?"rgba(251,191,36,0.2)":"rgba(239,68,68,0.2)")}}>
+                            <div style={{fontSize:12,color:"#e3e0f4"}}><strong>{s.to}</strong> scored <strong style={{color:pctColor(theirPct)}}>{theirPct}%</strong> · <span style={{color:"#fbbf24",fontWeight:700}}>{s.result.xp} XP</span></div>
+                            {myPct!=null&&<div style={{fontSize:11,marginTop:4,fontWeight:700,color:won?"#5af0b3":tied?"#fbbf24":"#f87171"}}>{won?"🏆 You won!":tied?"🤝 Tie!":"😤 They beat you ("+myPct+"% vs "+theirPct+"%)"}</div>}
+                          </div>);
+                        })}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {quickActions.length>0&&(
+                  <div className="lq-actions-row">
+                    {quickActions.map(function(a){return(
+                      <button key={a.key} type="button" disabled={a.disabled} onClick={a.onClick} className="lq-action-card" style={{borderColor:a.border,background:a.bg}}>
+                        <div className="lq-action-top">
+                          <span className="lq-action-ico">{a.icon}</span>
+                          <span className="lq-action-lbl" style={{color:a.color}}>{a.label}</span>
+                        </div>
+                        <div className="lq-action-sub">{a.disabled?"Loading…":a.sub}</div>
+                      </button>
+                    );})}
+                  </div>
+                )}
+
+                <div className="lq-section-h">
+                  <div className="h-lbl"><span className="h-ico">✦</span>{t("chooseLevel")}</div>
+                </div>
+                <div className="lq-levels">
+                  {LEVELS.map(function(l){
+                    var active=level===l.key;
+                    var badgeId=l.key.toLowerCase();
+                    return(<button key={l.key} type="button" onClick={function(){setLevel(l.key);setError("");}} className={"lq-level"+(active?" is-active":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
+                      <div className="lq-level-badge">
+                        <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48}} onError={function(e){e.target.style.display="none";}}/>
+                      </div>
+                      <div className="lq-level-meta">
+                        <div className="lq-level-top">
+                          <span className="lq-level-key" style={{color:active?l.color:"#e3e0f4"}}>{l.key}</span>
+                          <span className="lq-level-mult" style={active?{background:l.color,color:"#0d0d1a"}:{}}>x{l.mult}</span>
+                        </div>
+                        <div className="lq-level-desc">{l.desc}</div>
+                        <div className="lq-level-time">⏱ {formatTime(l.timeLimit)} limit</div>
+                      </div>
+                      <span className="lq-level-arrow">→</span>
+                    </button>);
+                  })}
+                </div>
+                {error&&<ErrorBanner message={error}/>}
+                {error&&error.includes("Daily AI quota")&&<button type="button" onClick={function(){setStage("library");}} className="lq-ghost-btn" style={{width:"100%",marginBottom:10}}>📚 Browse Library Stories</button>}
+                <button type="button" onClick={generate} disabled={!level||genLoading} className="lq-cta" style={{background:level&&!genLoading?(lv&&lv.color)||"#5af0b3":"rgba(255,255,255,0.08)",color:level&&!genLoading?"#0d0d1a":"rgba(227,224,244,0.4)",boxShadow:level&&!genLoading?"0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px "+((lv&&lv.glow)||"rgba(52,211,153,0.3)"):"0 4px 0 0 rgba(0,0,0,0.3)"}}>
+                  {genLoading?t("writingPassage"):level?t("startQuest")+" "+level:t("selectLevel")}
                 </button>
-                <button onClick={function(){setMusicOn(function(v){return!v;});}} style={{background:musicOn?"rgba(6,182,212,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(musicOn?"rgba(6,182,212,0.4)":"rgba(255,255,255,0.1)"),color:musicOn?"#22d3ee":"#9ca3af",borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all 0.15s ease"}}>
-                  {musicOn?"🎵 Music On":"🎵 Music Off"}
-                </button>
-                {musicOn&&(
-                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                    {[["classical","🎻 Classical"],["lofi","☕ Lo-fi"],["jazz","🎷 Jazz"],["nature","🌿 Nature"]].map(function(opt){
-                      var active=musicGenre===opt[0];
-                      return<button key={opt[0]} onClick={function(){setMusicGenre(opt[0]);try{localStorage.setItem("rq-music-genre",opt[0]);}catch(e){}}} style={{background:active?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"rgba(167,139,250,0.5)":"rgba(255,255,255,0.08)"),color:active?"#c4b5fd":"#6b7280",borderRadius:999,padding:"4px 10px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,transition:"all 0.15s ease"}}>{opt[1]}</button>;
+
+                {dailyQuests.length>0&&(
+                  <div className="lq-card-glass" style={{borderColor:allDoneHome?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.10)",background:allDoneHome?"rgba(52,211,153,0.04)":"rgba(255,255,255,0.02)"}}>
+                    <div className="lq-card-h">
+                      <p className="lq-card-lbl" style={{color:allDoneHome?"#5af0b3":"rgba(227,224,244,0.6)"}}>🎯 {t("todaysQuests")}</p>
+                      <span style={{fontSize:11,color:"rgba(227,224,244,0.5)"}}>{doneCountHome}/{dailyQuests.length} done</span>
+                    </div>
+                    {dailyQuests.map(function(q){
+                      var done=!!questsDone[q.id];
+                      return(<div key={q.id} className="lq-quest-row">
+                        <div className={"lq-quest-check"+(done?" done":"")}>{done?"✓":""}</div>
+                        <div className={"lq-quest-text"+(done?" done":"")}>{q.title}<small>{q.desc}</small></div>
+                        <div className={"lq-quest-xp"+(done?" done":"")}>+{q.xp} XP</div>
+                      </div>);
                     })}
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* daily challenge card */}
-            {currentUser&&(function(){
-              var today=todayKey();
-              var done=dailyDone&&dailyDone.date===today;
-              return(
-                <div style={{...CARD,marginBottom:12,padding:14,borderColor:done?"rgba(251,191,36,0.3)":"rgba(6,182,212,0.3)",background:done?"rgba(251,191,36,0.05)":"rgba(6,182,212,0.05)"}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <div>
-                      <p style={{fontSize:11,color:done?"#fbbf24":"#06b6d4",fontWeight:700,letterSpacing:0.6,margin:"0 0 2px"}}>{t("todaysDailyChallenge")}</p>
-                      <p style={{fontSize:12,color:"#9ca3af",margin:0}}>{done?"Completed! "+dailyDone.xp+" XP · "+dailyDone.pct+"%":dailyChallenge&&dailyChallenge.date===today?dailyChallenge.topic+" (B1)":"B1 · All question types"}</p>
-                    </div>
-                    <button onClick={done?function(){setStage("dailyleaderboard");}:startDailyChallenge} disabled={dailyLoading} style={{...mkBtn(done?"#fbbf24":"#06b6d4","#0d0d1a"),padding:"9px 16px",fontSize:13,flexShrink:0}}>{dailyLoading?"Loading...":done?"Leaderboard":"Play"}</button>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* recommendations card */}
-            {currentUser&&(function(){
-              var recs=getRecommendations(currentUser.games||[],3);
-              if(!recs.length)return null;
-              return(
-                <div style={{...CARD,marginBottom:12,padding:14}}>
-                  <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.6,margin:"0 0 10px"}}>{t("recommendedForYou")}</p>
-                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {recs.length>0&&(
+                  <div className="lq-card-glass">
+                    <p className="lq-card-lbl" style={{color:"#c4b5fd",marginBottom:10}}>📚 {t("recommendedForYou")}</p>
                     {recs.map(function(s){
                       var lo=getLv(s.level);
                       return(
-                        <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"8px 10px",borderRadius:10,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}} onClick={function(){startStoryFromLibrary(s);}}>
-                          <span style={{fontSize:20}}>{({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"})[s.level]||"📖"}</span>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:13,fontWeight:600,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.title}</div>
-                            <div style={{fontSize:11,color:"#6b7280"}}>{s.topic}</div>
+                        <div key={s.id} className="lq-rec-row" onClick={function(){startStoryFromLibrary(s);}}>
+                          <span className="lq-rec-emoji">{({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"})[s.level]||"📖"}</span>
+                          <div className="lq-rec-meta">
+                            <p className="lq-rec-t">{s.title}</p>
+                            <p className="lq-rec-s">{s.topic}</p>
                           </div>
-                          <span style={{fontSize:11,fontWeight:700,color:lo.color,flexShrink:0}}>{s.level}</span>
+                          <span className="lq-rec-lvl" style={{color:lo.color}}>{s.level}</span>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              );
-            })()}
+                )}
 
-            {/* daily quests card */}
-            {currentUser&&dailyQuests.length>0&&(function(){
-              var today=todayKey();
-              var todayGames=(currentUser.games||[]).filter(function(g){return g.date===today;});
-              var doneToday=dailyDone&&dailyDone.date===today;
-              var allDone=dailyQuests.every(function(q){return questsDone[q.id]||checkQuest(q.id,todayGames,vocab.length,{dailyDone:doneToday,streak:myStreak});});
-              var doneCount=dailyQuests.filter(function(q){return questsDone[q.id];}).length;
-              return(
-                <div style={{...CARD,marginBottom:12,padding:14,borderColor:allDone?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.1)",background:allDone?"rgba(52,211,153,0.04)":"rgba(255,255,255,0.02)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <p style={{fontSize:11,color:allDone?"#34d399":"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>{t("todaysQuests")}</p>
-                    <span style={{fontSize:11,color:"#6b7280"}}>{doneCount}/{dailyQuests.length} done</span>
+                <div className="lq-card-glass lq-wotd">
+                  <div className="lq-card-h">
+                    <p className="lq-card-lbl" style={{color:"#c4b5fd"}}>📖 Word of the Day</p>
+                    <span className="lq-wotd-type">{wotd.type}</span>
                   </div>
-                  {dailyQuests.map(function(q){
-                    var done=!!questsDone[q.id];
-                    return(<div key={q.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                      <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid "+(done?"#34d399":"rgba(255,255,255,0.15)"),background:done?"#34d399":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                        {done&&<span style={{fontSize:10,color:"#0d0d1a",fontWeight:900}}>✓</span>}
+                  <div style={{display:"flex",alignItems:"baseline"}}>
+                    <span className="lq-wotd-word">{wotd.word}</span>
+                    <span className="lq-wotd-phon">{wotd.phonetic}</span>
+                  </div>
+                  <p className="lq-wotd-def">{wotd.def}</p>
+                  <p className="lq-wotd-ex">"{wotd.ex}"</p>
+                </div>
+
+                <details className="lq-details">
+                  <summary>⚙️ {t("questionTypes")} & advanced</summary>
+                  <div className="lq-details-body">
+                    <div>
+                      <p className="lq-details-sub">{t("questionTypes")} ({selectedTypes.length} selected)</p>
+                      <div className="lq-chips">
+                        {Object.keys(Q_LABELS).map(function(qt){
+                          var active=selectedTypes.indexOf(qt)!==-1;
+                          function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(qt)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==qt;});return prev.concat([qt]);});}
+                          return(<button key={qt} type="button" onClick={toggle} className={"lq-mini-chip"+(active?" active":"")}>{active?"✓ ":""}{qLabel(qt)}</button>);
+                        })}
                       </div>
-                      <div style={{flex:1}}>
-                        <span style={{fontSize:13,fontWeight:600,color:done?"#6b7280":"#f3f4f6",textDecoration:done?"line-through":"none"}}>{q.title}</span>
-                        <span style={{fontSize:11,color:"#4b5563",marginLeft:6}}>{q.desc}</span>
+                    </div>
+                    <div>
+                      <p className="lq-details-sub">{t("topic")} <span style={{textTransform:"none",letterSpacing:0,fontWeight:400,opacity:0.7}}>(optional)</span></p>
+                      <div style={{display:"flex",gap:8}}>
+                        <input className="lq-text-input" style={{flex:1,borderColor:customTopic.trim()?"#5af0b3":undefined}} placeholder={t("topicPlaceholder")} value={customTopic} onChange={function(e){setCustomTopic(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&level)generate();}} maxLength={80}/>
+                        {customTopic.trim()&&<button type="button" onClick={function(){setCustomTopic("");}} className="lq-ghost-btn" style={{padding:"9px 12px"}}>✕</button>}
                       </div>
-                      <span style={{fontSize:12,fontWeight:700,color:done?"#6b7280":"#34d399",flexShrink:0}}>+{q.xp} XP</span>
-                    </div>);
-                  })}
-                  {allDone&&<div style={{marginTop:4,padding:"6px 10px",borderRadius:8,background:"rgba(52,211,153,0.1)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#34d399",textAlign:"center",fontWeight:700}}>All quests complete! Come back tomorrow for new ones.</div>}
-                </div>
-              );
-            })()}
-
-            {/* question type selector */}
-            <div style={{...CARD,marginBottom:12,padding:14}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:0}}>{t("questionTypes")}</p>
-                <span style={{fontSize:10,color:"#6b7280"}}>{selectedTypes.length} selected</span>
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {Object.keys(Q_LABELS).map(function(qt){
-                  var active=selectedTypes.indexOf(qt)!==-1;
-                  function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(qt)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==qt;});return prev.concat([qt]);});}
-                  return(<button key={qt} onClick={toggle} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>{active?"✓ ":""}{qLabel(qt)}</button>);
-                })}
-              </div>
-            </div>
-
-            {/* custom topic input */}
-            <div style={{...CARD,marginBottom:12,padding:14}}>
-              <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>{t("topic")} <span style={{color:"#4b5563",fontWeight:400,letterSpacing:0}}>(optional — leave blank for random)</span></p>
-              <div style={{display:"flex",gap:8}}>
-                <input
-                  style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid "+(customTopic.trim()?"#818cf8":"rgba(255,255,255,0.12)"),borderRadius:10,padding:"9px 12px",fontSize:13,color:"#f3f4f6",fontFamily:"inherit",outline:"none"}}
-                  placeholder={t("topicPlaceholder")}
-                  value={customTopic}
-                  onChange={function(e){setCustomTopic(e.target.value);}}
-                  onKeyDown={function(e){if(e.key==="Enter"&&level)generate();}}
-                  maxLength={80}
-                />
-                {customTopic.trim()&&<button onClick={function(){setCustomTopic("");}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>✕</button>}
-              </div>
-              {customTopic.trim()&&<p style={{fontSize:11,color:"#818cf8",margin:"6px 0 0"}}>{t("topicHint")} <strong>{customTopic.trim()}</strong></p>}
-              {/* personalised passage toggle */}
-              {(function(){
-                var activeVocab=vocab.filter(function(w){return w.status!=="known";});
-                activeVocab.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
-                var previewWords=activeVocab.slice(0,5).map(function(w){return w.word;});
-                return(<div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                  <div style={{flex:1}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <button onClick={function(){setUseWeakVocab(function(v){return !v;});}} style={{background:useWeakVocab?"rgba(16,185,129,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(useWeakVocab?"#10b981":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:11,color:useWeakVocab?"#34d399":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all 0.15s"}}>
-                        {useWeakVocab?"✓ Vocab-Personalised":"📚 Personalise with my vocab"}
-                      </button>
-                      {activeVocab.length===0&&<span style={{fontSize:10,color:"#4b5563"}}>(add words to vocab first)</span>}
+                      {customTopic.trim()&&<p style={{fontSize:11,color:"#5af0b3",margin:"6px 0 0"}}>{t("topicHint")} <strong>{customTopic.trim()}</strong></p>}
+                      {(function(){
+                        var activeVocab=vocab.filter(function(w){return w.status!=="known";});
+                        activeVocab.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
+                        var previewWords=activeVocab.slice(0,5).map(function(w){return w.word;});
+                        return(<div style={{marginTop:10}}>
+                          <button type="button" onClick={function(){setUseWeakVocab(function(v){return !v;});}} className={"lq-mini-chip"+(useWeakVocab?" active":"")} style={{fontSize:12,padding:"6px 14px"}}>
+                            {useWeakVocab?"✓ Vocab-Personalised":"📚 Personalise with my vocab"}
+                          </button>
+                          {activeVocab.length===0&&<span style={{fontSize:10,color:"rgba(227,224,244,0.4)",marginLeft:8}}>(add vocab first)</span>}
+                          {useWeakVocab&&previewWords.length>0&&<p style={{fontSize:11,color:"#5af0b3",margin:"6px 0 0",lineHeight:1.5}}>Will include: {previewWords.map(function(w){return<span key={w} style={{background:"rgba(52,211,153,0.15)",borderRadius:6,padding:"1px 6px",marginRight:4,display:"inline-block"}}>{w}</span>;})}</p>}
+                        </div>);
+                      })()}
                     </div>
-                    {useWeakVocab&&previewWords.length>0&&<p style={{fontSize:11,color:"#34d399",margin:"5px 0 0"}}>Passage will include: {previewWords.map(function(w,i){return<span key={w} style={{background:"rgba(16,185,129,0.15)",borderRadius:4,padding:"1px 5px",marginRight:4,display:"inline-block"}}>{w}</span>;})}</p>}
-                    {useWeakVocab&&previewWords.length===0&&<p style={{fontSize:11,color:"#6b7280",margin:"5px 0 0"}}>No active vocab words — add some from the Vocab screen.</p>}
+                    {customTopic.trim()&&(function(){
+                      var PASS_LANGS=[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}];
+                      return(<div>
+                        <p className="lq-details-sub">{t("passageLanguage")}</p>
+                        <div style={{display:"flex",overflowX:"auto",gap:6,paddingBottom:4}}>
+                          {PASS_LANGS.map(function(l){
+                            var active=passageLang===l.name;
+                            return(<button key={l.name} type="button" onClick={function(){setPassageLang(l.name);}} className={"lq-mini-chip"+(active?" active":"")} style={{whiteSpace:"nowrap",flexShrink:0}}>{l.flag} {l.name}</button>);
+                          })}
+                        </div>
+                      </div>);
+                    })()}
                   </div>
-                </div>);
-              })()}
-            </div>
+                </details>
 
-            {/* passage language selector — only shown when a custom topic is entered */}
-            {customTopic.trim()&&(function(){
-              var PASS_LANGS=[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}];
-              return(<div style={{...CARD,marginBottom:12,padding:14}}>
-                <p style={{fontSize:11,color:"#9ca3af",fontWeight:700,letterSpacing:0.6,margin:"0 0 8px"}}>{t("passageLanguage")}</p>
-                <div style={{display:"flex",overflowX:"auto",gap:6,paddingBottom:4}}>
-                  {PASS_LANGS.map(function(l){
-                    var active=passageLang===l.name;
-                    return(<button key={l.name} onClick={function(){setPassageLang(l.name);}} style={{background:active?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(active?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 11px",fontSize:11,color:active?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,whiteSpace:"nowrap",flexShrink:0}}>{l.flag} {l.name}</button>);
-                  })}
-                </div>
-              </div>);
-            })()}
-
-            {/* theme presets */}
-            <div style={{marginBottom:14}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,margin:0}}>THEME</p>
-                {appTheme&&<span style={{fontSize:12,fontWeight:700,color:appTheme.accent}}>{appTheme.emoji} {appTheme.name}</span>}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:6,marginBottom:10}}>
-                {PRESET_THEMES.map(function(t){
-                  var isActive=appTheme&&appTheme.id===t.id;
-                  return(
-                    <button key={t.id} title={t.name} onClick={function(){applyTheme(t);}} style={{background:isActive?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.04)",border:"2px solid "+(isActive?t.accent:"rgba(255,255,255,0.1)"),borderRadius:12,padding:"8px 4px",cursor:"pointer",textAlign:"center",boxShadow:isActive?"0 0 14px "+t.accent+"55":"none",transition:"all 0.15s ease",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                      <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,"+t.accent+" 50%,"+t.secondary+" 50%)"}}/>
-                      <span style={{fontSize:13,lineHeight:1}}>{t.emoji}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <button onClick={selectRandomTheme} style={{...GHOST,fontSize:11,padding:"6px 10px",width:"100%",textAlign:"center"}}>🎲 Random Theme</button>
-            </div>
-
-            {/* level selector */}
-            <p style={{fontWeight:700,color:"#d1fae5",fontSize:11,letterSpacing:0.8,marginBottom:8}}>{t("chooseLevel")}</p>
-            <div className="rq-lvgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-              {LEVELS.map(function(l){
-                var active=level===l.key;
-                var badgeId=l.key.toLowerCase();
-                return(<button key={l.key} className="rq-card-3d" onClick={function(){setLevel(l.key);setError("");}} style={{background:active?"rgba(255,255,255,0.09)":"rgba(255,255,255,0.03)",border:"2px solid "+(active?l.color:"rgba(255,255,255,0.08)"),borderRadius:14,padding:"12px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?"0 0 22px "+l.glow+",0 0 40px "+l.glow+"44,inset 0 1px 0 rgba(255,255,255,0.08)":"none",display:"flex",alignItems:"center",gap:10}}>
-                  <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48,flexShrink:0}} onError={function(e){e.target.style.display="none";}}/>
-                  <div style={{flex:1}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                      <span style={{fontSize:15,fontWeight:900,color:active?l.color:"#f3f4f6"}}>{l.key}</span>
-                      <span style={{background:active?l.color:"rgba(255,255,255,0.12)",color:active?"#0d0d1a":"#d1d5db",borderRadius:999,padding:"2px 7px",fontSize:10,fontWeight:700}}>x{l.mult}</span>
+                <details className="lq-details">
+                  <summary>✍️ Custom text quiz</summary>
+                  <div className="lq-details-body">
+                    <p style={{fontSize:12,color:"rgba(227,224,244,0.55)",margin:0}}>Paste any English text (30–3000 chars) and we'll generate questions about it.</p>
+                    <textarea className="lq-textarea" value={customText} onChange={function(e){setCustomText(e.target.value.slice(0,3000));}} placeholder="Paste your text here..."/>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:10,color:"rgba(227,224,244,0.4)"}}>{customText.length}/3000</span>
+                      <button type="button" onClick={doCustomTextQuiz} disabled={customTextLoading||customText.trim().length<30} className="lq-ghost-btn" style={{background:customText.trim().length>=30?"#f59e0b":undefined,color:customText.trim().length>=30?"#0d0d1a":undefined,border:customText.trim().length>=30?"none":undefined}}>{customTextLoading?"Generating…":"Generate Quiz"}</button>
                     </div>
-                    <div style={{fontSize:11,color:"#9ca3af"}}>{l.desc}</div>
-                    <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{formatTime(l.timeLimit)} limit</div>
+                    {customTextError&&<p style={{color:"#f87171",fontSize:12,margin:0}}>{customTextError}</p>}
                   </div>
-                </button>);
-              })}
-            </div>
-            {error&&<ErrorBanner message={error}/>}
-            {error&&error.includes("Daily AI quota")&&<button onClick={function(){setStage("library");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",fontSize:14,marginBottom:10}}>📚 Browse Library Stories</button>}
-            <button onClick={generate} disabled={!level||genLoading} style={{...mkBtn(level&&!genLoading?lv.color:"#374151",level&&!genLoading?"#0d0d1a":"#6b7280"),width:"100%",fontSize:15}}>
-              {genLoading?t("writingPassage"):level?t("startQuest"):t("selectLevel")}
-            </button>
+                </details>
 
-            {/* Custom Text Quiz */}
-            <div style={{marginTop:10}}>
-              {!customTextOpen?(
-                <button onClick={function(){setCustomTextOpen(true);setCustomTextError("");}} style={{...GHOST,width:"100%",fontSize:13}}>✍️ Quiz me on my own text</button>
-              ):(
-                <div style={{...CARD,padding:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <span style={{fontSize:13,fontWeight:700,color:"#f3f4f6"}}>✍️ Custom Text Quiz</span>
-                    <button onClick={function(){setCustomTextOpen(false);setCustomText("");setCustomTextError("");}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:16,cursor:"pointer"}}>×</button>
+                <details className="lq-details">
+                  <summary>🎵 Audio & theme</summary>
+                  <div className="lq-details-body">
+                    <div>
+                      <p className="lq-details-sub">Sound</p>
+                      <div className="lq-chips">
+                        <button type="button" onClick={function(){setSfxOn(function(v){var n=!v;try{localStorage.setItem("rq-sfx",n?"on":"off");}catch(e){}return n;});}} className={"lq-mini-chip"+(sfxOn?" active":"")}>{sfxOn?"🔊 SFX On":"🔇 SFX Off"}</button>
+                        <button type="button" onClick={function(){setMusicOn(function(v){return!v;});}} className={"lq-mini-chip"+(musicOn?" active":"")}>{musicOn?"🎵 Music On":"🎵 Music Off"}</button>
+                      </div>
+                      {musicOn&&(
+                        <div className="lq-chips" style={{marginTop:8}}>
+                          {[["classical","🎻 Classical"],["lofi","☕ Lo-fi"],["jazz","🎷 Jazz"],["nature","🌿 Nature"]].map(function(opt){
+                            var active=musicGenre===opt[0];
+                            return<button key={opt[0]} type="button" onClick={function(){setMusicGenre(opt[0]);try{localStorage.setItem("rq-music-genre",opt[0]);}catch(e){}}} className={"lq-mini-chip"+(active?" active":"")}>{opt[1]}</button>;
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="lq-details-sub">Theme {appTheme&&<span style={{textTransform:"none",letterSpacing:0,fontWeight:700,color:appTheme.accent,marginLeft:8}}>{appTheme.emoji} {appTheme.name}</span>}</p>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
+                        {PRESET_THEMES.map(function(th){
+                          var isActive=appTheme&&appTheme.id===th.id;
+                          return(<button key={th.id} title={th.name} type="button" onClick={function(){applyTheme(th);}} style={{background:isActive?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.04)",border:"2px solid "+(isActive?th.accent:"rgba(255,255,255,0.10)"),borderRadius:12,padding:"8px 4px",cursor:"pointer",textAlign:"center",boxShadow:isActive?"0 0 14px "+th.accent+"55":"none",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,"+th.accent+" 50%,"+th.secondary+" 50%)"}}/><span style={{fontSize:12,lineHeight:1}}>{th.emoji}</span></button>);
+                        })}
+                      </div>
+                      <button type="button" onClick={selectRandomTheme} className="lq-ghost-btn" style={{width:"100%",marginTop:8}}>🎲 Random Theme</button>
+                    </div>
+                    <div>
+                      <p className="lq-details-sub">Reminders</p>
+                      <div className="lq-chips">
+                        {notifPermission!=="granted"&&<button type="button" onClick={requestNotifPermission} className="lq-mini-chip">🔔 Enable</button>}
+                        {notifPermission==="granted"&&<button type="button" onClick={sendTestNotification} className="lq-mini-chip">🔔 Test</button>}
+                        {quotes.length>0&&<button type="button" onClick={function(){setStage("quotes");}} className="lq-mini-chip">🔖 Quotes ({quotes.length})</button>}
+                      </div>
+                    </div>
                   </div>
-                  <p style={{fontSize:11,color:"#6b7280",marginBottom:8}}>Paste any English text (30–3000 chars) and we'll generate questions about it.</p>
-                  <textarea value={customText} onChange={function(e){setCustomText(e.target.value.slice(0,3000));}} placeholder="Paste your text here..." style={{width:"100%",minHeight:80,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:12,padding:"8px 10px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                    <span style={{fontSize:10,color:"#6b7280"}}>{customText.length}/3000</span>
-                    <button onClick={doCustomTextQuiz} disabled={customTextLoading||customText.trim().length<30} style={{...mkBtn(customText.trim().length>=30?"#f59e0b":"#374151","#0d0d1a"),padding:"7px 16px",fontSize:12}}>{customTextLoading?"Generating...":"Generate Quiz"}</button>
-                  </div>
-                  {customTextError&&<p style={{color:"#f87171",fontSize:12,marginTop:6}}>{customTextError}</p>}
-                </div>
-              )}
-            </div>
+                </details>
 
-            {/* Notifications + Quotes quick links */}
-            <div style={{display:"flex",gap:7,marginTop:8,flexWrap:"wrap"}}>
-              {notifPermission!=="granted"&&<button onClick={requestNotifPermission} style={{...GHOST,flex:1,fontSize:12}}>🔔 Enable Reminders</button>}
-              {notifPermission==="granted"&&<button onClick={sendTestNotification} style={{...GHOST,flex:1,fontSize:12}}>🔔 Test Notification</button>}
-              {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={{...GHOST,flex:1,fontSize:12}}>🔖 Quote Book ({quotes.length})</button>}
-            </div>
+                {myClassBanner?(
+                  <div className="lq-card-glass" style={{display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{fontSize:28}}>🏫</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#e3e0f4"}}>{myClassBanner.name}</div>
+                      <div style={{fontSize:11,color:"rgba(227,224,244,0.5)"}}>Class by {myClassBanner.teacherName}</div>
+                    </div>
+                  </div>
+                ):(
+                  <div className="lq-card-glass">
+                    <p className="lq-card-lbl" style={{color:"rgba(227,224,244,0.55)",marginBottom:10}}>🏫 Join a Class</p>
+                    <div style={{display:"flex",gap:8}}>
+                      <input value={joinClassCode} onChange={function(e){setJoinClassCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""));}} onKeyDown={function(e){if(e.key==="Enter")doJoinClass();}} placeholder="Class code" maxLength={6} className="lq-text-input" style={{flex:1,letterSpacing:3,fontFamily:"'JetBrains Mono',monospace",fontSize:15,textTransform:"uppercase"}}/>
+                      <button type="button" onClick={doJoinClass} disabled={joinClassCode.length!==6} className="lq-ghost-btn" style={{background:joinClassCode.length===6?"#6366F1":undefined,color:joinClassCode.length===6?"#fff":undefined,border:joinClassCode.length===6?"none":undefined}}>Join</button>
+                    </div>
+                    {joinClassMsg&&<p style={{fontSize:12,color:joinClassMsg.startsWith("✓")?"#5af0b3":"#f87171",margin:"8px 0 0"}}>{joinClassMsg}</p>}
+                  </div>
+                )}
 
-            {/* Join a Class */}
-            {(function(){
-              var myClass=currentUser?classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;})||null:null;
-              return myClass?(
-                <div style={{...CARD,marginTop:10,display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{fontSize:28}}>🏫</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#f3f4f6"}}>{myClass.name}</div>
-                    <div style={{fontSize:11,color:"#6b7280"}}>Class by {myClass.teacherName}</div>
-                  </div>
+                <div className="lq-section-h">
+                  <div className="h-lbl"><span className="h-ico">⊞</span>More</div>
                 </div>
-              ):(
-                <div style={{...CARD,marginTop:10}}>
-                  <p style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:0.6,marginBottom:10}}>🏫 JOIN A CLASS</p>
-                  <div style={{display:"flex",gap:8}}>
-                    <input value={joinClassCode} onChange={function(e){setJoinClassCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""));}} onKeyDown={function(e){if(e.key==="Enter")doJoinClass();}} placeholder="Enter class code" maxLength={6} style={{...INP,flex:1,margin:0,letterSpacing:3,fontFamily:"'JetBrains Mono',monospace",fontSize:15,textTransform:"uppercase"}}/>
-                    <button onClick={doJoinClass} disabled={joinClassCode.length!==6} style={{...mkBtn(joinClassCode.length===6?"#6366f1":"#374151"),padding:"10px 16px",fontSize:13}}>Join</button>
-                  </div>
-                  {joinClassMsg&&<p style={{fontSize:12,color:joinClassMsg.startsWith("✓")?"#34d399":"#f87171",marginTop:8,marginBottom:0}}>{joinClassMsg}</p>}
+                <div className="lq-nav-grid">
+                  <button type="button" onClick={function(){setStage("friends");}} className="lq-ghost-btn">{t("friends")}</button>
+                  <button type="button" onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} className="lq-ghost-btn">{t("vocab")}</button>
+                  <button type="button" onClick={function(){setHistoryLevel("");setStage("history");}} className="lq-ghost-btn">{t("history")}</button>
+                  <button type="button" onClick={function(){setStage("goals");}} className="lq-ghost-btn">{t("goals")}</button>
+                  <button type="button" onClick={function(){setStage("weekly");}} className="lq-ghost-btn">{t("weekly")}</button>
+                  <button type="button" onClick={function(){setLbLevel("A1");setStage("leaderboard");}} className="lq-ghost-btn">{t("leaderboard")}</button>
+                  <button type="button" onClick={function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}} className="lq-ghost-btn">{t("portfolio")}</button>
+                  {quotes.length>0&&<button type="button" onClick={function(){setStage("quotes");}} className="lq-ghost-btn">{t("quotes")}</button>}
                 </div>
-              );
-            })()}
-          </div>
-        )}
+              </div>
+
+              <nav className="lq-bottom-nav">
+                <button type="button" className="lq-nav-btn is-active">
+                  <span className="ico">🏠</span><span>HOME</span>
+                </button>
+                <button type="button" onClick={function(){setStage("library");}} className="lq-nav-btn">
+                  <span className="ico">📚</span><span>LIBRARY</span>
+                </button>
+                <button type="button" onClick={function(){setStage("analytics");}} className="lq-nav-btn">
+                  <span className="ico">📊</span><span>STATS</span>
+                </button>
+                <button type="button" onClick={function(){setStage("profile");}} className="lq-nav-btn">
+                  <span className="ico">👤</span><span>PROFILE</span>
+                </button>
+              </nav>
+            </div>
+          </>
+          );
+        })()}
 
         {/* ── LOADING ───────────────────────────────────────── */}
         {stage==="loading"&&(
@@ -4574,349 +4663,510 @@ export default function App(){
             });
           }
 
-          if(focusMode)return(
-            <div>
-              <button onClick={function(){setFocusMode(false);}} style={{position:"fixed",top:14,right:14,background:"rgba(13,13,26,0.85)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",zIndex:100,backdropFilter:"blur(8px)"}}>✕ Exit Focus</button>
-              <div style={{paddingTop:10,paddingBottom:100}}>
-                <h2 style={{margin:"0 0 18px",fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#f9fafb"}}>{topic}</h2>
-                <div style={{lineHeight:1.85,fontSize:17,color:"#e5e7eb",letterSpacing:0.2,fontFamily:"'Inter','Trebuchet MS',sans-serif"}}><WordTokens/></div>
-                {activeSentence&&(
-                  <div style={{...CARD,marginTop:12,padding:12,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.3)"}}>
-                    <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                      <span style={{fontSize:12,color:"#9ca3af",flex:1}}>{activeSentence}</span>
-                      <button onClick={function(){translateSentence(activeSentence);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid #818cf8",color:"#a78bfa",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{translating?"...":"Translate"}</button>
-                      <select value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:6,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}>
-                        <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
-                      </select>
-                    </div>
-                    {translation&&<p style={{fontSize:13,color:"#c7d2fe",margin:"8px 0 0",fontStyle:"italic"}}>{translation}</p>}
-                  </div>
-                )}
-                {selectedWord&&(
-                  <div style={{...CARD,marginTop:12,background:"rgba(251,191,36,0.08)",borderColor:"rgba(251,191,36,0.3)"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                      <span style={{fontSize:17,fontWeight:900,color:"#fbbf24"}}>{selectedWord}</span>
-                      <div style={{display:"flex",gap:6}}>
-                        {wordDef&&wordDef.audio&&<button onClick={function(){new Audio(wordDef.audio).play().catch(function(){});}} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",color:"#fbbf24",borderRadius:7,padding:"4px 9px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>}
-                        <button onClick={function(){toggleWord(selectedWord);}} style={{background:savedWords.has(selectedWord)?"rgba(6,182,212,0.2)":"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:savedWords.has(selectedWord)?"#06b6d4":"#9ca3af",borderRadius:7,padding:"4px 9px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{savedWords.has(selectedWord)?"⭐ Saved":"⭐ Save"}</button>
-                        <button onClick={function(){setSelectedWord(null);setWordDef(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:18,cursor:"pointer",lineHeight:1}}>×</button>
-                      </div>
-                    </div>
-                    {wordDefLoading&&<><Skeleton h={12} mb={6}/><Skeleton h={12} w="70%"/></>}
-                    {wordDef&&!wordDefLoading&&<><p style={{fontSize:13,color:"#d1d5db",margin:0,lineHeight:1.6}}>{wordDef.def}</p>{wordDef.example&&<p style={{fontSize:12,color:"#6b7280",margin:"4px 0 0",fontStyle:"italic"}}>"{wordDef.example}"</p>}</>}
-                  </div>
-                )}
-              </div>
-              <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(13,13,26,0.95)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"10px 16px",display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",zIndex:99,backdropFilter:"blur(10px)"}}>
-                <span style={{fontSize:12,color:"#6b7280"}}>⏱ {formatTime(readingTimerSecs)}{liveWpm>0&&" · "+liveWpm+" WPM"}</span>
-                <button onClick={speakPassage} style={{background:isSpeaking?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(isSpeaking?"#818cf8":"rgba(255,255,255,0.1)"),color:isSpeaking?"#818cf8":"#9ca3af",borderRadius:8,padding:"6px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSpeaking?"⏹":"🔊"}</button>
-                <div style={{display:"flex",gap:3}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.08)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"4px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>{r}×</button>;})}
+          var isFav=favs.some(function(f){return f.id===currentStoryId;});
+          var lvColor=lv?lv.color:"#5af0b3";
+          var segCount=8;
+          var segFilled=Math.min(segCount,Math.round((readPct/100)*segCount));
+
+          if(!rsvpActive)return(
+            <>
+              <style>{`
+                .lq-read-wrap{margin:-18px -20px -64px;padding:0;background:#0d0d1a;min-height:calc(100vh - 0px)}
+                @media(min-width:480px){.lq-read-wrap{margin:-22px -28px -72px}}
+                .lq-read-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+                .lq-r-btn{background:none;border:none;color:rgba(227,224,244,0.55);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:10px;transition:all 0.15s}
+                .lq-r-btn:hover{background:rgba(255,255,255,0.06);color:#5af0b3}
+                .lq-r-btn:active{transform:scale(0.92)}
+                .lq-r-btn.is-active{background:rgba(52,211,153,0.15);color:#5af0b3}
+                .lq-r-btn.is-fav{color:#f472b6;background:rgba(236,72,153,0.15)}
+                .lq-r-title{flex:1;text-align:center;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#5af0b3;letter-spacing:0.01em;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+                .lq-read-prog{position:sticky;top:48px;z-index:29;background:rgba(13,13,26,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:6px}
+                .lq-seg{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
+                .lq-seg.on{background:linear-gradient(90deg,#34D399,#5af0b3);box-shadow:0 0 10px rgba(52,211,153,0.4)}
+                .lq-seg-pct{font-family:'Inter',sans-serif;font-size:10px;font-weight:800;color:#5af0b3;letter-spacing:0.1em;text-transform:uppercase;margin-left:6px;white-space:nowrap;flex-shrink:0}
+                .lq-read-main{padding:24px 18px 240px;max-width:680px;margin:0 auto}
+                .lq-read-header{text-align:center;margin-bottom:24px}
+                .lq-read-tag{display:inline-block;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;padding:5px 14px;border-radius:999px;margin-bottom:14px}
+                .lq-read-title{font-family:'Outfit',sans-serif;font-size:26px;font-weight:700;color:#e3e0f4;line-height:1.2;margin:0 0 14px;letter-spacing:-0.01em}
+                @media(min-width:480px){.lq-read-title{font-size:30px}}
+                .lq-read-divider{width:48px;height:1px;background:linear-gradient(90deg,transparent,rgba(52,211,153,0.6),transparent);margin:0 auto}
+                .lq-read-diff{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:14px;font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.5)}
+                .lq-read-diff .stars{color:#fbbf24}
+                .lq-read-diff .wpm{color:#5af0b3}
+                .lq-read-diff .newwords{color:#c4b5fd}
+                .lq-personal-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);margin-bottom:18px;font-family:'Inter',sans-serif;flex-wrap:wrap}
+                .lq-personal-banner .lbl{font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.04em}
+                .lq-personal-banner .desc{font-size:11px;color:rgba(227,224,244,0.5)}
+                .lq-personal-banner .word-chip{background:rgba(16,185,129,0.18);color:#34d399;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:600}
+                .lq-read-article{font-family:'Newsreader','Inter',serif;font-size:18px;line-height:1.85;color:rgba(227,224,244,0.92);letter-spacing:0.005em}
+                .lq-read-article p{margin:0 0 1.4em}
+                .lq-read-article p:last-child{margin-bottom:0}
+                .lq-read-article p:first-child::first-letter{font-family:'Outfit',sans-serif;font-size:64px;font-weight:800;color:#5af0b3;float:left;line-height:1;padding:8px 12px 0 0;margin-top:4px;text-shadow:0 0 18px rgba(52,211,153,0.4)}
+                .lq-read-foot-hint{text-align:center;font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.35);margin:20px 0 0;letter-spacing:0.04em}
+                .lq-panel{background:rgba(30,30,44,0.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:14px;margin-top:16px;position:relative;overflow:hidden}
+                .lq-panel-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+                .lq-panel-close{background:transparent;border:none;color:rgba(227,224,244,0.5);cursor:pointer;font-size:20px;padding:0 4px;line-height:1}
+                .lq-vocab-word{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#fbbf24;line-height:1.1}
+                .lq-vocab-phon{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(227,224,244,0.5);margin-left:10px}
+                .lq-vocab-def{font-family:'Inter',sans-serif;font-size:14px;color:rgba(227,224,244,0.85);line-height:1.6;margin:6px 0 0}
+                .lq-vocab-ex{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.5);font-style:italic;margin:6px 0 0}
+                .lq-trans-text{font-family:'Inter',sans-serif;font-size:14px;color:rgba(227,224,244,0.85);line-height:1.5;flex:1}
+                .lq-trans-out{font-family:'Inter',sans-serif;font-size:13px;color:#a78bfa;font-style:italic;margin:8px 0 0;line-height:1.6}
+                .lq-mini-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.7);border-radius:10px;padding:6px 10px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+                .lq-mini-btn:hover{background:rgba(255,255,255,0.10);color:#e3e0f4}
+                .lq-mini-btn.is-on{background:rgba(52,211,153,0.18);border-color:#5af0b3;color:#5af0b3}
+                .lq-mini-btn.is-fav{background:rgba(236,72,153,0.18);border-color:#f472b6;color:#f472b6}
+                .lq-mini-btn.is-amber{background:rgba(251,191,36,0.18);border-color:#fbbf24;color:#fbbf24}
+                .lq-trans-select{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.12);color:rgba(227,224,244,0.7);border-radius:8px;padding:5px 8px;font-size:11px;font-family:'Inter',sans-serif}
+                .lq-read-actions{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(13,13,26,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+                .lq-read-meta-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+                .lq-read-time{font-family:'JetBrains Mono',monospace;font-size:13px;color:#5af0b3;font-weight:700}
+                .lq-read-time-sub{font-family:'Inter',sans-serif;font-size:10px;color:rgba(227,224,244,0.4);letter-spacing:0.04em}
+                .lq-read-tools{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px;padding-bottom:2px}
+                .lq-read-tools::-webkit-scrollbar{display:none}
+                .lq-read-tools .lq-mini-btn{flex-shrink:0}
+                .lq-read-rate{display:flex;gap:3px}
+                .lq-rate-pill{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(227,224,244,0.5);border-radius:6px;padding:3px 7px;font-family:'Inter',sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s}
+                .lq-rate-pill.on{background:rgba(167,139,250,0.2);border-color:#a78bfa;color:#c4b5fd}
+                .lq-challenge-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;margin-bottom:10px}
+                .lq-challenge-row.on{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.4)}
+                .lq-challenge-lbl{font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:rgba(227,224,244,0.7)}
+                .lq-challenge-row.on .lq-challenge-lbl{color:#fbbf24}
+                .lq-challenge-sub{font-family:'Inter',sans-serif;font-size:10px;color:rgba(227,224,244,0.45);margin-top:1px}
+                .lq-toggle{position:relative;width:40px;height:22px;background:rgba(255,255,255,0.08);border:none;border-radius:999px;cursor:pointer;transition:background 0.2s;padding:0;flex-shrink:0}
+                .lq-toggle.on{background:#f59e0b}
+                .lq-toggle::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform 0.2s}
+                .lq-toggle.on::after{transform:translateX(18px)}
+                .lq-start-quiz{width:100%;padding:14px 20px;border:none;border-radius:16px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;color:#003825;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 8px 24px rgba(52,211,153,0.28)}
+                .lq-start-quiz:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
+                .lq-start-quiz:disabled{opacity:0.5;cursor:not-allowed}
+                .lq-pron-card{background:rgba(30,30,44,0.5);border:1px solid rgba(236,72,153,0.3);border-radius:18px;padding:14px;margin-top:16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+                .lq-pron-h{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#f472b6;letter-spacing:0.1em;text-transform:uppercase;margin:0 0 10px}
+                .lq-pron-sent{background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:11px 14px;font-family:'Newsreader','Inter',serif;font-size:15px;color:rgba(227,224,244,0.9);line-height:1.6;font-style:italic;margin-bottom:10px;cursor:pointer;transition:all 0.15s;width:100%;text-align:left;font-family:inherit}
+                .lq-pron-sent:hover{border-color:rgba(236,72,153,0.3);background:rgba(236,72,153,0.05)}
+              `}</style>
+              <div className="lq-read-wrap">
+                <header className="lq-read-topbar">
+                  <button type="button" className="lq-r-btn" onClick={function(){setStage("home");}} aria-label="Back">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <h1 className="lq-r-title">Reading Quest</h1>
+                  {currentStoryId&&<button type="button" className={"lq-r-btn"+(isFav?" is-fav":"")} onClick={function(){toggleFav(currentStoryId,topic,level);}} aria-label="Favorite">
+                    <svg width="20" height="20" fill={isFav?"currentColor":"none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </button>}
+                  <button type="button" className={"lq-r-btn"+(activeSentence!==null?" is-active":"")} onClick={function(){setActiveSentence(activeSentence!==null?null:"");setTranslation(null);}} aria-label="Translate">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+                  </button>
+                </header>
+
+                <div className="lq-read-prog">
+                  {Array.from({length:segCount}).map(function(_,i){return<div key={i} className={"lq-seg"+(i<segFilled?" on":"")}/>;})}
+                  <span className="lq-seg-pct">{readPct}%</span>
                 </div>
-                {savedWords.size>0&&<span style={{fontSize:11,color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size}</span>}
-                <button onClick={function(){
-                  if(rsvpActive){setRsvpActive(false);setRsvpPaused(false);setRsvpIdx(0);setRsvpDone(false);}
-                  else{rsvpWordsRef.current=passage.split(/\s+/).filter(Boolean);setRsvpIdx(0);setRsvpPaused(false);setRsvpDone(false);setRsvpActive(true);}
-                }} style={{background:rsvpActive?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(rsvpActive?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpActive?"#a78bfa":"#9ca3af",borderRadius:8,padding:"6px 11px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>⚡ RSVP</button>
-                <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),marginLeft:"auto",padding:"9px 18px",fontSize:13}}>{t("startQuiz")}</button>
+
+                <main className="lq-read-main">
+                  <div className="lq-read-header">
+                    <span className="lq-read-tag" style={{background:"rgba("+hex2rgb(lvColor)+",0.15)",color:lvColor,border:"1px solid rgba("+hex2rgb(lvColor)+",0.3)"}}>{level} · {selectedTypes.length} questions</span>
+                    <h2 className="lq-read-title">{topic}</h2>
+                    <div className="lq-read-divider"/>
+                    <div className="lq-read-diff">
+                      <span className="stars">{"⭐".repeat(difficulty.stars)+"☆".repeat(5-difficulty.stars)}</span>
+                      <span>📖 {difficulty.wordCount} words · ~{difficulty.estReadMins} min</span>
+                      <span className="newwords">🆕 ~{difficulty.newWords} new</span>
+                      {liveWpm>0&&<span className="wpm">⚡ {liveWpm} WPM</span>}
+                    </div>
+                  </div>
+
+                  {personalizedWords.length>0&&(
+                    <div className="lq-personal-banner">
+                      <span className="lbl">📚 Personalised</span>
+                      <span className="desc">includes:</span>
+                      {personalizedWords.map(function(w){return<span key={w} className="word-chip">{w}</span>;})}
+                    </div>
+                  )}
+
+                  <article className="lq-read-article">
+                    {activeSentence!==null?<SentencePassage/>:<WordTokens/>}
+                  </article>
+
+                  <p className="lq-read-foot-hint">{activeSentence!==null?"Tap a sentence to listen":hlMode?"Highlight mode: tap to mark words":"Tap any word to look it up"}</p>
+
+                  {activeSentence&&(
+                    <div className="lq-panel" style={{borderColor:"rgba(99,102,241,0.35)",background:"rgba(99,102,241,0.07)"}}>
+                      <div className="lq-panel-h">
+                        <div className="lq-trans-text">{activeSentence}</div>
+                        <button type="button" className="lq-panel-close" onClick={function(){setActiveSentence(null);setTranslation(null);}}>×</button>
+                      </div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                        <button type="button" className="lq-mini-btn is-on" onClick={function(){translateSentence(activeSentence);}}>{translating?"…":"🌐 Translate"}</button>
+                        <button type="button" className={"lq-mini-btn"+(quotesSaved?" is-amber":"")} onClick={function(){saveSentenceQuote(activeSentence);}} title="Save to Quote Book">{quotesSaved?"✓ Saved":"🔖 Save"}</button>
+                        <select className="lq-trans-select" value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}}>
+                          <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
+                        </select>
+                      </div>
+                      {translation&&<p className="lq-trans-out">{translation}</p>}
+                    </div>
+                  )}
+
+                  {selectedWord&&!activeSentence&&(
+                    <div className="lq-panel" style={{borderColor:"rgba(251,191,36,0.3)",background:"rgba(251,191,36,0.06)"}}>
+                      <div className="lq-panel-h">
+                        <div>
+                          <span className="lq-vocab-word">{selectedWord}</span>
+                          {wordDef&&wordDef.phonetic&&<span className="lq-vocab-phon">{wordDef.phonetic}</span>}
+                        </div>
+                        <button type="button" className="lq-panel-close" onClick={function(){setSelectedWord(null);setWordDef(null);}}>×</button>
+                      </div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {wordDef&&wordDef.audio&&<button type="button" className="lq-mini-btn is-amber" onClick={function(){new Audio(wordDef.audio).play().catch(function(){});}}>🔊 Listen</button>}
+                        <button type="button" className={"lq-mini-btn"+(savedWords.has(selectedWord)?" is-on":"")} onClick={function(){toggleWord(selectedWord);}}>{savedWords.has(selectedWord)?"⭐ Saved":"⭐ Save to vocab"}</button>
+                      </div>
+                      {wordDefLoading&&<div style={{marginTop:10}}><Skeleton h={12} mb={6}/><Skeleton h={12} w="70%"/></div>}
+                      {wordDef&&!wordDefLoading&&(
+                        <>
+                          <p className="lq-vocab-def">{wordDef.def}</p>
+                          {wordDef.example&&<p className="lq-vocab-ex">"{wordDef.example}"</p>}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {pronMode&&(function(){
+                    var sentences=splitSentences(passage);
+                    return(
+                      <div className="lq-pron-card">
+                        <p className="lq-pron-h">🎤 Pronunciation Check</p>
+                        {!pronSentence?(
+                          <>
+                            <p style={{fontSize:12,color:"rgba(227,224,244,0.55)",margin:"0 0 10px"}}>Tap a sentence to practise:</p>
+                            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                              {sentences.map(function(s,i){return<button key={i} type="button" className="lq-pron-sent" onClick={function(){setPronSentence(s);setPronResult(null);}}>{s}</button>;})}
+                            </div>
+                          </>
+                        ):(
+                          <>
+                            <div className="lq-pron-sent" style={{cursor:"default"}}>"{pronSentence}"</div>
+                            <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                              <button type="button" onClick={function(){startPronCheck(pronSentence);}} disabled={pronRecording} className="lq-mini-btn" style={{flex:1,minWidth:120,justifyContent:"center",background:pronRecording?"#ef4444":"#ec4899",color:"#fff",borderColor:"transparent",padding:"9px 14px",fontSize:13}}>
+                                {pronRecording?"● Recording…":"🎤 Record"}
+                              </button>
+                              {pronRecording&&<button type="button" onClick={function(){if(pronRecRef.current)pronRecRef.current.stop();}} className="lq-mini-btn">⏹ Stop</button>}
+                              <button type="button" onClick={function(){setPronSentence("");setPronResult(null);}} className="lq-mini-btn">← Back</button>
+                            </div>
+                            {pronResult&&pronResult.error&&<ErrorBanner message={pronResult.error} marginBottom={8}/>}
+                            {pronResult&&!pronResult.error&&(
+                              <div>
+                                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                                  <div style={{fontSize:28,fontWeight:800,fontFamily:"'Outfit',sans-serif",color:pronResult.accuracy>=80?"#5af0b3":pronResult.accuracy>=60?"#fbbf24":"#f87171"}}>{pronResult.accuracy}%</div>
+                                  <div>
+                                    <div style={{fontSize:12,fontWeight:700,color:"#e3e0f4"}}>{pronResult.accuracy>=80?"Excellent!":pronResult.accuracy>=60?"Good effort!":"Keep practising!"}</div>
+                                    <div style={{fontSize:11,color:"rgba(227,224,244,0.5)"}}>Heard: "{pronResult.transcript}"</div>
+                                  </div>
+                                </div>
+                                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
+                                  {pronResult.words.map(function(w,i){
+                                    var bg=w.status==="correct"?"rgba(52,211,153,0.18)":w.status==="close"?"rgba(251,191,36,0.18)":"rgba(239,68,68,0.18)";
+                                    var col=w.status==="correct"?"#5af0b3":w.status==="close"?"#fbbf24":"#f87171";
+                                    return<span key={i} title={w.heard?("heard: "+w.heard):""} style={{background:bg,color:col,borderRadius:7,padding:"3px 9px",fontSize:13,fontWeight:600,cursor:w.heard?"help":"default"}}>{w.word}</span>;
+                                  })}
+                                </div>
+                                <button type="button" onClick={function(){setPronResult(null);}} className="lq-mini-btn" style={{width:"100%",justifyContent:"center"}}>Try again</button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </main>
+
+                <footer className="lq-read-actions">
+                  <div className="lq-read-meta-row">
+                    <span className="lq-read-time">⏱ {formatTime(readingTimerSecs)}</span>
+                    {liveWpm>0&&<span className="lq-read-time-sub">{liveWpm} WPM · {getWpmLabel(liveWpm)}</span>}
+                    {savedWords.size>0&&<span className="lq-read-time-sub" style={{color:"#06b6d4",fontWeight:700}}>⭐ {savedWords.size}</span>}
+                    <div className="lq-read-rate" style={{marginLeft:"auto"}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} type="button" onClick={function(){setSpeechRate(r);}} className={"lq-rate-pill"+(speechRate===r?" on":"")}>{r}×</button>;})}</div>
+                  </div>
+
+                  <div className="lq-read-tools">
+                    <button type="button" className={"lq-mini-btn"+(isSpeaking&&!activeSentence?" is-on":"")} onClick={speakPassage}>{isSpeaking?"⏹ Stop":"🔊 Listen"}</button>
+                    <button type="button" className={"lq-mini-btn"+(heatmapOn?" is-amber":"")} onClick={function(){setHeatmapOn(function(h){return!h;});}}>🌡️ Heatmap</button>
+                    <button type="button" className={"lq-mini-btn"+(hlMode?" is-amber":"")} onClick={function(){setHlMode(function(m){return!m;});}}>✏️ Highlight{hlWords.size>0?" ("+hlWords.size+")":""}</button>
+                    <button type="button" className="lq-mini-btn" onClick={function(){
+                      if(rsvpActive){setRsvpActive(false);setRsvpPaused(false);setRsvpIdx(0);setRsvpDone(false);}
+                      else{rsvpWordsRef.current=passage.split(/\s+/).filter(Boolean);setRsvpIdx(0);setRsvpPaused(false);setRsvpDone(false);setRsvpActive(true);}
+                    }}>⚡ RSVP</button>
+                    {(function(){
+                      var srSupported=typeof window!=="undefined"&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+                      return<button type="button" disabled={!srSupported} title={srSupported?undefined:"Speech recognition isn't supported here"} className={"lq-mini-btn"+(pronMode?" is-on":"")} onClick={function(){if(!srSupported)return;setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={!srSupported?{opacity:0.5,cursor:"not-allowed"}:{}}>🎤 {pronMode?"Exit":"Pronounce"}</button>;
+                    })()}
+                  </div>
+
+                  <div className={"lq-challenge-row"+(challengeMode?" on":"")}>
+                    <div>
+                      <div className="lq-challenge-lbl">⚡ Challenge Mode</div>
+                      <div className="lq-challenge-sub">Half the time · 1.5× XP if you finish</div>
+                    </div>
+                    <button type="button" className={"lq-toggle"+(challengeMode?" on":"")} onClick={function(){setChallengeMode(function(v){return !v;});}} aria-label="Toggle challenge mode"/>
+                  </div>
+
+                  <button type="button" onClick={startQuiz} className="lq-start-quiz" style={{background:lvColor,boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 8px 24px "+(lv&&lv.glow||"rgba(52,211,153,0.3)")}}>
+                    {t("startQuiz")}
+                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </footer>
               </div>
-            </div>
+            </>
           );
 
+          // RSVP speed-reader fullscreen mode
+          var rsvpWords=rsvpWordsRef.current||[];
+          var rsvpPct=rsvpWords.length>0?Math.round((rsvpIdx/(rsvpWords.length-1))*100):0;
+          var rsvpCur=rsvpWords[rsvpIdx]||"";
+          var rsvpPrev=rsvpIdx>0?rsvpWords[rsvpIdx-1]:"";
+          var rsvpNxt=rsvpIdx<rsvpWords.length-1?rsvpWords[rsvpIdx+1]:"";
+          var rsvpMidIdx=Math.max(0,Math.round(rsvpCur.replace(/[^a-zA-Z]/g,"").length*0.3)-1);
+          var rsvpPre=rsvpCur.slice(0,rsvpMidIdx),rsvpHi=rsvpCur.slice(rsvpMidIdx,rsvpMidIdx+1),rsvpPost=rsvpCur.slice(rsvpMidIdx+1);
           return(
-            <div>
-              {/* header */}
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,paddingTop:6}}>
-                <span style={{...pill(lv?lv.color:"#34d399","#0d0d1a"),fontSize:12,fontWeight:900}}>{level} · {selectedTypes.length} questions</span>
-                <div style={{display:"flex",gap:6}}>
-                  <button onClick={function(){if(currentStoryId)toggleFav(currentStoryId,topic,level);}} style={{background:favs.some(function(f){return f.id===currentStoryId;})?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"rgba(255,255,255,0.12)"),color:favs.some(function(f){return f.id===currentStoryId;})?"#f472b6":"#9ca3af",borderRadius:8,padding:"5px 8px",fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,transition:"all 0.15s ease"}}>
-                    <img src="/assets/icons/icon-favorite.svg" alt="Favorite" style={{width:24,height:24}} onError={function(e){e.target.style.display="none";}}/>
-                  </button>
-                  <button onClick={function(){setFocusMode(true);}} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#9ca3af",borderRadius:8,padding:"6px 13px",fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s ease"}}>📖 Focus</button>
+            <>
+              <style>{`
+                .lq-rsvp-wrap{margin:-18px -20px -64px;padding:0;min-height:100vh;background:#0d0d1a;display:flex;flex-direction:column}
+                @media(min-width:480px){.lq-rsvp-wrap{margin:-22px -28px -72px}}
+                .lq-rsvp-top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.05)}
+                .lq-rsvp-title{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#a78bfa;letter-spacing:0.08em;text-transform:uppercase;margin:0}
+                .lq-rsvp-exit{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.7);border-radius:10px;padding:6px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+                .lq-rsvp-exit:hover{background:rgba(255,255,255,0.10);color:#e3e0f4}
+                .lq-rsvp-wpm{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;padding:18px;border-bottom:1px solid rgba(255,255,255,0.05)}
+                .lq-rsvp-wpm-lbl{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:rgba(227,224,244,0.45);align-self:center;letter-spacing:0.08em;text-transform:uppercase}
+                .lq-rsvp-wpm-pill{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.55);border-radius:8px;padding:5px 12px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s}
+                .lq-rsvp-wpm-pill.on{background:rgba(167,139,250,0.18);border-color:#a78bfa;color:#c4b5fd;box-shadow:0 0 12px rgba(167,139,250,0.3)}
+                .lq-rsvp-prog{padding:10px 18px}
+                .lq-rsvp-track{height:4px;background:rgba(255,255,255,0.06);border-radius:999px;overflow:hidden}
+                .lq-rsvp-fill{height:100%;background:linear-gradient(90deg,#a78bfa,#c4b5fd);border-radius:999px;box-shadow:0 0 10px rgba(167,139,250,0.5);transition:width 0.1s linear}
+                .lq-rsvp-stage{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 18px}
+                .lq-rsvp-ghost{font-family:'JetBrains Mono',monospace;font-size:14px;color:rgba(227,224,244,0.25);min-height:22px;letter-spacing:0.02em}
+                .lq-rsvp-word{font-family:'Outfit',sans-serif;font-size:54px;font-weight:800;letter-spacing:0.02em;line-height:1;user-select:none;margin:20px 0;text-shadow:0 0 28px rgba(167,139,250,0.3)}
+                @media(min-width:480px){.lq-rsvp-word{font-size:64px}}
+                .lq-rsvp-word .pre,.lq-rsvp-word .post{color:#e3e0f4}
+                .lq-rsvp-word .hi{color:#f472b6}
+                .lq-rsvp-counter{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(227,224,244,0.4);margin-top:14px;letter-spacing:0.08em}
+                .lq-rsvp-controls{display:flex;justify-content:center;gap:10px;padding:18px;border-top:1px solid rgba(255,255,255,0.05)}
+                .lq-rsvp-step{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.65);border-radius:12px;padding:10px 16px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+                .lq-rsvp-play{background:#a78bfa;color:#0d0d1a;border:none;border-radius:14px;padding:11px 32px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.04em;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 0 24px rgba(167,139,250,0.4)}
+                .lq-rsvp-play:active{transform:translateY(2px);box-shadow:0 2px 0 0 rgba(0,0,0,0.4),0 0 16px rgba(167,139,250,0.4)}
+                .lq-rsvp-done{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 18px;text-align:center}
+                .lq-rsvp-done-emoji{font-size:64px;margin-bottom:14px}
+                .lq-rsvp-done-h{font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;color:#c4b5fd;margin:0 0 6px}
+                .lq-rsvp-done-sub{font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.5);margin:0 0 24px}
+              `}</style>
+              <div className="lq-rsvp-wrap">
+                <div className="lq-rsvp-top">
+                  <h1 className="lq-rsvp-title">⚡ Speed Reader</h1>
+                  <button type="button" className="lq-rsvp-exit" onClick={function(){setRsvpActive(false);setRsvpPaused(false);setRsvpIdx(0);setRsvpDone(false);}}>✕ Exit</button>
                 </div>
-              </div>
-
-              {/* personalised vocab banner */}
-              {personalizedWords.length>0&&<div style={{background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.3)",borderRadius:10,padding:"8px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:12,color:"#34d399",fontWeight:700}}>📚 Personalised passage</span>
-                <span style={{fontSize:11,color:"#6b7280"}}>includes your vocab words:</span>
-                {personalizedWords.map(function(w){return<span key={w} style={{background:"rgba(16,185,129,0.2)",borderRadius:4,padding:"1px 6px",fontSize:11,color:"#34d399"}}>{w}</span>;})}
-              </div>}
-
-              {/* difficulty analyzer card */}
-              <div style={{...CARD,padding:"10px 14px",marginBottom:10,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
-                <div>
-                  <span style={{fontSize:10,color:"#6b7280",fontWeight:700,letterSpacing:0.5}}>DIFFICULTY </span>
-                  <span style={{fontSize:13,color:"#fbbf24"}}>{"⭐".repeat(difficulty.stars)+"☆".repeat(5-difficulty.stars)}</span>
+                <div className="lq-rsvp-wpm">
+                  <span className="lq-rsvp-wpm-lbl">WPM</span>
+                  {[150,200,250,300,400,500].map(function(w){return<button key={w} type="button" onClick={function(){setRsvpWpm(w);}} className={"lq-rsvp-wpm-pill"+(rsvpWpm===w?" on":"")}>{w}</button>;})}
                 </div>
-                <div style={{fontSize:11,color:"#6b7280"}}>📖 {difficulty.wordCount} words · ~{difficulty.estReadMins} min</div>
-                <div style={{fontSize:11,color:"#a78bfa"}}>🆕 ~{difficulty.newWords} new words</div>
-                {liveWpm>0&&<div style={{fontSize:11,color:"#34d399",marginLeft:"auto"}}>⚡ {liveWpm} WPM · {getWpmLabel(liveWpm)}</div>}
-              </div>
-
-              {/* title + progress */}
-              <h2 style={{margin:"0 0 10px",fontSize:21,fontWeight:900,color:"#f9fafb",lineHeight:1.3}}>{topic}</h2>
-              <div style={{marginBottom:12}}>
-                <div style={{background:"rgba(255,255,255,0.07)",borderRadius:999,height:6,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:readPct+"%",background:lv?lv.color:"#34d399",borderRadius:999,transition:"width 1s linear"}}/>
+                <div className="lq-rsvp-prog">
+                  <div className="lq-rsvp-track"><div className="lq-rsvp-fill" style={{width:rsvpPct+"%"}}/></div>
                 </div>
-              </div>
-
-              {/* RSVP speed reader */}
-              {rsvpActive&&(function(){
-                var words=rsvpWordsRef.current;
-                var pct=words.length>0?Math.round((rsvpIdx/(words.length-1))*100):0;
-                var cur=words[rsvpIdx]||"";
-                var prev=rsvpIdx>0?words[rsvpIdx-1]:"";
-                var nxt=rsvpIdx<words.length-1?words[rsvpIdx+1]:"";
-                // highlight the optimal recognition point (about 30% into word)
-                var midIdx=Math.max(0,Math.round(cur.replace(/[^a-zA-Z]/g,"").length*0.3)-1);
-                var pre=cur.slice(0,midIdx),highlight=cur.slice(midIdx,midIdx+1),post=cur.slice(midIdx+1);
-                return(
-                  <div style={{...CARD,marginBottom:12,padding:20}}>
-                    {/* wpm selector */}
-                    <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-                      <span style={{fontSize:11,color:"#6b7280",alignSelf:"center",marginRight:4}}>WPM:</span>
-                      {[150,200,250,300,400,500].map(function(w){return(
-                        <button key={w} onClick={function(){setRsvpWpm(w);}} style={{background:rsvpWpm===w?"rgba(167,139,250,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(rsvpWpm===w?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpWpm===w?"#c4b5fd":"#6b7280",borderRadius:6,padding:"3px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:rsvpWpm===w?700:400}}>{w}</button>
-                      );})}
-                    </div>
-                    {/* progress */}
-                    <div style={{background:"rgba(255,255,255,0.07)",borderRadius:999,height:4,overflow:"hidden",marginBottom:20}}>
-                      <div style={{height:"100%",width:pct+"%",background:"#a78bfa",borderRadius:999,transition:"width 0.1s linear"}}/>
-                    </div>
-                    {/* word display */}
-                    {!rsvpDone?(
-                      <div style={{textAlign:"center",minHeight:120,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",gap:10}}>
-                        <div style={{fontSize:13,color:"#4b5563",minHeight:20}}>{prev}</div>
-                        <div style={{fontSize:42,fontWeight:900,letterSpacing:1,lineHeight:1,fontFamily:"monospace",userSelect:"none"}}>
-                          <span style={{color:"#9ca3af"}}>{pre}</span>
-                          <span style={{color:"#f9a8d4"}}>{highlight}</span>
-                          <span style={{color:"#f9fafb"}}>{post}</span>
-                        </div>
-                        <div style={{fontSize:13,color:"#4b5563",minHeight:20}}>{nxt}</div>
-                        <div style={{fontSize:11,color:"#6b7280",marginTop:4}}>{rsvpIdx+1} / {words.length}</div>
+                {!rsvpDone?(
+                  <>
+                    <div className="lq-rsvp-stage">
+                      <div className="lq-rsvp-ghost">{rsvpPrev}</div>
+                      <div className="lq-rsvp-word">
+                        <span className="pre">{rsvpPre}</span>
+                        <span className="hi">{rsvpHi}</span>
+                        <span className="post">{rsvpPost}</span>
                       </div>
-                    ):(
-                      <div style={{textAlign:"center",padding:"20px 0"}}>
-                        <div style={{fontSize:32,marginBottom:8}}>✓</div>
-                        <div style={{fontSize:16,fontWeight:700,color:"#a78bfa",marginBottom:4}}>Speed read complete!</div>
-                        <div style={{fontSize:12,color:"#9ca3af",marginBottom:16}}>{words.length} words at {rsvpWpm} WPM</div>
-                        <button onClick={startQuiz} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"10px 24px",fontSize:14}}>{t("startQuiz")}</button>
-                      </div>
-                    )}
-                    {/* controls */}
-                    {!rsvpDone&&<div style={{display:"flex",justifyContent:"center",gap:10,marginTop:16}}>
-                      <button onClick={function(){setRsvpIdx(function(i){return Math.max(0,i-10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>−10</button>
-                      <button onClick={function(){setRsvpPaused(function(p){return !p;});}} style={{background:rsvpPaused?"rgba(167,139,250,0.2)":"rgba(255,255,255,0.06)",border:"1px solid "+(rsvpPaused?"#a78bfa":"rgba(255,255,255,0.1)"),color:rsvpPaused?"#c4b5fd":"#9ca3af",borderRadius:8,padding:"7px 20px",fontSize:14,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{rsvpPaused?"▶ Play":"⏸ Pause"}</button>
-                      <button onClick={function(){setRsvpIdx(function(i){return Math.min(Math.max(0,words.length-1),i+10);});}} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+10</button>
-                    </div>}
-                  </div>
-                );
-              })()}
-
-              {/* passage — sentence TTS mode or word mode (hidden during RSVP) */}
-              {!rsvpActive&&<div style={{...CARD,marginBottom:12}}>
-                <div style={{lineHeight:2.1,fontSize:17,color:"#e5e7eb"}}>
-                  {activeSentence!==null?<SentencePassage/>:<WordTokens/>}
-                </div>
-                <p style={{fontSize:11,color:"#4b5563",margin:"10px 0 0",textAlign:"center"}}>{activeSentence!==null?"Tap a sentence to listen":"Tap any word to look it up"}</p>
-              </div>}
-
-              {/* active sentence panel (translation) */}
-              {activeSentence&&(
-                <div style={{...CARD,marginBottom:12,padding:12,background:"rgba(99,102,241,0.07)",borderColor:"rgba(99,102,241,0.3)"}}>
-                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:6}}>
-                    <span style={{fontSize:12,color:"#c7d2fe",flex:1,lineHeight:1.5}}>{activeSentence}</span>
-                    <button onClick={function(){translateSentence(activeSentence);}} style={{background:"rgba(99,102,241,0.15)",border:"1px solid #818cf8",color:"#a78bfa",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{translating?"...":"🌐 Translate"}</button>
-                    <button onClick={function(){saveSentenceQuote(activeSentence);}} title="Save to Quote Book" style={{background:quotesSaved?"rgba(251,191,36,0.25)":"rgba(255,255,255,0.06)",border:"1px solid "+(quotesSaved?"#fbbf24":"rgba(255,255,255,0.12)"),color:quotesSaved?"#fbbf24":"#9ca3af",borderRadius:7,padding:"4px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{quotesSaved?"✓ Saved":"🔖 Save"}</button>
-                    <select value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.15)",color:"#9ca3af",borderRadius:6,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}>
-                      <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
-                    </select>
-                    <button onClick={function(){setActiveSentence(null);setTranslation(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:16,cursor:"pointer",lineHeight:1}}>×</button>
-                  </div>
-                  {translation&&<p style={{fontSize:13,color:"#c7d2fe",margin:0,fontStyle:"italic"}}>{translation}</p>}
-                </div>
-              )}
-
-              {/* vocab popup */}
-              {selectedWord&&!activeSentence&&(
-                <div style={{...CARD,marginBottom:12,background:"rgba(251,191,36,0.07)",borderColor:"rgba(251,191,36,0.3)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                    <div>
-                      <span style={{fontSize:19,fontWeight:900,color:"#fbbf24"}}>{selectedWord}</span>
-                      {wordDef&&wordDef.phonetic&&<span style={{fontSize:12,color:"#9ca3af",marginLeft:9}}>{wordDef.phonetic}</span>}
+                      <div className="lq-rsvp-ghost">{rsvpNxt}</div>
+                      <div className="lq-rsvp-counter">{rsvpIdx+1} / {rsvpWords.length}</div>
                     </div>
-                    <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                      {wordDef&&wordDef.audio&&<button onClick={function(){new Audio(wordDef.audio).play().catch(function(){});}} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.3)",color:"#fbbf24",borderRadius:7,padding:"5px 10px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>}
-                      <button onClick={function(){toggleWord(selectedWord);}} style={{background:savedWords.has(selectedWord)?"rgba(6,182,212,0.2)":"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.15)",color:savedWords.has(selectedWord)?"#06b6d4":"#9ca3af",borderRadius:7,padding:"5px 10px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{savedWords.has(selectedWord)?"⭐ Saved":"⭐ Save"}</button>
-                      <button onClick={function(){setSelectedWord(null);setWordDef(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:20,cursor:"pointer",lineHeight:1,padding:"0 2px"}}>×</button>
+                    <div className="lq-rsvp-controls">
+                      <button type="button" className="lq-rsvp-step" onClick={function(){setRsvpIdx(function(i){return Math.max(0,i-10);});}}>−10</button>
+                      <button type="button" className="lq-rsvp-play" onClick={function(){setRsvpPaused(function(p){return !p;});}}>{rsvpPaused?"▶ Play":"⏸ Pause"}</button>
+                      <button type="button" className="lq-rsvp-step" onClick={function(){setRsvpIdx(function(i){return Math.min(Math.max(0,rsvpWords.length-1),i+10);});}}>+10</button>
                     </div>
+                  </>
+                ):(
+                  <div className="lq-rsvp-done">
+                    <div className="lq-rsvp-done-emoji">✓</div>
+                    <h2 className="lq-rsvp-done-h">Speed read complete!</h2>
+                    <p className="lq-rsvp-done-sub">{rsvpWords.length} words at {rsvpWpm} WPM</p>
+                    <button type="button" onClick={startQuiz} className="lq-start-quiz" style={{background:"#a78bfa",color:"#0d0d1a",boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 8px 24px rgba(167,139,250,0.4)",maxWidth:280}}>{t("startQuiz")}</button>
                   </div>
-                  {wordDefLoading&&<><Skeleton h={12} mb={6}/><Skeleton h={12} w="70%"/></>}
-                  {wordDef&&!wordDefLoading&&(
-                    <>
-                      <p style={{fontSize:14,color:"#d1d5db",margin:0,lineHeight:1.7}}>{wordDef.def}</p>
-                      {wordDef.example&&<p style={{fontSize:12,color:"#6b7280",margin:"5px 0 0",fontStyle:"italic"}}>e.g. "{wordDef.example}"</p>}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* bottom action bar */}
-              <div style={{...CARD,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:"#9ca3af"}}>⏱ {formatTime(readingTimerSecs)}</span>
-                <button onClick={speakPassage} style={{background:isSpeaking&&!activeSentence?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:isSpeaking&&!activeSentence?"#818cf8":"#9ca3af",borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minWidth:40,justifyContent:"center",transition:"all 0.15s ease"}}>
-                  <img src="/assets/icons/icon-audio.svg" alt="Audio" style={{width:20,height:20}} onError={function(e){e.target.style.display="none";}}/>
-                </button>
-                <button onClick={function(){setActiveSentence(activeSentence!==null?null:"");setTranslation(null);}} style={{background:activeSentence!==null?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(activeSentence!==null?"#818cf8":"rgba(255,255,255,0.1)"),color:activeSentence!==null?"#a78bfa":"#9ca3af",borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minWidth:40,justifyContent:"center",transition:"all 0.15s ease"}}>
-                  <img src="/assets/icons/icon-translate.svg" alt="Translate" style={{width:20,height:20}} onError={function(e){e.target.style.display="none";}}/>
-                </button>
-                <button onClick={function(){setHeatmapOn(function(h){return!h;});}} style={{background:heatmapOn?"rgba(245,158,11,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(heatmapOn?"#f59e0b":"rgba(255,255,255,0.1)"),color:heatmapOn?"#fbbf24":"#9ca3af",borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minWidth:40,justifyContent:"center",transition:"all 0.15s ease"}}>
-                  <img src="/assets/icons/icon-heatmap.svg" alt="Heatmap" style={{width:20,height:20}} onError={function(e){e.target.style.display="none";}}/>
-                </button>
-                <button onClick={function(){setHlMode(function(m){return!m;});}} title="Highlight mode: tap words to mark them" style={{background:hlMode?"rgba(251,191,36,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(hlMode?"#fbbf24":"rgba(255,255,255,0.1)"),color:hlMode?"#fde68a":"#9ca3af",borderRadius:8,padding:"5px 10px",fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s ease",display:"flex",alignItems:"center",gap:4}}>
-                  ✏️{hlMode?" On":" Off"}
-                  {hlWords.size>0&&<span style={{background:"rgba(251,191,36,0.3)",borderRadius:999,padding:"0 5px",fontSize:10,fontWeight:700,color:"#fde68a"}}>{hlWords.size}</span>}
-                </button>
-                {(function(){
-                  var srSupported=typeof window!=="undefined"&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
-                  return<button disabled={!srSupported} title={srSupported?undefined:"Speech recognition isn't supported in this browser — try Chrome or Edge."} onClick={function(){if(!srSupported)return;setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={{background:pronMode?"rgba(236,72,153,0.2)":"rgba(255,255,255,0.05)",border:"1px solid "+(pronMode?"#ec4899":"rgba(255,255,255,0.1)"),color:!srSupported?"#4b5563":pronMode?"#f472b6":"#9ca3af",borderRadius:8,padding:"5px 11px",fontSize:12,cursor:srSupported?"pointer":"not-allowed",opacity:srSupported?1:0.55,fontFamily:"inherit",transition:"all 0.15s ease"}}>🎤 {pronMode?"Exit":"Pronounce"}</button>;
-                })()}
-                <div style={{display:"flex",gap:3,marginLeft:"auto"}}>{[0.75,1,1.25,1.5].map(function(r){return<button key={r} onClick={function(){setSpeechRate(r);}} style={{background:speechRate===r?"rgba(99,102,241,0.3)":"rgba(255,255,255,0.04)",border:"1px solid "+(speechRate===r?"#818cf8":"rgba(255,255,255,0.06)"),color:speechRate===r?"#c7d2fe":"#6b7280",borderRadius:6,padding:"3px 7px",fontSize:10,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s ease"}}>{r}×</button>;})}
-                </div>
+                )}
               </div>
-
-              {/* pronunciation check panel */}
-              {pronMode&&(function(){
-                var sentences=splitSentences(passage);
-                return(
-                  <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(236,72,153,0.3)",background:"rgba(236,72,153,0.04)"}}>
-                    <p style={{fontSize:11,fontWeight:700,color:"#f472b6",marginBottom:10}}>🎤 PRONUNCIATION CHECK</p>
-                    {!pronSentence?(
-                      <>
-                        <p style={{fontSize:12,color:"#9ca3af",marginBottom:8}}>Tap a sentence to practise:</p>
-                        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                          {sentences.map(function(s,i){
-                            return<button key={i} onClick={function(){setPronSentence(s);setPronResult(null);}} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,padding:"8px 12px",color:"#d1d5db",fontSize:13,cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.6}}>{s}</button>;
-                          })}
-                        </div>
-                      </>
-                    ):(
-                      <>
-                        <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:14,color:"#e5e7eb",lineHeight:1.7,fontStyle:"italic"}}>"{pronSentence}"</div>
-                        <div style={{display:"flex",gap:8,marginBottom:10}}>
-                          <button onClick={function(){startPronCheck(pronSentence);}} disabled={pronRecording} style={{...mkBtn(pronRecording?"#ef4444":"#ec4899"),flex:1,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                            {pronRecording?<><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#fff",animation:"rqFloat 0.6s ease-in-out infinite"}}/>Recording…</>:"🎤 Record"}
-                          </button>
-                          {pronRecording&&<button onClick={function(){if(pronRecRef.current)pronRecRef.current.stop();}} style={{...mkBtn("#374151"),fontSize:13}}>⏹ Stop</button>}
-                          <button onClick={function(){setPronSentence("");setPronResult(null);}} style={{...GHOST,fontSize:12}}>← Back</button>
-                        </div>
-                        {pronResult&&pronResult.error&&<ErrorBanner message={pronResult.error} marginBottom={8}/>}
-                        {pronResult&&!pronResult.error&&(
-                          <div>
-                            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                              <div style={{fontSize:26,fontWeight:900,color:pronResult.accuracy>=80?"#22c55e":pronResult.accuracy>=60?"#f59e0b":"#ef4444"}}>{pronResult.accuracy}%</div>
-                              <div>
-                                <div style={{fontSize:12,fontWeight:700,color:"#f3f4f6"}}>{pronResult.accuracy>=80?"Excellent!":pronResult.accuracy>=60?"Good effort!":"Keep practising!"}</div>
-                                <div style={{fontSize:11,color:"#6b7280"}}>Heard: "{pronResult.transcript}"</div>
-                              </div>
-                            </div>
-                            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
-                              {pronResult.words.map(function(w,i){
-                                var bg=w.status==="correct"?"rgba(34,197,94,0.2)":w.status==="close"?"rgba(245,158,11,0.2)":"rgba(239,68,68,0.2)";
-                                var col=w.status==="correct"?"#4ade80":w.status==="close"?"#fbbf24":"#f87171";
-                                return<span key={i} title={w.heard?("heard: "+w.heard):""} style={{background:bg,color:col,borderRadius:6,padding:"3px 8px",fontSize:13,fontWeight:600,cursor:w.heard?"help":"default"}}>{w.word}</span>;
-                              })}
-                            </div>
-                            <div style={{display:"flex",gap:6,fontSize:10,color:"#6b7280",flexWrap:"wrap",marginBottom:8}}>
-                              {[["rgba(34,197,94,0.2)","#4ade80","Correct"],["rgba(245,158,11,0.2)","#fbbf24","Close (hover to see)"],["rgba(239,68,68,0.2)","#f87171","Missed"]].map(function(p){return<span key={p[2]} style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:10,height:10,borderRadius:3,background:p[0],border:"1px solid "+p[1],display:"inline-block"}}/>{p[2]}</span>;})}
-                            </div>
-                            <button onClick={function(){setPronResult(null);}} style={{...mkBtn("#374151"),fontSize:12,width:"100%"}}>Try again</button>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })()}
-
-              <div style={{...CARD,marginBottom:10,padding:"10px 14px",borderColor:challengeMode?"rgba(245,158,11,0.5)":"rgba(255,255,255,0.08)",background:challengeMode?"rgba(245,158,11,0.06)":"rgba(255,255,255,0.02)"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:700,color:challengeMode?"#fbbf24":"#9ca3af"}}>⚡ Challenge Mode</div>
-                    <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Half the time · 1.5× XP if you finish</div>
-                  </div>
-                  <button onClick={function(){setChallengeMode(function(v){return !v;});}} style={{background:challengeMode?"#f59e0b":"rgba(255,255,255,0.08)",border:"none",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:700,color:challengeMode?"#0d0d1a":"#6b7280",cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{challengeMode?"ON":"OFF"}</button>
-                </div>
-              </div>
-              <button onClick={startQuiz} style={{...mkBtn(lv?lv.color:"#f59e0b","#0d0d1a"),width:"100%",fontSize:15,padding:"14px 0"}}>{t("startQuiz")}</button>
-            </div>
+            </>
           );
         })()}
 
         {/* ── QUIZ ──────────────────────────────────────────── */}
-        {stage==="quiz"&&q&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{display:"flex",gap:5}}>
-                <span style={pill("#7c3aed")}>Q{current+1}/{questions.length}</span>
-                <span style={pill("rgba(255,255,255,0.07)","#c7d2fe")}>{qLabel(q.type)}</span>
-                {streak>=3&&<span style={pill("#dc2626")}>Streak {streak}</span>}
+        {stage==="quiz"&&q&&(function(){
+          var qLvColor=lv?lv.color:"#5af0b3";
+          var qSegFilled=current;
+          return(
+            <>
+              <style>{`
+                .lq-quiz-wrap{margin:-18px -20px -64px;padding:0;background:#0d0d1a;min-height:100vh}
+                @media(min-width:480px){.lq-quiz-wrap{margin:-22px -28px -72px}}
+                .lq-quiz-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+                .lq-quiz-top .ico-btn{background:none;border:none;color:rgba(227,224,244,0.55);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:10px}
+                .lq-quiz-top .ico-btn:hover{background:rgba(255,255,255,0.06);color:#5af0b3}
+                .lq-quiz-counter{flex:1;text-align:center;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#e3e0f4;letter-spacing:0.02em}
+                .lq-quiz-counter .total{color:rgba(227,224,244,0.4);font-weight:600}
+                .lq-quiz-xp{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:999px;background:rgba(52,211,153,0.15);color:#5af0b3;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;border:1px solid rgba(52,211,153,0.3)}
+                .lq-quiz-prog{position:sticky;top:48px;z-index:29;background:rgba(13,13,26,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:4px}
+                .lq-quiz-seg{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:4px}
+                .lq-quiz-seg.on{background:linear-gradient(90deg,#34D399,#5af0b3);box-shadow:0 0 8px rgba(52,211,153,0.4)}
+                .lq-quiz-seg.cur{background:rgba(52,211,153,0.4);animation:rqPulseSeg 1.4s ease-in-out infinite}
+                @keyframes rqPulseSeg{0%,100%{opacity:0.5}50%{opacity:1}}
+                .lq-quiz-main{padding:18px 16px 160px;max-width:680px;margin:0 auto}
+                .lq-quiz-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap}
+                .lq-quiz-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.04em;white-space:nowrap}
+                .lq-quiz-type{background:rgba(167,139,250,0.15);color:#c4b5fd;border:1px solid rgba(167,139,250,0.3)}
+                .lq-quiz-streak{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35)}
+                .lq-quiz-timer-card{position:relative;padding:12px 16px;background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:14px;margin-bottom:14px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+                .lq-quiz-timer-card.challenge{background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.35)}
+                .lq-quiz-timer-h{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#fbbf24;margin:0 0 6px}
+                .lq-quiz-hint{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);margin-bottom:14px;animation:rqFadeIn 0.3s ease both}
+                .lq-quiz-hint .ico{font-size:18px;line-height:1;flex-shrink:0}
+                .lq-quiz-hint p{margin:0;font-family:'Inter',sans-serif;font-size:12px;color:#c4b5fd;line-height:1.5;flex:1}
+                .lq-quiz-hint .close-btn{background:none;border:none;color:rgba(227,224,244,0.4);cursor:pointer;font-size:16px;padding:0 4px;line-height:1;flex-shrink:0}
+                .lq-quiz-passage-toggle{width:100%;background:rgba(30,30,44,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 14px;color:rgba(227,224,244,0.7);font-family:'Inter',sans-serif;font-weight:600;font-size:12px;cursor:pointer;text-align:left;transition:all 0.15s;display:flex;align-items:center;justify-content:space-between}
+                .lq-quiz-passage-toggle:hover{background:rgba(30,30,44,0.7);color:#e3e0f4}
+                .lq-quiz-passage-body{background:rgba(13,13,26,0.6);border:1px solid rgba(255,255,255,0.08);border-top:none;border-radius:0 0 12px 12px;padding:14px 16px;line-height:1.85;font-family:'Newsreader','Inter',serif;font-size:15px;color:rgba(227,224,244,0.85);margin-bottom:14px;margin-top:-14px}
+                .lq-quiz-card{background:rgba(30,30,44,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:18px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+                .lq-quiz-q{font-family:'Outfit',sans-serif;font-size:17px;font-weight:700;line-height:1.45;color:#e3e0f4;margin:0 0 16px;letter-spacing:-0.005em}
+                .lq-quiz-explain{margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);font-family:'Inter',sans-serif;font-size:12px;color:rgba(52,211,153,0.9);line-height:1.5}
+                .lq-quiz-cta-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(13,13,26,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:14px 18px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+                .lq-quiz-cta{width:100%;padding:15px 20px;border:none;border-radius:16px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;color:#003825;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 8px 24px rgba(52,211,153,0.28)}
+                .lq-quiz-cta:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
+                .lq-quiz-cta:disabled{opacity:0.4;cursor:not-allowed;background:rgba(255,255,255,0.06)!important;color:rgba(227,224,244,0.4)!important;box-shadow:0 4px 0 0 rgba(0,0,0,0.3)}
+              `}</style>
+              <div className="lq-quiz-wrap">
+                <header className="lq-quiz-top">
+                  <button type="button" className="ico-btn" onClick={function(){if(confirm("Exit quiz? Progress will be lost."))doRestart();}} aria-label="Exit">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <div className="lq-quiz-counter">Question {current+1} <span className="total">/ {questions.length}</span></div>
+                  <span className="lq-quiz-xp">⚡ {totalXpSoFar}</span>
+                </header>
+
+                <div className="lq-quiz-prog">
+                  {questions.map(function(_,i){return<div key={i} className={"lq-quiz-seg"+(i<qSegFilled?" on":i===qSegFilled?" cur":"")}/>;})}
+                </div>
+
+                <main className="lq-quiz-main">
+                  <div className="lq-quiz-meta">
+                    <span className="lq-quiz-pill lq-quiz-type">{qLabel(q.type)}</span>
+                    {streak>=3&&<span className="lq-quiz-pill lq-quiz-streak">🔥 Streak {streak}</span>}
+                  </div>
+
+                  <div className={"lq-quiz-timer-card"+(challengeMode?" challenge":"")}>
+                    {challengeMode&&<p className="lq-quiz-timer-h">⚡ {t("challengeModeLabel")}</p>}
+                    <Timer limit={challengeMode?Math.floor((lv?lv.timeLimit:180)/2):(lv?lv.timeLimit:180)} running={timerRunning} onExpire={handleExpire}/>
+                  </div>
+
+                  {qHint(q.type)&&!dismissedHints.has(q.type)&&(
+                    <div className="lq-quiz-hint">
+                      <span className="ico">💡</span>
+                      <p>{qHint(q.type)}</p>
+                      <button type="button" className="close-btn" onClick={function(){setDismissedHints(function(s){var n=new Set(s);n.add(q.type);return n;});}} title="Got it">✕</button>
+                    </div>
+                  )}
+
+                  <button type="button" onClick={function(){setShowPassage(function(p){return!p;});}} className="lq-quiz-passage-toggle" style={showPassage?{borderRadius:"12px 12px 0 0"}:{}}>
+                    <span>{showPassage?"📖 "+t("hidePassage"):"📖 "+t("showPassage")}</span>
+                    <span style={{color:"rgba(227,224,244,0.4)",transform:showPassage?"rotate(180deg)":"none",transition:"transform 0.2s"}}>⌄</span>
+                  </button>
+                  {showPassage&&(
+                    <div className="lq-quiz-passage-body">{passage.split(/\n{2,}/).map(function(p,i){return<p key={i} style={{margin:i>0?"0.7em 0 0":0}}>{p}</p>;})}</div>
+                  )}
+
+                  <div className="lq-quiz-card" style={{marginTop:showPassage?0:14}}>
+                    {(q.q)&&<p className="lq-quiz-q">{q.q}</p>}
+                    {(q.instruction)&&<p className="lq-quiz-q">{q.instruction}</p>}
+                    {q.type==="gap_word"&&!q.q&&<p className="lq-quiz-q">{t("fillInTheBlank")}</p>}
+                    {q.type==="mcq"&&<McqQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
+                    {q.type==="gap_word"&&<GapWordQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
+                    {q.type==="gap_sentence"&&<GapSentQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
+                    {q.type==="matching"&&<MatchingQ q={q} matches={matchState} conf={confirmed} shuffled={shuffledRights} onMatch={function(li,origIdx){setMatchState(function(m){var n={};for(var k in m)n[k]=m[k];n[li]=origIdx;return n;});}}/>}
+                    {q.type==="heading"&&<HeadingQ q={q} userMap={headingState} conf={confirmed} onMatch={function(pi,hi){setHeadingState(function(m){var n={};for(var k in m)n[k]=m[k];n[pi]=hi;return n;});}}/>}
+                    {q.type==="qa"&&<QAQ q={q} val={userAnswers[current]||""} conf={confirmed} onChange={function(v){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=v;return n;});}}/>}
+                    {q.type==="tfnm"&&<TfnmQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
+                    {q.type==="ynng"&&<YnngQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
+                    {confirmed&&q.explanation&&q.type!=="qa"&&<div className="lq-quiz-explain">{q.explanation}</div>}
+                  </div>
+                </main>
+
+                <footer className="lq-quiz-cta-bar">
+                  {!confirmed?(
+                    <button type="button" onClick={doConfirm} disabled={!canConfirm()} className="lq-quiz-cta" style={canConfirm()?{background:qLvColor,boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 8px 24px "+(lv&&lv.glow||"rgba(52,211,153,0.3)")}:{}}>
+                      {t("submitAnswer")}
+                    </button>
+                  ):(
+                    <button type="button" onClick={doNext} className="lq-quiz-cta" style={{background:qLvColor,boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 8px 24px "+(lv&&lv.glow||"rgba(52,211,153,0.3)")}}>
+                      {current+1>=questions.length?t("seeResults"):t("nextQuestion")}
+                      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  )}
+                </footer>
               </div>
-              <span style={{background:"rgba(255,255,255,0.07)",borderRadius:999,padding:"4px 11px",fontSize:12,color:lv?lv.color:"#34d399",fontWeight:700}}>{totalXpSoFar} XP</span>
-            </div>
-            <div style={{...CARD,padding:"11px 14px",marginBottom:9,borderColor:challengeMode?"rgba(245,158,11,0.4)":"rgba(255,255,255,0.08)",background:challengeMode?"rgba(245,158,11,0.05)":"transparent"}}>
-              {challengeMode&&<div style={{fontSize:10,fontWeight:700,color:"#f59e0b",letterSpacing:0.8,marginBottom:6}}>{t("challengeModeLabel")}</div>}
-              <Timer limit={challengeMode?Math.floor((lv?lv.timeLimit:180)/2):(lv?lv.timeLimit:180)} running={timerRunning} onExpire={handleExpire}/>
-            </div>
-            {/* ── hint banner ── */}
-            {qHint(q.type)&&!dismissedHints.has(q.type)&&(
-              <div style={{marginBottom:9,background:"rgba(99,102,241,0.08)",border:"1px solid rgba(99,102,241,0.28)",borderRadius:10,padding:"9px 12px",display:"flex",alignItems:"flex-start",gap:9,animation:"rqFadeIn 0.3s ease both"}}>
-                <span style={{fontSize:16,flexShrink:0}}>💡</span>
-                <p style={{margin:0,fontSize:12,color:"#c7d2fe",lineHeight:1.55,flex:1}}>{qHint(q.type)}</p>
-                <button onClick={function(){setDismissedHints(function(s){var n=new Set(s);n.add(q.type);return n;});}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16,lineHeight:1,flexShrink:0,padding:0}} title="Got it">✕</button>
-              </div>
-            )}
-            <div style={{marginBottom:9}}>
-              <button onClick={function(){setShowPassage(function(p){return!p;});}} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",color:"#9ca3af",fontFamily:"inherit",fontWeight:600,fontSize:12,cursor:"pointer",textAlign:"left"}}>{showPassage?t("hidePassage"):t("showPassage")}</button>
-              {showPassage&&(<div style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)",borderTop:"none",borderRadius:"0 0 10px 10px",padding:"12px 14px",lineHeight:1.9,fontSize:15,color:"#d1d5db"}}>{passage.split(/\n{2,}/).map(function(p,i){return<p key={i} style={{margin:i>0?"0.7em 0 0":0}}>{p}</p>;})}</div>)}
-            </div>
-            <div style={CARD}>
-              {(q.q)&&<p style={{fontSize:17,fontWeight:700,lineHeight:1.6,marginBottom:14,color:"#f9fafb"}}>{q.q}</p>}
-              {(q.instruction)&&<p style={{fontSize:16,fontWeight:700,marginBottom:12,color:"#f9fafb"}}>{q.instruction}</p>}
-              {q.type==="gap_word"&&!q.q&&<p style={{fontSize:16,fontWeight:700,marginBottom:10,color:"#f9fafb"}}>{t("fillInTheBlank")}</p>}
-              {q.type==="mcq"&&<McqQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="gap_word"&&<GapWordQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="gap_sentence"&&<GapSentQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="matching"&&<MatchingQ q={q} matches={matchState} conf={confirmed} shuffled={shuffledRights} onMatch={function(li,origIdx){setMatchState(function(m){var n={};for(var k in m)n[k]=m[k];n[li]=origIdx;return n;});}}/>}
-              {q.type==="heading"&&<HeadingQ q={q} userMap={headingState} conf={confirmed} onMatch={function(pi,hi){setHeadingState(function(m){var n={};for(var k in m)n[k]=m[k];n[pi]=hi;return n;});}}/>}
-              {q.type==="qa"&&<QAQ q={q} val={userAnswers[current]||""} conf={confirmed} onChange={function(v){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=v;return n;});}}/>}
-              {q.type==="tfnm"&&<TfnmQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {q.type==="ynng"&&<YnngQ q={q} sel={userAnswers[current]!==undefined?userAnswers[current]:null} conf={confirmed} onSel={function(i){setUserAnswers(function(a){var n={};for(var k in a)n[k]=a[k];n[current]=i;return n;});}}/>}
-              {confirmed&&q.explanation&&q.type!=="qa"&&(<div style={{marginTop:10,padding:"9px 11px",borderRadius:10,background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",fontSize:12,color:"#d1fae5"}}>{q.explanation}</div>)}
-              <div style={{marginTop:12,display:"flex",justifyContent:"flex-end"}}>
-                {!confirmed?<button onClick={doConfirm} disabled={!canConfirm()} style={mkBtn(canConfirm()?"#6366f1":"#374151")}>{t("submitAnswer")}</button>
-                :<button onClick={doNext} style={mkBtn(lv?lv.color:"#34d399","#0d0d1a")}>{current+1>=questions.length?t("seeResults"):t("nextQuestion")}</button>}
-              </div>
-            </div>
-          </div>
-        )}
+            </>
+          );
+        })()}
 
         {/* ── RESULT ────────────────────────────────────────── */}
-        {stage==="result"&&result&&(
-          <div style={{textAlign:"center"}}>
-            <div style={{fontSize:50,marginBottom:5}}>{result.pct>=80?"★":"○"}</div>
-            <h2 style={{fontSize:22,fontWeight:900,margin:"0 0 4px",color:lv?lv.color:"#34d399"}}>{result.pct>=80?t("excellent"):result.pct>=60?t("goodJob"):t("keepGoing")}</h2>
-            <p style={{color:"#9ca3af",marginBottom:14,fontSize:13}}>{level} - {topic}</p>
-            <div className="rq-floating" style={{...CARD,marginBottom:10,position:"relative"}}>
-              <div className="rq-glow-green" style={{fontSize:38,fontWeight:900,color:"#f9fafb",marginBottom:3}}>{result.score}/{result.maxScore} pts</div>
-              <div style={{marginBottom:10,fontSize:18}}>{"★".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
-              <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                {[{v:result.xp+" XP",l:t("earnedLabel"),c:lv?lv.color:"#34d399"},{v:result.pct+"%",l:t("scoreLabel"),c:pctColor(result.pct)},{v:formatTime(result.timeSecs),l:t("timeLabel"),c:"#a78bfa"},{v:"#"+(result.rank+1),l:t("rankLabel"),c:"#fbbf24"},(result.wpm>0?{v:result.wpm+" WPM",l:getWpmLabel(result.wpm),c:"#34d399"}:null)].filter(Boolean).map(function(s){return<div key={s.l} style={{textAlign:"center",flex:1,minWidth:60,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:13,fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;})}
+        {stage==="result"&&result&&(function(){
+          var rsLvColor=lv?lv.color:"#5af0b3";
+          var rsPctColor=pctColor(result.pct);
+          var grade=result.pct>=80?"excellent":result.pct>=60?"good":"keep";
+          return(
+          <>
+            <style>{`
+              .lq-res-wrap{margin:-18px -20px -64px;padding:0 0 24px}
+              @media(min-width:480px){.lq-res-wrap{margin:-22px -28px -72px}}
+              .lq-res-hero{position:relative;text-align:center;padding:36px 18px 24px;overflow:hidden}
+              .lq-res-hero::before{content:"";position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,${grade==="excellent"?"rgba(52,211,153,0.18)":grade==="good"?"rgba(251,191,36,0.15)":"rgba(167,139,250,0.15)"} 0%,transparent 70%);pointer-events:none}
+              .lq-res-trophy{position:relative;font-size:84px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 0 32px ${grade==="excellent"?"rgba(52,211,153,0.6)":grade==="good"?"rgba(251,191,36,0.5)":"rgba(167,139,250,0.4)"});animation:rqPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both}
+              .lq-res-h{position:relative;font-family:'Outfit',sans-serif;font-size:30px;font-weight:800;margin:6px 0 4px;color:${grade==="excellent"?"#5af0b3":grade==="good"?"#fbbf24":"#c4b5fd"};letter-spacing:-0.02em;line-height:1.1;text-shadow:0 0 18px ${grade==="excellent"?"rgba(52,211,153,0.3)":grade==="good"?"rgba(251,191,36,0.3)":"rgba(167,139,250,0.3)"}}
+              .lq-res-sub{position:relative;font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.55);margin:0;letter-spacing:0.02em}
+              .lq-res-content{padding:0 16px}
+              .lq-res-score-card{position:relative;background:rgba(30,30,44,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:22px 18px;margin-bottom:14px;text-align:center;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);overflow:hidden}
+              .lq-res-score{font-family:'Outfit',sans-serif;font-size:48px;font-weight:800;color:#e3e0f4;line-height:1;letter-spacing:-0.02em;margin-bottom:4px}
+              .lq-res-score-sub{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.5);letter-spacing:0.12em;text-transform:uppercase}
+              .lq-res-stars{font-size:22px;margin:10px 0 16px;letter-spacing:4px}
+              .lq-res-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px}
+              .lq-res-stat{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:11px 6px;text-align:center}
+              .lq-res-stat-v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;line-height:1.1}
+              .lq-res-stat-l{font-family:'Inter',sans-serif;font-size:9px;color:rgba(227,224,244,0.45);margin-top:4px;letter-spacing:0.08em;text-transform:uppercase}
+              .lq-res-bonus{margin-top:12px;padding:8px 14px;border-radius:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);font-family:'Inter',sans-serif;font-size:12px;color:#fbbf24;font-weight:600;display:inline-block}
+            `}</style>
+            <div className="lq-res-wrap">
+              <div className="lq-res-hero">
+                <div className="lq-res-trophy">{result.pct>=80?"🏆":result.pct>=60?"⭐":"📖"}</div>
+                <h2 className="lq-res-h">{grade==="excellent"?t("excellent"):grade==="good"?t("goodJob"):t("keepGoing")}</h2>
+                <p className="lq-res-sub">{level} · {topic}</p>
               </div>
-              <div className="rq-float-up" style={{color:lv?lv.color:"#34d399",fontSize:22,fontFamily:"'JetBrains Mono',monospace",fontWeight:900,left:"50%",transform:"translateX(-50%)",top:"50%"}} key="xp-float">+{result.xp} XP</div>
-              {result.timeBonus>0&&<div style={{marginTop:9,padding:"6px 11px",borderRadius:8,background:"rgba(251,191,36,0.1)",border:"1px solid #fbbf24",fontSize:12,color:"#fbbf24"}}>{t("speedBonus")}: +{result.timeBonus} XP!</div>}
-            </div>
+
+              <div className="lq-res-content">
+                <div className="lq-res-score-card">
+                  <div className="lq-res-score" style={{color:rsLvColor}}>{result.score}<span style={{color:"rgba(227,224,244,0.4)",fontSize:32,fontWeight:600}}>/{result.maxScore}</span></div>
+                  <div className="lq-res-score-sub">{result.pct}% Correct</div>
+                  <div className="lq-res-stars">{"⭐".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
+                  <div className="lq-res-stat-grid">
+                    {[
+                      {v:"+"+result.xp,l:"XP earned",c:rsLvColor},
+                      {v:result.pct+"%",l:"Accuracy",c:rsPctColor},
+                      {v:formatTime(result.timeSecs),l:"Time",c:"#a78bfa"},
+                      {v:"#"+(result.rank+1),l:"Rank",c:"#fbbf24"},
+                      (result.wpm>0?{v:result.wpm,l:"WPM",c:"#5af0b3"}:null)
+                    ].filter(Boolean).map(function(s){return<div key={s.l} className="lq-res-stat"><div className="lq-res-stat-v" style={{color:s.c}}>{s.v}</div><div className="lq-res-stat-l">{s.l}</div></div>;})}
+                  </div>
+                  {result.timeBonus>0&&<div className="lq-res-bonus">⚡ {t("speedBonus")}: +{result.timeBonus} XP</div>}
+                </div>
             {result.wasChallenge&&(
               <div style={{...CARD,marginBottom:10,padding:14,background:"linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.04))",borderColor:"rgba(245,158,11,0.5)",textAlign:"center"}}>
                 <div style={{fontSize:28,marginBottom:4}}>⚡</div>
@@ -5119,17 +5369,22 @@ export default function App(){
                 </div>
               );
             })()}
-            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-              <button onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{...mkBtn("#6366f1"),flex:1,fontSize:12}}>{t("leaderboard")}</button>
-              {result.storyId&&<button onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{...mkBtn("#ec4899"),flex:1,fontSize:12}}>💬 Discuss</button>}
-              <button onClick={function(){setTutorChat([]);setStage("tutor");}} style={{...mkBtn("#0891b2"),flex:1,fontSize:12}}>🤖 Tutor</button>
-              <button onClick={doShare} style={{...mkBtn("#a78bfa"),flex:1,fontSize:12}} title="Share your result">📤 Share</button>
-              {quotes.length>0&&<button onClick={function(){setStage("quotes");}} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>🔖 Quotes</button>}
-              <button onClick={function(){setStage("profile");}} style={{...mkBtn("#7c3aed"),flex:1,fontSize:12}}>{t("profile")}</button>
-              <button onClick={doRestart} style={{...mkBtn(lv?lv.color:"#34d399","#0d0d1a"),flex:1,fontSize:12}}>{t("playAgain")}</button>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:14}}>
+                  <button type="button" onClick={function(){setLbLevel(level);setStage("leaderboard");}} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.10)",color:"rgba(227,224,244,0.85)",borderRadius:14,padding:"12px 8px",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:0.04,transition:"all 0.15s"}}>🏆 {t("leaderboard")}</button>
+                  {result.storyId&&<button type="button" onClick={function(){setDiscussStoryId(result.storyId);setStage("discuss");}} style={{background:"rgba(236,72,153,0.12)",border:"1px solid rgba(236,72,153,0.3)",color:"#f472b6",borderRadius:14,padding:"12px 8px",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:0.04,transition:"all 0.15s"}}>💬 Discuss</button>}
+                  <button type="button" onClick={function(){setTutorChat([]);setStage("tutor");}} style={{background:"rgba(14,165,233,0.12)",border:"1px solid rgba(14,165,233,0.3)",color:"#7dd3fc",borderRadius:14,padding:"12px 8px",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:0.04,transition:"all 0.15s"}}>🤖 Tutor</button>
+                  <button type="button" onClick={doShare} style={{background:"rgba(167,139,250,0.12)",border:"1px solid rgba(167,139,250,0.3)",color:"#c4b5fd",borderRadius:14,padding:"12px 8px",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:0.04,transition:"all 0.15s"}} title="Share your result">📤 Share</button>
+                  {quotes.length>0&&<button type="button" onClick={function(){setStage("quotes");}} style={{background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.3)",color:"#fbbf24",borderRadius:14,padding:"12px 8px",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:0.04,transition:"all 0.15s"}}>🔖 Quotes</button>}
+                  <button type="button" onClick={function(){setStage("profile");}} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.10)",color:"rgba(227,224,244,0.85)",borderRadius:14,padding:"12px 8px",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:0.04,transition:"all 0.15s"}}>👤 {t("profile")}</button>
+                </div>
+                <button type="button" onClick={doRestart} style={{width:"100%",marginTop:14,padding:"15px 20px",border:"none",borderRadius:16,background:rsLvColor,color:"#003825",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:14,letterSpacing:0.18,textTransform:"uppercase",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 8px 24px "+(lv&&lv.glow||"rgba(52,211,153,0.3)")}}>
+                  ▶ {t("playAgain")}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          </>
+          );
+        })()}
 
         {/* ── MISSED-QUESTION REVIEW ────────────────────────── */}
         {stage==="review"&&currentUser&&(function(){
@@ -5457,40 +5712,196 @@ export default function App(){
         })()}
 
         {/* ── LEADERBOARD ───────────────────────────────────── */}
-        {stage==="leaderboard"&&(
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>Leaderboard</h2>
-              <button onClick={function(){setStage(currentUser?"home":"auth");}} style={GHOST}>{t("back")}</button>
-            </div>
-            <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
-              {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setLbLevel(l.key);}} style={{background:lbLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:lbLevel===l.key?"#0d0d1a":"#9ca3af",border:"1px solid "+(lbLevel===l.key?l.color:"rgba(255,255,255,0.1)"),borderRadius:999,padding:"4px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
-            </div>
-            {(function(){
-              var bd=boards[lbLevel]||[];var lvd=getLv(lbLevel);
-              if(!bd.length)return<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>🏆</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No scores yet</div><div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Be the first to complete a {lbLevel} quiz!</div><button onClick={function(){setLevel(lbLevel);doRestart();}} style={{...mkBtn(lvd?lvd.color:"#34d399","#0d0d1a"),marginTop:8}}>Play {lbLevel} Quiz</button></div>;
-              return(<div style={CARD}>
-                <div style={{display:"flex",padding:"0 0 7px",borderBottom:"1px solid rgba(255,255,255,0.06)",marginBottom:5}}>
-                  {["#","PLAYER","XP","%","TIME"].map(function(h,i){return<span key={h} style={{fontSize:10,color:"#4b5563",width:i===0?28:i===1?"1fr":i===2?55:i===3?36:46,flex:i===1?1:0,textAlign:i>1?"right":"left"}}>{h}</span>;})}
-                </div>
-                {bd.map(function(e,i){
-                  var isMe=currentUser&&e.name===currentUser.name;
-                  return(<div key={i} className="rq-lb-row" onClick={function(){if(currentUser&&e.name===currentUser.name){setStage("profile");}else{setViewingUser(e.name);setStage("friendProfile");}}} style={{display:"flex",alignItems:"center",padding:"8px "+(isMe?"5px":"0"),borderBottom:i<bd.length-1?"1px solid rgba(255,255,255,0.05)":"none",background:isMe?"rgba(52,211,153,0.06)":"transparent",borderRadius:7,marginBottom:2,cursor:"pointer",userSelect:"none"}}>
-                    {i<3?(<img src={"/assets/icons/medal-"+(i+1)+".svg"} alt={"Rank "+(i+1)} style={{width:28,height:28,flexShrink:0}} onError={function(e){e.target.style.display="none";e.target.parentElement.insertBefore(document.createElement("span"),e.target.nextSibling).textContent=i===0?"1st":i===1?"2nd":"3rd";}}/>):(<span style={{width:28,fontSize:11,color:"#6b7280",fontWeight:700}}>{i+1}</span>)}
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,fontWeight:700,color:isMe?lvd.color:"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</div>
-                      <div style={{fontSize:10,color:"#4b5563",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.topic}</div>
+        {stage==="leaderboard"&&(function(){
+          var bd=boards[lbLevel]||[];
+          var lvd=getLv(lbLevel);
+          var lbColor=lvd?lvd.color:"#5af0b3";
+          var top3=bd.slice(0,3);
+          var rest=bd.slice(3);
+          var rank1=top3[0]||null,rank2=top3[1]||null,rank3=top3[2]||null;
+          return(
+          <>
+            <style>{`
+              .lq-lb-wrap{margin:-18px -20px -64px;padding:0 0 96px;background:#0d0d1a;min-height:100vh}
+              @media(min-width:480px){.lq-lb-wrap{margin:-22px -28px -72px}}
+              .lq-lb-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+              .lq-lb-ico-btn{background:none;border:none;color:rgba(227,224,244,0.55);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:10px}
+              .lq-lb-ico-btn:hover{background:rgba(255,255,255,0.06);color:#5af0b3}
+              .lq-lb-tb-title{flex:1;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#e3e0f4;text-align:center;margin:0}
+              .lq-lb-tb-title .accent{color:#5af0b3}
+              .lq-lb-content{padding:24px 16px 0}
+              .lq-lb-hero{text-align:center;margin-bottom:24px}
+              .lq-lb-hero-h{font-family:'Outfit',sans-serif;font-size:34px;font-weight:800;background:linear-gradient(180deg,#e3e0f4 0%,rgba(227,224,244,0.5) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-0.02em;line-height:1.1;margin:0;text-shadow:0 0 32px rgba(251,191,36,0.2)}
+              .lq-lb-tabs{display:inline-flex;padding:5px;background:rgba(30,30,44,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:16px;margin-top:16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);max-width:100%;overflow-x:auto;scrollbar-width:none}
+              .lq-lb-tabs::-webkit-scrollbar{display:none}
+              .lq-lb-tab{padding:8px 14px;border-radius:11px;border:none;background:transparent;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:rgba(227,224,244,0.55);cursor:pointer;transition:all 0.2s;letter-spacing:0.02em;white-space:nowrap;flex-shrink:0}
+              .lq-lb-tab:hover{color:#e3e0f4}
+              .lq-lb-tab.on{background:#5af0b3;color:#003825;box-shadow:0 0 14px rgba(52,211,153,0.35)}
+              .lq-lb-podium{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin-bottom:28px;padding:0 4px}
+              .lq-lb-podium-col{flex:1;display:flex;flex-direction:column;align-items:center;max-width:130px;position:relative;padding-top:12px}
+              .lq-lb-podium-card{position:relative;width:100%;padding:14px 8px 14px;border-radius:18px 18px 0 0;border:1px solid;border-bottom:none;display:flex;flex-direction:column;align-items:center;text-align:center;overflow:hidden}
+              .lq-lb-podium-card::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;border-top-left-radius:18px;border-top-right-radius:18px}
+              .lq-lb-podium-col.r1{order:2;transform:translateY(-12px);z-index:2}
+              .lq-lb-podium-col.r2{order:1;transform:translateY(8px)}
+              .lq-lb-podium-col.r3{order:3;transform:translateY(20px)}
+              .lq-lb-podium-card.gold{background:linear-gradient(180deg,rgba(251,191,36,0.18) 0%,#0d0d1a 100%);border-color:rgba(251,191,36,0.5);box-shadow:0 -10px 40px rgba(251,191,36,0.18)}
+              .lq-lb-podium-card.gold::after{background:#fbbf24}
+              .lq-lb-podium-card.silver{background:linear-gradient(180deg,rgba(203,213,225,0.12) 0%,#0d0d1a 100%);border-color:rgba(203,213,225,0.4);box-shadow:0 -8px 32px rgba(203,213,225,0.12)}
+              .lq-lb-podium-card.silver::after{background:#cbd5e1}
+              .lq-lb-podium-card.bronze{background:linear-gradient(180deg,rgba(194,120,3,0.12) 0%,#0d0d1a 100%);border-color:rgba(194,120,3,0.5);box-shadow:0 -8px 32px rgba(194,120,3,0.18)}
+              .lq-lb-podium-card.bronze::after{background:#c27803}
+              .lq-lb-podium-card.me{box-shadow:0 -10px 40px rgba(52,211,153,0.28)}
+              .lq-lb-podium-card.me .lq-lb-podium-name{color:#5af0b3}
+              .lq-lb-podium-current-tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:rgba(52,211,153,0.95);color:#003825;font-family:'Inter',sans-serif;font-size:8px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap;box-shadow:0 4px 14px rgba(52,211,153,0.4)}
+              .lq-lb-podium-current-tag .dot{width:5px;height:5px;border-radius:50%;background:#003825;animation:rqPulse 1.2s ease-in-out infinite}
+              @keyframes rqPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+              .lq-lb-podium-avatar-wrap{position:relative;margin-bottom:10px}
+              .lq-lb-podium-avatar{display:flex;align-items:center;justify-content:center;border-radius:50%;background:#0d0d1a;font-family:'Outfit',sans-serif;font-weight:800;color:#5af0b3}
+              .lq-lb-podium-col.r1 .lq-lb-podium-avatar{width:84px;height:84px;border:5px solid #fbbf24;font-size:30px;box-shadow:0 0 28px rgba(251,191,36,0.4),inset 0 0 16px rgba(0,0,0,0.3)}
+              .lq-lb-podium-col.r2 .lq-lb-podium-avatar{width:64px;height:64px;border:4px solid #cbd5e1;font-size:24px;box-shadow:0 0 20px rgba(203,213,225,0.25)}
+              .lq-lb-podium-col.r3 .lq-lb-podium-avatar{width:64px;height:64px;border:4px solid #c27803;font-size:24px;box-shadow:0 0 20px rgba(194,120,3,0.25)}
+              .lq-lb-podium-badge{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:#0d0d1a;border:2px solid #0d0d1a}
+              .lq-lb-podium-col.r1 .lq-lb-podium-badge{background:#fbbf24;width:34px;height:34px;font-size:16px}
+              .lq-lb-podium-col.r2 .lq-lb-podium-badge{background:#cbd5e1}
+              .lq-lb-podium-col.r3 .lq-lb-podium-badge{background:#c27803;color:#fff}
+              .lq-lb-podium-crown{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:24px;filter:drop-shadow(0 0 12px rgba(251,191,36,0.6))}
+              .lq-lb-podium-name{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:#e3e0f4;margin:0 0 3px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
+              .lq-lb-podium-col.r1 .lq-lb-podium-name{font-size:15px;color:#fbbf24}
+              .lq-lb-podium-col.r2 .lq-lb-podium-name{color:#cbd5e1}
+              .lq-lb-podium-col.r3 .lq-lb-podium-name{color:#fdba74}
+              .lq-lb-podium-sub{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:rgba(227,224,244,0.45);letter-spacing:0.12em;text-transform:uppercase;margin:0 0 8px}
+              .lq-lb-podium-xp{padding:5px 12px;border-radius:999px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1)}
+              .lq-lb-podium-col.r1 .lq-lb-podium-xp{background:rgba(52,211,153,0.12);color:#5af0b3;border-color:rgba(52,211,153,0.35)}
+              .lq-lb-podium-col.r2 .lq-lb-podium-xp{color:#cbd5e1;border-color:rgba(203,213,225,0.25)}
+              .lq-lb-podium-col.r3 .lq-lb-podium-xp{color:#fdba74;background:rgba(194,120,3,0.12);border-color:rgba(194,120,3,0.3)}
+              .lq-lb-list-card{background:rgba(30,30,44,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);margin-bottom:14px;box-shadow:0 12px 40px rgba(0,0,0,0.4)}
+              .lq-lb-list-h{display:flex;padding:14px 16px;background:rgba(13,13,26,0.4);border-bottom:1px solid rgba(255,255,255,0.06);font-family:'Inter',sans-serif;font-size:9px;font-weight:800;color:rgba(227,224,244,0.4);letter-spacing:0.14em;text-transform:uppercase}
+              .lq-lb-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background 0.15s,transform 0.15s}
+              .lq-lb-row:last-child{border-bottom:none}
+              .lq-lb-row:hover{background:rgba(255,255,255,0.03);transform:translateX(2px)}
+              .lq-lb-row.me{background:rgba(52,211,153,0.08);border-left:3px solid #5af0b3;padding-left:13px}
+              .lq-lb-row-rank{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:rgba(227,224,244,0.4);width:32px;letter-spacing:-0.02em}
+              .lq-lb-row.me .lq-lb-row-rank{color:#5af0b3}
+              .lq-lb-row-avatar{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#5af0b3,#a78bfa);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#003825;flex-shrink:0;border:1px solid rgba(255,255,255,0.1);position:relative}
+              .lq-lb-row-avatar.me::after{content:"";position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:#5af0b3;border-radius:50%;border:2px solid #0d0d1a;box-shadow:0 0 6px rgba(52,211,153,0.8)}
+              .lq-lb-row-info{flex:1;min-width:0}
+              .lq-lb-row-name{font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#e3e0f4;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+              .lq-lb-row-sub{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.45);margin:1px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+              .lq-lb-row-xp{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;text-align:right}
+              .lq-lb-row.me .lq-lb-row-xp{color:#5af0b3;filter:drop-shadow(0 0 8px rgba(52,211,153,0.3))}
+              .lq-lb-empty{background:rgba(30,30,44,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:48px 24px;text-align:center;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+              .lq-lb-empty-emoji{font-size:56px;margin-bottom:14px;line-height:1;filter:drop-shadow(0 0 20px rgba(251,191,36,0.5))}
+              .lq-lb-empty-t{font-family:'Outfit',sans-serif;font-size:20px;font-weight:700;color:#e3e0f4;margin:0 0 6px}
+              .lq-lb-empty-d{font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.5);margin:0 0 20px}
+              .lq-lb-boost{width:100%;background:linear-gradient(135deg,#34D399,#5af0b3);color:#003825;border:none;border-radius:18px;padding:16px 20px;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(52,211,153,0.32),0 4px 0 0 rgba(0,0,0,0.3);transition:all 0.2s}
+              .lq-lb-boost:active{transform:translateY(2px);box-shadow:0 6px 16px rgba(52,211,153,0.3),0 2px 0 0 rgba(0,0,0,0.3)}
+              .lq-lb-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+              .lq-lb-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
+              .lq-lb-nav-btn .ico{font-size:22px;line-height:1}
+            `}</style>
+            <div className="lq-lb-wrap">
+              <header className="lq-lb-topbar">
+                <button type="button" className="lq-lb-ico-btn" onClick={function(){setStage(currentUser?"home":"auth");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-lb-tb-title">Reading <span className="accent">Quest</span></h1>
+                <div style={{width:38}}/>
+              </header>
+
+              <div className="lq-lb-content">
+                <header className="lq-lb-hero">
+                  <h2 className="lq-lb-hero-h">Hall of Fame</h2>
+                  <div className="lq-lb-tabs">
+                    {LEVELS.map(function(l){return(
+                      <button key={l.key} type="button" onClick={function(){setLbLevel(l.key);}} className={"lq-lb-tab"+(lbLevel===l.key?" on":"")} style={lbLevel===l.key?{background:l.color,color:"#0d0d1a",boxShadow:"0 0 14px "+(l.glow||"rgba(52,211,153,0.3)")}:{}}>{l.key}</button>
+                    );})}
+                  </div>
+                </header>
+
+                {bd.length>0&&(
+                  <section className="lq-lb-podium">
+                    {[rank2,rank1,rank3].map(function(e,podIdx){
+                      var actualRank=podIdx===0?2:podIdx===1?1:3;
+                      if(!e)return<div key={"pod-"+actualRank} className={"lq-lb-podium-col r"+actualRank}/>;
+                      var isMe=currentUser&&e.name===currentUser.name;
+                      var tier=actualRank===1?"gold":actualRank===2?"silver":"bronze";
+                      var initial=(e.name||"?")[0].toUpperCase();
+                      return(
+                        <div key={"pod-"+actualRank} className={"lq-lb-podium-col r"+actualRank}>
+                          <div className={"lq-lb-podium-card "+tier+(isMe?" me":"")}>
+                            {isMe&&<span className="lq-lb-podium-current-tag"><span className="dot"/>Current Rank</span>}
+                            {actualRank===1&&<span className="lq-lb-podium-crown">👑</span>}
+                            <div className="lq-lb-podium-avatar-wrap">
+                              <div className="lq-lb-podium-avatar">{initial}</div>
+                              <div className="lq-lb-podium-badge">{actualRank}</div>
+                            </div>
+                            <h3 className="lq-lb-podium-name">{e.name}</h3>
+                            <p className="lq-lb-podium-sub">{lbLevel} Scholar</p>
+                            <div className="lq-lb-podium-xp">{(e.xp||0).toLocaleString()} XP</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </section>
+                )}
+
+                {bd.length===0?(
+                  <div className="lq-lb-empty">
+                    <div className="lq-lb-empty-emoji">🏆</div>
+                    <h3 className="lq-lb-empty-t">No scores yet</h3>
+                    <p className="lq-lb-empty-d">Be the first to complete a {lbLevel} quiz!</p>
+                    {currentUser&&<button type="button" className="lq-lb-boost" onClick={function(){setLevel(lbLevel);doRestart();}} style={{background:"linear-gradient(135deg,"+lbColor+",#5af0b3)"}}>⚡ Play {lbLevel} Quiz</button>}
+                  </div>
+                ):rest.length>0?(
+                  <div className="lq-lb-list-card">
+                    <div className="lq-lb-list-h">
+                      <span style={{width:32}}>Rank</span>
+                      <span style={{width:52,marginLeft:12}}>Scholar</span>
+                      <span style={{flex:1}}></span>
+                      <span>Total XP</span>
                     </div>
-                    <span style={{width:55,textAlign:"right",fontWeight:800,color:"#fbbf24",fontSize:12}}>{e.xp}</span>
-                    <span style={{width:36,textAlign:"right",fontSize:12,color:pctColor(e.pct)}}>{e.pct}%</span>
-                    <span style={{width:46,textAlign:"right",fontSize:11,color:"#6b7280"}}>{formatTime(e.timeSecs)}</span>
-                  </div>);
-                })}
-              </div>);
-            })()}
-            {currentUser&&<button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:12}}>Play and Climb!</button>}
-          </div>
-        )}
+                    {rest.map(function(e,i){
+                      var rank=i+4;
+                      var isMe=currentUser&&e.name===currentUser.name;
+                      var initial=(e.name||"?")[0].toUpperCase();
+                      return(
+                        <div key={rank} className={"lq-lb-row"+(isMe?" me":"")} onClick={function(){if(isMe){setStage("profile");}else{setViewingUser(e.name);setStage("friendProfile");}}}>
+                          <span className="lq-lb-row-rank">{String(rank).padStart(2,"0")}</span>
+                          <div className={"lq-lb-row-avatar"+(isMe?" me":"")}>{initial}</div>
+                          <div className="lq-lb-row-info">
+                            <p className="lq-lb-row-name">{e.name}{isMe?" • You":""}</p>
+                            <p className="lq-lb-row-sub">{e.topic||"Speed Reader"} · {e.pct}% · {formatTime(e.timeSecs||0)}</p>
+                          </div>
+                          <span className="lq-lb-row-xp" style={{color:isMe?"#5af0b3":pctColor(e.pct||0)}}>{(e.xp||0).toLocaleString()}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ):null}
+
+                {currentUser&&bd.length>0&&(
+                  <button type="button" onClick={function(){setLevel(lbLevel);doRestart();}} className="lq-lb-boost">⚡ Boost Your Rank</button>
+                )}
+              </div>
+
+              <nav className="lq-lb-bottom-nav">
+                <button type="button" onClick={function(){setStage("home");}} className="lq-lb-nav-btn">
+                  <span className="ico">🏠</span><span>HOME</span>
+                </button>
+                <button type="button" onClick={function(){setStage("library");}} className="lq-lb-nav-btn">
+                  <span className="ico">📚</span><span>LIBRARY</span>
+                </button>
+                <button type="button" onClick={function(){setStage("analytics");}} className="lq-lb-nav-btn">
+                  <span className="ico">📊</span><span>STATS</span>
+                </button>
+                <button type="button" onClick={function(){setStage("profile");}} className="lq-lb-nav-btn">
+                  <span className="ico">👤</span><span>PROFILE</span>
+                </button>
+              </nav>
+            </div>
+          </>
+          );
+        })()}
 
         {/* ── FRIENDS ───────────────────────────────────────── */}
         {stage==="friends"&&currentUser&&(
@@ -5753,100 +6164,291 @@ export default function App(){
           var gamesXp=games.reduce(function(s,g){return s+g.xp;},0);
           var totalXp=Math.max(Number(currentUser&&currentUser.totalXp)||0,gamesXp);
           var avgPct=games.length?Math.round(games.reduce(function(s,g){return s+g.pct;},0)/games.length):0;
-          var avgTime=games.length?Math.round(games.reduce(function(s,g){return s+g.timeSecs;},0)/games.length):0;
+          var avgTotalSecs=games.reduce(function(s,g){return s+(g.timeSecs||0);},0);
+          var totalReadHours=Math.round(avgTotalSecs/3600*10)/10;
           var lvlInfo=getLevelProgress(totalXp);
-          return(<div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>{t("myProfile")}</h2>
-              <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
-            </div>
-            <div style={{...CARD,marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",flexShrink:0}}>{currentUser.name[0].toUpperCase()}</div>
-              <div style={{flex:1}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                  <div style={{fontSize:18,fontWeight:900,color:"#f9fafb"}}>{currentUser.name}</div>
-                  <div style={{background:"linear-gradient(135deg,#fbbf24,#f59e0b)",padding:"2px 8px",borderRadius:999,fontSize:12,fontWeight:900,color:"#0d0d1a"}}>⭐ Lvl {lvlInfo.level}</div>
+          var initial=(currentUser.name||"?")[0].toUpperCase();
+          var myBadges=checkBadges(currentUser,vocab,myStreak);
+          var earnedBadges=BADGES.filter(function(b){return myBadges[b.id];});
+          var topBadges=earnedBadges.slice(0,5);
+          var lockedSlots=Math.max(0,5-topBadges.length);
+          // World ranking preview — top of best level board
+          var bestBoard=(boards&&boards[myBestLevel]||[]).slice().sort(function(a,b){return (b.xp||0)-(a.xp||0);}).slice(0,5);
+          var myRankIdx=bestBoard.findIndex(function(e){return e.name===currentUser.name;});
+          // Pick most recent unfinished story or last played for "Active Quest"
+          var lastPlayed=null;
+          for(var gi=games.length-1;gi>=0;gi--){if(games[gi].storyId){lastPlayed=games[gi];break;}}
+          var lastStory=lastPlayed?STORY_LIBRARY.find(function(s){return s.id===lastPlayed.storyId;}):null;
+          var lastStoryLv=lastStory?getLv(lastStory.level):null;
+          return(
+          <>
+            <style>{`
+              .lq-hero-wrap{margin:-18px -20px -64px;padding:0 0 96px;background:#0d0d1a;min-height:calc(100vh - 0px)}
+              @media(min-width:480px){.lq-hero-wrap{margin:-22px -28px -72px}}
+              .lq-hero-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+              .lq-hero-topbar-l{display:flex;align-items:center;gap:12px}
+              .lq-hero-title{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#e3e0f4;margin:0;letter-spacing:-0.01em}
+              .lq-hero-title .accent{color:#5af0b3}
+              .lq-hero-ico-btn{background:none;border:none;color:rgba(227,224,244,0.55);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:10px}
+              .lq-hero-ico-btn:hover{background:rgba(255,255,255,0.06);color:#5af0b3}
+              .lq-hero-content{padding:24px 18px 0}
+              .lq-hero-section{position:relative;text-align:center;padding:28px 16px 24px;background:radial-gradient(circle at 50% 0%,rgba(52,211,153,0.10) 0%,transparent 65%),radial-gradient(circle at 50% 100%,rgba(167,139,250,0.08) 0%,transparent 70%);border:1px solid rgba(255,255,255,0.08);border-radius:24px;margin-bottom:14px;overflow:hidden}
+              .lq-hero-avatar{position:relative;width:120px;height:120px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center}
+              .lq-hero-avatar::before{content:"";position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(from 0deg,#5af0b3,#a78bfa,#5af0b3);animation:rqRotate 6s linear infinite;opacity:0.7;filter:blur(2px)}
+              @keyframes rqRotate{to{transform:rotate(360deg)}}
+              .lq-hero-avatar-inner{position:relative;width:108px;height:108px;border-radius:50%;background:radial-gradient(circle,#1a1a28,#0d0d1a);border:2px solid #0d0d1a;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:46px;color:#5af0b3;text-shadow:0 0 24px rgba(52,211,153,0.6)}
+              .lq-hero-level-tag{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#a78bfa,#6366F1);color:#fff;font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;padding:4px 14px;border-radius:999px;border:2px solid #0d0d1a;letter-spacing:0.1em;text-transform:uppercase;box-shadow:0 4px 12px rgba(167,139,250,0.4)}
+              .lq-hero-name{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;color:#e3e0f4;margin:0;letter-spacing:-0.02em;line-height:1.1}
+              .lq-hero-subtitle{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.45);letter-spacing:0.18em;text-transform:uppercase;margin:4px 0 0;font-weight:600}
+              .lq-hero-xp-section{margin-top:20px;text-align:left}
+              .lq-hero-xp-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:6px}
+              .lq-hero-xp-lbl{font-family:'Inter',sans-serif;font-size:9px;font-weight:800;color:rgba(227,224,244,0.4);letter-spacing:0.14em;text-transform:uppercase}
+              .lq-hero-xp-curr{font-family:'Outfit',sans-serif;font-size:20px;font-weight:700;color:#e3e0f4;line-height:1}
+              .lq-hero-xp-curr .total{color:rgba(227,224,244,0.4);font-size:14px;font-weight:500}
+              .lq-hero-xp-rem{font-family:'Inter',sans-serif;font-size:10px;font-weight:800;color:#5af0b3;letter-spacing:0.1em;text-transform:uppercase;text-align:right}
+              .lq-hero-xp-bar{height:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:999px;overflow:hidden;padding:2px;position:relative}
+              .lq-hero-xp-fill{height:100%;background:linear-gradient(90deg,#a78bfa,#5af0b3,#0EA5E9);border-radius:999px;box-shadow:0 0 20px rgba(52,211,153,0.4);transition:width 1s ease}
+              .lq-hero-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+              .lq-hero-stat-card{background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-top-width:3px;border-radius:18px;padding:16px 12px;text-align:center;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+              .lq-hero-stat-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:22px}
+              .lq-hero-stat-v{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;color:#e3e0f4;line-height:1}
+              .lq-hero-stat-l{font-family:'Inter',sans-serif;font-size:9px;font-weight:800;color:rgba(227,224,244,0.45);letter-spacing:0.14em;text-transform:uppercase;margin-top:6px}
+              .lq-hero-bento-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+              .lq-hero-bento-h-l{display:flex;align-items:center;gap:10px}
+              .lq-hero-bento-h-l .ico{width:32px;height:32px;border-radius:10px;background:rgba(52,211,153,0.15);display:flex;align-items:center;justify-content:center;color:#5af0b3;font-size:16px}
+              .lq-hero-bento-h h3{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#e3e0f4;margin:0;letter-spacing:-0.01em}
+              .lq-hero-bento-h-l h3{flex-shrink:0}
+              .lq-hero-bento-h .link-btn{background:rgba(52,211,153,0.08);border:none;color:#5af0b3;font-family:'Inter',sans-serif;font-size:10px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;padding:6px 14px;border-radius:999px;cursor:pointer;transition:background 0.15s}
+              .lq-hero-bento-h .link-btn:hover{background:rgba(52,211,153,0.15)}
+              .lq-hero-bento-card{background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:22px 18px;margin-bottom:14px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);position:relative;overflow:hidden}
+              .lq-hero-bento-card::before{content:"";position:absolute;top:0;right:0;width:140px;height:140px;background:rgba(52,211,153,0.05);filter:blur(60px);border-radius:50%;pointer-events:none}
+              .lq-hero-badges-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;position:relative}
+              .lq-hero-badge{display:flex;flex-direction:column;align-items:center;gap:6px}
+              .lq-hero-badge-tile{position:relative;width:100%;aspect-ratio:1;border-radius:16px;background:linear-gradient(135deg,#383847,#292937);border:1px solid rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 8px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08);transition:transform 0.2s,box-shadow 0.2s;cursor:pointer}
+              .lq-hero-badge-tile.locked{background:rgba(13,13,26,0.5);border-color:rgba(255,255,255,0.04);opacity:0.4;cursor:not-allowed}
+              .lq-hero-badge-tile.locked::after{content:"🔒";font-size:18px;color:rgba(227,224,244,0.4)}
+              .lq-hero-badge-tile.locked>span{display:none}
+              .lq-hero-badge-tile:not(.locked):hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.55),0 0 18px rgba(52,211,153,0.12)}
+              .lq-hero-badge-tile .glow-ring{position:absolute;inset:6px;border:1px solid rgba(52,211,153,0.3);border-radius:12px;pointer-events:none}
+              .lq-hero-badge-lbl{font-family:'Inter',sans-serif;font-size:8px;font-weight:800;text-align:center;letter-spacing:0.12em;text-transform:uppercase;color:rgba(227,224,244,0.4);line-height:1.2;min-height:18px}
+              .lq-hero-rank-list{display:flex;flex-direction:column;gap:8px}
+              .lq-hero-rank-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid transparent;transition:all 0.15s}
+              .lq-hero-rank-row:hover{background:rgba(255,255,255,0.06)}
+              .lq-hero-rank-row.me{background:rgba(52,211,153,0.10);border-color:rgba(52,211,153,0.5);box-shadow:0 8px 24px rgba(52,211,153,0.18)}
+              .lq-hero-rank-pos{font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:rgba(227,224,244,0.4);width:24px;text-align:center}
+              .lq-hero-rank-row.me .lq-hero-rank-pos{color:#5af0b3}
+              .lq-hero-rank-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#5af0b3,#a78bfa);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:#003825;flex-shrink:0;border:1px solid rgba(255,255,255,0.10)}
+              .lq-hero-rank-row.me .lq-hero-rank-avatar{border:2px solid #5af0b3;box-shadow:0 0 12px rgba(52,211,153,0.5)}
+              .lq-hero-rank-name{flex:1;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:rgba(227,224,244,0.85);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+              .lq-hero-rank-row.me .lq-hero-rank-name{color:#e3e0f4}
+              .lq-hero-rank-name small{display:block;font-size:9px;font-weight:800;color:rgba(227,224,244,0.4);letter-spacing:0.12em;text-transform:uppercase;margin-top:2px}
+              .lq-hero-rank-row.me .lq-hero-rank-name small{color:#5af0b3}
+              .lq-hero-rank-xp{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;color:rgba(227,224,244,0.7)}
+              .lq-hero-rank-row.me .lq-hero-rank-xp{color:#5af0b3}
+              .lq-hero-rank-empty{padding:20px;text-align:center;font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.4)}
+              .lq-hero-quest-card{background:rgba(30,30,44,0.5);border:1px solid rgba(255,255,255,0.08);border-left:4px solid #0EA5E9;border-radius:22px;padding:18px;margin-bottom:14px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);position:relative;overflow:hidden}
+              .lq-hero-quest-card::before{content:"";position:absolute;bottom:-40px;right:-40px;width:200px;height:200px;background:rgba(14,165,233,0.06);filter:blur(80px);border-radius:50%;pointer-events:none}
+              .lq-hero-quest-row{display:flex;gap:14px;align-items:center;position:relative}
+              .lq-hero-quest-cover{width:80px;height:108px;border-radius:12px;background:rgba(0,0,0,0.4);overflow:hidden;flex-shrink:0;box-shadow:0 8px 20px rgba(0,0,0,0.6);position:relative}
+              .lq-hero-quest-cover img{width:100%;height:100%;object-fit:cover}
+              .lq-hero-quest-cover .active-tag{position:absolute;bottom:6px;left:6px;right:6px;text-align:center;background:rgba(14,165,233,0.85);color:#fff;font-family:'Inter',sans-serif;font-size:8px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:0.1em;text-transform:uppercase}
+              .lq-hero-quest-meta{flex:1;min-width:0}
+              .lq-hero-quest-cat{display:flex;align-items:center;gap:4px;color:#0EA5E9;font-family:'Inter',sans-serif;font-size:9px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px}
+              .lq-hero-quest-title{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#e3e0f4;margin:0 0 4px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+              .lq-hero-quest-author{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.5);margin:0 0 10px}
+              .lq-hero-quest-progress-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+              .lq-hero-quest-pct{font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:#0EA5E9}
+              .lq-hero-quest-pct small{font-family:'Inter',sans-serif;font-size:8px;font-weight:800;color:rgba(227,224,244,0.4);letter-spacing:0.12em;text-transform:uppercase;margin-left:4px}
+              .lq-hero-quest-bar{height:8px;background:rgba(255,255,255,0.06);border-radius:999px;overflow:hidden;margin-bottom:14px}
+              .lq-hero-quest-fill{height:100%;background:linear-gradient(90deg,#0EA5E9,#a78bfa);border-radius:999px;box-shadow:0 0 10px rgba(14,165,233,0.4)}
+              .lq-hero-quest-cta{display:flex;gap:8px;margin-top:4px}
+              .lq-hero-quest-resume{flex:1;background:#0EA5E9;color:#fff;border:none;border-radius:12px;padding:11px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 12px rgba(14,165,233,0.4),0 4px 0 0 rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:6px}
+              .lq-hero-quest-resume:active{transform:translateY(2px);box-shadow:0 4px 12px rgba(14,165,233,0.4),0 2px 0 0 rgba(0,0,0,0.3)}
+              .lq-hero-empty{padding:32px 18px;text-align:center;background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:24px;margin-bottom:14px}
+              .lq-hero-empty-emoji{font-size:48px;margin-bottom:10px;line-height:1}
+              .lq-hero-empty-t{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#e3e0f4;margin:0 0 6px}
+              .lq-hero-empty-d{font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.5);margin:0 0 16px}
+              .lq-hero-empty-cta{background:#5af0b3;color:#003825;border:none;border-radius:14px;padding:11px 24px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 4px 14px rgba(52,211,153,0.4)}
+              .lq-hero-action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+              .lq-hero-action-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.8);border-radius:14px;padding:12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.04em;cursor:pointer;transition:all 0.15s}
+              .lq-hero-action-btn:hover{background:rgba(255,255,255,0.08);color:#e3e0f4}
+              .lq-hero-action-btn.danger{color:#f87171;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.06)}
+              .lq-hero-action-btn.danger:hover{background:rgba(239,68,68,0.12)}
+              .lq-hero-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+              .lq-hero-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
+              .lq-hero-nav-btn:hover{color:#e3e0f4}
+              .lq-hero-nav-btn .ico{font-size:22px;line-height:1}
+              .lq-hero-nav-btn.is-active{color:#5af0b3}
+              .lq-hero-nav-btn.is-active::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:999px;background:#5af0b3;box-shadow:0 0 8px rgba(52,211,153,0.9)}
+            `}</style>
+            <div className="lq-hero-wrap">
+              <header className="lq-hero-topbar">
+                <div className="lq-hero-topbar-l">
+                  <button type="button" className="lq-hero-ico-btn" onClick={function(){setStage("home");}} aria-label="Back">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <h1 className="lq-hero-title">My <span className="accent">Hero</span></h1>
                 </div>
-                <div style={{fontSize:11,color:"#6b7280"}}>{t("joinedLabel")} {currentUser.joined}</div>
-                <div style={{display:"flex",gap:7,flexWrap:"wrap",marginTop:4}}>
-                  <span style={pill("rgba(251,191,36,0.15)","#fbbf24")}>🔥 {myStreak} day streak</span>
-                  <span style={pill("rgba(167,139,250,0.15)","#a78bfa")}>{t("friends")}: {myData.friends.length}</span>
-                  <span style={pill("rgba(236,72,153,0.15)","#f472b6")}>{t("likesLabel")}: {myData.likes||0}</span>
-                  <span style={pill("rgba(99,102,241,0.15)","#818cf8")}>{t("bestLabel")}: {myBestLevel}</span>
-                </div>
-              </div>
-            </div>
-            <div style={{...CARD,marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <span style={{fontSize:11,fontWeight:700,color:"#9ca3af"}}>LEVEL {lvlInfo.level} PROGRESS</span>
-                <span style={{fontSize:10,color:"#6b7280"}}>{lvlInfo.xpNeeded} XP to next</span>
-              </div>
-              <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:999,overflow:"hidden"}}>
-                <div style={{height:"100%",width:lvlInfo.progress+"%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",transition:"width 0.3s ease"}}/>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:7,marginBottom:10}}>
-              {[{v:games.length,l:t("gamesLabel"),c:"#34d399"},{v:totalXp,l:t("totalXp"),c:"#fbbf24"},{v:avgPct+"%",l:t("avgScore"),c:pctColor(avgPct)},{v:formatTime(avgTime),l:t("avgTime"),c:"#a78bfa"}].map(function(s){
-                return<div key={s.l} style={{textAlign:"center",flex:1,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 4px"}}><div style={{fontSize:14,fontWeight:900,color:s.c}}>{s.v}</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{s.l}</div></div>;
-              })}
-            </div>
-            {games.length>0&&(
-              <div style={{marginBottom:10}}>
-                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>{t("xpHistory")}</p>
-                <GameChart games={games}/>
-              </div>
-            )}
-            {(function(){
-              var typeAgg={};
-              games.forEach(function(g){if(!g.typeStats)return;Object.keys(g.typeStats).forEach(function(t){if(!typeAgg[t])typeAgg[t]={earned:0,max:0};typeAgg[t].earned+=g.typeStats[t].earned;typeAgg[t].max+=g.typeStats[t].max;});});
-              var types=Object.keys(typeAgg);
-              if(!types.length)return null;
-              return(<div style={{...CARD,marginBottom:10}}>
-                <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:10}}>{t("accuracyByType")}</p>
-                {types.map(function(t){
-                  var ts=typeAgg[t];var tp=ts.max>0?Math.round(ts.earned/ts.max*100):0;
-                  return(<div key={t} style={{marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                      <span style={{color:"#9ca3af"}}>{qLabel(t)}</span>
-                      <span style={{color:pctColor(tp),fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{tp}%</span>
+                <button type="button" className="lq-hero-ico-btn" onClick={function(){track("user_logout");revokeStoredRefreshToken();resetIdentity();_sessionToken=null;localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} aria-label="Logout">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+              </header>
+
+              <div className="lq-hero-content">
+                <section className="lq-hero-section">
+                  <div className="lq-hero-avatar">
+                    <div className="lq-hero-avatar-inner">{initial}</div>
+                    <div className="lq-hero-level-tag">Level {lvlInfo.level}</div>
+                  </div>
+                  <h2 className="lq-hero-name">{currentUser.name}</h2>
+                  <p className="lq-hero-subtitle">{lvlInfo.level>=20?"Legendary Scholar":lvlInfo.level>=10?"Master Reader":lvlInfo.level>=5?"Apprentice":"Initiate"}</p>
+
+                  <div className="lq-hero-xp-section">
+                    <div className="lq-hero-xp-row">
+                      <div>
+                        <div className="lq-hero-xp-lbl">Current Progression</div>
+                        <div className="lq-hero-xp-curr">{totalXp.toLocaleString()} <span className="total">/ {(totalXp+lvlInfo.xpNeeded).toLocaleString()} XP</span></div>
+                      </div>
+                      <div className="lq-hero-xp-rem">{lvlInfo.xpNeeded} XP to Lvl {lvlInfo.level+1}</div>
                     </div>
-                    <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:tp+"%",background:pctColor(tp),borderRadius:999}}/>
+                    <div className="lq-hero-xp-bar"><div className="lq-hero-xp-fill" style={{width:lvlInfo.progress+"%"}}/></div>
+                  </div>
+                </section>
+
+                <section className="lq-hero-stat-grid">
+                  <div className="lq-hero-stat-card" style={{borderTopColor:"#0EA5E9"}}>
+                    <div className="lq-hero-stat-ico" style={{background:"rgba(14,165,233,0.12)",color:"#7dd3fc"}}>📚</div>
+                    <div className="lq-hero-stat-v">{games.length}</div>
+                    <div className="lq-hero-stat-l">Books Read</div>
+                  </div>
+                  <div className="lq-hero-stat-card" style={{borderTopColor:"#5af0b3"}}>
+                    <div className="lq-hero-stat-ico" style={{background:"rgba(52,211,153,0.12)",color:"#5af0b3"}}>🔥</div>
+                    <div className="lq-hero-stat-v">{myStreak}</div>
+                    <div className="lq-hero-stat-l">Day Streak</div>
+                  </div>
+                  <div className="lq-hero-stat-card" style={{borderTopColor:"#a78bfa"}}>
+                    <div className="lq-hero-stat-ico" style={{background:"rgba(167,139,250,0.12)",color:"#c4b5fd"}}>🏅</div>
+                    <div className="lq-hero-stat-v">{earnedBadges.length}</div>
+                    <div className="lq-hero-stat-l">Quests Won</div>
+                  </div>
+                  <div className="lq-hero-stat-card" style={{borderTopColor:"#ec4899"}}>
+                    <div className="lq-hero-stat-ico" style={{background:"rgba(236,72,153,0.12)",color:"#f472b6"}}>⏱</div>
+                    <div className="lq-hero-stat-v">{totalReadHours}h</div>
+                    <div className="lq-hero-stat-l">Time Reading</div>
+                  </div>
+                </section>
+
+                <section className="lq-hero-bento-card">
+                  <div className="lq-hero-bento-h">
+                    <div className="lq-hero-bento-h-l">
+                      <span className="ico">✨</span>
+                      <h3>Legendary Artifacts</h3>
                     </div>
-                  </div>);
-                })}
-              </div>);
-            })()}
-            {games.length>0&&(<div style={{...CARD,marginBottom:10}}>
-              <p style={{fontWeight:700,fontSize:11,color:"#9ca3af",marginBottom:8}}>{t("recentGames")}</p>
-              {games.slice().reverse().slice(0,8).map(function(g,i){
-                var glv=getLv(g.level);
-                return(<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:i<7?"1px solid rgba(255,255,255,0.05)":"none"}}>
-                  <img src={"/assets/badges/badge-"+g.level.toLowerCase()+".svg"} alt={g.level} style={{width:28,height:28,flexShrink:0}} onError={function(e){e.target.style.display="none";}}/>
-                  <div style={{flex:1}}><div style={{fontSize:12,color:"#f3f4f6"}}>{g.topic}</div><div style={{fontSize:10,color:"#6b7280"}}>{g.date} - {formatTime(g.timeSecs)}</div></div>
-                  <div style={{textAlign:"right"}}><div style={{fontSize:12,fontWeight:800,color:"#fbbf24"}}>{g.xp} XP</div><div style={{fontSize:10,color:pctColor(g.pct)}}>{g.pct}%</div></div>
-                </div>);
-              })}
-            </div>)}
-            {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>🎮</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No games yet</div><div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Start your learning journey</div><button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:8}}>Play Now</button></div>}
-            {(function(){
-              var myBadges=checkBadges(currentUser,vocab,myStreak);
-              var earnedCount=BADGES.filter(function(b){return myBadges[b.id];}).length;
-              return(<div style={{...CARD,marginBottom:10,cursor:"pointer"}} onClick={function(){setStage("badges");}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>🏅 My Badges</span>
-                  <span style={{fontSize:12,color:"#6b7280"}}>{earnedCount} / {BADGES.length} earned →</span>
+                    <button type="button" className="link-btn" onClick={function(){setStage("badges");}}>Open Gallery</button>
+                  </div>
+                  <div className="lq-hero-badges-grid">
+                    {topBadges.map(function(b){return(
+                      <div key={b.id} className="lq-hero-badge">
+                        <div className="lq-hero-badge-tile">
+                          <div className="glow-ring"/>
+                          <span>{b.icon}</span>
+                        </div>
+                        <div className="lq-hero-badge-lbl">{badgeName(b.id)}</div>
+                      </div>
+                    );})}
+                    {Array.from({length:lockedSlots}).map(function(_,i){return(
+                      <div key={"lk-"+i} className="lq-hero-badge">
+                        <div className="lq-hero-badge-tile locked"/>
+                        <div className="lq-hero-badge-lbl">Locked</div>
+                      </div>
+                    );})}
+                  </div>
+                </section>
+
+                <section className="lq-hero-bento-card">
+                  <div className="lq-hero-bento-h">
+                    <div className="lq-hero-bento-h-l">
+                      <span className="ico" style={{background:"rgba(167,139,250,0.15)",color:"#c4b5fd"}}>🏆</span>
+                      <h3>World Ranking</h3>
+                    </div>
+                    <button type="button" className="link-btn" onClick={function(){setLbLevel(myBestLevel||"A1");setStage("leaderboard");}}>View All</button>
+                  </div>
+                  {bestBoard.length>0?(
+                    <div className="lq-hero-rank-list">
+                      {bestBoard.map(function(e,i){
+                        var isMe=e.name===currentUser.name;
+                        return(
+                          <div key={i} className={"lq-hero-rank-row"+(isMe?" me":"")}>
+                            <span className="lq-hero-rank-pos">{String(i+1).padStart(2,"0")}</span>
+                            <div className="lq-hero-rank-avatar">{(e.name||"?")[0].toUpperCase()}</div>
+                            <div className="lq-hero-rank-name">{e.name}{isMe&&<small>• You</small>}</div>
+                            <span className="lq-hero-rank-xp">{e.xp||0}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ):(
+                    <div className="lq-hero-rank-empty">Play a quest to enter the {myBestLevel||"A1"} leaderboard.</div>
+                  )}
+                </section>
+
+                {lastStory&&lastStoryLv?(
+                  <section className="lq-hero-quest-card" style={{borderLeftColor:lastStoryLv.color}}>
+                    <div className="lq-hero-quest-row">
+                      <div className="lq-hero-quest-cover">
+                        <img src={"/assets/covers/"+lastStory.id+".svg"} alt={lastStory.title} onError={function(e){e.target.style.display="none";}}/>
+                        <div className="active-tag" style={{background:"rgba("+hex2rgb(lastStoryLv.color)+",0.85)"}}>Active</div>
+                      </div>
+                      <div className="lq-hero-quest-meta">
+                        <div className="lq-hero-quest-cat" style={{color:lastStoryLv.color}}>✨ {lastStory.level} Main Quest</div>
+                        <h3 className="lq-hero-quest-title">{lastStory.title}</h3>
+                        <p className="lq-hero-quest-author">{lastStory.topic}</p>
+                        <div className="lq-hero-quest-progress-row">
+                          <span className="lq-hero-quest-pct" style={{color:lastStoryLv.color}}>{lastPlayed.pct}%<small>Last Score</small></span>
+                          <span style={{fontFamily:"'Inter',sans-serif",fontSize:9,fontWeight:800,color:"rgba(227,224,244,0.4)",letterSpacing:0.12,textTransform:"uppercase"}}>{lastPlayed.date}</span>
+                        </div>
+                        <div className="lq-hero-quest-bar"><div className="lq-hero-quest-fill" style={{width:lastPlayed.pct+"%",background:"linear-gradient(90deg,"+lastStoryLv.color+",#a78bfa)"}}/></div>
+                        <div className="lq-hero-quest-cta">
+                          <button type="button" className="lq-hero-quest-resume" onClick={function(){startStoryFromLibrary(lastStory);}} style={{background:lastStoryLv.color,boxShadow:"0 4px 12px "+lastStoryLv.glow+",0 4px 0 0 rgba(0,0,0,0.3)"}}>
+                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Resume Journey
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                ):games.length===0?(
+                  <div className="lq-hero-empty">
+                    <div className="lq-hero-empty-emoji">🎮</div>
+                    <h3 className="lq-hero-empty-t">No quests yet</h3>
+                    <p className="lq-hero-empty-d">Start your learning journey</p>
+                    <button type="button" className="lq-hero-empty-cta" onClick={doRestart}>Play Now</button>
+                  </div>
+                ):null}
+
+                <div className="lq-hero-action-row">
+                  <button type="button" className="lq-hero-action-btn" onClick={function(){setStage("analytics");}}>📊 {t("stats")}</button>
+                  <button type="button" className="lq-hero-action-btn" onClick={function(){setHistoryLevel("");setStage("history");}}>📜 {t("history")}</button>
                 </div>
-                <div style={{display:"flex",gap:4,marginTop:8,flexWrap:"wrap"}}>
-                  {BADGES.map(function(b){return<span key={b.id} style={{fontSize:18,opacity:myBadges[b.id]?1:0.2,filter:myBadges[b.id]?"none":"grayscale(1)"}}>{b.icon}</span>;})}
-                </div>
-              </div>);
-            })()}
-            <div style={{display:"flex",gap:7}}>
-              <button onClick={doRestart} style={{...mkBtn("#34d399","#0d0d1a"),flex:1}}>Play Now</button>
-              <button onClick={function(){track("user_logout");revokeStoredRefreshToken();resetIdentity();_sessionToken=null;localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} style={{...mkBtn("#374151"),flex:1}}>{t("logOut")}</button>
+              </div>
+
+              <nav className="lq-hero-bottom-nav">
+                <button type="button" onClick={function(){setStage("home");}} className="lq-hero-nav-btn">
+                  <span className="ico">🏠</span><span>HOME</span>
+                </button>
+                <button type="button" onClick={function(){setStage("library");}} className="lq-hero-nav-btn">
+                  <span className="ico">📚</span><span>LIBRARY</span>
+                </button>
+                <button type="button" onClick={function(){setStage("analytics");}} className="lq-hero-nav-btn">
+                  <span className="ico">📊</span><span>STATS</span>
+                </button>
+                <button type="button" className="lq-hero-nav-btn is-active">
+                  <span className="ico">👤</span><span>PROFILE</span>
+                </button>
+              </nav>
             </div>
-          </div>);
+          </>
+          );
         })()}
 
         {/* ── READING GOALS ─────────────────────────────────── */}
@@ -6176,85 +6778,212 @@ export default function App(){
         {stage==="library"&&currentUser&&(function(){
           var unlockedMap=getUnlockedStories(currentUser.games||[]);
           var levelOrder=["A1","A2","B1","B2","C1","C2"];
+          var filtered=STORY_LIBRARY.filter(function(s){return libSubjectFilter===""||getSubjectKey(s)===libSubjectFilter;});
+          var myClassLib=currentUser?classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;})||null:null;
+          // Continue Reading: pick the most recent unlocked played story
+          var games=currentUser.games||[];
+          var lastPlayedStory=null;var lastPlayedPct=0;
+          for(var gi=games.length-1;gi>=0;gi--){
+            var g=games[gi];
+            if(g.storyId){
+              var st=STORY_LIBRARY.find(function(s){return s.id===g.storyId;});
+              if(st){lastPlayedStory=st;lastPlayedPct=g.pct||0;break;}
+            }
+          }
           return(
-            <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>{t("storyLibrary")}</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
-              </div>
-              <p style={{color:"#6b7280",fontSize:12,marginBottom:10,lineHeight:1.5}}>Pre-written stories — instant play. Unlock more by completing quizzes.</p>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-                {["","life","science","tech","mind","humanities"].map(function(key){
-                  var label=key?SUBJECT_LABELS[key]:t("allTopics");
-                  var col=key?SUBJECT_COLORS[key]:"#9ca3af";
-                  var active=libSubjectFilter===key;
-                  return(<button key={key} onClick={function(){setLibSubjectFilter(key);}} style={{padding:"5px 12px",borderRadius:99,border:"1.5px solid "+(active?col:"rgba(255,255,255,0.1)"),background:active?col+"22":"transparent",color:active?col:"#6b7280",fontFamily:"inherit",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s"}}>{label}</button>);
-                })}
-              </div>
-              {favs.length>0&&(
-                <div style={{marginBottom:16}}>
-                  <p style={{fontSize:11,fontWeight:700,color:"#f472b6",letterSpacing:0.5,margin:"0 0 8px"}}>❤️ {t("myFavorites")}</p>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {favs.map(function(f){
-                      var story=STORY_LIBRARY.find(function(s){return s.id===f.id;});
-                      if(!story)return null;
-                      var lo=getLv(story.level);
-                      return(
-                        <div key={f.id} style={{...CARD,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",flex:"1 1 auto",minWidth:140,border:"1px solid rgba(236,72,153,0.3)",background:"rgba(236,72,153,0.05)"}} onClick={function(){startStoryFromLibrary(story);}}>
-                          <span style={{fontSize:20}}>{({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"})[story.level]||"📖"}</span>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:13,fontWeight:600,color:"#f3f4f6",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
-                            <div style={{fontSize:11,color:lo.color}}>{story.level} · {story.topic}</div>
-                          </div>
-                        </div>
-                      );
+            <>
+              <style>{`
+                .lq-lib-wrap{padding:0 0 96px;margin:-18px -20px -64px;padding:0 0 96px}
+                @media(min-width:480px){.lq-lib-wrap{margin:-18px -20px -64px}}
+                .lq-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+                .lq-topbar-left{display:flex;align-items:center;gap:12px}
+                .lq-icon-btn{background:none;border:none;color:#5af0b3;cursor:pointer;padding:6px;display:flex;align-items:center;border-radius:8px;transition:transform 0.15s,background 0.15s}
+                .lq-icon-btn:hover{background:rgba(255,255,255,0.06)}
+                .lq-icon-btn:active{transform:scale(0.92)}
+                .lq-topbar-title{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#e3e0f4;letter-spacing:-0.01em;margin:0}
+                .lq-topbar-title .accent{color:#5af0b3}
+                .lq-icon-btn-muted{color:rgba(227,224,244,0.55)}
+                .lq-icon-btn-muted:hover{color:#5af0b3}
+                .lq-content{padding:18px 16px 0}
+                .lq-search-row{margin-bottom:18px}
+                .lq-search-wrap{position:relative;background:rgba(30,30,44,0.6);border:1px solid rgba(255,255,255,0.10);border-radius:14px;overflow:hidden;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+                .lq-search-wrap>svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(227,224,244,0.45);pointer-events:none}
+                .lq-search-input{width:100%;background:transparent;border:none;outline:none;color:#e3e0f4;font-family:'Inter',sans-serif;font-size:14px;padding:13px 16px 13px 42px;box-sizing:border-box}
+                .lq-search-input::placeholder{color:rgba(227,224,244,0.4)}
+                .lq-search-wrap:focus-within{border-color:rgba(52,211,153,0.55);box-shadow:0 0 0 3px rgba(52,211,153,0.12)}
+                .lq-chips{display:flex;gap:8px;overflow-x:auto;padding:0 0 10px;margin-bottom:18px;scrollbar-width:none}
+                .lq-chips::-webkit-scrollbar{display:none}
+                .lq-chip{white-space:nowrap;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.10);background:transparent;color:rgba(227,224,244,0.6);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.02em;cursor:pointer;transition:all 0.2s;flex-shrink:0}
+                .lq-chip:hover{background:rgba(255,255,255,0.05);border-color:rgba(52,211,153,0.5)}
+                .lq-chip.is-active{background:#5af0b3;color:#003825;border-color:#5af0b3;box-shadow:0 0 18px rgba(52,211,153,0.32)}
+                .lq-section-h{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#e3e0f4}
+                .lq-section-h .ico{color:#5af0b3;font-size:22px;line-height:1}
+                .lq-hero{position:relative;display:flex;gap:14px;padding:14px;background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:24px;margin-bottom:24px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);overflow:hidden;cursor:pointer;transition:transform 0.2s}
+                .lq-hero::before,.lq-hero::after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;filter:blur(80px);pointer-events:none}
+                .lq-hero::before{top:-60px;left:-60px;background:rgba(52,211,153,0.10)}
+                .lq-hero::after{bottom:-60px;right:-60px;background:rgba(99,102,241,0.10)}
+                .lq-hero:active{transform:scale(0.99)}
+                .lq-hero-cover{position:relative;z-index:1;width:96px;height:128px;border-radius:14px;overflow:hidden;flex-shrink:0;background:rgba(0,0,0,0.4);box-shadow:0 12px 28px -8px rgba(0,0,0,0.7)}
+                .lq-hero-cover img{width:100%;height:100%;object-fit:cover}
+                .lq-hero-meta{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0}
+                .lq-pill-mission{display:inline-block;padding:3px 10px;background:rgba(52,211,153,0.18);color:#5af0b3;font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;border-radius:999px;border:1px solid rgba(52,211,153,0.3);margin-bottom:8px;align-self:flex-start}
+                .lq-hero-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:#e3e0f4;margin:0 0 4px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+                .lq-hero-sub{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.6);margin:0 0 8px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+                .lq-hero-prog{margin-top:auto}
+                .lq-hero-prog-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+                .lq-hero-prog-label{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#5af0b3;letter-spacing:0.04em}
+                .lq-hero-prog-pct{font-family:'Inter',sans-serif;font-size:10px;color:rgba(227,224,244,0.5)}
+                .lq-prog-track{height:6px;background:rgba(255,255,255,0.06);border-radius:999px;overflow:hidden}
+                .lq-prog-fill{height:100%;background:linear-gradient(90deg,rgba(52,211,153,0.6),#5af0b3);border-radius:999px;box-shadow:0 0 10px rgba(52,211,153,0.5)}
+                .lq-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+                .lq-card{cursor:pointer;transition:transform 0.2s ease}
+                .lq-card.is-locked{cursor:default;opacity:0.5}
+                .lq-card:not(.is-locked):active{transform:scale(0.98)}
+                .lq-cover{position:relative;aspect-ratio:3/4.5;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#1a1a28,#0d0d1a);border:1px solid rgba(255,255,255,0.08);box-shadow:0 12px 24px -8px rgba(0,0,0,0.7);margin-bottom:10px;transition:transform 0.3s,box-shadow 0.3s}
+                .lq-card:not(.is-locked):hover .lq-cover{transform:translateY(-2px);box-shadow:0 20px 32px -10px rgba(0,0,0,0.8),0 0 16px rgba(52,211,153,0.08)}
+                .lq-cover img{width:100%;height:100%;object-fit:cover}
+                .lq-cover .fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px;background:linear-gradient(135deg,#1a1a28,#0d0d1a)}
+                .lq-cover .cover-grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(13,13,26,0.85) 0%,transparent 50%);pointer-events:none}
+                .lq-cover .lvl-tag{position:absolute;top:8px;right:8px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.10);font-family:'Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase}
+                .lq-cover .lock-tag{position:absolute;top:8px;left:8px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:rgba(227,224,244,0.7);font-size:11px}
+                .lq-cover .assigned-tag{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:8px;background:rgba(245,158,11,0.85);font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:#0d0d1a;letter-spacing:0.06em}
+                .lq-card-title{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#e3e0f4;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color 0.2s}
+                .lq-card:not(.is-locked):hover .lq-card-title{color:#5af0b3}
+                .lq-card.is-locked .lq-card-title{color:rgba(227,224,244,0.4)}
+                .lq-card-sub{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.5);margin:0 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+                .lq-card-foot{display:flex;align-items:center;gap:8px}
+                .lq-card-foot .track{flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:999px;overflow:hidden}
+                .lq-card-foot .fill{height:100%;background:#5af0b3;border-radius:999px;box-shadow:0 0 8px rgba(52,211,153,0.5)}
+                .lq-card-foot .pct{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;color:rgba(227,224,244,0.55);letter-spacing:0.04em}
+                .lq-card-foot .new{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:#5af0b3;letter-spacing:0.16em;text-transform:uppercase}
+                .lq-card-foot .done{color:#5af0b3;font-size:14px}
+                .lq-empty{text-align:center;padding:48px 24px;color:rgba(227,224,244,0.4);font-family:'Inter',sans-serif;font-size:13px}
+                .lq-fab{position:fixed;bottom:96px;right:18px;width:56px;height:56px;border-radius:999px;background:#5af0b3;color:#003825;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(52,211,153,0.4),0 0 20px rgba(52,211,153,0.25);z-index:40;transition:transform 0.2s}
+                .lq-fab:active{transform:scale(0.92)}
+                .lq-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+                .lq-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
+                .lq-nav-btn:hover{color:#e3e0f4}
+                .lq-nav-btn .ico{font-size:22px;line-height:1}
+                .lq-nav-btn.is-active{color:#5af0b3}
+                .lq-nav-btn.is-active::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:999px;background:#5af0b3;box-shadow:0 0 8px rgba(52,211,153,0.9)}
+              `}</style>
+              <div className="lq-lib-wrap">
+                <header className="lq-topbar">
+                  <div className="lq-topbar-left">
+                    <button type="button" onClick={function(){setStage("home");}} className="lq-icon-btn" aria-label="Back">
+                      <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                    <h1 className="lq-topbar-title">Reading <span className="accent">Quest</span></h1>
+                  </div>
+                  <div style={{display:"flex",gap:4}}>
+                    <button type="button" onClick={function(){var langs=["en","uz","ru","tr","ar","de","es","fr"];var i=langs.indexOf(uiLang);var nx=langs[(i+1)%langs.length];setUiLang(nx);try{localStorage.setItem("rq-uilang",nx);}catch(e){}}} className="lq-icon-btn lq-icon-btn-muted" aria-label="Language">
+                      <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+                    </button>
+                  </div>
+                </header>
+
+                <div className="lq-content">
+                  <div className="lq-search-row">
+                    <div className="lq-search-wrap">
+                      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      <input className="lq-search-input" type="text" placeholder="Search for your next adventure..." value={librarySearch||""} onChange={function(e){setLibrarySearch(e.target.value);}}/>
+                    </div>
+                  </div>
+
+                  <div className="lq-chips">
+                    {["","life","science","tech","mind","humanities"].map(function(key){
+                      var label=key?SUBJECT_LABELS[key]:t("allTopics");
+                      var active=libSubjectFilter===key;
+                      return(<button key={key||"all"} type="button" onClick={function(){setLibSubjectFilter(key);}} className={"lq-chip"+(active?" is-active":"")}>{label}</button>);
                     })}
                   </div>
-                </div>
-              )}
-              {levelOrder.map(function(lk){
-                var lObj=getLv(lk);
-                var stories=STORY_LIBRARY.filter(function(s){return s.level===lk&&(libSubjectFilter===""||getSubjectKey(s)===libSubjectFilter);});
-                if(stories.length===0)return null;
-                return(
-                  <div key={lk} style={{marginBottom:20}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                      <img src={"/assets/badges/badge-"+lk.toLowerCase()+".svg"} alt={lk} style={{width:32,height:32}} onError={function(e){e.target.style.display="none";}}/>
-                      <span style={{fontSize:13,fontWeight:900,color:lObj.color}}>{lk}</span>
-                      <span style={{fontSize:11,color:"#4b5563"}}>{lObj.desc}</span>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {stories.map(function(story){
-                        var isUnlocked=!!unlockedMap[story.id];
-                        var myClass2=currentUser?classes.find(function(c){return (c.students||[]).indexOf(currentUser.name)!==-1;})||null:null;
-                        var isAssigned=myClass2?assignments.some(function(a){return a.classId===myClass2.id&&a.storyId===story.id&&(!a.completions||!a.completions[currentUser.name]);}):false;
-                        return(
-                          <div key={story.id} className="rq-raised" style={{...CARD,padding:0,display:"flex",alignItems:"stretch",gap:0,opacity:isUnlocked?1:0.45,border:"1px solid "+(isAssigned?"rgba(245,158,11,0.6)":isUnlocked?lObj.glow.replace("0.25","0.5"):"rgba(255,255,255,0.07)"),cursor:isUnlocked?"pointer":"default",background:isUnlocked?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)",overflow:"hidden"}} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
-                            <div style={{width:120,height:80,flexShrink:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-                              <img src={"/assets/covers/"+story.id+".svg"} alt={story.title} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={function(e){e.target.style.display="none";e.target.parentElement.style.fontSize="28px";e.target.parentElement.textContent=isUnlocked?({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"}[lk]||"📖"):"🔒";}}/>
-                            </div>
-                            <div style={{flex:1,minWidth:0,padding:12,display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
-                              <div>
-                                <div style={{fontSize:13,fontWeight:700,color:isUnlocked?"#f3f4f6":"#6b7280",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{story.title}</div>
-                                <div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>{story.topic} · {story.questions.length} Qs</div>
-                                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                                  <span style={{fontSize:9,fontWeight:700,color:SUBJECT_COLORS[getSubjectKey(story)],background:SUBJECT_COLORS[getSubjectKey(story)]+"22",borderRadius:5,padding:"1px 6px"}}>{SUBJECT_LABELS[getSubjectKey(story)]}</span>
-                                  <span style={{fontSize:9,fontWeight:700,color:"#818cf8",background:"rgba(99,102,241,0.15)",borderRadius:5,padding:"1px 6px"}}>{SKILL_LEVEL[lk]}</span>
-                                  {isAssigned&&<span style={{fontSize:9,fontWeight:700,color:"#fcd34d",background:"rgba(245,158,11,0.15)",borderRadius:5,padding:"1px 6px"}}>📋 Assigned</span>}
-                                </div>
+
+                  {lastPlayedStory&&libSubjectFilter===""&&!librarySearch&&(function(){
+                    var lo=getLv(lastPlayedStory.level);
+                    return(
+                      <section style={{marginBottom:24}}>
+                        <h2 className="lq-section-h"><span className="ico">📖</span>Continue Reading</h2>
+                        <div className="lq-hero" onClick={function(){startStoryFromLibrary(lastPlayedStory);}}>
+                          <div className="lq-hero-cover">
+                            <img src={"/assets/covers/"+lastPlayedStory.id+".svg"} alt={lastPlayedStory.title} onError={function(e){e.target.style.display="none";}}/>
+                          </div>
+                          <div className="lq-hero-meta">
+                            <span className="lq-pill-mission" style={{background:"rgba("+hex2rgb(lo.color)+",0.18)",color:lo.color,borderColor:"rgba("+hex2rgb(lo.color)+",0.3)"}}>{lastPlayedStory.level} · Active</span>
+                            <h3 className="lq-hero-title">{lastPlayedStory.title}</h3>
+                            <p className="lq-hero-sub">{lastPlayedStory.topic} · {lastPlayedStory.questions.length} questions</p>
+                            <div className="lq-hero-prog">
+                              <div className="lq-hero-prog-row">
+                                <span className="lq-hero-prog-label">▲ {lastPlayedPct}% Last Score</span>
+                                <span className="lq-hero-prog-pct">Tap to replay</span>
                               </div>
-                              {!isUnlocked&&<div style={{fontSize:10,color:"#4b5563"}}>Unlock by completing {lk} quizzes</div>}
+                              <div className="lq-prog-track"><div className="lq-prog-fill" style={{width:lastPlayedPct+"%"}}/></div>
                             </div>
-                            {isUnlocked&&<div style={{padding:12,display:"flex",alignItems:"center",fontSize:11,fontWeight:700,color:isAssigned?"#fcd34d":lObj.color,flexShrink:0}}>{isAssigned?"📋":"→"}</div>}
+                          </div>
+                        </div>
+                      </section>
+                    );
+                  })()}
+
+                  <section>
+                    <h2 className="lq-section-h"><span className="ico">✦</span>{t("storyLibrary")}</h2>
+                    <div className="lq-grid">
+                      {filtered.filter(function(s){if(!librarySearch)return true;var q=librarySearch.toLowerCase();return s.title.toLowerCase().indexOf(q)!==-1||s.topic.toLowerCase().indexOf(q)!==-1;}).map(function(story){
+                        var isUnlocked=!!unlockedMap[story.id];
+                        var lo=getLv(story.level);
+                        var isAssigned=myClassLib?assignments.some(function(a){return a.classId===myClassLib.id&&a.storyId===story.id&&(!a.completions||!a.completions[currentUser.name]);}):false;
+                        var subjKey=getSubjectKey(story);
+                        var playedGames=games.filter(function(g){return g.storyId===story.id;});
+                        var bestPct=playedGames.length?Math.max.apply(null,playedGames.map(function(g){return g.pct||0;})):0;
+                        var isNew=isUnlocked&&!playedGames.length;
+                        var isDone=isUnlocked&&bestPct>=80;
+                        return(
+                          <div key={story.id} className={"lq-card"+(isUnlocked?"":" is-locked")} onClick={isUnlocked?function(){startStoryFromLibrary(story);}:undefined}>
+                            <div className="lq-cover">
+                              <img src={"/assets/covers/"+story.id+".svg"} alt={story.title} onError={function(e){e.target.style.display="none";var fb=e.target.nextElementSibling;if(fb)fb.style.display="flex";}}/>
+                              <div className="fallback" style={{display:"none"}}>{isUnlocked?(({A1:"📗",A2:"📘",B1:"📙",B2:"📒",C1:"📕",C2:"📓"})[story.level]||"📖"):"🔒"}</div>
+                              <div className="cover-grad"/>
+                              {isAssigned?<div className="assigned-tag">📋 ASSIGNED</div>:(!isUnlocked&&<div className="lock-tag">🔒</div>)}
+                              <div className="lvl-tag" style={{color:lo.color,borderColor:"rgba("+hex2rgb(lo.color)+",0.4)"}}>{story.level} · {SUBJECT_LABELS[subjKey]}</div>
+                            </div>
+                            <h3 className="lq-card-title">{story.title}</h3>
+                            <p className="lq-card-sub">{story.topic}</p>
+                            <div className="lq-card-foot">
+                              {!isUnlocked?(
+                                <span className="pct" style={{color:"rgba(227,224,244,0.4)"}}>Locked</span>
+                              ):isNew?(
+                                <><div className="track"><div className="fill" style={{width:"0%"}}/></div><span className="new">New</span></>
+                              ):isDone?(
+                                <><div className="track"><div className="fill" style={{width:"100%"}}/></div><span className="done">✓</span></>
+                              ):(
+                                <><div className="track"><div className="fill" style={{width:bestPct+"%"}}/></div><span className="pct">{bestPct}%</span></>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
                     </div>
-                  </div>
-                );
-              })}
-              <button onClick={function(){setStage("home");}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",marginTop:4}}>{t("backHome")}</button>
-            </div>
+                    {filtered.filter(function(s){if(!librarySearch)return true;var q=librarySearch.toLowerCase();return s.title.toLowerCase().indexOf(q)!==-1||s.topic.toLowerCase().indexOf(q)!==-1;}).length===0&&(
+                      <div className="lq-empty">No stories match your filters.</div>
+                    )}
+                  </section>
+                </div>
+
+                <nav className="lq-bottom-nav">
+                  <button type="button" onClick={function(){setStage("home");}} className="lq-nav-btn">
+                    <span className="ico">🏠</span><span>HOME</span>
+                  </button>
+                  <button type="button" className="lq-nav-btn is-active">
+                    <span className="ico">📚</span><span>LIBRARY</span>
+                  </button>
+                  <button type="button" onClick={function(){setStage("analytics");}} className="lq-nav-btn">
+                    <span className="ico">📊</span><span>STATS</span>
+                  </button>
+                  <button type="button" onClick={function(){setStage("profile");}} className="lq-nav-btn">
+                    <span className="ico">👤</span><span>PROFILE</span>
+                  </button>
+                </nav>
+              </div>
+            </>
           );
         })()}
 

@@ -23,12 +23,12 @@ export const colors = {
   transparent: "transparent",
 
   // Semantic colors
-  primary: "#818cf8", // indigo (matches --rq-accent)
-  secondary: "#a78bfa", // light indigo (matches --rq-secondary)
-  success: "#22c55e",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
+  primary: "#5af0b3", // electric mint (matches --rq-accent)
+  secondary: "#a78bfa", // light violet (matches --rq-secondary)
+  success: "#34d399",
+  warning: "#fbbf24",
+  error: "#f87171",
+  info: "#0ea5e9",
 
   // Backgrounds & surfaces
   bg: {
