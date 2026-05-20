@@ -5398,11 +5398,13 @@ export default function App(){
           }
           return(
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:16}}>
-                <button onClick={function(){setStage("home");}} style={GHOST}>← Home</button>
-                <h2 style={{margin:0,fontSize:17,fontWeight:900,color:"#c084fc"}}>🔁 Review</h2>
-                <span style={{fontSize:12,color:"#6b7280"}}>{reviewIdx+1}/{due.length}</span>
-              </div>
+              <header className="lq-sub-topbar">
+                <button type="button" className="lq-sub-back" onClick={function(){setStage("home");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#c084fc"}}>🔁</span> Review</h1>
+                <span style={{fontSize:12,color:"rgba(227,224,244,0.5)",fontFamily:"'JetBrains Mono',monospace",minWidth:38,textAlign:"right"}}>{reviewIdx+1}/{due.length}</span>
+              </header>
               {/* progress bar */}
               <div style={{background:"rgba(255,255,255,0.06)",borderRadius:999,height:5,marginBottom:16,overflow:"hidden"}}>
                 <div style={{height:"100%",width:(reviewIdx/due.length*100)+"%",background:"#a855f7",borderRadius:999,transition:"width 0.3s"}}/>
@@ -5475,16 +5477,30 @@ export default function App(){
           function prev(){setVocabFlipped(false);setVocabCard(function(c){return display.length<=1?0:(c>0?c-1:display.length-1);});}
           var tabs=[["due","Due ("+dueWords.length+")"],["review","All active ("+reviewWords.length+")"],["all","All ("+words.length+")"]];
           return(
-            <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#06b6d4"}}>Vocabulary</h2>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {vocab.length>=2&&<button onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);setStage("vocabgame");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"7px 14px",fontSize:12}}>🎮 Practice</button>}
-                  {vocab.length>0&&<button onClick={function(){doExportVocab("csv");}} style={{...GHOST,padding:"7px 12px",fontSize:12}} title="Export as CSV">⬇ CSV</button>}
-                  {vocab.length>0&&<button onClick={function(){doExportVocab("anki");}} style={{...GHOST,padding:"7px 12px",fontSize:12}} title="Export for Anki">🃏 Anki</button>}
-                  <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
-                </div>
-              </div>
+            <>
+              <style>{`
+                .lq-sub-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:12px 16px;margin:-18px -20px 18px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+                @media(min-width:480px){.lq-sub-topbar{margin:-22px -28px 18px}}
+                .lq-sub-back{background:none;border:none;color:rgba(227,224,244,0.55);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:10px}
+                .lq-sub-back:hover{background:rgba(255,255,255,0.06);color:#5af0b3}
+                .lq-sub-title{flex:1;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#e3e0f4;margin:0;letter-spacing:-0.01em}
+                .lq-sub-title .accent{color:#06b6d4}
+                .lq-sub-actions{display:flex;gap:6px;flex-wrap:wrap}
+                .lq-sub-action-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.7);border-radius:10px;padding:6px 12px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+                .lq-sub-action-btn:hover{background:rgba(255,255,255,0.08);color:#e3e0f4}
+                .lq-sub-action-btn.primary{background:rgba(167,139,250,0.18);border-color:#a78bfa;color:#c4b5fd}
+              `}</style>
+              <div>
+                <header className="lq-sub-topbar">
+                  <button type="button" className="lq-sub-back" onClick={function(){setStage("home");}} aria-label="Back">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <h1 className="lq-sub-title"><span className="accent">📚</span> Vocab</h1>
+                  <div className="lq-sub-actions">
+                    {vocab.length>=2&&<button type="button" onClick={function(){setVocabGameMode(null);setVocabGameIdx(0);setVocabGameScore(0);setVocabGameAnswered(null);setStage("vocabgame");}} className="lq-sub-action-btn primary">🎮 Practice</button>}
+                    {vocab.length>0&&<button type="button" onClick={function(){doExportVocab("csv");}} className="lq-sub-action-btn" title="Export CSV">⬇</button>}
+                  </div>
+                </header>
               <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
                 {tabs.map(function(t){
                   return<button key={t[0]} onClick={function(){setVocabFilter(t[0]);setVocabCard(0);setVocabFlipped(false);}} style={{background:vocabFilter===t[0]?"#06b6d4":"rgba(255,255,255,0.05)",color:vocabFilter===t[0]?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t[1]}</button>;
@@ -5539,17 +5555,21 @@ export default function App(){
                   <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>{t("startReading")}</button>
                 </div>
               )}
-            </div>
+              </div>
+            </>
           );
         })()}
 
         {/* ── DAILY LEADERBOARD ─────────────────────────────── */}
         {stage==="dailyleaderboard"&&(
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#fbbf24"}}>{t("dailyBoard")}</h2>
-              <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
-            </div>
+            <header className="lq-sub-topbar">
+              <button type="button" className="lq-sub-back" onClick={function(){setStage("home");}} aria-label="Back">
+                <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#fbbf24"}}>🌟</span> {t("dailyBoard")}</h1>
+              <div style={{width:38}}/>
+            </header>
             <p style={{color:"#6b7280",fontSize:12,marginBottom:12}}>Today · {todayKey()} · B1</p>
             {dailyLb.length===0?(
               <div style={{...CARD,textAlign:"center",padding:36}}><p style={{color:"#6b7280"}}>No one has played today's challenge yet.</p><button onClick={startDailyChallenge} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:14}}>Be First!</button></div>
@@ -5597,10 +5617,13 @@ export default function App(){
 
           return(
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#34d399"}}>{t("readingHistory")}</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
-              </div>
+              <header className="lq-sub-topbar">
+                <button type="button" className="lq-sub-back" onClick={function(){setStage("home");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#5af0b3"}}>📜</span> {t("readingHistory")}</h1>
+                <div style={{width:38}}/>
+              </header>
 
               {/* level filter pills */}
               <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
@@ -5872,9 +5895,14 @@ export default function App(){
         {/* ── FRIENDS ───────────────────────────────────────── */}
         {stage==="friends"&&currentUser&&(
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#a78bfa"}}>{t("friends")}</h2>
-              <button onClick={function(){setStage("home");setSocialMsg("");}} style={GHOST}>{t("back")}</button>
+            <header className="lq-sub-topbar">
+              <button type="button" className="lq-sub-back" onClick={function(){setStage("home");setSocialMsg("");}} aria-label="Back">
+                <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#a78bfa"}}>👥</span> {t("friends")}</h1>
+              <div style={{width:38}}/>
+            </header>
+            <div style={{display:"none"}}><button onClick={function(){}} style={GHOST}>{t("back")}</button>
             </div>
             {socialMsg&&<div style={{background:"rgba(52,211,153,0.1)",border:"1px solid #34d399",borderRadius:10,padding:"8px 12px",fontSize:13,color:"#34d399",marginBottom:10}}>{socialMsg}</div>}
 
@@ -6643,10 +6671,13 @@ export default function App(){
           var games=currentUser.games||[];
           return(
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>{t("readingGoals")}</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
-              </div>
+              <header className="lq-sub-topbar">
+                <button type="button" className="lq-sub-back" onClick={function(){setStage("home");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#5af0b3"}}>🎯</span> {t("readingGoals")}</h1>
+                <div style={{width:38}}/>
+              </header>
 
               {/* active goals */}
               {GOAL_DEFS.filter(function(d){return goals[d.id];}).length>0&&(
@@ -7180,11 +7211,14 @@ export default function App(){
           var earnedCount=BADGES.filter(function(b){return myBadges[b.id];}).length;
           return(
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:6}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#fbbf24"}}>Badges</h2>
-                <button onClick={function(){setStage("profile");}} style={GHOST}>{t("back")}</button>
-              </div>
-              <p style={{color:"#6b7280",fontSize:13,marginBottom:14}}>{earnedCount} of {BADGES.length} earned</p>
+              <header className="lq-sub-topbar">
+                <button type="button" className="lq-sub-back" onClick={function(){setStage("profile");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#fbbf24"}}>🏅</span> Badges</h1>
+                <div style={{width:38}}/>
+              </header>
+              <p style={{color:"rgba(227,224,244,0.5)",fontSize:13,marginBottom:14,textAlign:"center"}}>{earnedCount} of {BADGES.length} earned</p>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {BADGES.map(function(b){
                   var earned=!!myBadges[b.id];
@@ -7213,11 +7247,14 @@ export default function App(){
 
           if(!vocabGameMode)return(
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#a78bfa"}}>{t("vocabPractice")}</h2>
-                <button onClick={function(){setStage("vocab");}} style={GHOST}>{t("back")}</button>
-              </div>
-              <p style={{color:"#6b7280",fontSize:13,marginBottom:16}}>{gameWords.length} words to practice</p>
+              <header className="lq-sub-topbar">
+                <button type="button" className="lq-sub-back" onClick={function(){setStage("vocab");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#a78bfa"}}>🎮</span> {t("vocabPractice")}</h1>
+                <div style={{width:38}}/>
+              </header>
+              <p style={{color:"rgba(227,224,244,0.5)",fontSize:13,marginBottom:16,textAlign:"center"}}>{gameWords.length} words to practice</p>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 {[{m:"flashcard",icon:"🃏",name:"Flashcards",desc:"Flip to reveal the meaning"},{m:"mcq",icon:"🎯",name:"Word Quiz",desc:"Pick the correct definition"},{m:"blank",icon:"✏️",name:"Fill the Blank",desc:"Complete the sentence"}].map(function(item){
                   return(
@@ -7348,10 +7385,13 @@ export default function App(){
           var goalMet=weekGames.length>=3;
           return(
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:14}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#818cf8"}}>{t("weeklyBoard")}</h2>
-                <button onClick={function(){setStage("home");}} style={GHOST}>{t("back")}</button>
-              </div>
+              <header className="lq-sub-topbar">
+                <button type="button" className="lq-sub-back" onClick={function(){setStage("home");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#a78bfa"}}>📅</span> {t("weeklyBoard")}</h1>
+                <div style={{width:38}}/>
+              </header>
               <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(129,140,248,0.3)",background:"rgba(129,140,248,0.05)"}}>
                 <p style={{fontSize:11,color:"#818cf8",fontWeight:700,letterSpacing:0.5,margin:"0 0 8px"}}>{t("thisWeek")}</p>
                 <div style={{display:"flex",gap:10}}>
@@ -7717,10 +7757,13 @@ export default function App(){
           }
           return(
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:10}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#ec4899"}}>{t("discussion")}</h2>
-                <button onClick={function(){setStage("result");}} style={GHOST}>{t("back")}</button>
-              </div>
+              <header className="lq-sub-topbar">
+                <button type="button" className="lq-sub-back" onClick={function(){setStage("result");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#f472b6"}}>💬</span> {t("discussion")}</h1>
+                <div style={{width:38}}/>
+              </header>
               {story&&<div style={{...CARD,marginBottom:12,padding:12,background:"rgba(236,72,153,0.06)",borderColor:"rgba(236,72,153,0.25)"}}>
                 <p style={{fontSize:11,color:"#f472b6",fontWeight:700,margin:"0 0 4px"}}>📖 {story.title} · {story.level}</p>
                 <p style={{fontSize:13,color:"#9ca3af",margin:0,lineHeight:1.5}}>{story.prompt||"What did you find most interesting about this passage?"}</p>
@@ -7758,10 +7801,13 @@ export default function App(){
         {/* ── QUOTE BOOK ────────────────────────────────────── */}
         {stage==="quotes"&&(
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:12}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:"#f59e0b"}}>{t("quoteBook")}</h2>
-              <button onClick={function(){setStage(result?"result":"home");}} style={GHOST}>{t("back")}</button>
-            </div>
+            <header className="lq-sub-topbar">
+              <button type="button" className="lq-sub-back" onClick={function(){setStage(result?"result":"home");}} aria-label="Back">
+                <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#fbbf24"}}>🔖</span> {t("quoteBook")}</h1>
+              <div style={{width:38}}/>
+            </header>
             {quotes.length===0?(
               <div style={{...CARD,textAlign:"center",padding:40}}>
                 <div style={{fontSize:36,marginBottom:10}}>🔖</div>
