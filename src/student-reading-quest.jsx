@@ -2005,17 +2005,21 @@ export default function App(){
     setStage("reading");
   }
 
-  // Library stories were authored with 3 questions each, but AI-generated
-  // passages now produce 5-15 depending on level. Upgrade the library quiz
-  // in the background so a B2/C1/C2 student gets a level-appropriate set
-  // for the same curated passage. Cached per story so repeat plays are
-  // instant and don't burn API quota.
+  // Library stories ship with level-appropriate question counts after the
+  // one-time content sweep (A1: 5, A2: 6, B1: 8, B2: 10, C1: 12, C2: 15).
+  // This helper stays as a safety net: if a story is shorter than its
+  // target count (e.g. a newly-added story or an in-flight edit), upgrade
+  // it via /api/quiz-from-text and cache the result. Otherwise the static
+  // questions are already fine — return null to signal "no swap needed".
   async function getLibraryQuiz(story){
     if(!story||!story.id||!story.passage||!story.level)return null;
+    var targetByLevel={A1:5,A2:6,B1:8,B2:10,C1:12,C2:15};
+    var target=targetByLevel[story.level]||6;
+    if(Array.isArray(story.questions)&&story.questions.length>=target)return null;
     var cacheKey="rq-libqs-"+story.id;
     try{
       var cached=JSON.parse(localStorage.getItem(cacheKey)||"null");
-      if(cached&&Array.isArray(cached)&&cached.length>=3)return cached;
+      if(cached&&Array.isArray(cached)&&cached.length>=target)return cached;
     }catch(e){}
     try{
       var r=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:story.passage,level:story.level,types:["mcq","gap_word","qa","tfnm"]})});
