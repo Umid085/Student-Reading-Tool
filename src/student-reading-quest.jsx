@@ -4505,44 +4505,10 @@ export default function App(){
                   </div>
                 </details>
 
-                <details className="lq-details">
-                  <summary>🎵 Audio & theme</summary>
-                  <div className="lq-details-body">
-                    <div>
-                      <p className="lq-details-sub">Sound</p>
-                      <div className="lq-chips">
-                        <button type="button" onClick={function(){setSfxOn(function(v){var n=!v;try{localStorage.setItem("rq-sfx",n?"on":"off");}catch(e){}return n;});}} className={"lq-mini-chip"+(sfxOn?" active":"")}>{sfxOn?"🔊 SFX On":"🔇 SFX Off"}</button>
-                        <button type="button" onClick={function(){setMusicOn(function(v){return!v;});}} className={"lq-mini-chip"+(musicOn?" active":"")}>{musicOn?"🎵 Music On":"🎵 Music Off"}</button>
-                      </div>
-                      {musicOn&&(
-                        <div className="lq-chips" style={{marginTop:8}}>
-                          {[["classical","🎻 Classical"],["lofi","☕ Lo-fi"],["jazz","🎷 Jazz"],["nature","🌿 Nature"]].map(function(opt){
-                            var active=musicGenre===opt[0];
-                            return<button key={opt[0]} type="button" onClick={function(){setMusicGenre(opt[0]);try{localStorage.setItem("rq-music-genre",opt[0]);}catch(e){}}} className={"lq-mini-chip"+(active?" active":"")}>{opt[1]}</button>;
-                          })}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="lq-details-sub">Theme {appTheme&&<span style={{textTransform:"none",letterSpacing:0,fontWeight:700,color:appTheme.accent,marginLeft:8}}>{appTheme.emoji} {appTheme.name}</span>}</p>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
-                        {PRESET_THEMES.map(function(th){
-                          var isActive=appTheme&&appTheme.id===th.id;
-                          return(<button key={th.id} title={th.name} type="button" onClick={function(){applyTheme(th);}} style={{background:isActive?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.04)",border:"2px solid "+(isActive?th.accent:"rgba(255,255,255,0.10)"),borderRadius:12,padding:"8px 4px",cursor:"pointer",textAlign:"center",boxShadow:isActive?"0 0 14px "+th.accent+"55":"none",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,"+th.accent+" 50%,"+th.secondary+" 50%)"}}/><span style={{fontSize:12,lineHeight:1}}>{th.emoji}</span></button>);
-                        })}
-                      </div>
-                      <button type="button" onClick={selectRandomTheme} className="lq-ghost-btn" style={{width:"100%",marginTop:8}}>🎲 Random Theme</button>
-                    </div>
-                    <div>
-                      <p className="lq-details-sub">Reminders</p>
-                      <div className="lq-chips">
-                        {notifPermission!=="granted"&&<button type="button" onClick={requestNotifPermission} className="lq-mini-chip">🔔 Enable</button>}
-                        {notifPermission==="granted"&&<button type="button" onClick={sendTestNotification} className="lq-mini-chip">🔔 Test</button>}
-                        {quotes.length>0&&<button type="button" onClick={function(){setStage("quotes");}} className="lq-mini-chip">🔖 Quotes ({quotes.length})</button>}
-                      </div>
-                    </div>
-                  </div>
-                </details>
+                <button type="button" onClick={function(){setStage("settings");}} className="lq-details" style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",border:"1px solid rgba(255,255,255,0.08)",borderRadius:18,background:"rgba(30,30,44,0.4)",color:"#e3e0f4",fontFamily:"'Outfit',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",marginBottom:14,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
+                  <span>⚙️ Settings</span>
+                  <span style={{color:"rgba(227,224,244,0.4)",fontSize:18,fontWeight:600}}>›</span>
+                </button>
 
                 {myClassBanner?(
                   <div className="lq-card-glass" style={{display:"flex",alignItems:"center",gap:12}}>
@@ -6158,6 +6124,222 @@ export default function App(){
           </div>);
         })()}
 
+        {/* ── SETTINGS ──────────────────────────────────────── */}
+        {stage==="settings"&&currentUser&&(function(){
+          var initial=(currentUser.name||"?")[0].toUpperCase();
+          return(
+          <>
+            <style>{`
+              .lq-set-wrap{margin:-18px -20px -64px;padding:0 0 96px;background:#0d0d1a;min-height:100vh}
+              @media(min-width:480px){.lq-set-wrap{margin:-22px -28px -72px}}
+              .lq-set-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+              .lq-set-ico-btn{background:none;border:none;color:rgba(227,224,244,0.55);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:10px}
+              .lq-set-ico-btn:hover{background:rgba(255,255,255,0.06);color:#5af0b3}
+              .lq-set-tb-title{flex:1;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#e3e0f4;text-align:center;margin:0}
+              .lq-set-tb-title .accent{color:#5af0b3}
+              .lq-set-content{padding:24px 18px 0}
+              .lq-set-hero{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+              .lq-set-hero-l{display:flex;align-items:center;gap:12px}
+              .lq-set-hero-ico{width:40px;height:40px;border-radius:12px;background:rgba(52,211,153,0.10);border:1px solid rgba(52,211,153,0.25);display:flex;align-items:center;justify-content:center;color:#5af0b3;font-size:22px}
+              .lq-set-hero h1{font-family:'Outfit',sans-serif;font-size:30px;font-weight:700;color:#e3e0f4;margin:0;letter-spacing:-0.02em;line-height:1.1}
+              .lq-set-badge{display:flex;align-items:center;gap:6px;background:rgba(167,139,250,0.10);border:1px solid rgba(167,139,250,0.25);color:#c4b5fd;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;letter-spacing:0.04em}
+              .lq-set-section{margin-bottom:28px}
+              .lq-set-section-h{display:flex;align-items:center;margin-bottom:14px;padding:0 4px}
+              .lq-set-section-t{font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;color:#e3e0f4;letter-spacing:0.16em;text-transform:uppercase;margin:0}
+              .lq-set-section-line{flex:1;height:1px;background:rgba(255,255,255,0.06);margin-left:14px}
+              .lq-set-card{background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.10);border-radius:18px;overflow:hidden;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+              .lq-set-row{display:flex;align-items:center;gap:14px;padding:18px 16px;border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.15s;cursor:pointer;width:100%;background:none;border-left:none;border-right:none;border-top:none;color:inherit;font-family:inherit;text-align:left}
+              .lq-set-row:last-child{border-bottom:none}
+              .lq-set-row:hover{background:rgba(255,255,255,0.03)}
+              .lq-set-row.no-click{cursor:default}
+              .lq-set-row.no-click:hover{background:transparent}
+              .lq-set-row-ico{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;color:rgba(227,224,244,0.7);font-size:20px;flex-shrink:0;transition:color 0.15s}
+              .lq-set-row:hover .lq-set-row-ico{color:#5af0b3}
+              .lq-set-row-text{flex:1;min-width:0}
+              .lq-set-row-h{font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;color:#e3e0f4;margin:0;line-height:1.3}
+              .lq-set-row-d{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.55);margin:2px 0 0;line-height:1.4}
+              .lq-set-row-chev{color:rgba(227,224,244,0.4);font-size:20px;transition:transform 0.15s;flex-shrink:0}
+              .lq-set-row:hover .lq-set-row-chev{transform:translateX(3px);color:#e3e0f4}
+              .lq-set-toggle{position:relative;width:44px;height:24px;background:rgba(255,255,255,0.10);border:none;border-radius:999px;cursor:pointer;transition:background 0.2s;flex-shrink:0;padding:0}
+              .lq-set-toggle.on{background:#5af0b3}
+              .lq-set-toggle::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+              .lq-set-toggle.on::after{transform:translateX(20px);background:#003825}
+              .lq-set-card-pad{padding:18px 16px}
+              .lq-set-card-pad-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+              .lq-set-card-pad-row:last-child{margin-bottom:0}
+              .lq-set-genre-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06)}
+              .lq-set-genre{padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);color:rgba(227,224,244,0.65);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;text-align:left;display:flex;align-items:center;gap:8px}
+              .lq-set-genre:hover{background:rgba(255,255,255,0.07);color:#e3e0f4}
+              .lq-set-genre.on{background:rgba(167,139,250,0.18);border-color:#a78bfa;color:#c4b5fd}
+              .lq-set-theme-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+              .lq-set-theme{aspect-ratio:1;border-radius:14px;border:2px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all 0.15s;padding:6px}
+              .lq-set-theme:hover{background:rgba(255,255,255,0.07)}
+              .lq-set-theme.on{background:rgba(255,255,255,0.08)}
+              .lq-set-theme .swatch{width:24px;height:24px;border-radius:50%}
+              .lq-set-theme .name{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:rgba(227,224,244,0.5);letter-spacing:0.04em}
+              .lq-set-theme.on .name{color:#e3e0f4}
+              .lq-set-random{width:100%;margin-top:10px;padding:11px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.75);font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.15s;letter-spacing:0.06em}
+              .lq-set-random:hover{background:rgba(255,255,255,0.08);color:#e3e0f4;border-color:rgba(52,211,153,0.4)}
+              .lq-set-logout{display:flex;align-items:center;gap:14px;padding:18px 16px;width:100%;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.25);border-radius:18px;cursor:pointer;color:#f87171;font-family:inherit;text-align:left;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:background 0.15s}
+              .lq-set-logout:hover{background:rgba(239,68,68,0.10)}
+              .lq-set-logout-ico{width:40px;height:40px;border-radius:12px;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+              .lq-set-logout-h{font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:#f87171;margin:0}
+              .lq-set-logout-d{font-family:'Inter',sans-serif;font-size:12px;color:rgba(248,113,113,0.65);margin:2px 0 0}
+            `}</style>
+            <div className="lq-set-wrap">
+              <header className="lq-set-topbar">
+                <button type="button" className="lq-set-ico-btn" onClick={function(){setStage("profile");}} aria-label="Back">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h1 className="lq-set-tb-title">Reading <span className="accent">Quest</span></h1>
+                <div style={{width:38}}/>
+              </header>
+
+              <div className="lq-set-content">
+                <div className="lq-set-hero">
+                  <div className="lq-set-hero-l">
+                    <div className="lq-set-hero-ico">⚙️</div>
+                    <h1>Settings</h1>
+                  </div>
+                  <span className="lq-set-badge">🛡️ Scholar</span>
+                </div>
+
+                <section className="lq-set-section">
+                  <div className="lq-set-section-h">
+                    <p className="lq-set-section-t">Profile</p>
+                    <span className="lq-set-section-line"/>
+                  </div>
+                  <div className="lq-set-card">
+                    <button type="button" className="lq-set-row no-click" style={{cursor:"default"}}>
+                      <div className="lq-set-row-ico">👤</div>
+                      <div className="lq-set-row-text">
+                        <p className="lq-set-row-h">Username</p>
+                        <p className="lq-set-row-d">{currentUser.name} · {initial}</p>
+                      </div>
+                    </button>
+                    <button type="button" className="lq-set-row no-click" style={{cursor:"default"}}>
+                      <div className="lq-set-row-ico">📅</div>
+                      <div className="lq-set-row-text">
+                        <p className="lq-set-row-h">Joined</p>
+                        <p className="lq-set-row-d">{currentUser.joined||"–"}</p>
+                      </div>
+                    </button>
+                    <button type="button" className="lq-set-row" onClick={function(){var langs=["en","uz","ru","tr","ar","de","es","fr"];var nx=prompt("Interface language ("+langs.join("/")+"):",uiLang);if(nx&&langs.indexOf(nx.toLowerCase())!==-1){setUiLang(nx.toLowerCase());try{localStorage.setItem("rq-uilang",nx.toLowerCase());}catch(e){}}}}>
+                      <div className="lq-set-row-ico">🌐</div>
+                      <div className="lq-set-row-text">
+                        <p className="lq-set-row-h">Language</p>
+                        <p className="lq-set-row-d">{({en:"English",uz:"O'zbek",ru:"Русский",tr:"Türkçe",ar:"العربية",de:"Deutsch",es:"Español",fr:"Français"})[uiLang]||uiLang.toUpperCase()}</p>
+                      </div>
+                      <span className="lq-set-row-chev">›</span>
+                    </button>
+                  </div>
+                </section>
+
+                <section className="lq-set-section">
+                  <div className="lq-set-section-h">
+                    <p className="lq-set-section-t">Immersion</p>
+                    <span className="lq-set-section-line"/>
+                  </div>
+                  <div className="lq-set-card">
+                    <div className="lq-set-row no-click">
+                      <div className="lq-set-row-ico">🔊</div>
+                      <div className="lq-set-row-text">
+                        <p className="lq-set-row-h">Sound Effects</p>
+                        <p className="lq-set-row-d">Quest cues and rewards</p>
+                      </div>
+                      <button type="button" className={"lq-set-toggle"+(sfxOn?" on":"")} onClick={function(){setSfxOn(function(v){var n=!v;try{localStorage.setItem("rq-sfx",n?"on":"off");}catch(e){}return n;});}} aria-label="Toggle sound effects"/>
+                    </div>
+                    <div className="lq-set-row no-click">
+                      <div className="lq-set-row-ico">🎵</div>
+                      <div className="lq-set-row-text">
+                        <p className="lq-set-row-h">Background Music</p>
+                        <p className="lq-set-row-d">Ambient soundtrack during reading</p>
+                      </div>
+                      <button type="button" className={"lq-set-toggle"+(musicOn?" on":"")} onClick={function(){setMusicOn(function(v){return!v;});}} aria-label="Toggle music"/>
+                    </div>
+                    {musicOn&&(
+                      <div className="lq-set-card-pad" style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
+                        <p style={{fontFamily:"'Inter',sans-serif",fontSize:10,fontWeight:700,color:"rgba(227,224,244,0.45)",letterSpacing:0.14,textTransform:"uppercase",margin:"0 0 10px"}}>Music Genre</p>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                          {[["classical","🎻","Classical"],["lofi","☕","Lo-fi"],["jazz","🎷","Jazz"],["nature","🌿","Nature"]].map(function(opt){
+                            var active=musicGenre===opt[0];
+                            return<button key={opt[0]} type="button" onClick={function(){setMusicGenre(opt[0]);try{localStorage.setItem("rq-music-genre",opt[0]);}catch(e){}}} className={"lq-set-genre"+(active?" on":"")}><span>{opt[1]}</span><span>{opt[2]}</span></button>;
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="lq-set-section">
+                  <div className="lq-set-section-h">
+                    <p className="lq-set-section-t">Alerts</p>
+                    <span className="lq-set-section-line"/>
+                  </div>
+                  <div className="lq-set-card">
+                    <button type="button" className="lq-set-row" onClick={notifPermission==="granted"?sendTestNotification:requestNotifPermission}>
+                      <div className="lq-set-row-ico">🔔</div>
+                      <div className="lq-set-row-text">
+                        <p className="lq-set-row-h">Daily Reminders</p>
+                        <p className="lq-set-row-d">{notifPermission==="granted"?"Enabled — tap to send a test":notifPermission==="denied"?"Blocked — change in browser":"Tap to enable scheduled prompts"}</p>
+                      </div>
+                      <span className="lq-set-row-chev" style={{color:notifPermission==="granted"?"#5af0b3":undefined}}>{notifPermission==="granted"?"✓":"›"}</span>
+                    </button>
+                    {quotes.length>0&&(
+                      <button type="button" className="lq-set-row" onClick={function(){setStage("quotes");}}>
+                        <div className="lq-set-row-ico">🔖</div>
+                        <div className="lq-set-row-text">
+                          <p className="lq-set-row-h">Quote Book</p>
+                          <p className="lq-set-row-d">{quotes.length} saved sentence{quotes.length!==1?"s":""}</p>
+                        </div>
+                        <span className="lq-set-row-chev">›</span>
+                      </button>
+                    )}
+                  </div>
+                </section>
+
+                <section className="lq-set-section">
+                  <div className="lq-set-section-h">
+                    <p className="lq-set-section-t">Visual Style</p>
+                    <span className="lq-set-section-line"/>
+                  </div>
+                  <div className="lq-set-card">
+                    <div className="lq-set-card-pad">
+                      <div className="lq-set-card-pad-row">
+                        <div className="lq-set-row-ico">🎨</div>
+                        <div className="lq-set-row-text">
+                          <p className="lq-set-row-h">Active Theme</p>
+                          <p className="lq-set-row-d">{appTheme?appTheme.emoji+" "+appTheme.name:"🌌 Lumina Quest (Default)"}</p>
+                        </div>
+                      </div>
+                      <div className="lq-set-theme-grid">
+                        {PRESET_THEMES.map(function(th){
+                          var isActive=appTheme&&appTheme.id===th.id;
+                          return(<button key={th.id} title={th.name} type="button" onClick={function(){applyTheme(th);}} className={"lq-set-theme"+(isActive?" on":"")} style={isActive?{borderColor:th.accent,boxShadow:"0 0 14px "+th.accent+"55"}:{}}>
+                            <div className="swatch" style={{background:"linear-gradient(135deg,"+th.accent+" 50%,"+th.secondary+" 50%)"}}/>
+                            <span className="name" style={isActive?{color:th.accent}:{}}>{th.emoji}</span>
+                          </button>);
+                        })}
+                      </div>
+                      <button type="button" onClick={selectRandomTheme} className="lq-set-random">🎲 Random Theme</button>
+                    </div>
+                  </div>
+                </section>
+
+                <button type="button" className="lq-set-logout" onClick={function(){track("user_logout");revokeStoredRefreshToken();resetIdentity();_sessionToken=null;localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}}>
+                  <div className="lq-set-logout-ico">🚪</div>
+                  <div className="lq-set-row-text">
+                    <p className="lq-set-logout-h">Logout</p>
+                    <p className="lq-set-logout-d">End your current session</p>
+                  </div>
+                  <span className="lq-set-row-chev" style={{color:"#f87171"}}>›</span>
+                </button>
+              </div>
+            </div>
+          </>
+          );
+        })()}
+
         {/* ── MY PROFILE ────────────────────────────────────── */}
         {stage==="profile"&&currentUser&&(function(){
           var games=(currentUser&&currentUser.games)?currentUser.games:[];
@@ -6289,9 +6471,14 @@ export default function App(){
                   </button>
                   <h1 className="lq-hero-title">My <span className="accent">Hero</span></h1>
                 </div>
-                <button type="button" className="lq-hero-ico-btn" onClick={function(){track("user_logout");revokeStoredRefreshToken();resetIdentity();_sessionToken=null;localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} aria-label="Logout">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                </button>
+                <div style={{display:"flex",gap:4}}>
+                  <button type="button" className="lq-hero-ico-btn" onClick={function(){setStage("settings");}} aria-label="Settings">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  </button>
+                  <button type="button" className="lq-hero-ico-btn" onClick={function(){track("user_logout");revokeStoredRefreshToken();resetIdentity();_sessionToken=null;localStorage.removeItem("rq-session");localStorage.removeItem(CREDS_KEY);setCurrentUser(null);setNameInput("");setPassInput("");setStage("auth");}} aria-label="Logout">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  </button>
+                </div>
               </header>
 
               <div className="lq-hero-content">
