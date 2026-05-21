@@ -1169,7 +1169,7 @@ export default function App(){
   var [appReady,setAppReady]=useState(false);
   // game
   var [level,setLevel]=useState("");
-  var [selectedTypes,setSelectedTypes]=useState(["mcq","gap_word","gap_sentence","matching","heading","qa"]);
+  var [selectedTypes,setSelectedTypes]=useState(["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"]);
   var [appTheme,setAppTheme]=useState(function(){try{return JSON.parse(localStorage.getItem("rq-theme")||"null")||null;}catch{return null;}});
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
