@@ -261,6 +261,69 @@ describe("api/generate.js", () => {
     }
   });
 
+  // Mode 3: slider micro-card path. The structured response must be a
+  // single passage + single MCQ; anything else is a 502.
+  it("Mode 3: returns {passage, question} for a valid micro request", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({
+        passage: "The octopus has three hearts and blue blood. When it swims, two of the hearts stop beating, which is why octopuses prefer to crawl.",
+        question: { type: "mcq", q: "Why do octopuses prefer crawling to swimming?", options: ["They have no fins", "Swimming stops two of their hearts", "Their blue blood is cold", "They cannot see underwater"], answer: 1, explanation: "Two hearts stop when swimming." },
+      }) }],
+    });
+    const handler = await loadHandler();
+    const r = await runHandler(handler, {
+      method: "POST",
+      body: { mode: "micro", level: "B1" },
+    });
+    expect(r.statusCode).toBe(200);
+    const body = JSON.parse(r.body);
+    expect(body.passage).toMatch(/octopus/);
+    expect(body.question.type).toBe("mcq");
+    expect(body.question.options).toHaveLength(4);
+    expect(body.question.answer).toBe(1);
+  });
+
+  it("Mode 3: returns 502 when Claude returns invalid micro shape", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({ passage: "ok", question: { type: "mcq", q: "?" } }) }], // missing options/answer
+    });
+    const handler = await loadHandler();
+    const r = await runHandler(handler, {
+      method: "POST",
+      body: { mode: "micro", level: "A1" },
+    });
+    expect(r.statusCode).toBe(502);
+  });
+
+  it("Mode 3: respects slider quota (429 when authed user is at cap)", async () => {
+    const { createHmac } = await import("crypto");
+    delete process.env.RATE_LIMIT_DISABLED;
+    process.env.SESSION_SECRET = "test-secret";
+    process.env.FIREBASE_DB_URL = "https://test-db.firebaseio.com";
+    const expires = Date.now() + 60_000;
+    const payload = `bob:${expires}`;
+    const sig = createHmac("sha256", "test-secret").update(payload).digest("hex");
+    const realFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ n: 30 }), // SLIDER_QUOTA cap
+    });
+    try {
+      const handler = await loadHandler();
+      const r = await runHandler(handler, {
+        method: "POST",
+        headers: { authorization: `Bearer ${payload}:${sig}` },
+        body: { mode: "micro", level: "B1" },
+      });
+      expect(r.statusCode).toBe(429);
+      expect(JSON.parse(r.body).error).toMatch(/Daily slider limit/);
+      expect(mockCreate).not.toHaveBeenCalled();
+    } finally {
+      global.fetch = realFetch;
+      delete process.env.SESSION_SECRET;
+    }
+  });
+
   // Anonymous (no Bearer) callers must NOT be blocked by the user quota —
   // they're throttled only by the IP rate-limit. Demo users still work.
   it("Mode 2: anonymous callers bypass user quota (still subject to IP rate limit)", async () => {

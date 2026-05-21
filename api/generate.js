@@ -6,6 +6,34 @@ import { extractUsername } from "./_session.js";
 const AI_LOW_TIER = new Set(["A1", "A2", "B1"]);
 const AI_QUOTA_LOW = 10; // per authenticated user per day at A1-B1
 const AI_QUOTA_HIGH = 6; // per authenticated user per day at B2-C2
+const SLIDER_QUOTA = 30; // per authenticated user per day — micro/slider cards
+
+// Word-count target per CEFR level for slider micro-cards. Tighter than
+// Mode 2 — slider is meant for a 20-30 second attention burst, not a
+// 5-minute reading. The prompt enforces a single self-contained paragraph
+// that ends with a small payoff (twist / surprising fact / vivid image)
+// so the user reaches the question with momentum, not fatigue.
+const MICRO_WORDS = {
+  A1: "55-75", A2: "65-90", B1: "80-110",
+  B2: "95-130", C1: "110-150", C2: "130-170",
+};
+
+// Default theme pool when the client doesn't supply a topic. Curated to
+// be high-density-fact AND emotionally interesting — slider engagement
+// dies on dry prompts. Picked deterministically per request to spread
+// usage across the pool when the shared cache (3c follow-up) is empty.
+const MICRO_THEMES = [
+  "an unusual animal behaviour",
+  "a strange historical event",
+  "a surprising everyday science fact",
+  "a notable invention story",
+  "a vivid food origin",
+  "an unexpected geographical fact",
+  "a tiny moment in space exploration",
+  "a person who changed one small thing",
+  "an unexpected language fact",
+  "a brief sports moment",
+];
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -112,6 +140,60 @@ export default async function handler(req, res) {
         return res.status(502).json({ error: "Empty model response" });
       }
       return res.status(200).json({ content: [{ type: "text", text }] });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── Mode 3: slider micro-card — {mode:"micro", level, topic?} → {passage, question} ──
+  // Optimised for ADHD-friendly burst reading. One passage, one MCQ, ~60-150
+  // words depending on level. Counts against the "slider" quota bucket
+  // (30/day per authed user) — not the heavier "ai" bucket.
+  if (body.mode === "micro") {
+    const sLevel = (typeof body.level === "string" ? body.level.toUpperCase() : "B1");
+    const sWords = MICRO_WORDS[sLevel] || MICRO_WORDS.B1;
+    const sUsername = extractUsername(req);
+    const sQuota = await consumeUserQuota(DB, sUsername, "slider", { max: SLIDER_QUOTA });
+    if (sQuota.exceeded) {
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil((sQuota.resetAt - Date.now()) / 1000))));
+      return res.status(429).json({ error: `Daily slider limit reached (${sQuota.used}/${sQuota.max}). Resets at UTC midnight.` });
+    }
+    const rawTopic = (typeof body.topic === "string" && body.topic.trim())
+      ? body.topic.trim().replace(/[\r\n"]+/g, " ").slice(0, 80)
+      : MICRO_THEMES[Math.floor(Math.random() * MICRO_THEMES.length)];
+    const sPrompt = `Write ONE self-contained slider micro-passage at CEFR level ${sLevel} about: ${rawTopic}.
+
+Hard constraints:
+  - Exactly one paragraph, ${sWords} words.
+  - Vocabulary and grammar must match CEFR ${sLevel} — do not exceed it.
+  - End with a small payoff (a twist, a vivid image, or a surprising fact) so the reader feels rewarded.
+  - No headings, no preamble, no "Did you know" framing — drop the reader straight into the scene/fact.
+
+Then write ONE multiple-choice comprehension question:
+  - 4 options, exactly one correct.
+  - Tests understanding of the payoff or a load-bearing detail (not trivia outside the passage).
+  - Distractors should be plausible but clearly wrong on a careful re-read.
+
+Reply with ONLY a JSON object, no prose around it:
+{"passage":"<one paragraph>","question":{"type":"mcq","q":"<question>","options":["A","B","C","D"],"answer":<0|1|2|3>,"explanation":"<one sentence>"}}`;
+
+    try {
+      const msg = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 700,
+        system: `You are a CEFR-aligned slider micro-passage writer. You write tight, engaging one-paragraph passages exactly at level ${sLevel} (both vocab and grammar) followed by one MCQ. Never explain your reasoning, never apologise, never wrap output in code fences.`,
+        messages: [{ role: "user", content: sPrompt }],
+      });
+      const raw = msg.content?.[0]?.text?.trim() || "";
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (!m) return res.status(502).json({ error: "Empty or malformed micro response" });
+      const parsed = JSON.parse(m[0]);
+      if (!parsed.passage || !parsed.question || parsed.question.type !== "mcq" ||
+          !Array.isArray(parsed.question.options) || parsed.question.options.length !== 4 ||
+          typeof parsed.question.answer !== "number") {
+        return res.status(502).json({ error: "Invalid micro response shape" });
+      }
+      return res.status(200).json({ passage: parsed.passage, question: parsed.question, topic: rawTopic });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
