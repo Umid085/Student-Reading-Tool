@@ -29,9 +29,17 @@ export default async function handler(req, res) {
 
   const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
 
-  // health-check
+  // health-check (no key) — also returns runtime env diagnostics (no values, just presence/lengths)
   if (!req.query.key && req.method === "GET") {
-    return res.status(200).json({ status: "ok", db: !!DB });
+    const sec = process.env.FIREBASE_DB_SECRET || "";
+    return res.status(200).json({
+      status: "ok",
+      db: !!DB,
+      urlHost: DB ? (new URL(DB)).host : null,
+      hasSecret: !!sec,
+      secretLen: sec.length,
+      secretHasWhitespace: /\s/.test(sec),
+    });
   }
 
   if (!DB) {
