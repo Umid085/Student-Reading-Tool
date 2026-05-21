@@ -1350,6 +1350,11 @@ export default function App(){
   var [viewedTeacher,setViewedTeacher]=useState(null);
   var [viewedTeacherErr,setViewedTeacherErr]=useState("");
   var [subscribeMsg,setSubscribeMsg]=useState("");
+  // F6c — Teacher directory search state
+  var [teacherSearchQuery,setTeacherSearchQuery]=useState("");
+  var [teacherSearchResults,setTeacherSearchResults]=useState([]);
+  var [teacherSearchLoading,setTeacherSearchLoading]=useState(false);
+  var [teacherSearchTotal,setTeacherSearchTotal]=useState(0);
   // Feature 2 - Placement Test
   var [showPlacement,setShowPlacement]=useState(false);
   var [placementAnswers,setPlacementAnswers]=useState({});
@@ -2659,6 +2664,26 @@ export default function App(){
       try{track("teacher_subscribed",{teacher:teacherName});}catch(e){}
     }catch(e){setSubscribeMsg("✗ "+(e.message||"Couldn't subscribe"));}
   }
+  // Debounced search. Runs on every keystroke after a 250ms pause so we
+  // don't hammer the endpoint character-by-character.
+  var teacherSearchTimerRef=useRef(null);
+  async function runTeacherSearch(q){
+    setTeacherSearchLoading(true);
+    try{
+      var r=await fetch("/api/teacher-search?q="+encodeURIComponent(q||""));
+      if(!r.ok)throw new Error("Search failed");
+      var d=await r.json();
+      setTeacherSearchResults(Array.isArray(d.results)?d.results:[]);
+      setTeacherSearchTotal(d.total||0);
+    }catch(e){setTeacherSearchResults([]);setTeacherSearchTotal(0);}
+    finally{setTeacherSearchLoading(false);}
+  }
+  function onTeacherSearchInput(q){
+    setTeacherSearchQuery(q);
+    if(teacherSearchTimerRef.current)clearTimeout(teacherSearchTimerRef.current);
+    teacherSearchTimerRef.current=setTimeout(function(){runTeacherSearch(q);},250);
+  }
+
   function unsubscribeFromTeacher(teacherName){
     if(!currentUser)return;
     var nSocial=Object.assign({},social);
@@ -4469,6 +4494,63 @@ export default function App(){
           );
         })()}
 
+        {/* ── TEACHER DIRECTORY SEARCH (F6c) ──────────────────── */}
+        {stage==="teacherSearch"&&(function(){
+          return(
+            <div style={{minHeight:"100vh",background:"#0d0d1a",padding:"20px 16px 80px"}}>
+              <div style={{maxWidth:560,margin:"0 auto"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                  <button onClick={function(){setStage("home");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>← Back</button>
+                  <h1 style={{flex:1,margin:0,fontFamily:"'Outfit',sans-serif",fontSize:18,fontWeight:800,color:"#f472b6",textAlign:"center"}}>🔍 Find Teachers</h1>
+                  <div style={{width:60}}/>
+                </div>
+                <input
+                  autoFocus
+                  placeholder="Search by name, subject, or language…"
+                  value={teacherSearchQuery}
+                  onChange={function(e){onTeacherSearchInput(e.target.value);}}
+                  style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 14px",padding:"12px 14px",fontSize:14}}
+                />
+                {teacherSearchLoading&&(
+                  <div style={{textAlign:"center",padding:"24px 0",fontSize:12,color:"#6b7280"}}>Searching…</div>
+                )}
+                {!teacherSearchLoading&&teacherSearchResults.length===0&&(
+                  <div style={{...CARD,textAlign:"center",padding:36,color:"#6b7280"}}>
+                    {teacherSearchQuery?"No teachers match that search yet.":"Type a name, subject (IELTS, TOEFL…) or language (en, ru, uz…) to start."}
+                  </div>
+                )}
+                {!teacherSearchLoading&&teacherSearchResults.length>0&&(
+                  <>
+                    <p style={{fontSize:11,color:"#6b7280",margin:"0 0 10px",letterSpacing:"0.08em"}}>{teacherSearchTotal} {teacherSearchTotal===1?"TEACHER":"TEACHERS"}{teacherSearchTotal>teacherSearchResults.length?" · showing top "+teacherSearchResults.length:""}</p>
+                    {teacherSearchResults.map(function(t){
+                      var initial=(t.displayName||t.name||"?")[0].toUpperCase();
+                      return(
+                        <button key={t.name} onClick={function(){loadPublicTeacherProfile(t.name);setStage("teacherProfile");}} style={{display:"flex",alignItems:"flex-start",gap:12,width:"100%",padding:"14px 16px",margin:"0 0 10px",background:"rgba(30,30,44,0.55)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:16,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all 0.15s"}}
+                          onMouseEnter={function(e){e.currentTarget.style.borderColor="rgba(244,114,182,0.4)";e.currentTarget.style.background="rgba(244,114,182,0.06)";}}
+                          onMouseLeave={function(e){e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";e.currentTarget.style.background="rgba(30,30,44,0.55)";}}>
+                          <div style={{flexShrink:0,width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#f472b6,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"#0d0d1a"}}>{initial}</div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontFamily:"'Outfit',sans-serif",fontSize:14,fontWeight:800,color:"#e3e0f4",marginBottom:2}}>{t.displayName||t.name}</div>
+                            <div style={{fontSize:11,color:"rgba(227,224,244,0.5)",marginBottom:4}}>@{t.name}</div>
+                            {t.bio&&<div style={{fontSize:12,color:"rgba(227,224,244,0.7)",lineHeight:1.45,marginBottom:6,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{t.bio}</div>}
+                            {(t.subjects.length>0||t.languages.length>0)&&(
+                              <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                                {t.subjects.slice(0,3).map(function(s){return<span key={"s-"+s} style={{background:"rgba(244,114,182,0.12)",color:"#f472b6",borderRadius:999,padding:"2px 8px",fontSize:10,fontWeight:600}}>{s}</span>;})}
+                                {t.languages.slice(0,3).map(function(l){return<span key={"l-"+l} style={{background:"rgba(167,139,250,0.12)",color:"#a78bfa",borderRadius:999,padding:"2px 8px",fontSize:10,fontWeight:600}}>🌐 {l}</span>;})}
+                              </div>
+                            )}
+                          </div>
+                          <div style={{flexShrink:0,fontSize:18,color:"#f472b6"}}>›</div>
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── PUBLIC TEACHER PROFILE (F6b) ────────────────────── */}
         {stage==="teacherProfile"&&(function(){
           var p=viewedTeacher;
@@ -5183,6 +5265,7 @@ export default function App(){
                 </div>
                 <div className="lq-nav-grid">
                   <button type="button" onClick={function(){setStage("friends");}} className="lq-ghost-btn">{t("friends")}</button>
+                  <button type="button" onClick={function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}} className="lq-ghost-btn">🔍 Find Teachers</button>
                   <button type="button" onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} className="lq-ghost-btn">{t("vocab")}</button>
                   <button type="button" onClick={function(){setHistoryLevel("");setStage("history");}} className="lq-ghost-btn">{t("history")}</button>
                   <button type="button" onClick={function(){setStage("goals");}} className="lq-ghost-btn">{t("goals")}</button>
