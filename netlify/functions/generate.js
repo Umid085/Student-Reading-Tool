@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { consumeUserQuota } from "./_userQuota.js";
 import { extractUsername } from "./_session.js";
+import { getRandomFromPool, addToPool } from "./_sliderPool.js";
 
 const AI_LOW_TIER = new Set(["A1", "A2", "B1"]);
 const AI_QUOTA_LOW = 10;
@@ -141,6 +142,16 @@ export const handler = async function (event) {
         body: JSON.stringify({ error: `Daily slider limit reached (${sQuota.used}/${sQuota.max}). Resets at UTC midnight.` }),
       };
     }
+
+    const seenIds = Array.isArray(body.seen_ids) ? body.seen_ids.filter((s) => typeof s === "string").slice(0, 200) : [];
+    const wantsCustomTopic = typeof body.topic === "string" && body.topic.trim().length > 0;
+    if (!wantsCustomTopic) {
+      const pooled = await getRandomFromPool(sDB, sLevel, seenIds);
+      if (pooled && pooled.passage && pooled.question) {
+        return { statusCode: 200, headers: CORS, body: JSON.stringify({ passage: pooled.passage, question: pooled.question, topic: pooled.topic || "", id: pooled.id, source: "pool" }) };
+      }
+    }
+
     const rawTopic = (typeof body.topic === "string" && body.topic.trim())
       ? body.topic.trim().replace(/[\r\n"]+/g, " ").slice(0, 80)
       : MICRO_THEMES[Math.floor(Math.random() * MICRO_THEMES.length)];
@@ -176,7 +187,11 @@ Reply with ONLY a JSON object, no prose around it:
           typeof parsed.question.answer !== "number") {
         return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Invalid micro response shape" }) };
       }
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ passage: parsed.passage, question: parsed.question, topic: rawTopic }) };
+      let poolId = null;
+      if (!wantsCustomTopic) {
+        poolId = await addToPool(sDB, sLevel, { passage: parsed.passage, question: parsed.question, topic: rawTopic });
+      }
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ passage: parsed.passage, question: parsed.question, topic: rawTopic, id: poolId, source: "claude" }) };
     } catch (e) {
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
     }

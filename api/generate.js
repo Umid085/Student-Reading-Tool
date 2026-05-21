@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit } from "./_rateLimit.js";
 import { consumeUserQuota } from "./_userQuota.js";
 import { extractUsername } from "./_session.js";
+import { getRandomFromPool, addToPool } from "./_sliderPool.js";
 
 const AI_LOW_TIER = new Set(["A1", "A2", "B1"]);
 const AI_QUOTA_LOW = 10; // per authenticated user per day at A1-B1
@@ -158,6 +159,21 @@ export default async function handler(req, res) {
       res.setHeader("Retry-After", String(Math.max(1, Math.ceil((sQuota.resetAt - Date.now()) / 1000))));
       return res.status(429).json({ error: `Daily slider limit reached (${sQuota.used}/${sQuota.max}). Resets at UTC midnight.` });
     }
+
+    // Shared pool first: if other users at this level have already paid
+    // for cards we can reuse, serve one and skip the Claude call. Client
+    // ships `seen_ids` so we don't show the same card twice in a session.
+    // Only opt into the pool when the request doesn't specify a custom
+    // topic — pooled cards are theme-driven and wouldn't match a custom topic.
+    const seenIds = Array.isArray(body.seen_ids) ? body.seen_ids.filter((s) => typeof s === "string").slice(0, 200) : [];
+    const wantsCustomTopic = typeof body.topic === "string" && body.topic.trim().length > 0;
+    if (!wantsCustomTopic) {
+      const pooled = await getRandomFromPool(DB, sLevel, seenIds);
+      if (pooled && pooled.passage && pooled.question) {
+        return res.status(200).json({ passage: pooled.passage, question: pooled.question, topic: pooled.topic || "", id: pooled.id, source: "pool" });
+      }
+    }
+
     const rawTopic = (typeof body.topic === "string" && body.topic.trim())
       ? body.topic.trim().replace(/[\r\n"]+/g, " ").slice(0, 80)
       : MICRO_THEMES[Math.floor(Math.random() * MICRO_THEMES.length)];
@@ -193,7 +209,13 @@ Reply with ONLY a JSON object, no prose around it:
           typeof parsed.question.answer !== "number") {
         return res.status(502).json({ error: "Invalid micro response shape" });
       }
-      return res.status(200).json({ passage: parsed.passage, question: parsed.question, topic: rawTopic });
+      // Add to shared pool (fire-and-forget — don't delay the response).
+      // Only pool-eligible if no custom topic — pooled cards are theme cards.
+      let poolId = null;
+      if (!wantsCustomTopic) {
+        poolId = await addToPool(DB, sLevel, { passage: parsed.passage, question: parsed.question, topic: rawTopic });
+      }
+      return res.status(200).json({ passage: parsed.passage, question: parsed.question, topic: rawTopic, id: poolId, source: "claude" });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }

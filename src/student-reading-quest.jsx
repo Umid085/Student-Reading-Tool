@@ -2510,10 +2510,16 @@ export default function App(){
   // session ends gracefully. Used both for the initial pre-fetch on
   // entry and for the on-demand top-up as the user swipes through.
   async function fetchSliderCard(sliderLevel){
+    // Pass any pool ids we've already seen this session so the server's
+    // shared pool (F3c) doesn't serve us a repeat. We read sliderCards
+    // via a ref-style snapshot to avoid stale closures inside the
+    // parallel Promise.allSettled at session start.
+    var seen=[];
+    try{seen=(sliderCards||[]).map(function(c){return c&&c.id;}).filter(Boolean);}catch(e){}
     var r=await fetch("/api/generate",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":_sessionToken?("Bearer "+_sessionToken):""},
-      body:JSON.stringify({mode:"micro",level:sliderLevel||level||"B1"}),
+      body:JSON.stringify({mode:"micro",level:sliderLevel||level||"B1",seen_ids:seen}),
     });
     if(r.status===429){setSliderCapHit(true);throw new Error("CAP_HIT");}
     if(!r.ok){throw new Error("Failed to load card");}
