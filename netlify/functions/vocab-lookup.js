@@ -3,8 +3,11 @@
 // B1+   → dictionaryapi.dev for phonetic/audio/def, Claude for situational example.
 // Shared cache at rq/rq-vocab-cache-v1/<key>.json in Firebase RTDB.
 import Anthropic from "@anthropic-ai/sdk";
+import { consumeUserQuota } from "./_userQuota.js";
+import { extractUsername } from "./_session.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const VOCAB_QUOTA = 80;
 
 const LOW_TIER = new Set(["A1", "A2"]);
 const SUPPORTED_LANGS = new Set(["uz", "ru", "tr", "ar", "de", "es", "fr"]);
@@ -132,6 +135,18 @@ export const handler = async function (event) {
     const cached = await cacheGet(cacheKey);
     if (cached) {
       return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...cached, source: "cache" }) };
+    }
+
+    // Cache miss → consume quota before any Claude call.
+    const vocabDB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+    const vocabUsername = extractUsername(event);
+    const vocabQuota = await consumeUserQuota(vocabDB, vocabUsername, "vocab", { max: VOCAB_QUOTA });
+    if (vocabQuota.exceeded) {
+      return {
+        statusCode: 429,
+        headers: { "Retry-After": String(Math.max(1, Math.ceil((vocabQuota.resetAt - Date.now()) / 1000))) },
+        body: JSON.stringify({ error: `Daily vocab lookup limit reached (${vocabQuota.used}/${vocabQuota.max}). Resets at UTC midnight.` }),
+      };
     }
 
     if (useTranslate) {

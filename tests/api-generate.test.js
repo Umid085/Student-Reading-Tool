@@ -226,4 +226,52 @@ describe("api/generate.js", () => {
     });
     expect(r.statusCode).toBe(422);
   });
+
+  // Per-user daily quota integration. Authenticated user with used >= max
+  // must get 429 — proves the consumeUserQuota wiring in generate.js works.
+  it("Mode 2: returns 429 when the authed user's daily 'ai' quota is exceeded", async () => {
+    const { createHmac } = await import("crypto");
+    // Drop RATE_LIMIT_DISABLED so _userQuota actually runs.
+    delete process.env.RATE_LIMIT_DISABLED;
+    process.env.SESSION_SECRET = "test-secret";
+    process.env.FIREBASE_DB_URL = "https://test-db.firebaseio.com";
+    const expires = Date.now() + 60_000;
+    const payload = `alice:${expires}`;
+    const sig = createHmac("sha256", "test-secret").update(payload).digest("hex");
+    const realFetch = global.fetch;
+    // _rateLimit short-circuits without a fetch when ip is empty (no
+    // x-forwarded-for header in the test). The only fetch is the quota
+    // GET, which we mock to return n=10 — the A1-B1 cap is 10 → blocked.
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ n: 10, ts: Date.now() }) });
+    try {
+      const handler = await loadHandler();
+      const r = await runHandler(handler, {
+        method: "POST",
+        headers: { authorization: `Bearer ${payload}:${sig}` },
+        body: { level: "B1", topic: "Mars", types: ["mcq"], language: "English" },
+      });
+      expect(r.statusCode).toBe(429);
+      expect(JSON.parse(r.body).error).toMatch(/Daily quest limit/);
+      // Claude must NOT have been called when quota is exceeded.
+      expect(mockCreate).not.toHaveBeenCalled();
+    } finally {
+      global.fetch = realFetch;
+      delete process.env.SESSION_SECRET;
+    }
+  });
+
+  // Anonymous (no Bearer) callers must NOT be blocked by the user quota —
+  // they're throttled only by the IP rate-limit. Demo users still work.
+  it("Mode 2: anonymous callers bypass user quota (still subject to IP rate limit)", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({ topic_echo: "cats", passage: "Cats are small animals. Cats have four legs. Cats are pets.", questions: [{ type: "mcq", q: "?" }] }) }],
+    });
+    const handler = await loadHandler();
+    const r = await runHandler(handler, {
+      method: "POST",
+      body: { level: "A1", topic: "cats", types: ["mcq"], language: "English" },
+    });
+    expect(r.statusCode).toBe(200);
+  });
 });

@@ -3,6 +3,10 @@
 // (student). Question count scales by CEFR level to match /api/generate.
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit } from "./_rateLimit.js";
+import { consumeUserQuota } from "./_userQuota.js";
+import { extractUsername } from "./_session.js";
+
+const QUIZ_FROM_TEXT_QUOTA = 15; // per authenticated user per day
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -37,6 +41,15 @@ export default async function handler(req, res) {
   if (rl.limited) {
     res.setHeader("Retry-After", String(rl.retryAfter));
     return res.status(429).json({ error: "Too many AI requests. Try again later." });
+  }
+
+  // Per-user daily quota (separate "quiz_from_text" bucket — cheaper than
+  // full passage generation since the passage is already provided).
+  const qftUsername = extractUsername(req);
+  const qftQuota = await consumeUserQuota(DB, qftUsername, "quiz_from_text", { max: QUIZ_FROM_TEXT_QUOTA });
+  if (qftQuota.exceeded) {
+    res.setHeader("Retry-After", String(Math.max(1, Math.ceil((qftQuota.resetAt - Date.now()) / 1000))));
+    return res.status(429).json({ error: `Daily quiz limit reached (${qftQuota.used}/${qftQuota.max}). Resets at UTC midnight.` });
   }
 
   const { passage, level = "B1", types = ["mcq", "tfnm", "qa"] } = req.body || {};

@@ -1,5 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit } from "./_rateLimit.js";
+import { consumeUserQuota } from "./_userQuota.js";
+import { extractUsername } from "./_session.js";
+
+const AI_LOW_TIER = new Set(["A1", "A2", "B1"]);
+const AI_QUOTA_LOW = 10; // per authenticated user per day at A1-B1
+const AI_QUOTA_HIGH = 6; // per authenticated user per day at B2-C2
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -113,6 +119,16 @@ export default async function handler(req, res) {
 
   // ── Mode 2: AI assignment generation — {level, topic, types, language} → {passage, questions} ──
   const level = body.level || "B1";
+  // Per-user daily quota (stacks on top of IP rate-limit). Anonymous /
+  // demo callers are exempt — they still have the IP cap above. Authed
+  // users get a level-tiered cap because C2 passages cost ~4× A1.
+  const aiQuotaMax = AI_LOW_TIER.has(level) ? AI_QUOTA_LOW : AI_QUOTA_HIGH;
+  const aiUsername = extractUsername(req);
+  const aiQuota = await consumeUserQuota(DB, aiUsername, "ai", { max: aiQuotaMax });
+  if (aiQuota.exceeded) {
+    res.setHeader("Retry-After", String(Math.max(1, Math.ceil((aiQuota.resetAt - Date.now()) / 1000))));
+    return res.status(429).json({ error: `Daily quest limit reached (${aiQuota.used}/${aiQuota.max}). Resets at UTC midnight — try a library story or come back tomorrow.` });
+  }
   const topic = body.topic || "General";
   const types = Array.isArray(body.types) ? body.types : ["mcq", "qa"];
   const language = body.language || "English";

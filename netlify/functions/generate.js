@@ -1,4 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { consumeUserQuota } from "./_userQuota.js";
+import { extractUsername } from "./_session.js";
+
+const AI_LOW_TIER = new Set(["A1", "A2", "B1"]);
+const AI_QUOTA_LOW = 10;
+const AI_QUOTA_HIGH = 6;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -104,6 +110,18 @@ export const handler = async function (event) {
 
   // ── Mode 2: AI assignment generation — {level, topic, types, language} → {passage, questions} ──
   const level = body.level || "B1";
+  // Per-user daily quota. Anonymous callers are exempt.
+  const aiQuotaMax = AI_LOW_TIER.has(level) ? AI_QUOTA_LOW : AI_QUOTA_HIGH;
+  const aiUsername = extractUsername(event);
+  const aiDB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+  const aiQuota = await consumeUserQuota(aiDB, aiUsername, "ai", { max: aiQuotaMax });
+  if (aiQuota.exceeded) {
+    return {
+      statusCode: 429,
+      headers: { ...CORS, "Retry-After": String(Math.max(1, Math.ceil((aiQuota.resetAt - Date.now()) / 1000))) },
+      body: JSON.stringify({ error: `Daily quest limit reached (${aiQuota.used}/${aiQuota.max}). Resets at UTC midnight — try a library story or come back tomorrow.` }),
+    };
+  }
   const topic = body.topic || "General";
   const types = Array.isArray(body.types) ? body.types : ["mcq", "qa"];
   const language = body.language || "English";

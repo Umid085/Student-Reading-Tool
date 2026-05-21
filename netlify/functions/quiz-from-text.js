@@ -2,8 +2,11 @@
 // custom-text assignment flow (teacher) and the library AI-quiz upgrade
 // (student). Question count scales by CEFR level to match generate.js.
 import Anthropic from "@anthropic-ai/sdk";
+import { consumeUserQuota } from "./_userQuota.js";
+import { extractUsername } from "./_session.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const QUIZ_FROM_TEXT_QUOTA = 15;
 
 // Must match LEVEL_CONFIG in generate.js — stronger learners get longer
 // quizzes for the same passage.
@@ -39,6 +42,18 @@ export const handler = async function (event) {
   }
   if (passage.length > 4000) {
     return { statusCode: 400, body: JSON.stringify({ error: "Passage too long (max 4000 characters)." }) };
+  }
+
+  // Per-user daily quota.
+  const qftDB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+  const qftUsername = extractUsername(event);
+  const qftQuota = await consumeUserQuota(qftDB, qftUsername, "quiz_from_text", { max: QUIZ_FROM_TEXT_QUOTA });
+  if (qftQuota.exceeded) {
+    return {
+      statusCode: 429,
+      headers: { "Retry-After": String(Math.max(1, Math.ceil((qftQuota.resetAt - Date.now()) / 1000))) },
+      body: JSON.stringify({ error: `Daily quiz limit reached (${qftQuota.used}/${qftQuota.max}). Resets at UTC midnight.` }),
+    };
   }
 
   const baseTypes = (Array.isArray(types) ? types : []).filter((t) => SUPPORTED_TYPES.has(t));

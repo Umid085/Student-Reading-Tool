@@ -1,8 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit } from "./_rateLimit.js";
+import { consumeUserQuota } from "./_userQuota.js";
+import { extractUsername } from "./_session.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const RATE_LIMIT_MAX = 200; // per IP per 15-min window — vocab lookups are frequent
+const VOCAB_QUOTA = 80; // per authenticated user per day
 
 const LOW_TIER = new Set(["A1", "A2"]);
 const SUPPORTED_LANGS = new Set(["uz", "ru", "tr", "ar", "de", "es", "fr"]);
@@ -122,6 +125,10 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: "ANTHROPIC_API_KEY not set" });
   }
 
+  // Per-user daily quota. Cache hits don't count — we'll check after the
+  // cache lookup, since the cap is meant to throttle Claude calls, not
+  // word-card opens.
+
   const { word: rawWord, lang: rawLang, level: rawLevel } = req.body || {};
   const word = normalizeWord(rawWord);
   const lang = typeof rawLang === "string" ? rawLang.toLowerCase() : "";
@@ -136,6 +143,14 @@ export default async function handler(req, res) {
     const cached = await cacheGet(cacheKey);
     if (cached) {
       return res.status(200).json({ ...cached, source: "cache" });
+    }
+
+    // Cache miss → about to spend a Claude call. Consume the user's quota now.
+    const vocabUsername = extractUsername(req);
+    const vocabQuota = await consumeUserQuota(DB, vocabUsername, "vocab", { max: VOCAB_QUOTA });
+    if (vocabQuota.exceeded) {
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil((vocabQuota.resetAt - Date.now()) / 1000))));
+      return res.status(429).json({ error: `Daily vocab lookup limit reached (${vocabQuota.used}/${vocabQuota.max}). Resets at UTC midnight.` });
     }
 
     if (useTranslate) {
