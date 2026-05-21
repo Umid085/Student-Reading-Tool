@@ -4472,12 +4472,13 @@ export default function App(){
           if(pendingReviews.length>0){quickActions.push({key:"review",icon:"🔁",label:t("reviewLabel"),sub:pendingReviews.length+" "+(pendingReviews.length!==1?t("missedQuestions"):t("missedQuestion")),color:"#c084fc",bg:"rgba(168,85,247,0.10)",border:"rgba(168,85,247,0.4)",onClick:function(){setReviewIdx(0);setReviewAns(null);setReviewConfirmed(false);setStage("review");}});}
           if(dueVocab.length>0){quickActions.push({key:"vocab",icon:"📚",label:t("vocabReview"),sub:dueVocab.length+" "+(dueVocab.length!==1?t("wordsLabel"):t("wordLabel")),color:"#22d3ee",bg:"rgba(6,182,212,0.10)",border:"rgba(6,182,212,0.4)",onClick:function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}});}
           if(!playedToday&&quickActions.length<2){quickActions.push({key:"play",icon:"📖",label:t("playToday"),sub:myStreak>0?t("keepStreak").replace("{n}",myStreak):t("startYourStreak"),color:"#a78bfa",bg:"rgba(99,102,241,0.10)",border:"rgba(99,102,241,0.4)",onClick:function(){setStage("library");}});}
-          // Slider mode — short-burst reading for focus-friendly sessions.
-          // Always offered when the slider quota isn't exhausted; sits at the
-          // tail of quickActions so streak/daily/review keep priority.
-          var sliderCapToday=userQuota&&userQuota.slider?(userQuota.slider.used||0)>=(userQuota.slider.max||30):false;
-          if(!sliderCapToday&&quickActions.length<2){quickActions.push({key:"slider",icon:"🪄",label:"Slider Mode",sub:"Bite-sized reads · swipe through",color:"#f472b6",bg:"rgba(236,72,153,0.10)",border:"rgba(236,72,153,0.4)",onClick:startSliderSession});}
           quickActions=quickActions.slice(0,2);
+          // Slider mode is rendered as its own dedicated banner below
+          // (not in quickActions) so it never gets squeezed out by
+          // higher-priority actions like daily/review/vocab.
+          var sliderCapToday=userQuota&&userQuota.slider?(userQuota.slider.used||0)>=(userQuota.slider.max||30):false;
+          var sliderUsedToday=userQuota&&userQuota.slider?(userQuota.slider.used||0):0;
+          var sliderMaxToday=userQuota&&userQuota.slider?(userQuota.slider.max||30):30;
           var initial=(currentUser.name||"?")[0].toUpperCase();
           return(
           <>
@@ -4793,6 +4794,19 @@ export default function App(){
                       </button>
                     );})}
                   </div>
+                )}
+
+                {/* Slider Mode banner — dedicated surface so the new mode is
+                    discoverable regardless of streak/daily/review slot pressure. */}
+                {!sliderCapToday&&(
+                  <button type="button" onClick={startSliderSession} disabled={sliderLoading} style={{display:"flex",alignItems:"center",gap:14,width:"100%",padding:"14px 16px",margin:"10px 0",borderRadius:18,border:"1px solid rgba(236,72,153,0.4)",background:"linear-gradient(135deg,rgba(236,72,153,0.12),rgba(167,139,250,0.08))",color:"#e3e0f4",cursor:sliderLoading?"wait":"pointer",fontFamily:"'Inter',sans-serif",textAlign:"left",transition:"all 0.15s"}}>
+                    <div style={{flexShrink:0,width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#f472b6,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,boxShadow:"0 4px 14px rgba(244,114,182,0.35)"}}>🪄</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"'Outfit',sans-serif",fontSize:14,fontWeight:800,color:"#f472b6",letterSpacing:"0.02em"}}>Slider Mode {sliderUsedToday>0?<span style={{fontSize:11,color:"rgba(244,114,182,0.7)",fontWeight:600,marginLeft:6}}>· {sliderUsedToday}/{sliderMaxToday} today</span>:null}</div>
+                      <div style={{fontSize:12,color:"rgba(227,224,244,0.6)",marginTop:2}}>Bite-sized reads · swipe through · focus-friendly</div>
+                    </div>
+                    <div style={{flexShrink:0,color:"#f472b6",fontSize:20}}>›</div>
+                  </button>
                 )}
 
                 <div className="lq-section-h" id="rq-level-picker">
