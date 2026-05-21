@@ -111,8 +111,12 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  if (!checkRateLimit(req, "vocab-lookup", RATE_LIMIT_MAX)) {
-    return res.status(429).json({ error: "Too many lookups. Slow down." });
+  const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+  const ip = ((req.headers["x-forwarded-for"] || req.headers["client-ip"] || "").split(",")[0]).trim();
+  const rl = await checkRateLimit(DB, ip, { max: RATE_LIMIT_MAX, bucket: "vocab" });
+  if (rl.limited) {
+    res.setHeader("Retry-After", String(rl.retryAfter));
+    return res.status(429).json({ error: "Too many vocab lookups. Slow down." });
   }
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(503).json({ error: "ANTHROPIC_API_KEY not set" });
