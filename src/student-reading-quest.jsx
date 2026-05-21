@@ -1340,6 +1340,16 @@ export default function App(){
   var [sliderCapHit,setSliderCapHit]=useState(false);
   var [sliderError,setSliderError]=useState("");
   var sliderStartRef=useRef({});
+  // F6 — Teacher public profile state. `teacherBio` is the form-bound
+  // editor on the teacher dashboard; `viewedTeacher` holds the
+  // currently-rendered public profile (loaded on ?teacher=X URL or
+  // from a search-result click).
+  var [teacherBio,setTeacherBio]=useState({bio:"",displayName:"",languages:[],subjects:[],public:false});
+  var [teacherBioSaving,setTeacherBioSaving]=useState(false);
+  var [teacherBioMsg,setTeacherBioMsg]=useState("");
+  var [viewedTeacher,setViewedTeacher]=useState(null);
+  var [viewedTeacherErr,setViewedTeacherErr]=useState("");
+  var [subscribeMsg,setSubscribeMsg]=useState("");
   // Feature 2 - Placement Test
   var [showPlacement,setShowPlacement]=useState(false);
   var [placementAnswers,setPlacementAnswers]=useState({});
@@ -1467,7 +1477,7 @@ export default function App(){
   },[currentUser,pendingReportData]);
 
   useEffect(function(){
-    try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){try{var rd=JSON.parse(b64dec(rep));setPendingReportData(rd);}catch(e){}/* don't short-circuit auth — gate the report behind a logged-in name match below */}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
+    try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){try{var rd=JSON.parse(b64dec(rep));setPendingReportData(rd);}catch(e){}/* don't short-circuit auth — gate the report behind a logged-in name match below */}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}var tch=params.get("teacher");if(tch){loadPublicTeacherProfile(tch);setStage("teacherProfile");setAppReady(true);return;}}catch(e){}
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
@@ -1536,6 +1546,12 @@ export default function App(){
     if(!currentUser)return;
     var today=todayKey();
     loadUserQuota().then(function(q){setUserQuota(q);});
+    // F6: pre-load the user's own teacher bio if they're a teacher.
+    // Lets the dashboard editor populate on first render. Safe to fire
+    // for students too — the GET returns 404 for non-public bios.
+    if(localStorage.getItem("rq-role-"+currentUser.name)==="teacher"){
+      setTimeout(loadOwnTeacherBio,0);
+    }
     loadVocab().then(function(v){setAllVocab(v||{});setVocab(asArray(v&&v[currentUser.name]));});
     loadDaily().then(function(d){if(d&&d.date===today)setDailyChallenge(d);});
     var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
@@ -2568,6 +2584,92 @@ export default function App(){
     // Top up the deck in the background and pre-time the next card.
     ensureSliderAhead(cardIdx);
     sliderStartRef.current[cardIdx+1]=Date.now();
+  }
+
+  // ── F6 Teacher Portfolio ──────────────────────────────────────────
+  // Load the authenticated teacher's existing bio so the editor can
+  // pre-populate. Falls back to defaults silently — the API returns 404
+  // when private, which we treat as "no bio yet".
+  async function loadOwnTeacherBio(){
+    if(!currentUser||!_sessionToken)return;
+    try{
+      var r=await fetch("/api/teacher-bio?name="+encodeURIComponent(currentUser.name));
+      if(r.ok){
+        var d=await r.json();
+        setTeacherBio({
+          bio:d.bio||"",
+          displayName:d.displayName||currentUser.name,
+          languages:Array.isArray(d.languages)?d.languages:[],
+          subjects:Array.isArray(d.subjects)?d.subjects:[],
+          public:true, // GET only succeeds when public
+        });
+      }
+    }catch(e){}
+  }
+  async function saveTeacherBio(){
+    if(!currentUser||!_sessionToken)return;
+    setTeacherBioSaving(true);setTeacherBioMsg("");
+    try{
+      var r=await fetch("/api/teacher-bio",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+_sessionToken},
+        body:JSON.stringify({
+          bio:teacherBio.bio,
+          displayName:teacherBio.displayName,
+          languages:teacherBio.languages,
+          subjects:teacherBio.subjects,
+          public:!!teacherBio.public,
+        }),
+      });
+      var d=await r.json();
+      if(!r.ok)throw new Error(d.error||"Save failed");
+      setTeacherBioMsg(teacherBio.public?"✓ Saved — your profile is public":"✓ Saved (private)");
+      try{track("teacher_bio_saved",{public:!!teacherBio.public,languages:teacherBio.languages.length,subjects:teacherBio.subjects.length});}catch(e){}
+    }catch(e){
+      setTeacherBioMsg("✗ "+(e.message||"Save failed"));
+    }finally{setTeacherBioSaving(false);}
+  }
+  // Public profile loader — runs on entry to teacherProfile stage or
+  // when the URL has ?teacher=X on app boot.
+  async function loadPublicTeacherProfile(name){
+    setViewedTeacher(null);setViewedTeacherErr("");
+    try{
+      var r=await fetch("/api/teacher-bio?name="+encodeURIComponent(name));
+      if(r.status===404){setViewedTeacherErr("This teacher's profile is private or doesn't exist.");return;}
+      if(!r.ok)throw new Error("Couldn't load profile");
+      var d=await r.json();
+      setViewedTeacher(d);
+    }catch(e){setViewedTeacherErr(e.message||"Couldn't load profile");}
+  }
+  async function subscribeToTeacher(teacherName){
+    if(!currentUser){setSubscribeMsg("Log in to subscribe");return;}
+    if(teacherName===currentUser.name){setSubscribeMsg("You can't subscribe to yourself");return;}
+    setSubscribeMsg("");
+    try{
+      var nSocial=Object.assign({},social);
+      var entry=Object.assign({},nSocial[currentUser.name]||{friends:[],requests:[],likes:[],challenges:[]});
+      entry.subscribed=Array.from(new Set((entry.subscribed||[]).concat([teacherName])));
+      nSocial[currentUser.name]=entry;
+      // Also reverse-index the subscriber under the teacher
+      var tEntry=Object.assign({},nSocial[teacherName]||{});
+      tEntry.subscribers=Array.from(new Set((tEntry.subscribers||[]).concat([currentUser.name])));
+      nSocial[teacherName]=tEntry;
+      setSocial(nSocial);await saveSocial(nSocial);
+      setSubscribeMsg("✓ Subscribed");
+      try{track("teacher_subscribed",{teacher:teacherName});}catch(e){}
+    }catch(e){setSubscribeMsg("✗ "+(e.message||"Couldn't subscribe"));}
+  }
+  function unsubscribeFromTeacher(teacherName){
+    if(!currentUser)return;
+    var nSocial=Object.assign({},social);
+    var entry=Object.assign({},nSocial[currentUser.name]||{});
+    entry.subscribed=(entry.subscribed||[]).filter(function(n){return n!==teacherName;});
+    nSocial[currentUser.name]=entry;
+    var tEntry=Object.assign({},nSocial[teacherName]||{});
+    tEntry.subscribers=(tEntry.subscribers||[]).filter(function(n){return n!==currentUser.name;});
+    nSocial[teacherName]=tEntry;
+    setSocial(nSocial);saveSocial(nSocial);
+    setSubscribeMsg("Unsubscribed");
   }
 
   function startDailyChallenge(){
@@ -3658,6 +3760,53 @@ export default function App(){
                 </div>
               </div>
 
+              {/* ── Public Profile (F6b) ───────────────────────────── */}
+              {myClasses.length>0&&(
+                <div style={{...CARD,marginBottom:14,borderColor:teacherBio.public?"rgba(244,114,182,0.4)":"rgba(255,255,255,0.08)",background:teacherBio.public?"linear-gradient(135deg,rgba(244,114,182,0.06),rgba(167,139,250,0.04))":"rgba(30,30,44,0.5)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <p style={{fontSize:11,fontWeight:700,color:teacherBio.public?"#f472b6":"#9ca3af",letterSpacing:0.6,margin:0}}>👤 PUBLIC PROFILE {teacherBio.public?"· LIVE":""}</p>
+                    {teacherBio.public&&(
+                      <button onClick={function(){window.open(window.location.origin+window.location.pathname+"?teacher="+encodeURIComponent(currentUser.name),"_blank");}} style={{...GHOST,fontSize:11,padding:"4px 10px"}}>View →</button>
+                    )}
+                  </div>
+                  <input
+                    placeholder="Display name (e.g. Ms. Alice)"
+                    value={teacherBio.displayName}
+                    maxLength={60}
+                    onChange={function(e){setTeacherBio(function(b){return Object.assign({},b,{displayName:e.target.value});});}}
+                    style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 8px"}}
+                  />
+                  <textarea
+                    placeholder="Short bio — qualifications, teaching style, what students can expect (max 500 chars)"
+                    value={teacherBio.bio}
+                    maxLength={500}
+                    onChange={function(e){setTeacherBio(function(b){return Object.assign({},b,{bio:e.target.value});});}}
+                    rows={3}
+                    style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 8px",resize:"vertical",fontFamily:"inherit"}}
+                  />
+                  <input
+                    placeholder="Languages you teach in, comma-separated (e.g. en, ru, uz)"
+                    value={teacherBio.languages.join(", ")}
+                    onChange={function(e){var arr=e.target.value.split(",").map(function(s){return s.trim();}).filter(Boolean).slice(0,5);setTeacherBio(function(b){return Object.assign({},b,{languages:arr});});}}
+                    style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 8px"}}
+                  />
+                  <input
+                    placeholder="Subjects you teach, comma-separated (e.g. IELTS, Conversational, Business English)"
+                    value={teacherBio.subjects.join(", ")}
+                    onChange={function(e){var arr=e.target.value.split(",").map(function(s){return s.trim();}).filter(Boolean).slice(0,5);setTeacherBio(function(b){return Object.assign({},b,{subjects:arr});});}}
+                    style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 10px"}}
+                  />
+                  <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#d1d5db",cursor:"pointer",marginBottom:10}}>
+                    <input type="checkbox" checked={!!teacherBio.public} onChange={function(e){setTeacherBio(function(b){return Object.assign({},b,{public:e.target.checked});});}}/>
+                    Make my profile public — students can find and subscribe to me
+                  </label>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <button onClick={saveTeacherBio} disabled={teacherBioSaving} style={{...mkBtn("#f472b6"),padding:"9px 16px",fontSize:13,fontWeight:800}}>{teacherBioSaving?"Saving…":"Save Profile"}</button>
+                    {teacherBioMsg&&<span style={{fontSize:11,color:teacherBioMsg.indexOf("✓")===0?"#5af0b3":"#f87171"}}>{teacherBioMsg}</span>}
+                  </div>
+                </div>
+              )}
+
               {myClasses.length===0?(
                 <div style={{textAlign:"center",padding:"40px 0",color:"#4b5563"}}>
                   <div style={{fontSize:48,marginBottom:12}}>🏫</div>
@@ -4313,6 +4462,64 @@ export default function App(){
                       <button onClick={function(){try{navigator.clipboard.writeText(portfolioLink);}catch(e){}setPortfolioLinkCopied(true);setTimeout(function(){setPortfolioLinkCopied(false);},2000);}} style={{...mkBtn(portfolioLinkCopied?"#34d399":"#6366f1"),padding:"7px 12px",fontSize:12,flexShrink:0}}>{portfolioLinkCopied?"✓":"Copy"}</button>
                     </div>
                     <p style={{fontSize:10,color:"#6b7280",marginTop:6}}>Anyone with this link can view your portfolio — no login needed.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── PUBLIC TEACHER PROFILE (F6b) ────────────────────── */}
+        {stage==="teacherProfile"&&(function(){
+          var p=viewedTeacher;
+          var isSubscribed=p&&currentUser&&social[currentUser.name]&&(social[currentUser.name].subscribed||[]).indexOf(p.name)!==-1;
+          var isOwnProfile=p&&currentUser&&p.name===currentUser.name;
+          return(
+            <div style={{minHeight:"100vh",background:"#0d0d1a",padding:"24px 18px 64px",fontFamily:"'Inter',sans-serif"}}>
+              <div style={{maxWidth:540,margin:"0 auto"}}>
+                <button onClick={function(){setViewedTeacher(null);setViewedTeacherErr("");setStage(currentUser?"home":"auth");}} style={{...GHOST,fontSize:12,marginBottom:14}}>← Back</button>
+                {viewedTeacherErr&&(
+                  <div style={{...CARD,textAlign:"center",padding:32}}>
+                    <div style={{fontSize:48,marginBottom:10}}>🔒</div>
+                    <p style={{color:"#9ca3af",fontSize:13,margin:0}}>{viewedTeacherErr}</p>
+                  </div>
+                )}
+                {!viewedTeacherErr&&!p&&(
+                  <div style={{...CARD,textAlign:"center",padding:32,color:"#6b7280"}}>Loading profile…</div>
+                )}
+                {p&&(
+                  <div>
+                    <div style={{...CARD,padding:24,borderColor:"rgba(244,114,182,0.35)",background:"linear-gradient(135deg,rgba(244,114,182,0.08),rgba(167,139,250,0.05))",marginBottom:14}}>
+                      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+                        <div style={{width:64,height:64,borderRadius:18,background:"linear-gradient(135deg,#f472b6,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#0d0d1a",boxShadow:"0 6px 20px rgba(244,114,182,0.35)"}}>{(p.displayName||p.name||"?")[0].toUpperCase()}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <h1 style={{margin:0,fontFamily:"'Outfit',sans-serif",fontSize:22,fontWeight:800,color:"#e3e0f4"}}>{p.displayName||p.name}</h1>
+                          <p style={{margin:"3px 0 0",fontSize:12,color:"rgba(227,224,244,0.55)"}}>@{p.name}</p>
+                        </div>
+                      </div>
+                      {p.bio&&<p style={{fontSize:14,lineHeight:1.55,color:"rgba(227,224,244,0.85)",margin:"0 0 14px"}}>{p.bio}</p>}
+                      <div style={{display:"flex",gap:16,flexWrap:"wrap",margin:"0 0 14px"}}>
+                        <div><div style={{fontSize:20,fontWeight:800,color:"#f472b6",fontFamily:"'Outfit',sans-serif"}}>{p.classCount||0}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>Classes</div></div>
+                        <div><div style={{fontSize:20,fontWeight:800,color:"#a78bfa",fontFamily:"'Outfit',sans-serif"}}>{p.studentCount||0}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>Students</div></div>
+                        {social[p.name]&&social[p.name].subscribers&&<div><div style={{fontSize:20,fontWeight:800,color:"#5af0b3",fontFamily:"'Outfit',sans-serif"}}>{(social[p.name].subscribers||[]).length}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>Subscribers</div></div>}
+                      </div>
+                      {(p.languages.length>0||p.subjects.length>0)&&(
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+                          {p.subjects.map(function(s){return<span key={"sub-"+s} style={{background:"rgba(244,114,182,0.15)",color:"#f472b6",border:"1px solid rgba(244,114,182,0.3)",borderRadius:999,padding:"3px 10px",fontSize:11,fontWeight:600}}>{s}</span>;})}
+                          {p.languages.map(function(l){return<span key={"lang-"+l} style={{background:"rgba(167,139,250,0.15)",color:"#a78bfa",border:"1px solid rgba(167,139,250,0.3)",borderRadius:999,padding:"3px 10px",fontSize:11,fontWeight:600}}>🌐 {l}</span>;})}
+                        </div>
+                      )}
+                      {!isOwnProfile&&currentUser&&(
+                        <button onClick={function(){isSubscribed?unsubscribeFromTeacher(p.name):subscribeToTeacher(p.name);}} style={{...mkBtn(isSubscribed?"#6b7280":"#f472b6"),width:"100%",padding:"11px 16px",fontSize:13,fontWeight:800,letterSpacing:"0.04em"}}>{isSubscribed?"✓ Subscribed — Unfollow":"⭐ Subscribe"}</button>
+                      )}
+                      {!currentUser&&(
+                        <button onClick={function(){setStage("auth");}} style={{...mkBtn("#f472b6"),width:"100%",padding:"11px 16px",fontSize:13,fontWeight:800}}>Log in to subscribe</button>
+                      )}
+                      {isOwnProfile&&(
+                        <p style={{fontSize:11,color:"rgba(227,224,244,0.5)",margin:"6px 0 0",textAlign:"center"}}>This is your own public profile.</p>
+                      )}
+                      {subscribeMsg&&<p style={{fontSize:11,color:subscribeMsg.indexOf("✓")===0?"#5af0b3":"#f87171",margin:"6px 0 0",textAlign:"center"}}>{subscribeMsg}</p>}
+                    </div>
                   </div>
                 )}
               </div>
