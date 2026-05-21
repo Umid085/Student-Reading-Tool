@@ -52,8 +52,11 @@ export const handler = async function (event) {
     const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
 
     // Check for duplicate name in profile list
-    const pr = await fetch(`${DB}/rq/rq-users-v6.json`);
+    const pr = await fetch(`${DB}/rq/rq-users-v6.json${fbAuth}`);
     const profiles = await pr.json();
+    if (profiles && typeof profiles === "object" && !Array.isArray(profiles) && typeof profiles.error === "string") {
+      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: `Firebase: ${profiles.error}` }) };
+    }
     const profileList = Array.isArray(profiles) ? profiles : [];
 
     if (profileList.some(u => u.name.toLowerCase() === name.toLowerCase())) {
@@ -66,11 +69,16 @@ export const handler = async function (event) {
 
     // Write profile (no hash) to rq-users-v6
     const newProfiles = profileList.concat([{ name, games: [], joined }]);
-    await fetch(`${DB}/rq/rq-users-v6.json`, {
+    const wp = await fetch(`${DB}/rq/rq-users-v6.json${fbAuth}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newProfiles),
     });
+    if (!wp.ok) {
+      let errText = "";
+      try { errText = await wp.text(); } catch (_) {}
+      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: `Firebase profile write failed (${wp.status}): ${errText.slice(0, 200)}` }) };
+    }
 
     // Write credentials to rq-auth-v6 (separate, never exposed via storage.js).
     // Store as a scrypt-hashed value so a DB leak doesn't expose passwords

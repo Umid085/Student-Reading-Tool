@@ -75,7 +75,7 @@ describe("storage.js", () => {
   });
 
   it("POST saves data to Firebase and returns ok", async () => {
-    fetch.mockResolvedValue({});
+    fetch.mockResolvedValue({ ok: true });
     const handler = await loadHandler();
     const payload = JSON.stringify([{ name: "Bob" }]);
     const res = await handler(

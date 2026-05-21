@@ -93,10 +93,10 @@ describe("register.js", () => {
   it("registers a new user and returns a valid signed token", async () => {
     // First fetch: read profiles (empty), Second: PUT profiles, Third: read auth list, Fourth: PUT auth list
     fetch
-      .mockResolvedValueOnce({ json: async () => [] })   // GET profiles
-      .mockResolvedValueOnce({})                          // PUT profiles
-      .mockResolvedValueOnce({ json: async () => [] })   // GET auth list
-      .mockResolvedValueOnce({});                         // PUT auth list
+      .mockResolvedValueOnce({ json: async () => [] })       // GET profiles
+      .mockResolvedValueOnce({ ok: true })                    // PUT profiles
+      .mockResolvedValueOnce({ json: async () => [] })       // GET auth list
+      .mockResolvedValueOnce({ ok: true });                   // PUT auth list
 
     const handler = await loadHandler();
     const res = await handler(makeEvent({ body: JSON.stringify({ name: "Alice", hash: "sha256hash" }) }));
@@ -109,9 +109,9 @@ describe("register.js", () => {
   it("appends ?auth= to rq-auth-v6 calls when FIREBASE_DB_SECRET is set", async () => {
     fetch
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({ ok: true });
     const handler = await loadHandler();
     await handler(makeEvent({ body: JSON.stringify({ name: "Bob", hash: "myhash" }) }));
     // 3rd call is GET rq-auth-v6, 4th is PUT rq-auth-v6 — both should have ?auth=
@@ -122,9 +122,9 @@ describe("register.js", () => {
   it("writes profile without hash and credentials to auth list", async () => {
     fetch
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({ ok: true });
 
     const handler = await loadHandler();
     await handler(makeEvent({ body: JSON.stringify({ name: "Bob", hash: "myhash" }) }));

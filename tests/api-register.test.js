@@ -86,9 +86,9 @@ describe("api/register.js", () => {
   it("registers a new user and returns a valid signed token", async () => {
     fetch
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({ ok: true });
 
     const handler = await loadHandler();
     const r = await runHandler(handler, { method: "POST", body: { name: "Alice", hash: "sha256hash" } });
@@ -101,9 +101,9 @@ describe("api/register.js", () => {
   it("writes profile without hash and credentials to auth list", async () => {
     fetch
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ json: async () => [] })
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({ ok: true });
 
     const handler = await loadHandler();
     await runHandler(handler, { method: "POST", body: { name: "Bob", hash: "myhash" } });

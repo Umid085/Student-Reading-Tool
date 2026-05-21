@@ -38,14 +38,20 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: "FIREBASE_DB_URL not set" });
   }
 
+  const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
+
   try {
     if (req.method === "GET") {
       const key = req.query.key;
       if (!key || !ALLOWED_KEYS.test(key) || READ_BLOCKED.has(key)) {
         return res.status(400).json({ error: "Invalid key" });
       }
-      const r = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`);
+      const r = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json${fbAuth}`);
       const data = await r.json();
+      // Firebase returns {error: "..."} on permission denial — surface it rather than caching the error string
+      if (data && typeof data === "object" && !Array.isArray(data) && typeof data.error === "string") {
+        return res.status(502).json({ error: `Firebase: ${data.error}` });
+      }
       return res.status(200).json({ value: data !== null && data !== undefined ? JSON.stringify(data) : null });
     }
 
@@ -70,11 +76,16 @@ export default async function handler(req, res) {
       if (Buffer.byteLength(value, "utf8") > MAX_VALUE_BYTES) {
         return res.status(413).json({ error: "Value too large (max 512 KB)" });
       }
-      await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`, {
+      const wr = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json${fbAuth}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: value,
       });
+      if (!wr.ok) {
+        let errText = "";
+        try { errText = await wr.text(); } catch (_) {}
+        return res.status(502).json({ error: `Firebase write failed (${wr.status}): ${errText.slice(0, 200)}` });
+      }
       return res.status(200).json({ ok: true });
     }
 

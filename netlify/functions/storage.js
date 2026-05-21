@@ -43,14 +43,19 @@ export const handler = async function (event) {
     return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "FIREBASE_DB_URL not set" }) };
   }
 
+  const fbAuth = process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
+
   try {
     if (event.httpMethod === "GET") {
       const key = (event.queryStringParameters || {}).key;
       if (!key || !ALLOWED_KEYS.test(key) || READ_BLOCKED.has(key)) {
         return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid key" }) };
       }
-      const r = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`);
+      const r = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json${fbAuth}`);
       const data = await r.json();
+      if (data && typeof data === "object" && !Array.isArray(data) && typeof data.error === "string") {
+        return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: `Firebase: ${data.error}` }) };
+      }
       return {
         statusCode: 200,
         headers: CORS,
@@ -79,11 +84,16 @@ export const handler = async function (event) {
       if (Buffer.byteLength(value, "utf8") > MAX_VALUE_BYTES) {
         return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: "Value too large (max 512 KB)" }) };
       }
-      await fetch(`${DB}/rq/${encodeURIComponent(key)}.json`, {
+      const wr = await fetch(`${DB}/rq/${encodeURIComponent(key)}.json${fbAuth}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: value,
       });
+      if (!wr.ok) {
+        let errText = "";
+        try { errText = await wr.text(); } catch (_) {}
+        return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: `Firebase write failed (${wr.status}): ${errText.slice(0, 200)}` }) };
+      }
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true }) };
     }
 
