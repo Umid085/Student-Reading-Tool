@@ -34,6 +34,20 @@ var LEVELS = [
   {key:"C2",color:"#ec4899",glow:"rgba(236,72,153,0.25)", mult:4,  timeLimit:210,timeBonus:400,desc:"Mastery"}
 ];
 
+// Demo passage + 5 MCQs for no-signup landing demo. B1 level, ~260 words.
+var DEMO_QUIZ = {
+  title:"Why Do Cats Purr?",
+  level:"B1",
+  passage:"Most people think cats purr only when they are happy, but the truth is more interesting. A cat may purr while it is being stroked on a warm sofa — but it can also purr when it is hurt, frightened or even close to death.\n\nScientists believe purring helps cats heal themselves. The sound has a frequency of about 25 to 150 hertz, and research suggests that these vibrations can speed up the growth of bones and the healing of soft tissue. In other words, when a cat purrs, it may be giving itself a kind of medicine.\n\nKittens start to purr when they are just a few days old. At that age they cannot yet see properly, so the purring helps them stay connected to their mother. The mother cat purrs back, and the gentle vibration tells the kittens where she is and that they are safe. This early conversation might be one of the first sounds a kitten ever learns to make.\n\nAdult cats often purr around the humans they trust. Some scientists have even noticed that certain purrs sound more like a baby's cry — a special kind of purr that cats use when they want food. People find it hard to ignore, which is probably why it works so well.\n\nSo a purr is not just a sign of joy. It is a complicated tool. It comforts kittens, calms anxious cats, helps healing, and even helps cats ask for what they want. The next time your cat purrs, remember: it is saying much more than 'I'm happy.'",
+  questions:[
+    {q:"According to the passage, when do cats purr?", options:["Only when they are happy","Only when they are kittens","In many different situations, including pain","Only when their owner is at home"], answer:2, explain:"Paragraph 1 says cats can purr when happy but also when 'hurt, frightened or even close to death.'"},
+    {q:"What do scientists think the purring vibrations can do?", options:["Make cats sleep longer","Help bones grow and tissue heal","Improve a cat's eyesight","Help cats run faster"], answer:1, explain:"Paragraph 2: vibrations 'can speed up the growth of bones and the healing of soft tissue.'"},
+    {q:"Why is purring important for kittens?", options:["It helps them learn to walk","It keeps them warm in winter","It connects them to their mother before they can see well","It scares away other cats"], answer:2, explain:"Paragraph 3: kittens cannot yet see properly, so purring helps them stay connected to their mother."},
+    {q:"What is special about the 'food-asking' purr?", options:["It is silent","It sounds a bit like a baby's cry","Only adult male cats do it","It lasts for hours"], answer:1, explain:"Paragraph 4: 'certain purrs sound more like a baby's cry — a special kind of purr that cats use when they want food.'"},
+    {q:"What is the main idea of the passage?", options:["Cats purr only because they are happy","Purring is just a random noise","Purring serves many different purposes for cats","People should pet cats more often"], answer:2, explain:"The last paragraph summarises: purring 'comforts kittens, calms anxious cats, helps healing, and even helps cats ask for what they want.'"}
+  ]
+};
+
 var PRESET_THEMES = [
   {id:"indigo", name:"Indigo", emoji:"💜", accent:"#6366f1", secondary:"#34d399"},
   {id:"ocean", name:"Ocean", emoji:"🌊", accent:"#06b6d4", secondary:"#818cf8"},
@@ -1197,7 +1211,7 @@ export default function App(){
   var [reviewAns,setReviewAns]=useState(null);
   var [reviewConfirmed,setReviewConfirmed]=useState(false);
   // ui
-  var [stage,setStage]=useState("auth");
+  var [stage,setStage]=useState("welcome");
   var [loadMsg,setLoadMsg]=useState("");
   var [lbLevel,setLbLevel]=useState("A1");
   var [error,setError]=useState("");
@@ -1424,6 +1438,19 @@ export default function App(){
       setAppReady(true);
     });
   },[]);
+
+  // first-time-user coach: show 3-step modal on home if 0 games and not dismissed
+  useEffect(function(){
+    if(stage!=="home"||!currentUser)return;
+    if((currentUser.games||[]).length>0)return;
+    try{if(localStorage.getItem("rq-coach-done-"+currentUser.name)==="1")return;}catch(e){}
+    if(coachStep===0){setCoachStep(1);try{track("onboarding_shown");}catch(e){}}
+  },[stage,currentUser]);
+  function dismissCoach(){
+    setCoachStep(0);
+    if(currentUser){try{localStorage.setItem("rq-coach-done-"+currentUser.name,"1");}catch(e){}}
+    try{track("onboarding_dismissed",{atStep:coachStep});}catch(e){}
+  }
 
   // reading screen timer + TTS cleanup
   useEffect(function(){
@@ -2269,6 +2296,19 @@ export default function App(){
     }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");track("quiz_failed",{error:String(e&&e.message||e)});}
   }
 
+  // No-signup demo quiz. Standalone flow that doesn't touch user state.
+  var [demoStep,setDemoStep]=useState(0); // 0=passage, 1..5=questions, 6=result
+  var [demoAnswers,setDemoAnswers]=useState([]);
+  // First-time-user onboarding modal. coachStep: 0=hidden, 1/2/3=visible
+  var [coachStep,setCoachStep]=useState(0);
+  // Toast feedback after share-to-clipboard
+  var [shareToast,setShareToast]=useState("");
+  function startDemoQuiz(){
+    try{track("welcome_demo_start");}catch(e){}
+    setDemoStep(0);setDemoAnswers([]);
+    setStage("demo");
+  }
+
   function doRestart(){
     setLevel("");setPassage("");setTopic("");setQuestions([]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
@@ -2595,6 +2635,11 @@ export default function App(){
 
   // ── social share ──────────────────────────────────────────
   function doShare(){
+    var lvKey=result.level||level;
+    var inviteUrl="https://student-reading-tool.vercel.app/welcome";
+    var shareText=(t("shareResultText")||"I just scored {pct}% on a {level} Reading Quest quiz! Try it free:").replace("{pct}",result.pct).replace("{level}",lvKey);
+    var shareBody=shareText+" "+inviteUrl;
+    try{track("share_attempt",{pct:result.pct,level:lvKey,hasNativeShare:!!navigator.share});}catch(e){}
     try{
       var canvas=document.createElement("canvas");
       canvas.width=800;canvas.height=420;
@@ -2603,17 +2648,17 @@ export default function App(){
       var grd=c.createLinearGradient(0,0,800,420);grd.addColorStop(0,"#0d0d1a");grd.addColorStop(1,"#111827");
       c.fillStyle=grd;c.fillRect(0,0,800,420);
       // accent stripe
-      var lv=getLv(result.level||level);
-      c.fillStyle=lv?lv.color:"#34d399";c.fillRect(0,0,6,420);
+      var lv=getLv(lvKey);
+      c.fillStyle=lv?lv.color:"#5af0b3";c.fillRect(0,0,6,420);
       // app name
       c.font="700 15px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.4)";
       c.fillText("READING QUEST",30,40);
       // level badge
-      c.font="900 13px 'Trebuchet MS',sans-serif";c.fillStyle=lv?lv.color:"#34d399";
-      c.fillText((result.level||level)+" QUEST",30,68);
+      c.font="900 13px 'Trebuchet MS',sans-serif";c.fillStyle=lv?lv.color:"#5af0b3";
+      c.fillText(lvKey+" QUEST",30,68);
       // big score
       c.font="900 110px 'Trebuchet MS',sans-serif";
-      c.fillStyle=result.pct>=80?"#22c55e":result.pct>=60?"#f59e0b":"#ef4444";
+      c.fillStyle=result.pct>=80?"#5af0b3":result.pct>=60?"#fbbf24":"#f87171";
       c.fillText(result.pct+"%",30,190);
       // sub stats
       c.font="700 20px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.7)";
@@ -2629,20 +2674,37 @@ export default function App(){
       // user
       if(currentUser){
         c.font="700 18px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.55)";
-        c.fillText("@"+currentUser.name,30,380);
+        c.fillText("@"+currentUser.name,30,360);
       }
+      // invite link
+      c.font="700 15px 'Trebuchet MS',sans-serif";c.fillStyle="#5af0b3";
+      c.fillText("Try it: student-reading-tool.vercel.app",30,395);
       // verdict
       var verdict=result.pct>=80?"Excellent!":result.pct>=60?"Good job!":"Keep going!";
       c.font="900 52px 'Trebuchet MS',sans-serif";c.fillStyle="rgba(255,255,255,0.08)";
       c.textAlign="right";c.fillText(verdict,780,190);c.textAlign="left";
-      // share
+      function fallbackCopy(){
+        try{
+          navigator.clipboard.writeText(shareBody).then(function(){
+            setShareToast(t("shareCopied")||"Copied to clipboard!");
+            try{track("share_copied",{pct:result.pct,level:lvKey});}catch(e){}
+            setTimeout(function(){setShareToast("");},2200);
+          }).catch(function(){
+            // very old browsers: trigger PNG download
+            canvas.toBlob(function(b){var u=URL.createObjectURL(b);var a=document.createElement("a");a.href=u;a.download="reading-quest-result.png";a.click();setTimeout(function(){URL.revokeObjectURL(u);},2000);});
+          });
+        }catch(e){}
+      }
+      // share with image if supported, else text-only share, else clipboard
       canvas.toBlob(function(blob){
-        if(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([blob],"result.png",{type:"image/png"})]})){
-          navigator.share({title:"Reading Quest Result",text:"I scored "+result.pct+"% on a "+( result.level||level)+" quest! 📖",files:[new File([blob],"result.png",{type:"image/png"})]}).catch(function(){});
+        var file=null;try{file=new File([blob],"reading-quest-result.png",{type:"image/png"});}catch(e){}
+        var canShareFile=file&&navigator.canShare&&navigator.canShare({files:[file]});
+        if(navigator.share&&canShareFile){
+          navigator.share({title:"Reading Quest",text:shareBody,url:inviteUrl,files:[file]}).then(function(){try{track("share_native_image",{pct:result.pct});}catch(e){}}).catch(function(){fallbackCopy();});
+        } else if(navigator.share){
+          navigator.share({title:"Reading Quest",text:shareBody,url:inviteUrl}).then(function(){try{track("share_native_text",{pct:result.pct});}catch(e){}}).catch(function(){fallbackCopy();});
         } else {
-          var url=URL.createObjectURL(blob);
-          var a=document.createElement("a");a.href=url;a.download="reading-quest-result.png";a.click();
-          setTimeout(function(){URL.revokeObjectURL(url);},2000);
+          fallbackCopy();
         }
       },"image/png");
     }catch(e){console.error("share failed",e);}
@@ -2984,6 +3046,43 @@ export default function App(){
       <div style={{position:"fixed",inset:0,background:"radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.45) 100%)",pointerEvents:"none",zIndex:2}}/>
       <div className="rq-wrap" style={{position:"relative",zIndex:1}}>
 
+        {/* ── SHARE TOAST ────────────────────────────────────── */}
+        {shareToast&&(
+          <div style={{position:"fixed",left:"50%",bottom:90,transform:"translateX(-50%)",background:"rgba(30,30,44,0.96)",border:"1px solid rgba(90,240,179,0.4)",borderRadius:14,padding:"12px 18px",zIndex:9999,fontFamily:"'Inter',sans-serif",fontSize:13,fontWeight:600,color:"#5af0b3",boxShadow:"0 10px 30px rgba(0,0,0,0.5),0 0 24px rgba(90,240,179,0.18)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",maxWidth:"calc(100% - 32px)"}}>
+            ✓ {shareToast}
+          </div>
+        )}
+
+        {/* ── STUDENT ONBOARDING TOUR (first-time users, 0 games) ── */}
+        {coachStep>0&&currentUser&&(function(){
+          var steps=[
+            {title:t("coachStep1Title"),body:t("coachStep1Body")},
+            {title:t("coachStep2Title"),body:t("coachStep2Body")},
+            {title:t("coachStep3Title"),body:t("coachStep3Body")}
+          ];
+          var cur=steps[coachStep-1];
+          var isLast=coachStep>=steps.length;
+          return(
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.78)",zIndex:9998,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:16,backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)"}} onClick={dismissCoach}>
+              <div onClick={function(e){e.stopPropagation();}} style={{background:"rgba(30,30,44,0.95)",border:"1px solid rgba(90,240,179,0.30)",borderRadius:24,padding:"24px 22px 20px",maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.6),0 0 40px rgba(90,240,179,0.15)",marginBottom:24,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)"}}>
+                {coachStep===1&&(
+                  <p style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:700,color:"#5af0b3",letterSpacing:"0.18em",textTransform:"uppercase",margin:"0 0 4px"}}>{t("coachWelcomeTitle")}</p>
+                )}
+                <h3 style={{fontFamily:"'Outfit',sans-serif",fontSize:22,fontWeight:800,color:"#e3e0f4",margin:"0 0 10px",lineHeight:1.2}}>{cur.title}</h3>
+                <p style={{fontFamily:"'Inter',sans-serif",fontSize:14,lineHeight:1.55,color:"rgba(227,224,244,0.72)",margin:"0 0 20px"}}>{cur.body}</p>
+                <div style={{display:"flex",gap:6,marginBottom:16}}>
+                  {[1,2,3].map(function(n){return<div key={n} style={{flex:1,height:3,borderRadius:999,background:n<=coachStep?"#5af0b3":"rgba(255,255,255,0.10)",transition:"background 0.2s"}}/>;})}
+                </div>
+                <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                  <button type="button" onClick={dismissCoach} style={{background:"none",border:"none",color:"rgba(227,224,244,0.5)",fontFamily:"'Inter',sans-serif",fontSize:13,fontWeight:600,cursor:"pointer",padding:"10px 0"}}>{t("coachSkip")}</button>
+                  <div style={{flex:1}}/>
+                  <button type="button" onClick={function(){if(isLast){dismissCoach();try{track("onboarding_completed");}catch(e){}}else{setCoachStep(coachStep+1);try{track("onboarding_step",{step:coachStep+1});}catch(e){}}}} style={{background:"linear-gradient(135deg,#5af0b3,#34d399)",color:"#003825",border:"none",borderRadius:14,padding:"12px 22px",fontFamily:"'Outfit',sans-serif",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 6px 16px rgba(52,211,153,0.36),0 3px 0 0 rgba(0,0,0,0.3)"}}>{isLast?t("coachLetsGo"):t("coachNext")+" →"}</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── TEACHER ONBOARDING WIZARD ────────────────────── */}
         {onboardStep!==null&&(
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:10000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
@@ -3176,6 +3275,7 @@ export default function App(){
               .lq-footer-icons{display:flex;gap:18px;font-size:16px}
             `}</style>
             <div className="lq-auth-wrap">
+              <button type="button" onClick={function(){setStage("welcome");setAuthErr("");}} style={{position:"absolute",top:16,left:16,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:999,padding:"6px 12px",fontFamily:"'Inter',sans-serif",fontSize:11,color:"rgba(227,224,244,0.65)",cursor:"pointer",letterSpacing:"0.04em"}}>← {t("back")}</button>
               <h1 className="lq-brand">Reading Quest</h1>
               <p className="lq-tagline">6 Question Types · Friends · Compete</p>
               <div className="lq-langrow">
@@ -3242,6 +3342,174 @@ export default function App(){
             </div>
           </>
         )}
+
+        {/* ── WELCOME ──────────────────────────────────────── */}
+        {stage==="welcome"&&(
+          <>
+            <style>{`
+              .wc-wrap{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;padding:24px 0 40px}
+              .wc-brand{font-family:'Outfit',sans-serif;font-weight:700;font-size:38px;letter-spacing:-0.02em;color:#5af0b3;line-height:1.05;margin:0;text-align:center;text-shadow:0 0 15px rgba(52,211,153,0.7),0 0 30px rgba(52,211,153,0.45),0 0 60px rgba(52,211,153,0.25)}
+              @media(min-width:480px){.wc-brand{font-size:48px}}
+              .wc-tagline{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:#e3e0f4;letter-spacing:0.04em;margin:18px 0 8px;text-align:center}
+              .wc-subhead{font-family:'Inter',sans-serif;font-size:13px;line-height:1.55;color:rgba(227,224,244,0.62);text-align:center;max-width:340px;margin:0 0 28px;padding:0 8px}
+              .wc-langrow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 0 24px;max-width:340px}
+              .wc-lang-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:500;color:rgba(227,224,244,0.65);cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.04em;transition:all 0.2s}
+              .wc-lang-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18);color:#e3e0f4}
+              .wc-lang-btn.is-active{background:rgba(52,211,153,0.14);border-color:rgba(52,211,153,0.45);color:#5af0b3}
+              .wc-ctas{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+              .wc-cta-primary{width:100%;padding:16px 20px;border:none;border-radius:18px;background:#5af0b3;color:#003825;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(52,211,153,0.28),0 0 30px rgba(52,211,153,0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
+              .wc-cta-primary:hover{filter:brightness(1.08);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(52,211,153,0.4),0 0 40px rgba(52,211,153,0.3)}
+              .wc-cta-primary:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
+              .wc-cta-demo{width:100%;padding:15px 20px;border:1px solid rgba(167,139,250,0.45);border-radius:18px;background:rgba(167,139,250,0.08);color:#c4b5fd;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.2s}
+              .wc-cta-demo:hover{background:rgba(167,139,250,0.14);border-color:#a78bfa;color:#e3e0f4}
+              .wc-nosignup{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.4);text-align:center;letter-spacing:0.06em;margin:0 0 36px}
+              .wc-benefits{width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;margin-bottom:32px}
+              .wc-benefit{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:18px;background:rgba(18,18,31,0.55);border:1px solid rgba(255,255,255,0.07);backdrop-filter:blur(10px)}
+              .wc-benefit-ico{flex-shrink:0;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.25)}
+              .wc-benefit-text h3{margin:0 0 4px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:#e3e0f4;letter-spacing:0.02em}
+              .wc-benefit-text p{margin:0;font-family:'Inter',sans-serif;font-size:12px;line-height:1.5;color:rgba(227,224,244,0.55)}
+              .wc-footer{text-align:center;margin-top:8px}
+              .wc-footer-about{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.35);margin:0 0 14px;letter-spacing:0.04em}
+              .wc-login-link{background:none;border:none;color:#5af0b3;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;padding:8px 14px;text-decoration:underline}
+              .wc-login-link:hover{color:#7df5c7}
+            `}</style>
+            <div className="wc-wrap">
+              <h1 className="wc-brand">Reading Quest</h1>
+              <p className="wc-tagline">{t("welcomeTagline")}</p>
+              <p className="wc-subhead">{t("welcomeSubhead")}</p>
+              <div className="wc-langrow">
+                {[{c:"en",f:"🇬🇧"},{c:"uz",f:"🇺🇿"},{c:"ru",f:"🇷🇺"},{c:"tr",f:"🇹🇷"},{c:"ar",f:"🇦🇪"},{c:"de",f:"🇩🇪"},{c:"es",f:"🇪🇸"},{c:"fr",f:"🇫🇷"}].map(function(opt){
+                  var active=uiLang===opt.c;
+                  return<button key={opt.c} type="button" onClick={function(){setUiLang(opt.c);try{localStorage.setItem("rq-uilang",opt.c);}catch(e){}}} className={"wc-lang-btn"+(active?" is-active":"")}><span>{opt.f}</span><span>{opt.c.toUpperCase()}</span></button>;
+                })}
+              </div>
+              <div className="wc-ctas">
+                <button type="button" className="wc-cta-primary" onClick={function(){try{track("welcome_cta_signup");}catch(e){}setAuthMode("register");setStage("auth");}}>{t("welcomeCtaPrimary")}</button>
+                <button type="button" className="wc-cta-demo" onClick={startDemoQuiz}>▶ {t("welcomeCtaDemo")}</button>
+              </div>
+              <p className="wc-nosignup">{t("welcomeNoSignup")}</p>
+              <div className="wc-benefits">
+                {[
+                  {ico:"🤖",t:t("welcomeBenefit1Title"),b:t("welcomeBenefit1Body")},
+                  {ico:"⚡",t:t("welcomeBenefit2Title"),b:t("welcomeBenefit2Body")},
+                  {ico:"🌍",t:t("welcomeBenefit3Title"),b:t("welcomeBenefit3Body")},
+                ].map(function(it,i){return(
+                  <div key={i} className="wc-benefit">
+                    <div className="wc-benefit-ico">{it.ico}</div>
+                    <div className="wc-benefit-text"><h3>{it.t}</h3><p>{it.b}</p></div>
+                  </div>
+                );})}
+              </div>
+              <div className="wc-footer">
+                <p className="wc-footer-about">{t("welcomeFooterAbout")}</p>
+                <button type="button" className="wc-login-link" onClick={function(){try{track("welcome_cta_login");}catch(e){}setAuthMode("login");setStage("auth");}}>{t("welcomeAlreadyAccount")}</button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── DEMO QUIZ (no-signup) ────────────────────────── */}
+        {stage==="demo"&&(function(){
+          var totalSteps=DEMO_QUIZ.questions.length;
+          var atIntro=demoStep===0;
+          var atResult=demoStep>totalSteps;
+          var atQuestion=!atIntro&&!atResult;
+          var qIdx=demoStep-1;
+          var curQ=atQuestion?DEMO_QUIZ.questions[qIdx]:null;
+          var curAns=atQuestion?(demoAnswers[qIdx]!=null?demoAnswers[qIdx]:null):null;
+          var correct=atResult?demoAnswers.filter(function(a,i){return a===DEMO_QUIZ.questions[i].answer;}).length:0;
+          function pickAns(idx){if(curAns!=null)return;var next=demoAnswers.slice();next[qIdx]=idx;setDemoAnswers(next);}
+          function nextStep(){setDemoStep(demoStep+1);}
+          function tryAgain(){setDemoStep(0);setDemoAnswers([]);}
+          return(
+            <>
+              <style>{`
+                .dm-wrap{min-height:calc(100vh - 80px);display:flex;flex-direction:column;padding:16px 0}
+                .dm-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+                .dm-back{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:12px;color:#e3e0f4;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+                .dm-back:hover{background:rgba(255,255,255,0.10)}
+                .dm-prog{display:flex;gap:4px;flex:1;max-width:180px}
+                .dm-prog-tick{flex:1;height:3px;border-radius:999px;background:rgba(255,255,255,0.10);transition:background 0.2s}
+                .dm-prog-tick.is-done{background:#5af0b3}
+                .dm-card{background:rgba(18,18,31,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:22px;backdrop-filter:blur(20px)}
+                .dm-title{font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;color:#e3e0f4;margin:0 0 6px;letter-spacing:-0.01em}
+                .dm-meta{font-family:'Inter',sans-serif;font-size:11px;color:#5af0b3;letter-spacing:0.18em;text-transform:uppercase;font-weight:600;margin:0 0 16px}
+                .dm-passage{font-family:'Inter',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,224,244,0.85);max-height:48vh;overflow-y:auto;padding-right:6px;margin-bottom:18px}
+                .dm-passage p{margin:0 0 0.85em}
+                .dm-passage::-webkit-scrollbar{width:6px}
+                .dm-passage::-webkit-scrollbar-thumb{background:rgba(167,139,250,0.3);border-radius:999px}
+                .dm-q{font-family:'Outfit',sans-serif;font-size:17px;font-weight:600;color:#e3e0f4;margin:0 0 16px;line-height:1.4}
+                .dm-opts{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+                .dm-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:#e3e0f4;font-family:'Inter',sans-serif;font-size:14px;cursor:pointer;transition:all 0.18s}
+                .dm-opt:hover:not(:disabled){background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18)}
+                .dm-opt:disabled{cursor:default}
+                .dm-opt.is-correct{background:rgba(52,211,153,0.14);border-color:#5af0b3;color:#5af0b3}
+                .dm-opt.is-wrong{background:rgba(239,68,68,0.12);border-color:#ef4444;color:#fca5a5}
+                .dm-opt-bullet{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(227,224,244,0.55);flex-shrink:0}
+                .dm-opt.is-correct .dm-opt-bullet{background:#5af0b3;color:#003825}
+                .dm-opt.is-wrong .dm-opt-bullet{background:#ef4444;color:#0d0d1a}
+                .dm-explain{margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.25);font-family:'Inter',sans-serif;font-size:12px;line-height:1.55;color:rgba(227,224,244,0.75)}
+                .dm-explain strong{color:#a78bfa;font-weight:700}
+                .dm-cta{width:100%;padding:15px 20px;border:none;border-radius:18px;background:#5af0b3;color:#003825;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(52,211,153,0.28);margin-top:8px;transition:all 0.2s}
+                .dm-cta:hover{filter:brightness(1.08)}
+                .dm-cta:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4)}
+                .dm-cta:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+                .dm-result-num{font-family:'Outfit',sans-serif;font-size:64px;font-weight:900;color:#5af0b3;line-height:1;text-align:center;margin:8px 0 4px;text-shadow:0 0 20px rgba(52,211,153,0.45)}
+                .dm-result-label{font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.55);text-align:center;letter-spacing:0.08em;margin:0 0 20px}
+                .dm-result-cta{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+                .dm-result-ghost{padding:13px 18px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);color:#e3e0f4;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all 0.18s}
+                .dm-result-ghost:hover{background:rgba(255,255,255,0.08)}
+              `}</style>
+              <div className="dm-wrap">
+                <div className="dm-top">
+                  <button type="button" className="dm-back" onClick={function(){setStage("welcome");}}>← {t("back")}</button>
+                  {atQuestion&&(
+                    <div className="dm-prog">{DEMO_QUIZ.questions.map(function(_,i){return<div key={i} className={"dm-prog-tick"+(i<=qIdx&&demoAnswers[i]!=null?" is-done":"")}/>;})}</div>
+                  )}
+                  {atQuestion&&<span style={{fontFamily:"'Inter',sans-serif",fontSize:12,color:"rgba(227,224,244,0.5)",fontWeight:600}}>{demoStep}/{totalSteps}</span>}
+                </div>
+                <div className="dm-card">
+                  {atIntro&&(<>
+                    <p className="dm-meta">📖 {DEMO_QUIZ.level} · Demo passage</p>
+                    <h2 className="dm-title">{DEMO_QUIZ.title}</h2>
+                    <div className="dm-passage">{DEMO_QUIZ.passage.split(/\n{2,}/).map(function(p,i){return<p key={i}>{p}</p>;})}</div>
+                    <button type="button" className="dm-cta" onClick={function(){try{track("welcome_demo_quiz_start");}catch(e){}nextStep();}}>{t("welcomeCtaPrimary")?"Begin Quiz →":"Begin Quiz →"}</button>
+                  </>)}
+                  {atQuestion&&(<>
+                    <p className="dm-meta">Question {demoStep} of {totalSteps}</p>
+                    <h2 className="dm-q">{curQ.q}</h2>
+                    <div className="dm-opts">
+                      {curQ.options.map(function(opt,i){
+                        var done=curAns!=null;
+                        var isCorrect=done&&i===curQ.answer;
+                        var isWrong=done&&i===curAns&&curAns!==curQ.answer;
+                        return<button key={i} type="button" disabled={done} onClick={function(){pickAns(i);}} className={"dm-opt"+(isCorrect?" is-correct":isWrong?" is-wrong":"")}>
+                          <span className="dm-opt-bullet">{["A","B","C","D"][i]}</span><span>{opt}</span>
+                        </button>;
+                      })}
+                    </div>
+                    {curAns!=null&&(
+                      <div className="dm-explain"><strong>{curAns===curQ.answer?"✓ Correct.":"✕ Not quite."}</strong> {curQ.explain}</div>
+                    )}
+                    {curAns!=null&&(
+                      <button type="button" className="dm-cta" onClick={nextStep}>{demoStep===totalSteps?"See result →":"Next →"}</button>
+                    )}
+                  </>)}
+                  {atResult&&(<>
+                    <p className="dm-meta">🎉 You finished the demo</p>
+                    <div className="dm-result-num">{correct}/{totalSteps}</div>
+                    <p className="dm-result-label">{correct===totalSteps?"PERFECT SCORE":correct>=totalSteps*0.6?"NICE WORK":"GOOD TRY"}</p>
+                    <div className="dm-result-cta">
+                      <button type="button" className="dm-cta" onClick={function(){try{track("welcome_demo_completed",{score:correct});}catch(e){}setAuthMode("register");setStage("auth");}}>{t("welcomeCtaPrimary")}</button>
+                      <button type="button" className="dm-result-ghost" onClick={tryAgain}>🔁 Try again</button>
+                      <button type="button" className="dm-result-ghost" onClick={function(){setStage("welcome");}}>← {t("back")}</button>
+                    </div>
+                  </>)}
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {/* ── TEACHER DASHBOARD ────────────────────────────── */}
         {stage==="teacherDashboard"&&currentUser&&(function(){
