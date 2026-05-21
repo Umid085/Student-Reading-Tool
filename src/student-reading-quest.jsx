@@ -3231,21 +3231,21 @@ export default function App(){
           <>
             <style>{`
               .lq-auth-wrap{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 0}
-              .lq-brand{font-family:'Outfit',sans-serif;font-weight:700;font-size:34px;letter-spacing:-0.02em;color:#5af0b3;line-height:1.05;margin:0;text-shadow:0 0 15px rgba(52,211,153,0.7),0 0 30px rgba(52,211,153,0.45),0 0 60px rgba(52,211,153,0.25)}
+              .lq-brand{font-family:'Outfit',sans-serif;font-weight:700;font-size:34px;letter-spacing:-0.02em;color:var(--rq-accent);line-height:1.05;margin:0;text-shadow:0 0 15px rgba(var(--rq-accent-rgb),0.7),0 0 30px rgba(var(--rq-accent-rgb),0.45),0 0 60px rgba(var(--rq-accent-rgb),0.25)}
               @media(min-width:480px){.lq-brand{font-size:42px}}
               .lq-tagline{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:rgba(227,224,244,0.55);letter-spacing:0.22em;text-transform:uppercase;margin:14px 0 0;text-align:center}
               .lq-langrow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:28px 0 24px;max-width:340px}
               .lq-lang-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:500;color:rgba(227,224,244,0.65);cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.04em;transition:all 0.2s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
               .lq-lang-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18);color:#e3e0f4}
               .lq-lang-btn:active{transform:scale(0.95)}
-              .lq-lang-btn.is-active{background:rgba(52,211,153,0.14);border-color:rgba(52,211,153,0.45);color:#5af0b3}
+              .lq-lang-btn.is-active{background:rgba(var(--rq-accent-rgb),0.14);border-color:rgba(var(--rq-accent-rgb),0.45);color:var(--rq-accent)}
               .lq-glass{position:relative;width:100%;max-width:440px;background:rgba(18,18,31,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:32px;padding:28px 24px 24px;backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);box-shadow:0 20px 50px rgba(0,0,0,0.5),inset 0 1px 1px rgba(255,255,255,0.05);overflow:hidden}
               .lq-glass::before,.lq-glass::after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0}
               .lq-glass::before{top:-40px;right:-40px;background:rgba(99,102,241,0.18)}
               .lq-glass::after{bottom:-40px;left:-40px;background:rgba(52,211,153,0.12)}
               .lq-glass>*{position:relative;z-index:1}
               .lq-toggle{position:relative;display:flex;background:rgba(13,13,26,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:6px;margin-bottom:24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-              .lq-toggle-pill{position:absolute;top:6px;bottom:6px;left:6px;width:calc(50% - 6px);background:#5af0b3;border-radius:12px;box-shadow:0 0 18px rgba(52,211,153,0.45);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);z-index:0}
+              .lq-toggle-pill{position:absolute;top:6px;bottom:6px;left:6px;width:calc(50% - 6px);background:var(--rq-accent);border-radius:12px;box-shadow:0 0 18px rgba(var(--rq-accent-rgb),0.45);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);z-index:0}
               .lq-toggle-pill.is-login{transform:translateX(100%)}
               .lq-toggle-btn{position:relative;flex:1;padding:11px 12px;border:none;background:transparent;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.02em;color:rgba(227,224,244,0.55);cursor:pointer;border-radius:12px;transition:color 0.3s;z-index:1}
               .lq-toggle-btn.is-active{color:#003825}
@@ -3271,7 +3271,7 @@ export default function App(){
               .lq-input.has-eye{padding-right:48px}
               .lq-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(227,224,244,0.5);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:8px;transition:color 0.15s,background 0.15s}
               .lq-eye:hover{color:#e3e0f4;background:rgba(255,255,255,0.06)}
-              .lq-submit{width:100%;padding:16px 20px;margin-top:8px;border:none;border-radius:18px;background:#5af0b3;color:#003825;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(52,211,153,0.28),0 0 30px rgba(52,211,153,0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
+              .lq-submit{width:100%;padding:16px 20px;margin-top:8px;border:none;border-radius:18px;background:var(--rq-accent);color:#0d0d1a;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(var(--rq-accent-rgb),0.28),0 0 30px rgba(var(--rq-accent-rgb),0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
               .lq-submit:hover{filter:brightness(1.08);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(52,211,153,0.4),0 0 40px rgba(52,211,153,0.3)}
               .lq-submit:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
               .lq-submit:disabled{opacity:0.5;cursor:not-allowed;transform:none}
@@ -3355,7 +3355,7 @@ export default function App(){
           <>
             <style>{`
               .wc-wrap{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;padding:24px 0 40px}
-              .wc-brand{font-family:'Outfit',sans-serif;font-weight:700;font-size:38px;letter-spacing:-0.02em;color:#5af0b3;line-height:1.05;margin:0;text-align:center;text-shadow:0 0 15px rgba(52,211,153,0.7),0 0 30px rgba(52,211,153,0.45),0 0 60px rgba(52,211,153,0.25)}
+              .wc-brand{font-family:'Outfit',sans-serif;font-weight:700;font-size:38px;letter-spacing:-0.02em;color:var(--rq-accent);line-height:1.05;margin:0;text-align:center;text-shadow:0 0 15px rgba(var(--rq-accent-rgb),0.7),0 0 30px rgba(var(--rq-accent-rgb),0.45),0 0 60px rgba(var(--rq-accent-rgb),0.25)}
               @media(min-width:480px){.wc-brand{font-size:48px}}
               .wc-tagline{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:#e3e0f4;letter-spacing:0.04em;margin:18px 0 8px;text-align:center}
               .wc-subhead{font-family:'Inter',sans-serif;font-size:13px;line-height:1.55;color:rgba(227,224,244,0.62);text-align:center;max-width:340px;margin:0 0 28px;padding:0 8px}
@@ -3364,7 +3364,7 @@ export default function App(){
               .wc-lang-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18);color:#e3e0f4}
               .wc-lang-btn.is-active{background:rgba(52,211,153,0.14);border-color:rgba(52,211,153,0.45);color:#5af0b3}
               .wc-ctas{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
-              .wc-cta-primary{width:100%;padding:16px 20px;border:none;border-radius:18px;background:#5af0b3;color:#003825;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(52,211,153,0.28),0 0 30px rgba(52,211,153,0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
+              .wc-cta-primary{width:100%;padding:16px 20px;border:none;border-radius:18px;background:var(--rq-accent);color:#0d0d1a;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(var(--rq-accent-rgb),0.28),0 0 30px rgba(var(--rq-accent-rgb),0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
               .wc-cta-primary:hover{filter:brightness(1.08);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(52,211,153,0.4),0 0 40px rgba(52,211,153,0.3)}
               .wc-cta-primary:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
               .wc-cta-demo{width:100%;padding:15px 20px;border:1px solid rgba(167,139,250,0.45);border-radius:18px;background:rgba(167,139,250,0.08);color:#c4b5fd;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.2s}
@@ -4478,12 +4478,12 @@ export default function App(){
               .lq-asgn-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid rgba(245,158,11,0.15)}
               .lq-chal-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.08)}
               .lq-chal-mini-btn{padding:5px 10px;border-radius:8px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#0d0d1a}
-              .lq-bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
-              .lq-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
+              .lq-bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+              .lq-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:8px 16px;color:rgba(227,224,244,0.65);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s;min-width:64px}
               .lq-nav-btn:hover{color:#e3e0f4}
-              .lq-nav-btn .ico{font-size:22px;line-height:1}
-              .lq-nav-btn.is-active{color:#5af0b3}
-              .lq-nav-btn.is-active::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:999px;background:#5af0b3;box-shadow:0 0 8px rgba(52,211,153,0.9)}
+              .lq-nav-btn .ico{font-size:26px;line-height:1}
+              .lq-nav-btn.is-active{color:var(--rq-accent)}
+              .lq-nav-btn.is-active::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:999px;background:var(--rq-accent);box-shadow:0 0 8px rgba(var(--rq-accent-rgb),0.9)}
             `}</style>
             <div className="lq-home">
               <header className="lq-topbar">
@@ -4738,9 +4738,8 @@ export default function App(){
                   <p className="lq-wotd-ex">"{wotd.ex}"</p>
                 </div>
 
-                <details className="lq-details">
-                  <summary>⚙️ {t("questionTypes")} & advanced</summary>
-                  <div className="lq-details-body">
+                <div className="lq-details" style={{padding:"16px"}}>
+                  <div className="lq-details-body" style={{padding:0}}>
                     <div>
                       <p className="lq-details-sub">{t("questionTypes")} ({selectedTypes.length} selected)</p>
                       <div className="lq-chips">
@@ -4771,7 +4770,7 @@ export default function App(){
                         </div>);
                       })()}
                     </div>
-                    {customTopic.trim()&&(function(){
+                    {(function(){
                       var PASS_LANGS=[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}];
                       return(<div>
                         <p className="lq-details-sub">{t("passageLanguage")}</p>
@@ -4784,7 +4783,7 @@ export default function App(){
                       </div>);
                     })()}
                   </div>
-                </details>
+                </div>
 
                 <details className="lq-details">
                   <summary>✍️ Custom text quiz</summary>
