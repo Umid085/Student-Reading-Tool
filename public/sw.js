@@ -1,5 +1,5 @@
 // Bump on any SW logic change so old caches are evicted on activate.
-const CACHE_NAME = 'srq-v8';
+const CACHE_NAME = 'srq-v9';
 
 // Stable paths worth pre-caching so the app shell loads from cache
 // on the first offline visit. Hashed build assets (/assets/index-*.js,

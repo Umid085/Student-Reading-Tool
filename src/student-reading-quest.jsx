@@ -1329,6 +1329,17 @@ export default function App(){
   // Refreshed on login + after every result. Used by the home-screen
   // "X / Y quests today" chip. Null until first /api/quota response.
   var [userQuota,setUserQuota]=useState(null);
+  // Reading-slider stage state. Cards are pre-fetched a few ahead of the
+  // current index; sliderAnswers maps cardIdx → pickedOptionIdx so the
+  // post-answer state survives swipes. sliderCapHit flips true when the
+  // server returns 429 — UI then shows a graceful "come back tomorrow" card.
+  var [sliderCards,setSliderCards]=useState([]);
+  var [sliderIdx,setSliderIdx]=useState(0);
+  var [sliderAnswers,setSliderAnswers]=useState({});
+  var [sliderLoading,setSliderLoading]=useState(false);
+  var [sliderCapHit,setSliderCapHit]=useState(false);
+  var [sliderError,setSliderError]=useState("");
+  var sliderStartRef=useRef({});
   // Feature 2 - Placement Test
   var [showPlacement,setShowPlacement]=useState(false);
   var [placementAnswers,setPlacementAnswers]=useState({});
@@ -2491,6 +2502,66 @@ export default function App(){
     rec.onend=function(){setPronRecording(false);};
     pronRecRef.current=rec;
     rec.start();
+  }
+
+  // ── Reading Slider ──────────────────────────────────────────────────
+  // Fetches a single slider micro-card from /api/generate Mode 3.
+  // Returns the card or throws; 429 cap-hit sets sliderCapHit and the
+  // session ends gracefully. Used both for the initial pre-fetch on
+  // entry and for the on-demand top-up as the user swipes through.
+  async function fetchSliderCard(sliderLevel){
+    var r=await fetch("/api/generate",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":_sessionToken?("Bearer "+_sessionToken):""},
+      body:JSON.stringify({mode:"micro",level:sliderLevel||level||"B1"}),
+    });
+    if(r.status===429){setSliderCapHit(true);throw new Error("CAP_HIT");}
+    if(!r.ok){throw new Error("Failed to load card");}
+    var d=await r.json();
+    if(!d||!d.passage||!d.question)throw new Error("Bad response");
+    return d;
+  }
+  async function startSliderSession(){
+    if(sliderLoading)return;
+    setSliderLoading(true);setSliderCapHit(false);setSliderError("");
+    setSliderCards([]);setSliderIdx(0);setSliderAnswers({});
+    sliderStartRef.current={};
+    try{track("slider_session_start",{level:level||"B1"});}catch(e){}
+    setStage("slider");
+    try{
+      // Pre-fetch 3 cards in parallel so the user gets the first card
+      // immediately and the next two are ready by the time they swipe.
+      var batch=await Promise.allSettled([fetchSliderCard(level),fetchSliderCard(level),fetchSliderCard(level)]);
+      var good=batch.filter(function(p){return p.status==="fulfilled";}).map(function(p){return p.value;});
+      if(!good.length){
+        if(!sliderCapHit)setSliderError("Couldn't load slider cards. Try again later.");
+      }
+      setSliderCards(good);
+      sliderStartRef.current[0]=Date.now();
+    }catch(e){
+      // Already captured above
+    }finally{setSliderLoading(false);}
+  }
+  // Top up the deck when the user approaches the end. Called from the
+  // answer handler so we never block on the network during a swipe.
+  async function ensureSliderAhead(idx){
+    if(sliderCapHit)return;
+    if(sliderCards.length-idx>2)return; // already have ≥3 ahead
+    try{
+      var card=await fetchSliderCard(level);
+      setSliderCards(function(cs){return cs.concat([card]);});
+    }catch(e){/* cap-hit or transient — UI already reflects state */}
+  }
+  function pickSliderAnswer(cardIdx,optionIdx){
+    if(sliderAnswers[cardIdx]!==undefined)return; // already answered
+    var card=sliderCards[cardIdx];if(!card)return;
+    var correct=optionIdx===card.question.answer;
+    var elapsed=sliderStartRef.current[cardIdx]?Math.round((Date.now()-sliderStartRef.current[cardIdx])/1000):null;
+    setSliderAnswers(function(a){var n=Object.assign({},a);n[cardIdx]=optionIdx;return n;});
+    try{track("slider_answer",{idx:cardIdx,correct:correct,elapsed:elapsed,topic:card.topic||"",level:level||"B1"});}catch(e){}
+    // Top up the deck in the background and pre-time the next card.
+    ensureSliderAhead(cardIdx);
+    sliderStartRef.current[cardIdx+1]=Date.now();
   }
 
   function startDailyChallenge(){
@@ -4395,6 +4466,11 @@ export default function App(){
           if(pendingReviews.length>0){quickActions.push({key:"review",icon:"🔁",label:t("reviewLabel"),sub:pendingReviews.length+" "+(pendingReviews.length!==1?t("missedQuestions"):t("missedQuestion")),color:"#c084fc",bg:"rgba(168,85,247,0.10)",border:"rgba(168,85,247,0.4)",onClick:function(){setReviewIdx(0);setReviewAns(null);setReviewConfirmed(false);setStage("review");}});}
           if(dueVocab.length>0){quickActions.push({key:"vocab",icon:"📚",label:t("vocabReview"),sub:dueVocab.length+" "+(dueVocab.length!==1?t("wordsLabel"):t("wordLabel")),color:"#22d3ee",bg:"rgba(6,182,212,0.10)",border:"rgba(6,182,212,0.4)",onClick:function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}});}
           if(!playedToday&&quickActions.length<2){quickActions.push({key:"play",icon:"📖",label:t("playToday"),sub:myStreak>0?t("keepStreak").replace("{n}",myStreak):t("startYourStreak"),color:"#a78bfa",bg:"rgba(99,102,241,0.10)",border:"rgba(99,102,241,0.4)",onClick:function(){setStage("library");}});}
+          // Slider mode — short-burst reading for focus-friendly sessions.
+          // Always offered when the slider quota isn't exhausted; sits at the
+          // tail of quickActions so streak/daily/review keep priority.
+          var sliderCapToday=userQuota&&userQuota.slider?(userQuota.slider.used||0)>=(userQuota.slider.max||30):false;
+          if(!sliderCapToday&&quickActions.length<2){quickActions.push({key:"slider",icon:"🪄",label:"Slider Mode",sub:"Bite-sized reads · swipe through",color:"#f472b6",bg:"rgba(236,72,153,0.10)",border:"rgba(236,72,153,0.4)",onClick:startSliderSession});}
           quickActions=quickActions.slice(0,2);
           var initial=(currentUser.name||"?")[0].toUpperCase();
           return(
@@ -7378,6 +7454,138 @@ export default function App(){
               {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>📊</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No data yet</div><div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Complete quizzes to see your stats</div><button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:8}}>Start Playing</button></div>}
               <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>{t("startReading")}</button>
             </div>
+          );
+        })()}
+
+        {/* ── READING SLIDER (F3b) ───────────────────────────── */}
+        {stage==="slider"&&currentUser&&(function(){
+          var current=sliderCards[sliderIdx];
+          var answered=sliderAnswers[sliderIdx]!==undefined;
+          var pickedIdx=answered?sliderAnswers[sliderIdx]:null;
+          var correctIdx=current?current.question.answer:null;
+          var isCorrect=answered&&pickedIdx===correctIdx;
+          var progressLabel=(sliderIdx+1)+" / "+Math.max(sliderCards.length,sliderIdx+1);
+          return(
+            <>
+              <style>{`
+                .sl-wrap{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d1a;z-index:60;display:flex;flex-direction:column;overflow:hidden}
+                .sl-topbar{display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(13,13,26,0.85);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
+                .sl-back{background:none;border:none;color:rgba(227,224,244,0.7);cursor:pointer;padding:6px 10px;border-radius:10px;display:flex;align-items:center;gap:4px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600}
+                .sl-back:hover{background:rgba(255,255,255,0.06)}
+                .sl-title{flex:1;text-align:center;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#f472b6;letter-spacing:0.04em}
+                .sl-progress{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(227,224,244,0.55);font-weight:700}
+                .sl-card{flex:1;display:flex;flex-direction:column;padding:24px 22px 16px;overflow-y:auto;animation:slFade 0.25s ease}
+                @keyframes slFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+                .sl-topic{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;color:#f472b6;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:14px}
+                .sl-passage{font-family:'Newsreader','Inter',serif;font-size:19px;line-height:1.65;color:rgba(227,224,244,0.93);margin:0 0 22px;letter-spacing:0.005em}
+                .sl-question{font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:#e3e0f4;line-height:1.4;margin:0 0 14px}
+                .sl-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+                .sl-opt{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:13px 14px;text-align:left;cursor:pointer;color:rgba(227,224,244,0.85);font-family:'Inter',sans-serif;font-size:14px;line-height:1.4;transition:all 0.15s}
+                .sl-opt:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18)}
+                .sl-opt.is-right{background:rgba(52,211,153,0.14);border-color:rgba(52,211,153,0.55);color:#5af0b3}
+                .sl-opt.is-wrong{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.5);color:#fca5a5}
+                .sl-opt:disabled{cursor:default}
+                .sl-opt-letter{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;color:rgba(227,224,244,0.6)}
+                .sl-opt.is-right .sl-opt-letter{background:rgba(52,211,153,0.3);color:#5af0b3}
+                .sl-opt.is-wrong .sl-opt-letter{background:rgba(239,68,68,0.3);color:#fca5a5}
+                .sl-explain{background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:11px 14px;font-family:'Inter',sans-serif;font-size:12px;color:#c4b5fd;line-height:1.55;margin-bottom:14px}
+                .sl-explain b{color:#a78bfa;font-weight:700;text-transform:uppercase;font-size:10px;letterSpacing:0.08em;margin-right:6px}
+                .sl-nav{display:flex;gap:8px;flex-shrink:0;padding:8px 22px 18px}
+                .sl-nav-btn{flex:1;padding:13px 18px;border:none;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all 0.15s}
+                .sl-nav-next{background:linear-gradient(135deg,#f472b6,#a78bfa);color:#0d0d1a}
+                .sl-nav-next:active{transform:translateY(2px)}
+                .sl-nav-next:disabled{opacity:0.4;cursor:not-allowed}
+                .sl-skel{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:14px;gap:14px}
+                .sl-spin{width:32px;height:32px;border-radius:50%;border:2px solid rgba(244,114,182,0.25);border-top-color:#f472b6;animation:slSpin 0.8s linear infinite}
+                @keyframes slSpin{to{transform:rotate(360deg)}}
+                .sl-end{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 24px;text-align:center;gap:14px}
+                .sl-end-icon{font-size:54px;line-height:1}
+                .sl-end-h{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#f472b6;margin:0}
+                .sl-end-p{font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.65);line-height:1.55;max-width:320px;margin:0}
+                .sl-end-btn{margin-top:10px;background:rgba(244,114,182,0.18);border:1px solid rgba(244,114,182,0.4);color:#f472b6;padding:11px 22px;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer}
+              `}</style>
+              <div className="sl-wrap">
+                <header className="sl-topbar">
+                  <button type="button" className="sl-back" onClick={function(){setStage("home");}} aria-label="Exit slider">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    Exit
+                  </button>
+                  <div className="sl-title">🪄 Slider · {level||"B1"}</div>
+                  <span className="sl-progress">{progressLabel}</span>
+                </header>
+
+                {sliderError&&!current&&(
+                  <div className="sl-end">
+                    <div className="sl-end-icon">⚠️</div>
+                    <h2 className="sl-end-h">Couldn't load cards</h2>
+                    <p className="sl-end-p">{sliderError}</p>
+                    <button className="sl-end-btn" onClick={startSliderSession}>Retry</button>
+                  </div>
+                )}
+
+                {sliderCapHit&&!current&&(
+                  <div className="sl-end">
+                    <div className="sl-end-icon">🌙</div>
+                    <h2 className="sl-end-h">Daily slider cap reached</h2>
+                    <p className="sl-end-p">You've used today's slider quota. Resets at UTC midnight — try the library or a custom passage in the meantime.</p>
+                    <button className="sl-end-btn" onClick={function(){setStage("home");}}>Back home</button>
+                  </div>
+                )}
+
+                {sliderLoading&&!current&&!sliderCapHit&&!sliderError&&(
+                  <div className="sl-skel">
+                    <div className="sl-spin"/>
+                    <div>Picking your first card…</div>
+                  </div>
+                )}
+
+                {current&&(
+                  <div className="sl-card" key={sliderIdx}>
+                    {current.topic&&<div className="sl-topic">{current.topic}</div>}
+                    <p className="sl-passage">{current.passage}</p>
+                    <p className="sl-question">{current.question.q}</p>
+                    <div className="sl-opts">
+                      {current.question.options.map(function(opt,i){
+                        var cls="sl-opt";
+                        if(answered){
+                          if(i===correctIdx)cls+=" is-right";
+                          else if(i===pickedIdx)cls+=" is-wrong";
+                        }
+                        return(
+                          <button key={i} type="button" className={cls} disabled={answered} onClick={function(){pickSliderAnswer(sliderIdx,i);}}>
+                            <span className="sl-opt-letter">{String.fromCharCode(65+i)}</span>
+                            <span style={{flex:1}}>{opt}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {answered&&current.question.explanation&&(
+                      <div className="sl-explain">
+                        <b>{isCorrect?"Right":"Heads-up"}</b>{current.question.explanation}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {current&&answered&&(
+                  <div className="sl-nav">
+                    <button className="sl-nav-btn sl-nav-next" disabled={sliderIdx>=sliderCards.length-1&&!sliderLoading&&sliderCapHit} onClick={function(){
+                      var next=sliderIdx+1;
+                      if(next>=sliderCards.length){
+                        if(sliderCapHit){setStage("home");return;}
+                        // No card ready yet — kick off a fetch and stay put
+                        ensureSliderAhead(sliderIdx);
+                        return;
+                      }
+                      sliderStartRef.current[next]=Date.now();
+                      setSliderIdx(next);
+                    }}>
+                      {sliderIdx>=sliderCards.length-1&&sliderCapHit?"Finish →":"Next Card →"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           );
         })()}
 
