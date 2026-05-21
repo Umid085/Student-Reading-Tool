@@ -21,6 +21,8 @@ export default {
     correct:"Правильно!",incorrect:"Неправильно",
     yourScore:"Ваш результат",
     leaderboard:"Рейтинг",
+    home:"Главная",
+    playToday:"Играть",keepStreak:"Серия {n} дней",startYourStreak:"Начать серию",saveStreak:"Спасти серию",useShield:"Использовать щит",reviewLabel:"Повтор",missedQuestion:"пропущенный вопрос",missedQuestions:"пропущенных вопросов",vocabReview:"Повтор слов",wordsLabel:"слов",wordLabel:"слово",
     library:"Библиотека",
     profile:"Профиль",
     friends:"Друзья",

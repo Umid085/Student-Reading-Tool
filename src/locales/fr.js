@@ -21,6 +21,8 @@ export default {
     correct:"Correct !",incorrect:"Incorrect",
     yourScore:"Votre score",
     leaderboard:"Classement",
+    home:"Accueil",
+    playToday:"Jouer aujourd'hui",keepStreak:"Garde la série de {n} jours",startYourStreak:"Commence ta série",saveStreak:"Sauve la série",useShield:"Utiliser bouclier",reviewLabel:"Réviser",missedQuestion:"question manquée",missedQuestions:"questions manquées",vocabReview:"Révision de vocab",wordsLabel:"mots",wordLabel:"mot",
     library:"Bibliothèque",
     profile:"Profil",
     friends:"Amis",

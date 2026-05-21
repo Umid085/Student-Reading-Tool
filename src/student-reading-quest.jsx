@@ -893,14 +893,14 @@ function GameChart(props){
         <line x1={pad} y1={h-pad} x2={w-20} y2={h-pad} stroke="rgba(255,255,255,0.2)" strokeWidth="2"/>
 
         {/* chart line */}
-        <path d={pathData} stroke="#818cf8" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d={pathData} stroke="#a78bfa" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
 
         {/* data points */}
         {points.map(function(p,i){
           return(
             <g key={"point-"+i}>
-              <circle cx={p.x} cy={p.y} r="4" fill="#818cf8" opacity="0.6"/>
-              <circle cx={p.x} cy={p.y} r="5.5" fill="none" stroke="#818cf8" strokeWidth="1.5" opacity="0.3"/>
+              <circle cx={p.x} cy={p.y} r="4" fill="#a78bfa" opacity="0.6"/>
+              <circle cx={p.x} cy={p.y} r="5.5" fill="none" stroke="#a78bfa" strokeWidth="1.5" opacity="0.3"/>
               <text x={p.x} y={p.y-12} textAnchor="middle" fontSize="11" fill="#a78bfa" fontWeight="700">{p.xp}</text>
             </g>
           );
@@ -925,7 +925,7 @@ function McqQ(props){
       var isOk=i===q.answer,isSel=i===sel;
       var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
       if(conf){if(isOk){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
-      else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
+      else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #a78bfa";col="#a78bfa";}
       return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:10,padding:"10px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
         <span className={conf&&isOk?"rq-bounce":""} style={{width:22,height:22,borderRadius:"50%",flexShrink:0,background:(isSel||(conf&&isOk))?col:"rgba(255,255,255,0.1)",color:(isSel||(conf&&isOk))?"#0d0d1a":"#6b7280",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900}}>
           {conf&&isOk?"✓":conf&&isSel&&!isOk?"✕":["A","B","C","D"][i]}
@@ -940,14 +940,14 @@ function GapWordQ(props){
   var parts=q.sentence?q.sentence.split("___"):["",""];
   return(<div>
     <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:14,color:"#e5e7eb",lineHeight:1.7}}>
-      {parts[0]}<span style={{display:"inline-block",minWidth:70,borderBottom:"2px solid #818cf8",textAlign:"center",padding:"0 4px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#818cf8",fontWeight:700}}>{sel!==null?q.options[sel]:"_____"}</span>{parts[1]}
+      {parts[0]}<span style={{display:"inline-block",minWidth:70,borderBottom:"2px solid #a78bfa",textAlign:"center",padding:"0 4px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa",fontWeight:700}}>{sel!==null?q.options[sel]:"_____"}</span>{parts[1]}
     </div>
     <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
       {q.options.map(function(opt,i){
         var isOk=i===q.answer,isSel=i===sel;
         var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
         if(conf){if(isOk){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
-        else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
+        else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #a78bfa";col="#a78bfa";}
         return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:8,padding:"7px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit"}}>{opt}</button>);
       })}
     </div>
@@ -959,14 +959,14 @@ function GapSentQ(props){
   var parts=q.paragraph?q.paragraph.split("___"):["",""];
   return(<div>
     <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:13,color:"#e5e7eb",lineHeight:1.8}}>
-      {parts[0]}<span style={{display:"inline-block",background:conf?(sel===q.answer?"rgba(52,211,153,0.2)":"rgba(239,68,68,0.2)"):"rgba(99,102,241,0.15)",border:"1px dashed "+(conf?(sel===q.answer?"#34d399":"#ef4444"):"#818cf8"),borderRadius:6,padding:"1px 6px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#818cf8",fontWeight:700,margin:"0 4px"}}>{sel!==null?q.options[sel]:"[ select ]"}</span>{parts[1]}
+      {parts[0]}<span style={{display:"inline-block",background:conf?(sel===q.answer?"rgba(52,211,153,0.2)":"rgba(239,68,68,0.2)"):"rgba(99,102,241,0.15)",border:"1px dashed "+(conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa"),borderRadius:6,padding:"1px 6px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa",fontWeight:700,margin:"0 4px"}}>{sel!==null?q.options[sel]:"[ select ]"}</span>{parts[1]}
     </div>
     <div style={{display:"flex",flexDirection:"column",gap:6}}>
       {q.options.map(function(opt,i){
         var isOk=i===q.answer,isSel=i===sel;
         var bg="rgba(255,255,255,0.04)",bd="1px solid rgba(255,255,255,0.1)",col="#9ca3af";
         if(conf){if(isOk){bg="rgba(52,211,153,0.1)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.1)";bd="1px solid #ef4444";col="#ef4444";}}
-        else if(isSel){bg="rgba(99,102,241,0.15)";bd="1px solid #818cf8";col="#c7d2fe";}
+        else if(isSel){bg="rgba(99,102,241,0.15)";bd="1px solid #a78bfa";col="#c7d2fe";}
         return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:8,padding:"9px 10px",color:col,fontSize:12,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left"}}>
           <span style={{color:"#6366f1",fontWeight:700,marginRight:6}}>{["A","B","C","D"][i]}.</span>{opt}
         </button>);
@@ -991,7 +991,7 @@ function MatchingQ(props){
           var matched=matches&&matches[i]!==undefined;
           var ok=conf&&matched&&matches[i]===correctPairs[i];
           var bad=conf&&matched&&matches[i]!==correctPairs[i];
-          return(<button key={i} onClick={function(){clickLeft(i);}} style={{background:activeLeft===i?"rgba(99,102,241,0.3)":matched?"rgba(255,255,255,0.07)":"rgba(255,255,255,0.04)",border:"1px solid "+(activeLeft===i?"#818cf8":ok?"#34d399":bad?"#ef4444":"rgba(255,255,255,0.1)"),borderRadius:8,padding:"9px 10px",color:ok?"#34d399":bad?"#ef4444":activeLeft===i?"#c7d2fe":"#e5e7eb",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+          return(<button key={i} onClick={function(){clickLeft(i);}} style={{background:activeLeft===i?"rgba(99,102,241,0.3)":matched?"rgba(255,255,255,0.07)":"rgba(255,255,255,0.04)",border:"1px solid "+(activeLeft===i?"#a78bfa":ok?"#34d399":bad?"#ef4444":"rgba(255,255,255,0.1)"),borderRadius:8,padding:"9px 10px",color:ok?"#34d399":bad?"#ef4444":activeLeft===i?"#c7d2fe":"#e5e7eb",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
             {l}{matched&&<span style={{float:"right",opacity:0.5,fontSize:9}}>{rights[matches[i]]}</span>}
           </button>);
         })}
@@ -1030,7 +1030,7 @@ function HeadingQ(props){
             var bg="rgba(255,255,255,0.04)",bd="1px solid rgba(255,255,255,0.1)",col="#9ca3af";
             if(ok){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}
             else if(bad){bg="rgba(239,68,68,0.1)";bd="1px solid #ef4444";col="#ef4444";}
-            else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
+            else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #a78bfa";col="#a78bfa";}
             return(<button key={hi} onClick={function(){if(!conf)onMatch(pi,hi);}} style={{background:bg,border:bd,borderRadius:6,padding:"4px 9px",color:col,fontSize:11,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit"}}>{h}</button>);
           })}
         </div>
@@ -1058,7 +1058,7 @@ function TfnmQ(props){
       var isOk=i===q.answer,isSel=i===sel;
       var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
       if(conf){if(isOk){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
-      else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
+      else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #a78bfa";col="#a78bfa";}
       return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:10,padding:"10px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
         <span className={conf&&isOk?"rq-bounce":""} style={{width:22,height:22,borderRadius:"50%",flexShrink:0,background:(isSel||(conf&&isOk))?col:"rgba(255,255,255,0.1)",color:(isSel||(conf&&isOk))?"#0d0d1a":"#6b7280",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900}}>
           {conf&&isOk?"✓":conf&&isSel&&!isOk?"✕":"●"}
@@ -1076,7 +1076,7 @@ function YnngQ(props){
       var isOk=i===q.answer,isSel=i===sel;
       var bg="rgba(255,255,255,0.05)",bd="1px solid rgba(255,255,255,0.1)",col="#e5e7eb";
       if(conf){if(isOk){bg="rgba(52,211,153,0.15)";bd="1px solid #34d399";col="#34d399";}else if(isSel){bg="rgba(239,68,68,0.15)";bd="1px solid #ef4444";col="#ef4444";}}
-      else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #818cf8";col="#818cf8";}
+      else if(isSel){bg="rgba(99,102,241,0.2)";bd="1px solid #a78bfa";col="#a78bfa";}
       return(<button key={i} onClick={function(){if(!conf)onSel(i);}} style={{background:bg,border:bd,borderRadius:10,padding:"10px 12px",color:col,fontSize:13,fontWeight:600,cursor:conf?"default":"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
         <span className={conf&&isOk?"rq-bounce":""} style={{width:22,height:22,borderRadius:"50%",flexShrink:0,background:(isSel||(conf&&isOk))?col:"rgba(255,255,255,0.1)",color:(isSel||(conf&&isOk))?"#0d0d1a":"#6b7280",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900}}>
           {conf&&isOk?"✓":conf&&isSel&&!isOk?"✕":"●"}
@@ -1093,7 +1093,7 @@ function Timer(props){
   useEffect(function(){setSecs(props.limit);},[props.limit]);
   useEffect(function(){
     if(!props.running){clearInterval(iv.current);return;}
-    iv.current=setInterval(function(){setSecs(function(s){if(s<=1){clearInterval(iv.current);props.onExpire();return 0;}return s-1;});},1000);
+    iv.current=setInterval(function(){setSecs(function(s){if(s<=1){clearInterval(iv.current);setTimeout(function(){props.onExpire();},0);return 0;}return s-1;});},1000);
     return function(){clearInterval(iv.current);};
   },[props.running]);
   var p=props.limit>0?secs/props.limit:0;
@@ -3863,7 +3863,7 @@ export default function App(){
                   {icon:"🔥",label:"Longest Streak",val:longestStreak+" days",col:"#fbbf24"},
                   {icon:"📚",label:"Top Subject",val:favSubj,col:"#a78bfa"},
                   {icon:"⭐",label:"Total XP",val:totalXpP.toLocaleString(),col:"#f472b6"},
-                  {icon:"📖",label:"Sessions",val:pg.length+"",col:"#818cf8"},
+                  {icon:"📖",label:"Sessions",val:pg.length+"",col:"#a78bfa"},
                 ].map(function(s){return(
                   <div key={s.label} style={{...CARD,padding:"12px 14px"}}>
                     <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
@@ -4054,11 +4054,11 @@ export default function App(){
           var myClassBanner=myClasses4[0]||null;
           // Pick top 2 quick actions from highest-priority items
           var quickActions=[];
-          if(streakAtRisk&&shields>0){quickActions.push({key:"shield",icon:"🛡️",label:"Save Streak",sub:"Use shield",color:"#f87171",bg:"rgba(239,68,68,0.12)",border:"rgba(239,68,68,0.4)",onClick:useShield});}
+          if(streakAtRisk&&shields>0){quickActions.push({key:"shield",icon:"🛡️",label:t("saveStreak"),sub:t("useShield"),color:"#f87171",bg:"rgba(239,68,68,0.12)",border:"rgba(239,68,68,0.4)",onClick:useShield});}
           if(!dailyDoneTodayHome){quickActions.push({key:"daily",icon:"🎯",label:t("todaysDailyChallenge"),sub:dailyChallenge&&dailyChallenge.date===today?dailyChallenge.topic+" · B1":"B1 · All types",color:"#06b6d4",bg:"rgba(6,182,212,0.10)",border:"rgba(6,182,212,0.4)",onClick:startDailyChallenge,disabled:dailyLoading});}
-          if(pendingReviews.length>0){quickActions.push({key:"review",icon:"🔁",label:"Review",sub:pendingReviews.length+" missed question"+(pendingReviews.length!==1?"s":""),color:"#c084fc",bg:"rgba(168,85,247,0.10)",border:"rgba(168,85,247,0.4)",onClick:function(){setReviewIdx(0);setReviewAns(null);setReviewConfirmed(false);setStage("review");}});}
-          if(dueVocab.length>0){quickActions.push({key:"vocab",icon:"📚",label:"Vocab review",sub:dueVocab.length+" word"+(dueVocab.length!==1?"s":""),color:"#22d3ee",bg:"rgba(6,182,212,0.10)",border:"rgba(6,182,212,0.4)",onClick:function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}});}
-          if(!playedToday&&quickActions.length<2){quickActions.push({key:"play",icon:"📖",label:"Play today",sub:myStreak>0?"Keep "+myStreak+"-day streak":"Start your streak",color:"#818cf8",bg:"rgba(99,102,241,0.10)",border:"rgba(99,102,241,0.4)",onClick:function(){setStage("library");}});}
+          if(pendingReviews.length>0){quickActions.push({key:"review",icon:"🔁",label:t("reviewLabel"),sub:pendingReviews.length+" "+(pendingReviews.length!==1?t("missedQuestions"):t("missedQuestion")),color:"#c084fc",bg:"rgba(168,85,247,0.10)",border:"rgba(168,85,247,0.4)",onClick:function(){setReviewIdx(0);setReviewAns(null);setReviewConfirmed(false);setStage("review");}});}
+          if(dueVocab.length>0){quickActions.push({key:"vocab",icon:"📚",label:t("vocabReview"),sub:dueVocab.length+" "+(dueVocab.length!==1?t("wordsLabel"):t("wordLabel")),color:"#22d3ee",bg:"rgba(6,182,212,0.10)",border:"rgba(6,182,212,0.4)",onClick:function(){setVocabFilter("due");setVocabCard(0);setVocabFlipped(false);setStage("vocab");}});}
+          if(!playedToday&&quickActions.length<2){quickActions.push({key:"play",icon:"📖",label:t("playToday"),sub:myStreak>0?t("keepStreak").replace("{n}",myStreak):t("startYourStreak"),color:"#a78bfa",bg:"rgba(99,102,241,0.10)",border:"rgba(99,102,241,0.4)",onClick:function(){setStage("library");}});}
           quickActions=quickActions.slice(0,2);
           var initial=(currentUser.name||"?")[0].toUpperCase();
           return(
@@ -4184,7 +4184,7 @@ export default function App(){
               .lq-asgn-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid rgba(245,158,11,0.15)}
               .lq-chal-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.08)}
               .lq-chal-mini-btn{padding:5px 10px;border-radius:8px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#0d0d1a}
-              .lq-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+              .lq-bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
               .lq-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
               .lq-nav-btn:hover{color:#e3e0f4}
               .lq-nav-btn .ico{font-size:22px;line-height:1}
@@ -4546,16 +4546,16 @@ export default function App(){
 
               <nav className="lq-bottom-nav">
                 <button type="button" className="lq-nav-btn is-active">
-                  <span className="ico">🏠</span><span>HOME</span>
+                  <span className="ico">🏠</span><span>{t("home").toUpperCase()}</span>
                 </button>
                 <button type="button" onClick={function(){setStage("library");}} className="lq-nav-btn">
-                  <span className="ico">📚</span><span>LIBRARY</span>
+                  <span className="ico">📚</span><span>{t("library").toUpperCase()}</span>
                 </button>
                 <button type="button" onClick={function(){setStage("analytics");}} className="lq-nav-btn">
-                  <span className="ico">📊</span><span>STATS</span>
+                  <span className="ico">📊</span><span>{t("stats").toUpperCase()}</span>
                 </button>
                 <button type="button" onClick={function(){setStage("profile");}} className="lq-nav-btn">
-                  <span className="ico">👤</span><span>PROFILE</span>
+                  <span className="ico">👤</span><span>{t("profile").toUpperCase()}</span>
                 </button>
               </nav>
             </div>
@@ -4624,7 +4624,7 @@ export default function App(){
               var sents=paraSentences[pi];
               return<p key={pi} style={{margin:pi>0?"0.95em 0 0":0}}>{sents.map(function(sent,si){
                 var isActive=activeSentence===sent.trim();
-                return<span key={si} onClick={function(){speakSentence(sent.trim());}} style={{cursor:"pointer",borderRadius:4,padding:"1px 2px",background:isActive?"rgba(99,102,241,0.2)":"transparent",borderBottom:isActive?"2px solid #818cf8":"none",transition:"background 0.15s"}}>{sent}</span>;
+                return<span key={si} onClick={function(){speakSentence(sent.trim());}} style={{cursor:"pointer",borderRadius:4,padding:"1px 2px",background:isActive?"rgba(99,102,241,0.2)":"transparent",borderBottom:isActive?"2px solid #a78bfa":"none",transition:"background 0.15s"}}>{sent}</span>;
               })}</p>;
             });
           }
@@ -5168,7 +5168,7 @@ export default function App(){
             )}
             {result.completedGoals&&result.completedGoals.length>0&&(
               <div style={{...CARD,marginBottom:10,background:"rgba(99,102,241,0.08)",borderColor:"rgba(99,102,241,0.4)"}}>
-                <p style={{fontWeight:700,fontSize:12,color:"#818cf8",marginBottom:8,textAlign:"left"}}>🎯 GOAL{result.completedGoals.length>1?"S":""} ACHIEVED!</p>
+                <p style={{fontWeight:700,fontSize:12,color:"#a78bfa",marginBottom:8,textAlign:"left"}}>🎯 GOAL{result.completedGoals.length>1?"S":""} ACHIEVED!</p>
                 {result.completedGoals.map(function(id){
                   var def=GOAL_DEFS.find(function(d){return d.id===id;});
                   return def?(
@@ -5784,7 +5784,7 @@ export default function App(){
               .lq-lb-empty-d{font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.5);margin:0 0 20px}
               .lq-lb-boost{width:100%;background:linear-gradient(135deg,#34D399,#5af0b3);color:#003825;border:none;border-radius:18px;padding:16px 20px;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(52,211,153,0.32),0 4px 0 0 rgba(0,0,0,0.3);transition:all 0.2s}
               .lq-lb-boost:active{transform:translateY(2px);box-shadow:0 6px 16px rgba(52,211,153,0.3),0 2px 0 0 rgba(0,0,0,0.3)}
-              .lq-lb-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+              .lq-lb-bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
               .lq-lb-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
               .lq-lb-nav-btn .ico{font-size:22px;line-height:1}
             `}</style>
@@ -5875,16 +5875,16 @@ export default function App(){
 
               <nav className="lq-lb-bottom-nav">
                 <button type="button" onClick={function(){setStage("home");}} className="lq-lb-nav-btn">
-                  <span className="ico">🏠</span><span>HOME</span>
+                  <span className="ico">🏠</span><span>{t("home").toUpperCase()}</span>
                 </button>
                 <button type="button" onClick={function(){setStage("library");}} className="lq-lb-nav-btn">
-                  <span className="ico">📚</span><span>LIBRARY</span>
+                  <span className="ico">📚</span><span>{t("library").toUpperCase()}</span>
                 </button>
                 <button type="button" onClick={function(){setStage("analytics");}} className="lq-lb-nav-btn">
-                  <span className="ico">📊</span><span>STATS</span>
+                  <span className="ico">📊</span><span>{t("stats").toUpperCase()}</span>
                 </button>
                 <button type="button" onClick={function(){setStage("profile");}} className="lq-lb-nav-btn">
-                  <span className="ico">👤</span><span>PROFILE</span>
+                  <span className="ico">👤</span><span>{t("profile").toUpperCase()}</span>
                 </button>
               </nav>
             </div>
@@ -5997,7 +5997,7 @@ export default function App(){
                           {LEVELS.map(function(l){return<button key={l.key} onClick={function(){setChallengeLevel(l.key);}} style={{background:challengeLevel===l.key?l.color:"rgba(255,255,255,0.05)",color:challengeLevel===l.key?"#0d0d1a":"#9ca3af",border:"none",borderRadius:999,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l.key}</button>;})}
                         </div>
                         <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>
-                          {Object.keys(Q_LABELS).map(function(t){var on=challengeTypes.indexOf(t)!==-1;return<button key={t} onClick={function(){setChallengeTypes(function(prev){var on2=prev.indexOf(t)!==-1;if(on2&&prev.length===1)return prev;if(on2)return prev.filter(function(x){return x!==t;});return prev.concat([t]);});}} style={{background:on?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(on?"#818cf8":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"3px 9px",fontSize:10,color:on?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>{qLabel(t)}</button>;})}
+                          {Object.keys(Q_LABELS).map(function(t){var on=challengeTypes.indexOf(t)!==-1;return<button key={t} onClick={function(){setChallengeTypes(function(prev){var on2=prev.indexOf(t)!==-1;if(on2&&prev.length===1)return prev;if(on2)return prev.filter(function(x){return x!==t;});return prev.concat([t]);});}} style={{background:on?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)",border:"1px solid "+(on?"#a78bfa":"rgba(255,255,255,0.1)"),borderRadius:999,padding:"3px 9px",fontSize:10,color:on?"#c7d2fe":"#6b7280",cursor:"pointer",fontFamily:"inherit"}}>{qLabel(t)}</button>;})}
                         </div>
                         <div style={{display:"flex",gap:6}}>
                           <button onClick={sendChallenge} style={{...mkBtn("#f59e0b","#0d0d1a"),flex:1,fontSize:12}}>Send Challenge</button>
@@ -6484,7 +6484,7 @@ export default function App(){
               .lq-hero-action-btn:hover{background:rgba(255,255,255,0.08);color:#e3e0f4}
               .lq-hero-action-btn.danger{color:#f87171;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.06)}
               .lq-hero-action-btn.danger:hover{background:rgba(239,68,68,0.12)}
-              .lq-hero-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+              .lq-hero-bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
               .lq-hero-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
               .lq-hero-nav-btn:hover{color:#e3e0f4}
               .lq-hero-nav-btn .ico{font-size:22px;line-height:1}
@@ -6649,16 +6649,16 @@ export default function App(){
 
               <nav className="lq-hero-bottom-nav">
                 <button type="button" onClick={function(){setStage("home");}} className="lq-hero-nav-btn">
-                  <span className="ico">🏠</span><span>HOME</span>
+                  <span className="ico">🏠</span><span>{t("home").toUpperCase()}</span>
                 </button>
                 <button type="button" onClick={function(){setStage("library");}} className="lq-hero-nav-btn">
-                  <span className="ico">📚</span><span>LIBRARY</span>
+                  <span className="ico">📚</span><span>{t("library").toUpperCase()}</span>
                 </button>
                 <button type="button" onClick={function(){setStage("analytics");}} className="lq-hero-nav-btn">
-                  <span className="ico">📊</span><span>STATS</span>
+                  <span className="ico">📊</span><span>{t("stats").toUpperCase()}</span>
                 </button>
                 <button type="button" className="lq-hero-nav-btn is-active">
-                  <span className="ico">👤</span><span>PROFILE</span>
+                  <span className="ico">👤</span><span>{t("profile").toUpperCase()}</span>
                 </button>
               </nav>
             </div>
@@ -7078,7 +7078,7 @@ export default function App(){
                 .lq-empty{text-align:center;padding:48px 24px;color:rgba(227,224,244,0.4);font-family:'Inter',sans-serif;font-size:13px}
                 .lq-fab{position:fixed;bottom:96px;right:18px;width:56px;height:56px;border-radius:999px;background:#5af0b3;color:#003825;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(52,211,153,0.4),0 0 20px rgba(52,211,153,0.25);z-index:40;transition:transform 0.2s}
                 .lq-fab:active{transform:scale(0.92)}
-                .lq-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
+                .lq-bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:50;display:flex;justify-content:space-around;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(30,30,44,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.6)}
                 .lq-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 14px;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;position:relative;transition:color 0.15s}
                 .lq-nav-btn:hover{color:#e3e0f4}
                 .lq-nav-btn .ico{font-size:22px;line-height:1}
@@ -7188,16 +7188,16 @@ export default function App(){
 
                 <nav className="lq-bottom-nav">
                   <button type="button" onClick={function(){setStage("home");}} className="lq-nav-btn">
-                    <span className="ico">🏠</span><span>HOME</span>
+                    <span className="ico">🏠</span><span>{t("home").toUpperCase()}</span>
                   </button>
                   <button type="button" className="lq-nav-btn is-active">
-                    <span className="ico">📚</span><span>LIBRARY</span>
+                    <span className="ico">📚</span><span>{t("library").toUpperCase()}</span>
                   </button>
                   <button type="button" onClick={function(){setStage("analytics");}} className="lq-nav-btn">
-                    <span className="ico">📊</span><span>STATS</span>
+                    <span className="ico">📊</span><span>{t("stats").toUpperCase()}</span>
                   </button>
                   <button type="button" onClick={function(){setStage("profile");}} className="lq-nav-btn">
-                    <span className="ico">👤</span><span>PROFILE</span>
+                    <span className="ico">👤</span><span>{t("profile").toUpperCase()}</span>
                   </button>
                 </nav>
               </div>
@@ -7353,7 +7353,7 @@ export default function App(){
                   <span style={{fontSize:12,color:"#6b7280"}}>{vocabGameIdx+1}/{shuffled.length} · {vocabGameScore} pts</span>
                 </div>
                 <div style={{...CARD,marginBottom:14,padding:16}}>
-                  <p style={{fontSize:16,color:"#e5e7eb",lineHeight:1.9,margin:0}}>{sentence.split("___")[0]}<span style={{display:"inline-block",minWidth:80,borderBottom:"2px solid #818cf8",textAlign:"center",color:"#818cf8",fontWeight:700}}>{vocabGameAnswered!==null?bOptions[vocabGameAnswered].word:"_____"}</span>{sentence.split("___")[1]||""}</p>
+                  <p style={{fontSize:16,color:"#e5e7eb",lineHeight:1.9,margin:0}}>{sentence.split("___")[0]}<span style={{display:"inline-block",minWidth:80,borderBottom:"2px solid #a78bfa",textAlign:"center",color:"#a78bfa",fontWeight:700}}>{vocabGameAnswered!==null?bOptions[vocabGameAnswered].word:"_____"}</span>{sentence.split("___")[1]||""}</p>
                 </div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
                   {bOptions.map(function(opt,oi){
@@ -7392,11 +7392,11 @@ export default function App(){
                 <h1 className="lq-sub-title" style={{textAlign:"center"}}><span style={{color:"#a78bfa"}}>📅</span> {t("weeklyBoard")}</h1>
                 <div style={{width:38}}/>
               </header>
-              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(129,140,248,0.3)",background:"rgba(129,140,248,0.05)"}}>
-                <p style={{fontSize:11,color:"#818cf8",fontWeight:700,letterSpacing:0.5,margin:"0 0 8px"}}>{t("thisWeek")}</p>
+              <div style={{...CARD,marginBottom:12,padding:14,borderColor:"rgba(167,139,250,0.3)",background:"rgba(167,139,250,0.05)"}}>
+                <p style={{fontSize:11,color:"#a78bfa",fontWeight:700,letterSpacing:0.5,margin:"0 0 8px"}}>{t("thisWeek")}</p>
                 <div style={{display:"flex",gap:10}}>
                   <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
-                    <div style={{fontSize:18,fontWeight:900,color:"#818cf8"}}>{weekXp}</div>
+                    <div style={{fontSize:18,fontWeight:900,color:"#a78bfa"}}>{weekXp}</div>
                     <div style={{fontSize:10,color:"#6b7280",marginTop:2}}>XP earned</div>
                   </div>
                   <div style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"10px 6px"}}>
@@ -7418,15 +7418,15 @@ export default function App(){
                 var isMe=e.name===currentUser.name;
                 var medals=["🥇","🥈","🥉"];
                 return(
-                  <div key={i} className="rq-lb-row" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,marginBottom:5,background:isMe?"rgba(129,140,248,0.1)":"rgba(255,255,255,0.03)",border:isMe?"1px solid rgba(129,140,248,0.3)":"1px solid transparent"}}>
+                  <div key={i} className="rq-lb-row" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,marginBottom:5,background:isMe?"rgba(167,139,250,0.1)":"rgba(255,255,255,0.03)",border:isMe?"1px solid rgba(167,139,250,0.3)":"1px solid transparent"}}>
                     <span style={{width:24,fontSize:i<3?16:12,textAlign:"center",color:"#fbbf24",fontWeight:700}}>{i<3?medals[i]:i+1}</span>
-                    <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#818cf8":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
-                    <span style={{fontSize:12,fontWeight:700,color:"#818cf8"}}>{e.xp} XP</span>
+                    <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#a78bfa":"#f3f4f6"}}>{e.name}{isMe?" (you)":""}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"#a78bfa"}}>{e.xp} XP</span>
                     <span style={{fontSize:11,color:"#6b7280"}}>{e.games} {e.games===1?"story":"stories"}</span>
                   </div>
                 );
               })}
-              <button onClick={doRestart} style={{...mkBtn("#818cf8","#0d0d1a"),width:"100%",marginTop:10}}>{t("readAStory")}</button>
+              <button onClick={doRestart} style={{...mkBtn("#a78bfa","#0d0d1a"),width:"100%",marginTop:10}}>{t("readAStory")}</button>
             </div>
           );
         })()}

@@ -21,6 +21,8 @@ export default {
     correct:"صحيح!",incorrect:"خطأ",
     yourScore:"درجتك",
     leaderboard:"لوحة المتصدرين",
+    home:"الرئيسية",
+    playToday:"العب اليوم",keepStreak:"احتفظ بسلسلة {n} يوم",startYourStreak:"ابدأ سلسلتك",saveStreak:"احفظ السلسلة",useShield:"استخدم الدرع",reviewLabel:"مراجعة",missedQuestion:"سؤال فائت",missedQuestions:"أسئلة فائتة",vocabReview:"مراجعة الكلمات",wordsLabel:"كلمات",wordLabel:"كلمة",
     library:"المكتبة",
     profile:"الملف الشخصي",
     friends:"الأصدقاء",

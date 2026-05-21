@@ -21,6 +21,8 @@ export default {
     correct:"Correct!",incorrect:"Incorrect",
     yourScore:"Your Score",
     leaderboard:"Leaderboard",
+    home:"Home",
+    playToday:"Play today",keepStreak:"Keep {n}-day streak",startYourStreak:"Start your streak",saveStreak:"Save Streak",useShield:"Use shield",reviewLabel:"Review",missedQuestion:"missed question",missedQuestions:"missed questions",vocabReview:"Vocab review",wordsLabel:"words",wordLabel:"word",
     library:"Library",
     profile:"Profile",
     friends:"Friends",

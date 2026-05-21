@@ -21,6 +21,8 @@ export default {
     correct:"¡Correcto!",incorrect:"Incorrecto",
     yourScore:"Tu puntuación",
     leaderboard:"Clasificación",
+    home:"Inicio",
+    playToday:"Jugar hoy",keepStreak:"Mantén racha de {n} días",startYourStreak:"Inicia tu racha",saveStreak:"Salva la racha",useShield:"Usar escudo",reviewLabel:"Repasar",missedQuestion:"pregunta fallada",missedQuestions:"preguntas falladas",vocabReview:"Repaso de palabras",wordsLabel:"palabras",wordLabel:"palabra",
     library:"Biblioteca",
     profile:"Perfil",
     friends:"Amigos",

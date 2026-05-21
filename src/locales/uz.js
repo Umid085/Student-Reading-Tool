@@ -21,6 +21,8 @@ export default {
     correct:"To'g'ri!",incorrect:"Noto'g'ri",
     yourScore:"Sizning ballingiz",
     leaderboard:"Reyting",
+    home:"Bosh",
+    playToday:"Bugun o'yna",keepStreak:"{n}-kunlik seriyani saqla",startYourStreak:"Seriyani boshla",saveStreak:"Seriyani saqla",useShield:"Qalqondan foydalan",reviewLabel:"Takrorlash",missedQuestion:"qoldirilgan savol",missedQuestions:"qoldirilgan savol",vocabReview:"So'z takrori",wordsLabel:"so'z",wordLabel:"so'z",
     library:"Kutubxona",
     profile:"Profil",
     friends:"Do'stlar",

@@ -21,6 +21,8 @@ export default {
     correct:"Richtig!",incorrect:"Falsch",
     yourScore:"Dein Ergebnis",
     leaderboard:"Bestenliste",
+    home:"Start",
+    playToday:"Heute spielen",keepStreak:"{n}-Tage-Serie halten",startYourStreak:"Serie starten",saveStreak:"Serie retten",useShield:"Schild verwenden",reviewLabel:"Wiederholen",missedQuestion:"verpasste Frage",missedQuestions:"verpasste Fragen",vocabReview:"Vokabel-Wiederholung",wordsLabel:"Wörter",wordLabel:"Wort",
     library:"Bibliothek",
     profile:"Profil",
     friends:"Freunde",

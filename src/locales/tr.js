@@ -21,6 +21,8 @@ export default {
     correct:"Doğru!",incorrect:"Yanlış",
     yourScore:"Puanınız",
     leaderboard:"Liderlik Tablosu",
+    home:"Ana",
+    playToday:"Bugün oyna",keepStreak:"{n} günlük seriyi koru",startYourStreak:"Seriyi başlat",saveStreak:"Seriyi kurtar",useShield:"Kalkanı kullan",reviewLabel:"Tekrar",missedQuestion:"kaçırılan soru",missedQuestions:"kaçırılan soru",vocabReview:"Kelime tekrarı",wordsLabel:"kelime",wordLabel:"kelime",
     library:"Kütüphane",
     profile:"Profil",
     friends:"Arkadaşlar",
