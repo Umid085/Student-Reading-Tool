@@ -682,6 +682,17 @@ async function saveBoards(b){try{localStorage.setItem(BOARDS_KEY,JSON.stringify(
 async function loadSocial(){
   var v=await apiGet(SOCIAL_KEY)||{};
   if(v._likes&&!v["!likes"]){v["!likes"]=v._likes;delete v._likes;}
+  // Coerce Firebase-object-form arrays back to real arrays so direct
+  // mutations (doAcceptRequest, doDeclineRequest, etc.) don't crash.
+  for(var name in v){
+    var e=v[name];
+    if(e&&typeof e==="object"&&name!=="!likes"&&name!=="_likes"){
+      e.friends=asArray(e.friends);
+      e.requests=asArray(e.requests);
+      e.challenges=asArray(e.challenges);
+      e.sent=asArray(e.sent);
+    }
+  }
   return v;
 }
 async function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}try{await apiSet(SOCIAL_KEY,s);}catch(e){console.warn("saveSocial failed:",e);}}
@@ -709,7 +720,12 @@ async function loadAssignments(){try{var v=await apiGet(ASSIGNMENTS_KEY);var arr
 async function saveAssignmentsRemote(v){try{localStorage.setItem(ASSIGNMENTS_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(ASSIGNMENTS_KEY,v);}catch(e){}}
 
 // ── social helpers ────────────────────────────────────────────
-function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
+function getSocial(social,name){
+  var s=social[name];
+  if(!s||typeof s!=="object")return{friends:[],requests:[],likes:0,challenges:[],sent:[]};
+  // Firebase round-trips can swap nested arrays for numeric-keyed objects.
+  return{friends:asArray(s.friends),requests:asArray(s.requests),likes:Number(s.likes)||0,challenges:asArray(s.challenges),sent:asArray(s.sent)};
+}
 
 function doSendRequest(social,from,to){
   var toData=getSocial(social,to);
@@ -1456,12 +1472,12 @@ export default function App(){
     loadDaily().then(function(d){if(d&&d.date===today)setDailyChallenge(d);});
     var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
     setDailyDone(doneRaw&&doneRaw.date===today?doneRaw:null);
-    loadDailyLb().then(function(lb){setDailyLb((lb&&lb[today])||[]);});
+    loadDailyLb().then(function(lb){setDailyLb(asArray(lb&&lb[today]));});
     var todayQuests=getDayQuests(today);setDailyQuests(todayQuests);
     var qDoneRaw=null;try{qDoneRaw=JSON.parse(localStorage.getItem("rq-quests-"+currentUser.name+"-"+today));}catch(e){}
     setQuestsDone(qDoneRaw||{});
-    loadFavs().then(function(f){setAllFavs(f||{});setFavs((f&&f[currentUser.name])||[]);});
-    loadWeeklyLb().then(function(w){var wk=getWeekId();setWeeklyLb((w&&w[wk])||[]);});
+    loadFavs().then(function(f){setAllFavs(f||{});setFavs(asArray(f&&f[currentUser.name]));});
+    loadWeeklyLb().then(function(w){var wk=getWeekId();setWeeklyLb(asArray(w&&w[wk]));});
     loadDiscuss().then(function(d){setAllDiscuss(d||{});});
     var sKey="rq-streak-data-v1-"+currentUser.name;
     var sd=null;try{sd=JSON.parse(localStorage.getItem(sKey));}catch(e){}
@@ -5705,7 +5721,7 @@ export default function App(){
 
         {/* ── LEADERBOARD ───────────────────────────────────── */}
         {stage==="leaderboard"&&(function(){
-          var bd=boards[lbLevel]||[];
+          var bd=asArray(boards[lbLevel]);
           var lvd=getLv(lbLevel);
           var lbColor=lvd?lvd.color:"#5af0b3";
           var top3=bd.slice(0,3);
@@ -6386,7 +6402,7 @@ export default function App(){
           var topBadges=earnedBadges.slice(0,5);
           var lockedSlots=Math.max(0,5-topBadges.length);
           // World ranking preview — top of best level board
-          var bestBoard=(boards&&boards[myBestLevel]||[]).slice().sort(function(a,b){return (b.xp||0)-(a.xp||0);}).slice(0,5);
+          var bestBoard=asArray(boards&&boards[myBestLevel]).slice().sort(function(a,b){return (b.xp||0)-(a.xp||0);}).slice(0,5);
           var myRankIdx=bestBoard.findIndex(function(e){return e.name===currentUser.name;});
           // Pick most recent unfinished story or last played for "Active Quest"
           var lastPlayed=null;
