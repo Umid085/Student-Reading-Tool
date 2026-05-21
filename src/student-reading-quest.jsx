@@ -34,6 +34,20 @@ var LEVELS = [
   {key:"C2",color:"#ec4899",glow:"rgba(236,72,153,0.25)", mult:4,  timeLimit:210,timeBonus:400,desc:"Mastery"}
 ];
 
+// Demo passage + 5 MCQs for no-signup landing demo. B1 level, ~260 words.
+var DEMO_QUIZ = {
+  title:"Why Do Cats Purr?",
+  level:"B1",
+  passage:"Most people think cats purr only when they are happy, but the truth is more interesting. A cat may purr while it is being stroked on a warm sofa — but it can also purr when it is hurt, frightened or even close to death.\n\nScientists believe purring helps cats heal themselves. The sound has a frequency of about 25 to 150 hertz, and research suggests that these vibrations can speed up the growth of bones and the healing of soft tissue. In other words, when a cat purrs, it may be giving itself a kind of medicine.\n\nKittens start to purr when they are just a few days old. At that age they cannot yet see properly, so the purring helps them stay connected to their mother. The mother cat purrs back, and the gentle vibration tells the kittens where she is and that they are safe. This early conversation might be one of the first sounds a kitten ever learns to make.\n\nAdult cats often purr around the humans they trust. Some scientists have even noticed that certain purrs sound more like a baby's cry — a special kind of purr that cats use when they want food. People find it hard to ignore, which is probably why it works so well.\n\nSo a purr is not just a sign of joy. It is a complicated tool. It comforts kittens, calms anxious cats, helps healing, and even helps cats ask for what they want. The next time your cat purrs, remember: it is saying much more than 'I'm happy.'",
+  questions:[
+    {q:"According to the passage, when do cats purr?", options:["Only when they are happy","Only when they are kittens","In many different situations, including pain","Only when their owner is at home"], answer:2, explain:"Paragraph 1 says cats can purr when happy but also when 'hurt, frightened or even close to death.'"},
+    {q:"What do scientists think the purring vibrations can do?", options:["Make cats sleep longer","Help bones grow and tissue heal","Improve a cat's eyesight","Help cats run faster"], answer:1, explain:"Paragraph 2: vibrations 'can speed up the growth of bones and the healing of soft tissue.'"},
+    {q:"Why is purring important for kittens?", options:["It helps them learn to walk","It keeps them warm in winter","It connects them to their mother before they can see well","It scares away other cats"], answer:2, explain:"Paragraph 3: kittens cannot yet see properly, so purring helps them stay connected to their mother."},
+    {q:"What is special about the 'food-asking' purr?", options:["It is silent","It sounds a bit like a baby's cry","Only adult male cats do it","It lasts for hours"], answer:1, explain:"Paragraph 4: 'certain purrs sound more like a baby's cry — a special kind of purr that cats use when they want food.'"},
+    {q:"What is the main idea of the passage?", options:["Cats purr only because they are happy","Purring is just a random noise","Purring serves many different purposes for cats","People should pet cats more often"], answer:2, explain:"The last paragraph summarises: purring 'comforts kittens, calms anxious cats, helps healing, and even helps cats ask for what they want.'"}
+  ]
+};
+
 var PRESET_THEMES = [
   {id:"indigo", name:"Indigo", emoji:"💜", accent:"#6366f1", secondary:"#34d399"},
   {id:"ocean", name:"Ocean", emoji:"🌊", accent:"#06b6d4", secondary:"#818cf8"},
@@ -682,6 +696,17 @@ async function saveBoards(b){try{localStorage.setItem(BOARDS_KEY,JSON.stringify(
 async function loadSocial(){
   var v=await apiGet(SOCIAL_KEY)||{};
   if(v._likes&&!v["!likes"]){v["!likes"]=v._likes;delete v._likes;}
+  // Coerce Firebase-object-form arrays back to real arrays so direct
+  // mutations (doAcceptRequest, doDeclineRequest, etc.) don't crash.
+  for(var name in v){
+    var e=v[name];
+    if(e&&typeof e==="object"&&name!=="!likes"&&name!=="_likes"){
+      e.friends=asArray(e.friends);
+      e.requests=asArray(e.requests);
+      e.challenges=asArray(e.challenges);
+      e.sent=asArray(e.sent);
+    }
+  }
   return v;
 }
 async function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}try{await apiSet(SOCIAL_KEY,s);}catch(e){console.warn("saveSocial failed:",e);}}
@@ -709,7 +734,12 @@ async function loadAssignments(){try{var v=await apiGet(ASSIGNMENTS_KEY);var arr
 async function saveAssignmentsRemote(v){try{localStorage.setItem(ASSIGNMENTS_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(ASSIGNMENTS_KEY,v);}catch(e){}}
 
 // ── social helpers ────────────────────────────────────────────
-function getSocial(social,name){return social[name]||{friends:[],requests:[],likes:0,challenges:[]};}
+function getSocial(social,name){
+  var s=social[name];
+  if(!s||typeof s!=="object")return{friends:[],requests:[],likes:0,challenges:[],sent:[]};
+  // Firebase round-trips can swap nested arrays for numeric-keyed objects.
+  return{friends:asArray(s.friends),requests:asArray(s.requests),likes:Number(s.likes)||0,challenges:asArray(s.challenges),sent:asArray(s.sent)};
+}
 
 function doSendRequest(social,from,to){
   var toData=getSocial(social,to);
@@ -1398,6 +1428,8 @@ export default function App(){
 
   useEffect(function(){
     try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){try{var rd=JSON.parse(b64dec(rep));setPendingReportData(rd);}catch(e){}/* don't short-circuit auth — gate the report behind a logged-in name match below */}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}}catch(e){}
+    // Landing route: /welcome shows the marketing landing for logged-out visitors.
+    var pathIsWelcome=false;try{pathIsWelcome=window.location.pathname==="/welcome"||window.location.pathname==="/welcome/";}catch(e){}
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
@@ -1405,6 +1437,7 @@ export default function App(){
       setAllUsers(Array.isArray(v[0])?v[0]:[]);setBoards(v[1]||{});setSocial(v[2]||{});setClasses(asArray(v[3]));setAssignments(asArray(v[4]));
       var sessionName=saved||(savedCreds&&savedCreds.name);
       if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){if(savedCreds&&(savedCreds.refreshToken||savedCreds.hash)){getSessionToken(sessionName,savedCreds);if(savedCreds.hash)found=Object.assign({},found,{hash:savedCreds.hash});}if(!Array.isArray(found.games))found=Object.assign({},found,{games:[]});setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");identify(found.name);track("user_session_resumed",{isTeacher:role==="teacher",gameCount:(found.games||[]).length});}}
+      else if(pathIsWelcome){setStage("welcome");track("welcome_view");}
       setAppReady(true);
     });
   },[]);
@@ -1456,12 +1489,12 @@ export default function App(){
     loadDaily().then(function(d){if(d&&d.date===today)setDailyChallenge(d);});
     var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
     setDailyDone(doneRaw&&doneRaw.date===today?doneRaw:null);
-    loadDailyLb().then(function(lb){setDailyLb((lb&&lb[today])||[]);});
+    loadDailyLb().then(function(lb){setDailyLb(asArray(lb&&lb[today]));});
     var todayQuests=getDayQuests(today);setDailyQuests(todayQuests);
     var qDoneRaw=null;try{qDoneRaw=JSON.parse(localStorage.getItem("rq-quests-"+currentUser.name+"-"+today));}catch(e){}
     setQuestsDone(qDoneRaw||{});
-    loadFavs().then(function(f){setAllFavs(f||{});setFavs((f&&f[currentUser.name])||[]);});
-    loadWeeklyLb().then(function(w){var wk=getWeekId();setWeeklyLb((w&&w[wk])||[]);});
+    loadFavs().then(function(f){setAllFavs(f||{});setFavs(asArray(f&&f[currentUser.name]));});
+    loadWeeklyLb().then(function(w){var wk=getWeekId();setWeeklyLb(asArray(w&&w[wk]));});
     loadDiscuss().then(function(d){setAllDiscuss(d||{});});
     var sKey="rq-streak-data-v1-"+currentUser.name;
     var sd=null;try{sd=JSON.parse(localStorage.getItem(sKey));}catch(e){}
@@ -2251,6 +2284,15 @@ export default function App(){
       setStage("result");
       track("quiz_completed",{level:lvObj.key,pct:pct,xp:finalXp,timeSecs:timeSecs,wpm:wpm,stars:stars,isDaily:!!wasDaily,isChallenge:!!wasChallenge,gameCount:updatedUser.games.length});
     }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");track("quiz_failed",{error:String(e&&e.message||e)});}
+  }
+
+  // No-signup demo quiz. Standalone flow that doesn't touch user state.
+  var [demoStep,setDemoStep]=useState(0); // 0=passage, 1..5=questions, 6=result
+  var [demoAnswers,setDemoAnswers]=useState([]);
+  function startDemoQuiz(){
+    try{track("welcome_demo_start");}catch(e){}
+    setDemoStep(0);setDemoAnswers([]);
+    setStage("demo");
   }
 
   function doRestart(){
@@ -3103,6 +3145,236 @@ export default function App(){
             </div>
           </div>
         )}
+
+        {/* ── WELCOME / LANDING ────────────────────────────── */}
+        {stage==="welcome"&&(
+          <>
+            <style>{`
+              .lq-w-wrap{min-height:calc(100vh - 80px);padding:0 0 32px}
+              .lq-w-hero{position:relative;padding:48px 4px 36px;text-align:center;overflow:hidden}
+              .lq-w-hero::before{content:"";position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(90,240,179,0.22) 0%,rgba(90,240,179,0) 60%);pointer-events:none;z-index:0;filter:blur(20px)}
+              .lq-w-badge{position:relative;display:inline-flex;align-items:center;gap:8px;background:rgba(90,240,179,0.10);border:1px solid rgba(90,240,179,0.30);color:#5af0b3;border-radius:999px;padding:6px 14px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:22px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:1}
+              .lq-w-h1{position:relative;font-family:'Outfit',sans-serif;font-weight:800;font-size:36px;line-height:1.08;letter-spacing:-0.02em;color:#e3e0f4;margin:0 0 16px;z-index:1}
+              @media(min-width:480px){.lq-w-h1{font-size:48px}}
+              .lq-w-h1 .accent{background:linear-gradient(135deg,#5af0b3,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+              .lq-w-sub{position:relative;font-family:'Inter',sans-serif;font-size:15px;line-height:1.55;color:rgba(227,224,244,0.65);margin:0 auto 28px;max-width:380px;z-index:1}
+              .lq-w-ctas{position:relative;display:flex;flex-direction:column;gap:10px;max-width:340px;margin:0 auto 14px;z-index:1}
+              .lq-w-cta-primary{background:linear-gradient(135deg,#5af0b3,#34d399);color:#003825;border:none;border-radius:18px;padding:18px 24px;font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;letter-spacing:0.04em;cursor:pointer;box-shadow:0 12px 28px rgba(52,211,153,0.40),0 4px 0 0 rgba(0,0,0,0.35);transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+              .lq-w-cta-primary:hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(52,211,153,0.50),0 4px 0 0 rgba(0,0,0,0.35)}
+              .lq-w-cta-primary:active{transform:translateY(2px);box-shadow:0 8px 20px rgba(52,211,153,0.36),0 2px 0 0 rgba(0,0,0,0.35)}
+              .lq-w-cta-secondary{background:rgba(167,139,250,0.10);color:#c4b5fd;border:1px solid rgba(167,139,250,0.35);border-radius:18px;padding:16px 24px;font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+              .lq-w-cta-secondary:hover{background:rgba(167,139,250,0.18);border-color:rgba(167,139,250,0.55)}
+              .lq-w-nosignup{position:relative;font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.45);text-align:center;margin:0;z-index:1}
+              .lq-w-benefits{display:grid;grid-template-columns:1fr;gap:12px;padding:12px 0 28px}
+              @media(min-width:640px){.lq-w-benefits{grid-template-columns:repeat(3,1fr)}}
+              .lq-w-benefit{background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:20px 18px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+              .lq-w-benefit-icon{font-size:30px;line-height:1;margin-bottom:12px;display:block;filter:drop-shadow(0 4px 12px rgba(90,240,179,0.3))}
+              .lq-w-benefit-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:#e3e0f4;margin:0 0 6px}
+              .lq-w-benefit-body{font-family:'Inter',sans-serif;font-size:13px;line-height:1.5;color:rgba(227,224,244,0.55);margin:0}
+              .lq-w-footer{text-align:center;padding:20px 0 0;border-top:1px solid rgba(255,255,255,0.05);margin-top:8px}
+              .lq-w-footer-about{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.4);margin:0 0 10px}
+              .lq-w-footer-link{color:rgba(90,240,179,0.7);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;background:none;border:none;padding:0}
+              .lq-w-footer-link:hover{color:#5af0b3;text-decoration:underline}
+              .lq-w-langrow{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:14px 0 0;max-width:380px;margin-left:auto;margin-right:auto}
+              .lq-w-lang-btn{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:999px;padding:4px 10px;font-size:10px;font-weight:500;color:rgba(227,224,244,0.55);cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.04em;transition:all 0.2s}
+              .lq-w-lang-btn:hover{background:rgba(255,255,255,0.08);color:#e3e0f4}
+              .lq-w-lang-btn.is-active{background:rgba(90,240,179,0.12);border-color:rgba(90,240,179,0.35);color:#5af0b3}
+            `}</style>
+            <div className="lq-w-wrap">
+              <section className="lq-w-hero">
+                <span className="lq-w-badge">⚡ Free · CEFR A1–C2</span>
+                <h1 className="lq-w-h1">{t("welcomeTagline").split(" ").slice(0,-1).join(" ")} <span className="accent">{t("welcomeTagline").split(" ").slice(-1)[0]}</span></h1>
+                <p className="lq-w-sub">{t("welcomeSubhead")}</p>
+                <div className="lq-w-ctas">
+                  <button type="button" className="lq-w-cta-primary" onClick={function(){track("welcome_cta_primary");setStage("auth");try{window.history.replaceState(null,"","/");}catch(e){}}}>{t("welcomeCtaPrimary")} →</button>
+                  <button type="button" className="lq-w-cta-secondary" onClick={function(){track("welcome_cta_demo");startDemoQuiz();}}>▶ {t("welcomeCtaDemo")}</button>
+                </div>
+                <p className="lq-w-nosignup">{t("welcomeNoSignup")}</p>
+              </section>
+              <section className="lq-w-benefits">
+                <div className="lq-w-benefit">
+                  <span className="lq-w-benefit-icon">🤖</span>
+                  <h3 className="lq-w-benefit-title">{t("welcomeBenefit1Title")}</h3>
+                  <p className="lq-w-benefit-body">{t("welcomeBenefit1Body")}</p>
+                </div>
+                <div className="lq-w-benefit">
+                  <span className="lq-w-benefit-icon">🏆</span>
+                  <h3 className="lq-w-benefit-title">{t("welcomeBenefit2Title")}</h3>
+                  <p className="lq-w-benefit-body">{t("welcomeBenefit2Body")}</p>
+                </div>
+                <div className="lq-w-benefit">
+                  <span className="lq-w-benefit-icon">🌍</span>
+                  <h3 className="lq-w-benefit-title">{t("welcomeBenefit3Title")}</h3>
+                  <p className="lq-w-benefit-body">{t("welcomeBenefit3Body")}</p>
+                </div>
+              </section>
+              <div className="lq-w-footer">
+                <p className="lq-w-footer-about">{t("welcomeFooterAbout")}</p>
+                <button type="button" className="lq-w-footer-link" onClick={function(){track("welcome_already_account");setStage("auth");try{window.history.replaceState(null,"","/");}catch(e){}}}>{t("welcomeAlreadyAccount")} →</button>
+                <div className="lq-w-langrow">
+                  {[["en","🇬🇧"],["uz","🇺🇿"],["ru","🇷🇺"],["tr","🇹🇷"],["ar","🇸🇦"],["de","🇩🇪"],["es","🇪🇸"],["fr","🇫🇷"]].map(function(p){
+                    return<button key={p[0]} type="button" onClick={function(){setUiLang(p[0]);try{localStorage.setItem("rq-uilang",p[0]);}catch(e){}}} className={"lq-w-lang-btn"+(uiLang===p[0]?" is-active":"")}>{p[1]} {p[0].toUpperCase()}</button>;
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── DEMO QUIZ (no signup) ────────────────────────── */}
+        {stage==="demo"&&(function(){
+          var passageParts=DEMO_QUIZ.passage.split(/\n{2,}/);
+          var correctCount=demoAnswers.filter(function(a,i){return a===DEMO_QUIZ.questions[i].answer;}).length;
+          var totalQ=DEMO_QUIZ.questions.length;
+          var pct=Math.round(correctCount/totalQ*100);
+          return(
+            <>
+              <style>{`
+                .lq-d-wrap{min-height:calc(100vh - 80px);padding:0 0 32px}
+                .lq-d-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:14px 16px;margin:-18px -20px 18px;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+                @media(min-width:480px){.lq-d-topbar{margin:-22px -28px 18px}}
+                .lq-d-back{background:none;border:none;color:rgba(227,224,244,0.55);cursor:pointer;padding:8px;display:flex;align-items:center;border-radius:10px}
+                .lq-d-back:hover{background:rgba(255,255,255,0.06);color:#5af0b3}
+                .lq-d-title{flex:1;font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:#e3e0f4;margin:0;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+                .lq-d-badge{background:rgba(90,240,179,0.14);color:#5af0b3;border:1px solid rgba(90,240,179,0.4);border-radius:999px;padding:3px 9px;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase}
+                .lq-d-progress{height:4px;background:rgba(255,255,255,0.05);border-radius:999px;margin:0 0 18px;overflow:hidden}
+                .lq-d-progress-fill{height:100%;background:linear-gradient(90deg,#5af0b3,#a78bfa);border-radius:999px;transition:width 0.4s ease}
+                .lq-d-passage{background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px 22px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);margin-bottom:18px}
+                .lq-d-passage h2{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#e3e0f4;margin:0 0 14px}
+                .lq-d-passage p{font-family:'Newsreader','Inter',serif;font-size:16px;line-height:1.65;color:rgba(227,224,244,0.85);margin:0 0 14px}
+                .lq-d-passage p:last-child{margin-bottom:0}
+                .lq-d-passage p:first-of-type::first-letter{font-size:56px;font-weight:700;float:left;line-height:0.9;margin:6px 10px 0 0;color:#5af0b3;font-family:'Outfit',sans-serif}
+                .lq-d-q{background:rgba(30,30,44,0.45);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:22px 20px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);margin-bottom:16px}
+                .lq-d-q-num{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:rgba(167,139,250,0.8);letter-spacing:0.1em;margin-bottom:8px}
+                .lq-d-q-text{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:#e3e0f4;line-height:1.4;margin:0 0 18px}
+                .lq-d-opts{display:flex;flex-direction:column;gap:8px}
+                .lq-d-opt{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;color:#e3e0f4;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;cursor:pointer;text-align:left;transition:all 0.15s;font:inherit;width:100%}
+                .lq-d-opt:hover{background:rgba(255,255,255,0.06);border-color:rgba(167,139,250,0.35)}
+                .lq-d-opt.sel{background:rgba(167,139,250,0.15);border-color:#a78bfa;color:#c4b5fd}
+                .lq-d-opt.correct{background:rgba(90,240,179,0.12);border-color:#5af0b3;color:#5af0b3}
+                .lq-d-opt.wrong{background:rgba(248,113,113,0.10);border-color:#f87171;color:#f87171}
+                .lq-d-opt-letter{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;flex-shrink:0}
+                .lq-d-opt.sel .lq-d-opt-letter{background:#a78bfa;color:#0d0d1a}
+                .lq-d-opt.correct .lq-d-opt-letter{background:#5af0b3;color:#003825}
+                .lq-d-opt.wrong .lq-d-opt-letter{background:#f87171;color:#fff}
+                .lq-d-feedback{margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.03);font-family:'Inter',sans-serif;font-size:13px;line-height:1.55;color:rgba(227,224,244,0.78)}
+                .lq-d-cta{display:flex;flex-direction:column;gap:10px}
+                .lq-d-cta-primary{background:linear-gradient(135deg,#5af0b3,#34d399);color:#003825;border:none;border-radius:16px;padding:16px 22px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;letter-spacing:0.04em;cursor:pointer;box-shadow:0 8px 20px rgba(52,211,153,0.36),0 4px 0 0 rgba(0,0,0,0.3);transition:all 0.2s}
+                .lq-d-cta-primary:active{transform:translateY(2px);box-shadow:0 6px 16px rgba(52,211,153,0.3),0 2px 0 0 rgba(0,0,0,0.3)}
+                .lq-d-cta-primary:disabled{opacity:0.5;cursor:default}
+                .lq-d-cta-ghost{background:rgba(255,255,255,0.04);color:rgba(227,224,244,0.75);border:1px solid rgba(255,255,255,0.10);border-radius:16px;padding:14px 22px;font-family:'Inter',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all 0.15s}
+                .lq-d-cta-ghost:hover{background:rgba(255,255,255,0.08)}
+                .lq-d-result{text-align:center;padding:18px 8px 4px}
+                .lq-d-result-pct{font-family:'Outfit',sans-serif;font-size:72px;font-weight:900;background:linear-gradient(135deg,#5af0b3,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin:0 0 6px}
+                .lq-d-result-sub{font-family:'Inter',sans-serif;font-size:15px;color:rgba(227,224,244,0.65);margin:0 0 22px}
+                .lq-d-result-stats{display:flex;gap:10px;margin-bottom:24px}
+                .lq-d-result-stat{flex:1;background:rgba(30,30,44,0.55);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 8px;text-align:center}
+                .lq-d-result-stat-v{font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:#5af0b3;line-height:1}
+                .lq-d-result-stat-l{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.5);margin-top:4px;letter-spacing:0.08em;text-transform:uppercase}
+                .lq-d-signup-card{background:linear-gradient(135deg,rgba(90,240,179,0.10),rgba(167,139,250,0.08));border:1px solid rgba(90,240,179,0.30);border-radius:20px;padding:22px 20px;margin-bottom:14px;text-align:center}
+                .lq-d-signup-card h3{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#e3e0f4;margin:0 0 8px}
+                .lq-d-signup-card p{font-family:'Inter',sans-serif;font-size:13px;color:rgba(227,224,244,0.65);margin:0 0 16px;line-height:1.5}
+              `}</style>
+              <div className="lq-d-wrap">
+                <header className="lq-d-topbar">
+                  <button type="button" className="lq-d-back" onClick={function(){setStage("welcome");try{window.history.replaceState(null,"","/welcome");}catch(e){}}} aria-label="Back">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <h1 className="lq-d-title">
+                    <span className="lq-d-badge">Demo · B1</span>
+                    <span style={{opacity:0.85}}>{DEMO_QUIZ.title}</span>
+                  </h1>
+                </header>
+                <div className="lq-d-progress">
+                  <div className="lq-d-progress-fill" style={{width:(demoStep===0?5:demoStep>totalQ?100:(demoStep/totalQ)*100)+"%"}}/>
+                </div>
+
+                {/* Step 0: passage */}
+                {demoStep===0&&(
+                  <>
+                    <article className="lq-d-passage">
+                      <h2>{DEMO_QUIZ.title}</h2>
+                      {passageParts.map(function(para,i){return<p key={i}>{para}</p>;})}
+                    </article>
+                    <div className="lq-d-cta">
+                      <button type="button" className="lq-d-cta-primary" onClick={function(){track("demo_passage_done");setDemoStep(1);}}>{t("startQuiz")}</button>
+                    </div>
+                  </>
+                )}
+
+                {/* Steps 1..N: questions */}
+                {demoStep>=1&&demoStep<=totalQ&&(function(){
+                  var qIdx=demoStep-1;
+                  var q=DEMO_QUIZ.questions[qIdx];
+                  var sel=demoAnswers[qIdx];
+                  var confirmed=sel!==undefined;
+                  function pick(i){
+                    if(confirmed)return;
+                    var next=demoAnswers.slice();next[qIdx]=i;setDemoAnswers(next);
+                    try{track("demo_q_answered",{q:qIdx+1,correct:i===q.answer});}catch(e){}
+                  }
+                  return(
+                    <>
+                      <div className="lq-d-q">
+                        <div className="lq-d-q-num">QUESTION {demoStep} / {totalQ}</div>
+                        <p className="lq-d-q-text">{q.q}</p>
+                        <div className="lq-d-opts">
+                          {q.options.map(function(opt,i){
+                            var cls="lq-d-opt";
+                            if(confirmed){
+                              if(i===q.answer)cls+=" correct";
+                              else if(i===sel)cls+=" wrong";
+                            } else if(i===sel) cls+=" sel";
+                            return<button key={i} type="button" className={cls} onClick={function(){pick(i);}}>
+                              <span className="lq-d-opt-letter">{["A","B","C","D"][i]}</span>
+                              <span>{opt}</span>
+                            </button>;
+                          })}
+                        </div>
+                        {confirmed&&<div className="lq-d-feedback">{sel===q.answer?"✓ ":"✕ "}{q.explain}</div>}
+                      </div>
+                      <div className="lq-d-cta">
+                        <button type="button" className="lq-d-cta-primary" disabled={!confirmed} onClick={function(){if(demoStep<totalQ)setDemoStep(demoStep+1);else{setDemoStep(totalQ+1);try{track("demo_completed",{score:correctCount+(sel===q.answer&&qIdx===totalQ-1&&demoAnswers[qIdx]===undefined?1:0),total:totalQ});}catch(e){}}}}>{demoStep<totalQ?t("nextQuestion")+" →":t("seeResults")+" →"}</button>
+                      </div>
+                    </>
+                  );
+                })()}
+
+                {/* Step N+1: result + signup CTA */}
+                {demoStep>totalQ&&(
+                  <>
+                    <div className="lq-d-result">
+                      <div className="lq-d-result-pct">{pct}%</div>
+                      <p className="lq-d-result-sub">{correctCount} / {totalQ} correct</p>
+                    </div>
+                    <div className="lq-d-result-stats">
+                      <div className="lq-d-result-stat">
+                        <div className="lq-d-result-stat-v">+{correctCount*50}</div>
+                        <div className="lq-d-result-stat-l">XP</div>
+                      </div>
+                      <div className="lq-d-result-stat">
+                        <div className="lq-d-result-stat-v" style={{color:pct>=80?"#5af0b3":pct>=60?"#fbbf24":"#f87171"}}>{pct>=80?"★★★":pct>=60?"★★":"★"}</div>
+                        <div className="lq-d-result-stat-l">Stars</div>
+                      </div>
+                      <div className="lq-d-result-stat">
+                        <div className="lq-d-result-stat-v" style={{color:"#a78bfa"}}>B1</div>
+                        <div className="lq-d-result-stat-l">Level</div>
+                      </div>
+                    </div>
+                    <div className="lq-d-signup-card">
+                      <h3>🏆 Save your XP, build a streak</h3>
+                      <p>Sign up free to save progress, unlock all 60 stories, track your streak, and join the leaderboard.</p>
+                    </div>
+                    <div className="lq-d-cta">
+                      <button type="button" className="lq-d-cta-primary" onClick={function(){try{track("demo_signup_cta");}catch(e){}setStage("auth");try{window.history.replaceState(null,"","/");}catch(e){}}}>{t("welcomeCtaPrimary")} →</button>
+                      <button type="button" className="lq-d-cta-ghost" onClick={function(){try{track("demo_restart");}catch(e){}setDemoStep(0);setDemoAnswers([]);}}>↻ Restart Demo</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          );
+        })()}
 
         {/* ── AUTH ──────────────────────────────────────────── */}
         {stage==="auth"&&(
@@ -5705,7 +5977,7 @@ export default function App(){
 
         {/* ── LEADERBOARD ───────────────────────────────────── */}
         {stage==="leaderboard"&&(function(){
-          var bd=boards[lbLevel]||[];
+          var bd=asArray(boards[lbLevel]);
           var lvd=getLv(lbLevel);
           var lbColor=lvd?lvd.color:"#5af0b3";
           var top3=bd.slice(0,3);
@@ -6386,7 +6658,7 @@ export default function App(){
           var topBadges=earnedBadges.slice(0,5);
           var lockedSlots=Math.max(0,5-topBadges.length);
           // World ranking preview — top of best level board
-          var bestBoard=(boards&&boards[myBestLevel]||[]).slice().sort(function(a,b){return (b.xp||0)-(a.xp||0);}).slice(0,5);
+          var bestBoard=asArray(boards&&boards[myBestLevel]).slice().sort(function(a,b){return (b.xp||0)-(a.xp||0);}).slice(0,5);
           var myRankIdx=bestBoard.findIndex(function(e){return e.name===currentUser.name;});
           // Pick most recent unfinished story or last played for "Active Quest"
           var lastPlayed=null;
