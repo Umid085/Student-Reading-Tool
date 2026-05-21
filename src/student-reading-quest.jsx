@@ -722,6 +722,19 @@ async function loadWeeklyLb(){try{var v=await apiGet(WEEKLY_KEY);if(v)return v;}
 async function saveWeeklyLb(v){try{localStorage.setItem(WEEKLY_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(WEEKLY_KEY,v);}catch(e){console.warn("saveWeeklyLb failed:",e);}}
 async function loadDiscuss(){var v=await apiGet(DISCUSS_KEY);return v||{};}
 async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
+// Per-user daily quota. Server-managed counters in Firebase; the chip on
+// the home screen reads `used` and `maxLow`/`maxHigh` for the "ai" bucket
+// and renders a colour by % of cap. Returns null when unauthenticated or
+// the endpoint fails (chip then hides).
+async function loadUserQuota(){
+  if(!_sessionToken)return null;
+  try{
+    var r=await fetch("/api/quota",{headers:{"Authorization":"Bearer "+_sessionToken}});
+    if(!r.ok)return null;
+    var d=await r.json();
+    return d&&d.quotas?d.quotas:null;
+  }catch(e){return null;}
+}
 function loadQuotes(){try{var v=localStorage.getItem(QUOTES_KEY);return v?JSON.parse(v):[];}catch(e){return[];}}
 function saveQuotesLocal(v){try{localStorage.setItem(QUOTES_KEY,JSON.stringify(v));}catch(e){}}
 function generateClassCode(){var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",r="";for(var i=0;i<6;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
@@ -1312,6 +1325,10 @@ export default function App(){
   var [shields,setShields]=useState(0);
   var [shieldDates,setShieldDates]=useState([]);
   var [longestStreak,setLongestStreak]=useState(0);
+  // Daily quota state — { ai:{used,maxLow,maxHigh}, vocab:{used,max}, ... }
+  // Refreshed on login + after every result. Used by the home-screen
+  // "X / Y quests today" chip. Null until first /api/quota response.
+  var [userQuota,setUserQuota]=useState(null);
   // Feature 2 - Placement Test
   var [showPlacement,setShowPlacement]=useState(false);
   var [placementAnswers,setPlacementAnswers]=useState({});
@@ -1507,6 +1524,7 @@ export default function App(){
   useEffect(function(){
     if(!currentUser)return;
     var today=todayKey();
+    loadUserQuota().then(function(q){setUserQuota(q);});
     loadVocab().then(function(v){setAllVocab(v||{});setVocab(asArray(v&&v[currentUser.name]));});
     loadDaily().then(function(d){if(d&&d.date===today)setDailyChallenge(d);});
     var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
@@ -2314,6 +2332,9 @@ export default function App(){
       stopMusic();playSfx("complete");
       setStage("result");
       track("quiz_completed",{level:lvObj.key,pct:pct,xp:finalXp,timeSecs:timeSecs,wpm:wpm,stars:stars,isDaily:!!wasDaily,isChallenge:!!wasChallenge,gameCount:updatedUser.games.length});
+      // Refresh the quota chip so users see their daily counter tick up
+      // immediately on return-to-home, without waiting for a full reload.
+      loadUserQuota().then(function(q){setUserQuota(q);});
     }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");track("quiz_failed",{error:String(e&&e.message||e)});}
   }
 
@@ -4530,6 +4551,17 @@ export default function App(){
                   <span className="lq-pill" style={{background:"rgba(167,139,250,0.15)",color:"#c4b5fd",border:"1px solid rgba(167,139,250,0.3)"}}>👥 {myData.friends.length}</span>
                   {myData.likes>0&&<span className="lq-pill" style={{background:"rgba(236,72,153,0.15)",color:"#f472b6",border:"1px solid rgba(236,72,153,0.3)"}}>❤️ {myData.likes}</span>}
                   <span className="lq-pill" style={{background:"rgba(52,211,153,0.15)",color:"#5af0b3",border:"1px solid rgba(52,211,153,0.3)"}}>⚡ {currentUser.totalXp||0} XP</span>
+                  {userQuota&&userQuota.ai&&(function(){
+                    // Level-aware cap for the "ai" bucket: A1-B1 → 10/day, B2-C2 → 6/day.
+                    var lowLv=["A1","A2","B1"].indexOf(level||"")!==-1;
+                    var aiMax=lowLv?(userQuota.ai.maxLow||10):(userQuota.ai.maxHigh||6);
+                    var aiUsed=userQuota.ai.used||0;
+                    var pct=aiMax>0?aiUsed/aiMax:0;
+                    var tone=pct>=1?{bg:"rgba(239,68,68,0.18)",fg:"#f87171",bd:"rgba(239,68,68,0.4)"}
+                      :pct>=0.75?{bg:"rgba(245,158,11,0.18)",fg:"#fbbf24",bd:"rgba(245,158,11,0.4)"}
+                      :{bg:"rgba(99,102,241,0.15)",fg:"#a78bfa",bd:"rgba(99,102,241,0.3)"};
+                    return<span className="lq-pill" title="Daily AI quest limit — resets at UTC midnight" style={{background:tone.bg,color:tone.fg,border:"1px solid "+tone.bd}}>🪙 {aiUsed} / {aiMax} today</span>;
+                  })()}
                 </div>
 
                 {milestoneToShow&&(
