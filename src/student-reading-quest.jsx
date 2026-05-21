@@ -2324,6 +2324,13 @@ export default function App(){
     setEcData(null);setEcSelected(new Set());setEcRevealed(false);setEcLoading(false);setEcError("");setPassagePeekOpen(false);
     setAutoVocabWords([]);setAutoVocabDismissed(false);
     setStage("home");
+    // Land on the level picker, not buried below the streak/daily-challenge sections,
+    // so "Play Again"/"Start Reading" actually feel like start-reading buttons.
+    setTimeout(function(){
+      var el=document.getElementById("rq-level-picker");
+      if(el&&el.scrollIntoView)el.scrollIntoView({behavior:"smooth",block:"start"});
+      else window.scrollTo(0,0);
+    },50);
   }
 
   function useShield(){
@@ -4653,7 +4660,7 @@ export default function App(){
                   </div>
                 )}
 
-                <div className="lq-section-h">
+                <div className="lq-section-h" id="rq-level-picker">
                   <div className="h-lbl"><span className="h-ico">✦</span>{t("chooseLevel")}</div>
                 </div>
                 <div className="lq-levels">
@@ -8099,7 +8106,7 @@ export default function App(){
               <div style={{...CARD,textAlign:"center",padding:40}}>
                 <div style={{fontSize:36,marginBottom:10}}>🔖</div>
                 <p style={{color:"#6b7280",fontSize:14}}>No saved sentences yet. In the reading screen, tap a sentence then click "🔖 Save" to add it here.</p>
-                <button onClick={function(){setStage("home");}} style={{...mkBtn("#f59e0b","#0d0d1a"),marginTop:14}}>{t("startReading")}</button>
+                <button onClick={doRestart} style={{...mkBtn("#f59e0b","#0d0d1a"),marginTop:14}}>{t("startReading")}</button>
               </div>
             ):(
               <div>
