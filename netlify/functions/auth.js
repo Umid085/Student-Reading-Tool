@@ -50,6 +50,9 @@ export const handler = async function (event) {
     // Try the dedicated auth store first (new and migrated users)
     const ar = await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`);
     const authData = await ar.json();
+    if (authData && typeof authData === "object" && !Array.isArray(authData) && typeof authData.error === "string") {
+      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: `Firebase: ${authData.error}` }) };
+    }
     if (Array.isArray(authData)) {
       const authUser = authData.find(function (u) {
         return u.name.toLowerCase() === name.toLowerCase();
@@ -86,6 +89,9 @@ export const handler = async function (event) {
     // Fall back to old profile list (users registered before the auth separation)
     const pr = await fetch(`${DB}/rq/rq-users-v6.json${fbAuth}`);
     const profiles = await pr.json();
+    if (profiles && typeof profiles === "object" && !Array.isArray(profiles) && typeof profiles.error === "string") {
+      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: `Firebase: ${profiles.error}` }) };
+    }
     if (!Array.isArray(profiles)) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Invalid credentials" }) };
     }

@@ -42,6 +42,10 @@ export default async function handler(req, res) {
     // Try the dedicated auth store first (new and migrated users)
     const ar = await fetch(`${DB}/rq/rq-auth-v6.json${fbAuth}`);
     const authData = await ar.json();
+    // Surface Firebase permission/auth errors instead of masking them as "Invalid credentials"
+    if (authData && typeof authData === "object" && !Array.isArray(authData) && typeof authData.error === "string") {
+      return res.status(502).json({ error: `Firebase: ${authData.error}` });
+    }
     if (Array.isArray(authData)) {
       const authUser = authData.find(function (u) {
         return u.name.toLowerCase() === name.toLowerCase();
@@ -72,6 +76,9 @@ export default async function handler(req, res) {
     // Fall back to old profile list (users registered before the auth separation)
     const pr = await fetch(`${DB}/rq/rq-users-v6.json${fbAuth}`);
     const profiles = await pr.json();
+    if (profiles && typeof profiles === "object" && !Array.isArray(profiles) && typeof profiles.error === "string") {
+      return res.status(502).json({ error: `Firebase: ${profiles.error}` });
+    }
     if (!Array.isArray(profiles)) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
