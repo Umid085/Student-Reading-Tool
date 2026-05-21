@@ -1956,17 +1956,23 @@ export default function App(){
     if(selectedWord===word){setSelectedWord(null);setWordDef(null);return;}
     setSelectedWord(word);setWordDef(null);setWordDefLoading(true);
     try{
-      var ctl=new AbortController();var tid=setTimeout(function(){ctl.abort();},8000);
-      var r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(word),{signal:ctl.signal});clearTimeout(tid);
+      // Server endpoint dispatches by level (A1/A2 → translate, B1+ →
+      // dict+situational-example) and shares a global cache, so the same
+      // word never round-trips through Claude twice across users.
+      var lookupLevel=level||"B1";
+      var lookupLang=uiLang||"en";
+      var ctl=new AbortController();var tid=setTimeout(function(){ctl.abort();},10000);
+      var r=await fetch("/api/vocab-lookup",{method:"POST",headers:{"Content-Type":"application/json"},signal:ctl.signal,body:JSON.stringify({word:word,lang:lookupLang,level:lookupLevel})});
+      clearTimeout(tid);
       if(!r.ok)throw new Error("not found");
       var data=await r.json();
-      var entry=data[0];
-      var phonetic=entry.phonetic||(entry.phonetics&&entry.phonetics[0]&&entry.phonetics[0].text)||"";
-      var audio=(entry.phonetics&&entry.phonetics.find(function(p){return p.audio;})||{}).audio||"";
-      var meaning=entry.meanings&&entry.meanings[0]&&entry.meanings[0].definitions&&entry.meanings[0].definitions[0];
-      setWordDef({phonetic:phonetic,audio:audio,def:meaning?meaning.definition:"",example:meaning&&meaning.example?meaning.example:""});
+      if(data.mode==="translate"){
+        setWordDef({mode:"translate",translation:data.translation||"",lang:data.lang||lookupLang,phonetic:"",audio:"",def:"",example:""});
+      }else{
+        setWordDef({mode:"enriched",phonetic:data.phonetic||"",audio:data.audio||"",def:data.def||"",example:data.example||""});
+      }
     }catch(e){
-      setWordDef({phonetic:"",audio:"",def:t("stu_noDefinition"),example:""});
+      setWordDef({mode:"error",phonetic:"",audio:"",def:t("stu_noDefinition"),example:""});
     }
     setWordDefLoading(false);
   }
@@ -5102,9 +5108,18 @@ export default function App(){
                         <button type="button" className={"lq-mini-btn"+(savedWords.has(selectedWord)?" is-on":"")} onClick={function(){toggleWord(selectedWord);}}>{savedWords.has(selectedWord)?"⭐ Saved":"⭐ Save to vocab"}</button>
                       </div>
                       {wordDefLoading&&<div style={{marginTop:10}}><Skeleton h={12} mb={6}/><Skeleton h={12} w="70%"/></div>}
-                      {wordDef&&!wordDefLoading&&(
+                      {wordDef&&!wordDefLoading&&wordDef.mode==="translate"&&(function(){
+                        var LANG_LABELS={uz:"Uzbek",ru:"Russian",tr:"Turkish",ar:"Arabic",de:"German",es:"Spanish",fr:"French"};
+                        return(
+                          <>
+                            <p className="lq-vocab-def" style={{fontFamily:"'Newsreader','Inter',serif",fontSize:18,fontWeight:700,color:"#fbbf24",direction:wordDef.lang==="ar"?"rtl":"ltr"}}>{wordDef.translation||t("stu_noDefinition")}</p>
+                            <p style={{fontSize:10,color:"rgba(227,224,244,0.4)",margin:"4px 0 0",letterSpacing:"0.04em",textTransform:"uppercase"}}>{LANG_LABELS[wordDef.lang]||wordDef.lang||""}</p>
+                          </>
+                        );
+                      })()}
+                      {wordDef&&!wordDefLoading&&wordDef.mode!=="translate"&&(
                         <>
-                          <p className="lq-vocab-def">{wordDef.def}</p>
+                          <p className="lq-vocab-def">{wordDef.def||t("stu_noDefinition")}</p>
                           {wordDef.example&&<p className="lq-vocab-ex">"{wordDef.example}"</p>}
                         </>
                       )}
