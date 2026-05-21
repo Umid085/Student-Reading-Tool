@@ -700,9 +700,12 @@ async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
 function loadQuotes(){try{var v=localStorage.getItem(QUOTES_KEY);return v?JSON.parse(v):[];}catch(e){return[];}}
 function saveQuotesLocal(v){try{localStorage.setItem(QUOTES_KEY,JSON.stringify(v));}catch(e){}}
 function generateClassCode(){var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",r="";for(var i=0;i<6;i++)r+=c[Math.floor(Math.random()*c.length)];return r;}
-async function loadClasses(){try{var v=await apiGet(CLASSES_KEY);if(v&&Array.isArray(v))return v;}catch(e){}try{var lv=localStorage.getItem(CLASSES_KEY);return lv?JSON.parse(lv):[];}catch(e){return[];}}
+// Firebase returns arrays-with-gaps as objects with numeric string keys. Coerce
+// to an array so downstream `.filter`/`.map` doesn't crash the whole app.
+function asArray(v){if(Array.isArray(v))return v;if(v&&typeof v==="object")return Object.keys(v).filter(function(k){return /^\d+$/.test(k);}).sort(function(a,b){return Number(a)-Number(b);}).map(function(k){return v[k];}).filter(function(x){return x!=null;});return[];}
+async function loadClasses(){try{var v=await apiGet(CLASSES_KEY);var arr=asArray(v);if(arr.length||Array.isArray(v))return arr;}catch(e){}try{var lv=localStorage.getItem(CLASSES_KEY);return asArray(lv?JSON.parse(lv):[]);}catch(e){return[];}}
 async function saveClassesRemote(v){try{localStorage.setItem(CLASSES_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(CLASSES_KEY,v);}catch(e){}}
-async function loadAssignments(){try{var v=await apiGet(ASSIGNMENTS_KEY);if(v&&Array.isArray(v))return v;}catch(e){}try{var lv=localStorage.getItem(ASSIGNMENTS_KEY);return lv?JSON.parse(lv):[];}catch(e){return[];}}
+async function loadAssignments(){try{var v=await apiGet(ASSIGNMENTS_KEY);var arr=asArray(v);if(arr.length||Array.isArray(v))return arr;}catch(e){}try{var lv=localStorage.getItem(ASSIGNMENTS_KEY);return asArray(lv?JSON.parse(lv):[]);}catch(e){return[];}}
 async function saveAssignmentsRemote(v){try{localStorage.setItem(ASSIGNMENTS_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(ASSIGNMENTS_KEY,v);}catch(e){}}
 
 // ── social helpers ────────────────────────────────────────────
@@ -1399,7 +1402,7 @@ export default function App(){
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
     Promise.all([loadUsers(),loadBoards(),loadSocial(),loadClasses(),loadAssignments()]).then(function(v){
-      setAllUsers(v[0]);setBoards(v[1]);setSocial(v[2]);setClasses(v[3]||[]);setAssignments(v[4]||[]);
+      setAllUsers(Array.isArray(v[0])?v[0]:[]);setBoards(v[1]||{});setSocial(v[2]||{});setClasses(asArray(v[3]));setAssignments(asArray(v[4]));
       var sessionName=saved||(savedCreds&&savedCreds.name);
       if(sessionName){var found=null;for(var i=0;i<v[0].length;i++){if(v[0][i].name===sessionName){found=v[0][i];break;}}if(found){if(savedCreds&&(savedCreds.refreshToken||savedCreds.hash)){getSessionToken(sessionName,savedCreds);if(savedCreds.hash)found=Object.assign({},found,{hash:savedCreds.hash});}if(!Array.isArray(found.games))found=Object.assign({},found,{games:[]});setCurrentUser(found);var role=localStorage.getItem("rq-role-"+found.name);if(role==="teacher"&&!localStorage.getItem("rq-onboarded-"+found.name))setOnboardStep(1);setStage(role==="teacher"?"teacherDashboard":"home");identify(found.name);track("user_session_resumed",{isTeacher:role==="teacher",gameCount:(found.games||[]).length});}}
       setAppReady(true);
@@ -1449,7 +1452,7 @@ export default function App(){
   useEffect(function(){
     if(!currentUser)return;
     var today=todayKey();
-    loadVocab().then(function(v){setAllVocab(v||{});setVocab((v&&v[currentUser.name])||[]);});
+    loadVocab().then(function(v){setAllVocab(v||{});setVocab(asArray(v&&v[currentUser.name]));});
     loadDaily().then(function(d){if(d&&d.date===today)setDailyChallenge(d);});
     var doneRaw=null;try{doneRaw=JSON.parse(localStorage.getItem("rq-daily-done-"+currentUser.name));}catch(e){}
     setDailyDone(doneRaw&&doneRaw.date===today?doneRaw:null);
@@ -1470,7 +1473,7 @@ export default function App(){
     setGoals(gd||{});
     var rqk="rq-review-"+currentUser.name;
     var rqd=null;try{rqd=JSON.parse(localStorage.getItem(rqk));}catch(e){}
-    setReviewQueue(rqd||[]);
+    setReviewQueue(asArray(rqd));
   },[currentUser]);
 
   // pull fresh users when entering friends page or typing a search
