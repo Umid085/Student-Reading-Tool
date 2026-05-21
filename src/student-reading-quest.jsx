@@ -1355,6 +1355,21 @@ export default function App(){
   var [teacherSearchResults,setTeacherSearchResults]=useState([]);
   var [teacherSearchLoading,setTeacherSearchLoading]=useState(false);
   var [teacherSearchTotal,setTeacherSearchTotal]=useState(0);
+  // F7 — Group Reading Rooms
+  // roomCode: active room id; roomState: latest server snapshot;
+  // roomMyName: the display name we joined under (could be the
+  // authenticated username OR an anonymous nickname for link-share guests).
+  // roomEntryCode: typed code on the entry/join screen.
+  var [roomCode,setRoomCode]=useState("");
+  var [roomState,setRoomState]=useState(null);
+  var [roomMyName,setRoomMyName]=useState("");
+  var [roomLoading,setRoomLoading]=useState(false);
+  var [roomMsg,setRoomMsg]=useState("");
+  var [roomEntryCode,setRoomEntryCode]=useState("");
+  var [roomEntryName,setRoomEntryName]=useState("");
+  var [roomCreateTopic,setRoomCreateTopic]=useState("");
+  var roomPollRef=useRef(null);
+  var roomStartRef=useRef(0);
   // Feature 2 - Placement Test
   var [showPlacement,setShowPlacement]=useState(false);
   var [placementAnswers,setPlacementAnswers]=useState({});
@@ -1482,7 +1497,7 @@ export default function App(){
   },[currentUser,pendingReportData]);
 
   useEffect(function(){
-    try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){try{var rd=JSON.parse(b64dec(rep));setPendingReportData(rd);}catch(e){}/* don't short-circuit auth — gate the report behind a logged-in name match below */}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}var tch=params.get("teacher");if(tch){loadPublicTeacherProfile(tch);setStage("teacherProfile");setAppReady(true);return;}}catch(e){}
+    try{var params=new URLSearchParams(window.location.search);var b64dec=function(b){return new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0);}));};var rep=params.get("report");if(rep){try{var rd=JSON.parse(b64dec(rep));setPendingReportData(rd);}catch(e){}/* don't short-circuit auth — gate the report behind a logged-in name match below */}var pf=params.get("portfolio");if(pf){var pd=JSON.parse(b64dec(pf));setPortfolioShareData(pd);setStage("portfolioShare");setAppReady(true);return;}var tch=params.get("teacher");if(tch){loadPublicTeacherProfile(tch);setStage("teacherProfile");setAppReady(true);return;}var rm=params.get("room");if(rm){setRoomEntryCode(rm);setStage("roomEntry");setAppReady(true);/* don't auto-join — let the user pick their display name first */return;}}catch(e){}
     var saved=localStorage.getItem("rq-session");
     var savedCreds=null;
     try{savedCreds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
@@ -2664,6 +2679,86 @@ export default function App(){
       try{track("teacher_subscribed",{teacher:teacherName});}catch(e){}
     }catch(e){setSubscribeMsg("✗ "+(e.message||"Couldn't subscribe"));}
   }
+  // ── F7 Group Reading Rooms ──────────────────────────────────────
+  async function roomCall(body){
+    var r=await fetch("/api/room",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":_sessionToken?("Bearer "+_sessionToken):""},
+      body:JSON.stringify(body),
+    });
+    var d=null;try{d=await r.json();}catch(e){}
+    return{ok:r.ok,status:r.status,data:d||{}};
+  }
+  async function createRoom(){
+    setRoomLoading(true);setRoomMsg("");
+    var displayName=currentUser?currentUser.name:(roomEntryName||"anonymous");
+    var isTeacher=currentUser&&localStorage.getItem("rq-role-"+currentUser.name)==="teacher";
+    var payload={action:"create",level:level||"B1",topic:roomCreateTopic.trim()||null,ownerName:displayName,ownerType:isTeacher?"teacher":"student"};
+    try{
+      var res=await roomCall(payload);
+      if(!res.ok)throw new Error(res.data.error||"Couldn't create room");
+      setRoomState(res.data.room);
+      setRoomCode(res.data.room.code);
+      setRoomMyName(displayName);
+      roomStartRef.current=Date.now();
+      setStage("room");
+      try{track("room_created",{ownerType:payload.ownerType,level:payload.level});}catch(e){}
+    }catch(e){setRoomMsg(e.message||"Couldn't create room");}
+    finally{setRoomLoading(false);}
+  }
+  async function joinRoom(code,name){
+    setRoomLoading(true);setRoomMsg("");
+    var safe=(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    var displayName=currentUser?currentUser.name:((name||"").trim()||"guest"+Math.floor(Math.random()*1000));
+    try{
+      var res=await roomCall({action:"join",code:safe,name:displayName});
+      if(!res.ok)throw new Error(res.data.error||"Couldn't join room");
+      setRoomState(res.data.room);
+      setRoomCode(res.data.room.code);
+      setRoomMyName(displayName);
+      roomStartRef.current=Date.now();
+      setStage("room");
+      try{track("room_joined",{code:safe});}catch(e){}
+    }catch(e){setRoomMsg(e.message||"Couldn't join room");}
+    finally{setRoomLoading(false);}
+  }
+  async function submitRoomAnswer(optionIdx){
+    if(!roomCode||!roomMyName||!roomState)return;
+    var elapsed=Date.now()-(roomStartRef.current||Date.now());
+    try{
+      var res=await roomCall({action:"answer",code:roomCode,name:roomMyName,optionIdx:optionIdx,elapsedMs:elapsed});
+      if(res.ok||res.status===409){
+        // 409 just means we already answered — server still returns the room state
+        if(res.data.room)setRoomState(res.data.room);
+        try{track("room_answered",{code:roomCode,correct:res.data.room&&res.data.room.participants&&res.data.room.participants[roomMyName]&&res.data.room.participants[roomMyName].correct});}catch(e){}
+      }
+    }catch(e){}
+  }
+  async function pollRoom(){
+    if(!roomCode)return;
+    try{
+      var r=await fetch("/api/room?code="+encodeURIComponent(roomCode));
+      if(r.status===410){
+        // Room expired — bounce back
+        setRoomState(null);setRoomCode("");setRoomMsg("This room has expired.");setStage("roomEntry");return;
+      }
+      if(!r.ok)return;
+      var d=await r.json();
+      if(d.room)setRoomState(d.room);
+    }catch(e){}
+  }
+  // Poll the room every 2s while we're in the room stage. Stops on
+  // exit or when the room expires.
+  useEffect(function(){
+    if(stage!=="room"||!roomCode){
+      if(roomPollRef.current){clearInterval(roomPollRef.current);roomPollRef.current=null;}
+      return;
+    }
+    if(roomPollRef.current)clearInterval(roomPollRef.current);
+    roomPollRef.current=setInterval(pollRoom,2000);
+    return function(){if(roomPollRef.current){clearInterval(roomPollRef.current);roomPollRef.current=null;}};
+  },[stage,roomCode]);
+
   // Debounced search. Runs on every keystroke after a 250ms pause so we
   // don't hammer the endpoint character-by-character.
   var teacherSearchTimerRef=useRef(null);
@@ -4494,6 +4589,135 @@ export default function App(){
           );
         })()}
 
+        {/* ── ROOM ENTRY (F7b — create or join) ───────────────── */}
+        {stage==="roomEntry"&&(function(){
+          return(
+            <div style={{minHeight:"100vh",background:"#0d0d1a",padding:"20px 16px 80px"}}>
+              <div style={{maxWidth:520,margin:"0 auto"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                  <button onClick={function(){setStage(currentUser?"home":"auth");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>← Back</button>
+                  <h1 style={{flex:1,margin:0,fontFamily:"'Outfit',sans-serif",fontSize:18,fontWeight:800,color:"#34d399",textAlign:"center"}}>🏫 Group Room</h1>
+                  <div style={{width:60}}/>
+                </div>
+
+                {/* Join card */}
+                <div style={{...CARD,marginBottom:14,borderColor:"rgba(52,211,153,0.35)"}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#5af0b3",letterSpacing:0.6,margin:"0 0 10px"}}>JOIN AN EXISTING ROOM</p>
+                  <input
+                    placeholder="6-CHAR CODE (e.g. KQ7AT2)"
+                    value={roomEntryCode}
+                    maxLength={8}
+                    onChange={function(e){setRoomEntryCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""));}}
+                    style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 10px",fontFamily:"'JetBrains Mono',monospace",fontSize:18,letterSpacing:"0.18em",textAlign:"center",fontWeight:800}}
+                  />
+                  {!currentUser&&(
+                    <input
+                      placeholder="Your display name (link guests only)"
+                      value={roomEntryName}
+                      maxLength={40}
+                      onChange={function(e){setRoomEntryName(e.target.value);}}
+                      style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 10px"}}
+                    />
+                  )}
+                  <button disabled={!roomEntryCode||roomLoading} onClick={function(){joinRoom(roomEntryCode,roomEntryName);}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",padding:"11px",fontSize:13,fontWeight:800,letterSpacing:"0.06em"}}>{roomLoading?"Joining…":"Join Room →"}</button>
+                </div>
+
+                {/* Create card — auth required (so we know who the owner is) */}
+                {currentUser&&(
+                  <div style={{...CARD,borderColor:"rgba(167,139,250,0.35)"}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#c4b5fd",letterSpacing:0.6,margin:"0 0 10px"}}>OR CREATE A NEW ROOM</p>
+                    <p style={{fontSize:12,color:"#9ca3af",margin:"0 0 10px",lineHeight:1.5}}>Generates a fresh passage + question at your current level ({level||"B1"}). Share the 6-char code or the room URL with classmates.</p>
+                    <input
+                      placeholder="Optional topic (e.g. 'space exploration')"
+                      value={roomCreateTopic}
+                      maxLength={80}
+                      onChange={function(e){setRoomCreateTopic(e.target.value);}}
+                      style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 10px"}}
+                    />
+                    <button disabled={roomLoading} onClick={createRoom} style={{...mkBtn("#a78bfa","#0d0d1a"),width:"100%",padding:"11px",fontSize:13,fontWeight:800,letterSpacing:"0.06em"}}>{roomLoading?"Creating room…":"Create Room →"}</button>
+                  </div>
+                )}
+                {roomMsg&&<p style={{fontSize:12,color:"#f87171",margin:"12px 0 0",textAlign:"center"}}>{roomMsg}</p>}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── ROOM (F7b — read + answer + live participants) ───── */}
+        {stage==="room"&&roomState&&(function(){
+          var r=roomState;
+          var me=r.participants&&r.participants[roomMyName];
+          var hasAnswered=me&&typeof me.answerIdx==="number";
+          var isCorrect=hasAnswered&&me.correct;
+          var pList=Object.keys(r.participants||{}).map(function(n){return Object.assign({name:n},r.participants[n]);});
+          var answeredCount=pList.filter(function(p){return typeof p.answerIdx==="number";}).length;
+          var pUrl=window.location.origin+window.location.pathname+"?room="+r.code;
+          return(
+            <div style={{minHeight:"100vh",background:"#0d0d1a",padding:"16px 16px 80px"}}>
+              <div style={{maxWidth:560,margin:"0 auto"}}>
+                {/* Top bar with code + share + exit */}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                  <button onClick={function(){if(window.confirm("Leave this room? Your answer will stay recorded.")){setRoomState(null);setRoomCode("");setRoomMyName("");setStage(currentUser?"home":"auth");}}} style={{...GHOST,fontSize:12,padding:"6px 10px"}}>← Leave</button>
+                  <div style={{flex:1,textAlign:"center"}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:18,fontWeight:800,color:"#5af0b3",letterSpacing:"0.18em"}}>{r.code}</div>
+                    <div style={{fontSize:10,color:"#6b7280",letterSpacing:"0.08em"}}>{r.ownerType==="teacher"?"TEACHER ROOM":"STUDY GROUP"} · {r.level}</div>
+                  </div>
+                  <button onClick={function(){try{navigator.clipboard.writeText(pUrl);setRoomMsg("Link copied");setTimeout(function(){setRoomMsg("");},1500);}catch(e){setRoomMsg(pUrl);}}} style={{...GHOST,fontSize:11,padding:"6px 10px"}}>🔗 Share</button>
+                </div>
+                {roomMsg&&<p style={{fontSize:11,color:"#a78bfa",textAlign:"center",margin:"0 0 10px"}}>{roomMsg}</p>}
+
+                {/* Participants chip row */}
+                <div style={{...CARD,padding:"10px 12px",marginBottom:12,background:"rgba(99,102,241,0.06)",borderColor:"rgba(99,102,241,0.3)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,color:"#a78bfa",marginBottom:6,letterSpacing:"0.06em",fontWeight:700}}>
+                    <span>👥 {pList.length} {pList.length===1?"PARTICIPANT":"PARTICIPANTS"}</span>
+                    <span>{answeredCount}/{pList.length} ANSWERED</span>
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {pList.map(function(p){
+                      var color=typeof p.answerIdx==="number"?(p.correct?"#34d399":"#f87171"):"rgba(227,224,244,0.5)";
+                      var bg=typeof p.answerIdx==="number"?(p.correct?"rgba(52,211,153,0.14)":"rgba(239,68,68,0.12)"):"rgba(255,255,255,0.04)";
+                      return<span key={p.name} style={{padding:"3px 10px",borderRadius:999,background:bg,color:color,fontSize:11,fontWeight:700,fontFamily:"'Inter',sans-serif"}}>{p.name===roomMyName?"⭐ "+p.name+" (you)":p.name}{typeof p.answerIdx==="number"?(p.correct?" ✓":" ✕"):" …"}</span>;
+                    })}
+                  </div>
+                </div>
+
+                {/* Passage */}
+                <div style={{...CARD,padding:"18px",marginBottom:14}}>
+                  {r.topic&&<div style={{fontSize:10,color:"#5af0b3",fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",marginBottom:10}}>{r.topic}</div>}
+                  <p style={{fontFamily:"'Newsreader','Inter',serif",fontSize:17,lineHeight:1.65,color:"rgba(227,224,244,0.93)",margin:0}}>{r.passage}</p>
+                </div>
+
+                {/* Question + options */}
+                <div style={{...CARD,padding:"18px",marginBottom:14}}>
+                  <p style={{fontFamily:"'Outfit',sans-serif",fontSize:14,fontWeight:700,color:"#e3e0f4",margin:"0 0 14px"}}>{r.question.q}</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {r.question.options.map(function(opt,i){
+                      var disabled=hasAnswered;
+                      var isPicked=hasAnswered&&me.answerIdx===i;
+                      var isRight=hasAnswered&&i===r.question.answer;
+                      var bg="rgba(255,255,255,0.04)";var bd="rgba(255,255,255,0.10)";var fg="rgba(227,224,244,0.85)";
+                      if(hasAnswered){
+                        if(isRight){bg="rgba(52,211,153,0.14)";bd="rgba(52,211,153,0.55)";fg="#5af0b3";}
+                        else if(isPicked){bg="rgba(239,68,68,0.12)";bd="rgba(239,68,68,0.5)";fg="#fca5a5";}
+                      }
+                      return<button key={i} disabled={disabled} onClick={function(){submitRoomAnswer(i);}} style={{display:"flex",alignItems:"flex-start",gap:10,background:bg,border:"1px solid "+bd,borderRadius:14,padding:"12px 14px",textAlign:"left",color:fg,cursor:disabled?"default":"pointer",fontFamily:"'Inter',sans-serif",fontSize:14,lineHeight:1.4,transition:"all 0.15s"}}>
+                        <span style={{flexShrink:0,width:24,height:24,borderRadius:"50%",background:"rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:800,color:fg==="rgba(227,224,244,0.85)"?"rgba(227,224,244,0.6)":fg}}>{String.fromCharCode(65+i)}</span>
+                        <span style={{flex:1}}>{opt}</span>
+                      </button>;
+                    })}
+                  </div>
+                  {hasAnswered&&r.question.explanation&&(
+                    <div style={{marginTop:14,padding:"11px 14px",borderRadius:12,background:isCorrect?"rgba(52,211,153,0.08)":"rgba(99,102,241,0.08)",border:"1px solid "+(isCorrect?"rgba(52,211,153,0.3)":"rgba(99,102,241,0.3)")}}>
+                      <span style={{fontSize:10,color:isCorrect?"#5af0b3":"#a78bfa",fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",marginRight:8}}>{isCorrect?"Correct":"Heads-up"}</span>
+                      <span style={{fontSize:12,color:"rgba(227,224,244,0.85)",lineHeight:1.5}}>{r.question.explanation}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── TEACHER DIRECTORY SEARCH (F6c) ──────────────────── */}
         {stage==="teacherSearch"&&(function(){
           return(
@@ -5266,6 +5490,7 @@ export default function App(){
                 <div className="lq-nav-grid">
                   <button type="button" onClick={function(){setStage("friends");}} className="lq-ghost-btn">{t("friends")}</button>
                   <button type="button" onClick={function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}} className="lq-ghost-btn">🔍 Find Teachers</button>
+                  <button type="button" onClick={function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}} className="lq-ghost-btn">🏫 Group Room</button>
                   <button type="button" onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} className="lq-ghost-btn">{t("vocab")}</button>
                   <button type="button" onClick={function(){setHistoryLevel("");setStage("history");}} className="lq-ghost-btn">{t("history")}</button>
                   <button type="button" onClick={function(){setStage("goals");}} className="lq-ghost-btn">{t("goals")}</button>
