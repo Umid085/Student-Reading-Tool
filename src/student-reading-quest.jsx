@@ -4713,6 +4713,45 @@ export default function App(){
                     </div>
                   )}
                 </div>
+
+                {/* ── F7c — Live leaderboard ──────────────────────────
+                    Shows once anyone has answered. Ranks by correct
+                    first, then fastest. Highlights the current user. */}
+                {(function(){
+                  var finished=pList.filter(function(p){return typeof p.answerIdx==="number";});
+                  if(!finished.length)return null;
+                  var sorted=finished.slice().sort(function(a,b){
+                    if(!!b.correct-!!a.correct!==0)return(!!b.correct)-(!!a.correct);
+                    return(a.elapsedMs||0)-(b.elapsedMs||0);
+                  });
+                  var allDone=finished.length===pList.length&&pList.length>1;
+                  return(
+                    <div style={{...CARD,padding:"16px",marginBottom:14,borderColor:allDone?"rgba(251,191,36,0.45)":"rgba(255,255,255,0.08)",background:allDone?"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(52,211,153,0.04))":"rgba(30,30,44,0.55)"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                        <span style={{fontSize:18}}>{allDone?"🏆":"📊"}</span>
+                        <span style={{fontFamily:"'Outfit',sans-serif",fontSize:13,fontWeight:800,color:allDone?"#fbbf24":"#e3e0f4",letterSpacing:"0.06em"}}>{allDone?"FINAL LEADERBOARD":"LIVE LEADERBOARD"}</span>
+                        <span style={{marginLeft:"auto",fontSize:10,color:"#6b7280",letterSpacing:"0.08em"}}>{finished.length}/{pList.length}</span>
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                        {sorted.map(function(p,i){
+                          var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1)+".";
+                          var isMe=p.name===roomMyName;
+                          var fg=p.correct?"#5af0b3":"#f87171";
+                          var bg=isMe?"rgba(251,191,36,0.10)":"rgba(255,255,255,0.03)";
+                          var bd=isMe?"rgba(251,191,36,0.4)":"rgba(255,255,255,0.06)";
+                          var sec=p.elapsedMs?Math.max(0,Math.round(p.elapsedMs/100)/10).toFixed(1)+"s":"–";
+                          return(
+                            <div key={p.name} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:bg,border:"1px solid "+bd}}>
+                              <span style={{width:24,fontFamily:"'Outfit',sans-serif",fontWeight:800,fontSize:13,color:i<3?"#fbbf24":"#6b7280",textAlign:"center"}}>{medal}</span>
+                              <span style={{flex:1,fontFamily:"'Inter',sans-serif",fontSize:13,fontWeight:isMe?800:600,color:isMe?"#fbbf24":"#e3e0f4"}}>{p.name}{isMe?" (you)":""}</span>
+                              <span style={{fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:fg,fontWeight:700}}>{p.correct?"✓":"✕"} {sec}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );
