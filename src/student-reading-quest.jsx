@@ -4938,6 +4938,11 @@ export default function App(){
                 .lq-r-btn:active{transform:scale(0.92)}
                 .lq-r-btn.is-active{background:rgba(52,211,153,0.15);color:#5af0b3}
                 .lq-r-btn.is-fav{color:#f472b6;background:rgba(236,72,153,0.15)}
+                .lq-r-btn.lq-r-exit{padding:6px 12px 6px 8px;gap:4px;color:rgba(227,224,244,0.75)}
+                .lq-r-btn.lq-r-exit:hover{color:#fca5a5;background:rgba(239,68,68,0.12)}
+                .lq-r-exit-lbl{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.01em}
+                .lq-exit-link{display:block;margin:0 auto 10px;background:transparent;border:none;color:rgba(227,224,244,0.5);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:8px 14px;border-radius:10px;transition:all 0.15s}
+                .lq-exit-link:hover{color:#fca5a5;background:rgba(239,68,68,0.08)}
                 .lq-r-title{flex:1;text-align:center;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#5af0b3;letter-spacing:0.01em;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
                 .lq-read-prog{position:sticky;top:48px;z-index:29;background:rgba(13,13,26,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:6px}
                 .lq-seg{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
@@ -5006,8 +5011,9 @@ export default function App(){
               `}</style>
               <div className="lq-read-wrap">
                 <header className="lq-read-topbar">
-                  <button type="button" className="lq-r-btn" onClick={function(){setStage("home");}} aria-label="Back">
+                  <button type="button" className="lq-r-btn lq-r-exit" onClick={function(){setStage("home");}} aria-label="Exit reading">
                     <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span className="lq-r-exit-lbl">Exit</span>
                   </button>
                   <h1 className="lq-r-title">Reading Quest</h1>
                   {currentStoryId&&<button type="button" className={"lq-r-btn"+(isFav?" is-fav":"")} onClick={function(){toggleFav(currentStoryId,topic,level);}} aria-label="Favorite">
@@ -5168,6 +5174,8 @@ export default function App(){
                     </div>
                     <button type="button" className={"lq-toggle"+(challengeMode?" on":"")} onClick={function(){setChallengeMode(function(v){return !v;});}} aria-label="Toggle challenge mode"/>
                   </div>
+
+                  <button type="button" onClick={function(){setStage("home");}} className="lq-exit-link">✕ Exit reading</button>
 
                   <button type="button" onClick={startQuiz} className="lq-start-quiz" style={{background:lvColor,boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 8px 24px "+(lv&&lv.glow||"rgba(52,211,153,0.3)")}}>
                     {t("startQuiz")}
