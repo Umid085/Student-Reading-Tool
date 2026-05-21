@@ -150,4 +150,26 @@ export default {
       ynng:"'Berilmagan' degani matn na tasdiqlaydi, na inkor etadi.",
     },
     practiceMore:"Bu turni ko'proq mashq qiling!",
+    motivational:{
+      generic:[
+        "Har bir o'rgangan so'z yangi eshik ochadi.",
+        "Har kuni kichik qadamlar.",
+      ],
+      excellent:[
+        "Mahorat — taslim bo'lmaslikning natijasidir.",
+        "Mukammallik shunday boshlanadi — bir matn, bir kun.",
+      ],
+      keep:[
+        "Ball seni belgilamaydi. Qaytishing belgilaydi.",
+        "Bugungi chalkashlik — ertangi aniqlikdir.",
+      ],
+      levelUp:[
+        "Yangi bob ochildi. Keyingi sahifaga xush kelibsiz.",
+        "Bu darajani sen qazonding. Orqaga qaytma.",
+      ],
+      streak:[
+        "Kelish — eng noyob mahorat.",
+        "Ketma-ketliklar charchagan kechalardan quriladi.",
+      ],
+    },
 };

@@ -1402,6 +1402,18 @@ export default function App(){
   // Localized quiz-strategy hint per question type. Falls back to English
   // Q_HINTS module-level table.
   function qHint(type){var tbl=STRINGS[uiLang]&&STRINGS[uiLang].qHints;if(tbl&&tbl[type])return tbl[type];return Q_HINTS[type]||"";}
+  // Pick a motivational quote for the given milestone category. Reads from
+  // the active locale's `motivational` table with English fallback; rotates
+  // by today's date so users see variation across days but stable text
+  // within a single result view.
+  function pickMotivation(category){
+    void localesVersion;
+    var tbl=(STRINGS[uiLang]&&STRINGS[uiLang].motivational)||STRINGS.en.motivational;
+    var pool=(tbl&&tbl[category])||(STRINGS.en.motivational&&STRINGS.en.motivational[category])||[];
+    if(!pool.length)return"";
+    var seed=todayKey().split("-").reduce(function(s,p){return s+Number(p);},0);
+    return pool[seed%pool.length];
+  }
 
   // Keep passageLang in sync with uiLang: switching UI to Russian also makes
   // AI-generated passages Russian by default. User can still override per
@@ -2207,6 +2219,9 @@ export default function App(){
       var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
       var priorXp=Math.max(Number(currentUser.totalXp)||0,userGames.reduce(function(s,g){return s+(g.xp||0);},0));
       var newTotalXp=priorXp+finalXp;
+      var prevAppLevel=getUserLevel(priorXp);
+      var newAppLevel=getUserLevel(newTotalXp);
+      var leveledUp=newAppLevel>prevAppLevel;
       var updatedUser={name:currentUser.name,hash:currentUser.hash,games:userGames.concat([gameEntry]),joined:currentUser.joined,totalXp:newTotalXp};
       var newUsers=[];for(var j=0;j<allUsers.length;j++){newUsers.push(allUsers[j].name===currentUser.name?updatedUser:allUsers[j]);}
       try{await saveUsers(newUsers);}catch(e){console.warn("saveUsers failed:",e);}
@@ -2289,7 +2304,7 @@ export default function App(){
         localStorage.setItem("rq-review-"+currentUser.name,JSON.stringify(rqUpdated));
         setReviewQueue(rqUpdated);
       }
-      setResult({level:lvObj.key,xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds,wasChallenge:wasChallenge});
+      setResult({level:lvObj.key,xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds,wasChallenge:wasChallenge,leveledUp:leveledUp,newAppLevel:newAppLevel});
       stopMusic();playSfx("complete");
       setStage("result");
       track("quiz_completed",{level:lvObj.key,pct:pct,xp:finalXp,timeSecs:timeSecs,wpm:wpm,stars:stars,isDaily:!!wasDaily,isChallenge:!!wasChallenge,gameCount:updatedUser.games.length});
@@ -5390,6 +5405,18 @@ export default function App(){
           var rsLvColor=lv?lv.color:"#5af0b3";
           var rsPctColor=pctColor(result.pct);
           var grade=result.pct>=80?"excellent":result.pct>=60?"good":"keep";
+          // Pick the motivational category by precedence: level-up >
+          // streak milestone (3/7/14/30) > grade. Falls back to "generic"
+          // if the chosen category has no quotes.
+          var motivCategory=result.leveledUp?"levelUp"
+            :(result.earnedShield||[3,7,14,30].indexOf(result.newStreakVal)!==-1)?"streak"
+            :grade;
+          var motivQuote=pickMotivation(motivCategory)||pickMotivation("generic");
+          var motivAccent=motivCategory==="levelUp"?"#5af0b3"
+            :motivCategory==="streak"?"#a78bfa"
+            :motivCategory==="excellent"?"#5af0b3"
+            :motivCategory==="good"?"#fbbf24"
+            :"#c4b5fd";
           return(
           <>
             <style>{`
@@ -5419,6 +5446,19 @@ export default function App(){
               </div>
 
               <div className="lq-res-content">
+                {motivQuote&&(
+                  <div style={{margin:"0 0 12px",padding:"12px 16px",borderRadius:14,background:"rgba("+hex2rgb(motivAccent)+",0.06)",border:"1px solid rgba("+hex2rgb(motivAccent)+",0.28)",textAlign:"center"}}>
+                    <p style={{margin:0,fontFamily:"'Newsreader','Inter',serif",fontSize:14,fontStyle:"italic",color:"rgba(227,224,244,0.85)",lineHeight:1.5}}>
+                      <span style={{color:motivAccent,fontWeight:700,fontStyle:"normal",marginRight:6}}>“</span>{motivQuote}<span style={{color:motivAccent,fontWeight:700,fontStyle:"normal",marginLeft:6}}>”</span>
+                    </p>
+                  </div>
+                )}
+                {result.leveledUp&&(
+                  <div className="rq-pop" style={{margin:"0 0 12px",padding:"14px 16px",borderRadius:14,background:"linear-gradient(135deg,rgba(52,211,153,0.14),rgba(167,139,250,0.08))",border:"1px solid rgba(52,211,153,0.5)",textAlign:"center"}}>
+                    <div style={{fontSize:28,lineHeight:1,marginBottom:4}}>🎖️</div>
+                    <div style={{fontSize:14,fontWeight:800,color:"#5af0b3",letterSpacing:"0.03em",textTransform:"uppercase"}}>LEVEL {result.newAppLevel} UNLOCKED</div>
+                  </div>
+                )}
                 <div className="lq-res-score-card">
                   <div className="lq-res-score" style={{color:rsLvColor}}>{result.score}<span style={{color:"rgba(227,224,244,0.4)",fontSize:32,fontWeight:600}}>/{result.maxScore}</span></div>
                   <div className="lq-res-score-sub">{result.pct}% Correct</div>
@@ -5463,6 +5503,7 @@ export default function App(){
                   <div style={{textAlign:"left"}}>
                     <div style={{fontSize:13,fontWeight:700,color:"#a78bfa"}}>STREAK SHIELD EARNED!</div>
                     <div style={{fontSize:11,color:"#9ca3af"}}>{result.newStreakVal}-day milestone — you now have {shields} shield{shields!==1?"s":""}. It will save your streak if you miss a day.</div>
+                    {(function(){var q=pickMotivation("streak");return q?<div style={{marginTop:6,fontSize:11,color:"#c4b5fd",fontStyle:"italic"}}>“{q}”</div>:null;})()}
                   </div>
                 </div>
               </div>

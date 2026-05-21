@@ -136,4 +136,26 @@ export default {
       ynng:"'Non donné' signifie que le texte ne confirme ni n'infirme.",
     },
     practiceMore:"Entraîne-toi plus sur ce type !",
+    motivational:{
+      generic:[
+        "Chaque mot appris ouvre une nouvelle porte.",
+        "Des petits pas, chaque jour.",
+      ],
+      excellent:[
+        "La maîtrise est le résultat du refus d'abandonner.",
+        "C'est ainsi que commence l'excellence — un texte à la fois.",
+      ],
+      keep:[
+        "La note ne te définit pas. Ton retour, si.",
+        "La confusion d'aujourd'hui est la clarté de demain.",
+      ],
+      levelUp:[
+        "Nouveau chapitre débloqué. Bienvenue à la page suivante.",
+        "Tu as mérité ce niveau. Ne recule pas.",
+      ],
+      streak:[
+        "Se présenter est la compétence la plus rare.",
+        "Les séries se construisent dans les soirées fatiguées.",
+      ],
+    },
 };

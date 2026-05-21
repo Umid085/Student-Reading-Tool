@@ -150,4 +150,26 @@ export default {
       ynng:"'Not Given' means the passage doesn't confirm OR deny.",
     },
     practiceMore:"Practice this type more!",
+    motivational:{
+      generic:[
+        "Every word you learn opens a new door.",
+        "Small steps, every day.",
+      ],
+      excellent:[
+        "Mastery is the result of refusing to quit.",
+        "This is how excellence starts — one passage at a time.",
+      ],
+      keep:[
+        "The score doesn't define you. Your return does.",
+        "Confusion today is clarity tomorrow.",
+      ],
+      levelUp:[
+        "New chapter unlocked. Welcome to the next page.",
+        "You earned this level. Don't borrow it back.",
+      ],
+      streak:[
+        "Showing up is the rarest skill.",
+        "Streaks are built one tired evening at a time.",
+      ],
+    },
 };

@@ -136,4 +136,26 @@ export default {
       ynng:"'No dado' significa que el texto ni confirma ni niega.",
     },
     practiceMore:"¡Practica más este tipo!",
+    motivational:{
+      generic:[
+        "Cada palabra que aprendes abre una nueva puerta.",
+        "Pasos pequeños, todos los días.",
+      ],
+      excellent:[
+        "La maestría es el resultado de no rendirse.",
+        "Así comienza la excelencia: un texto a la vez.",
+      ],
+      keep:[
+        "La nota no te define. Tu regreso sí.",
+        "La confusión de hoy es la claridad de mañana.",
+      ],
+      levelUp:[
+        "Nuevo capítulo desbloqueado. Bienvenido a la siguiente página.",
+        "Te ganaste este nivel. No retrocedas.",
+      ],
+      streak:[
+        "Aparecer es la habilidad más rara.",
+        "Las rachas se construyen en noches cansadas.",
+      ],
+    },
 };

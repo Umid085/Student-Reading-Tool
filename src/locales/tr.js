@@ -136,4 +136,26 @@ export default {
       ynng:"'Belirtilmedi', metin ne onaylar ne inkâr eder demektir.",
     },
     practiceMore:"Bu türü daha fazla pratik yap!",
+    motivational:{
+      generic:[
+        "Öğrendiğin her kelime yeni bir kapı açar.",
+        "Her gün küçük adımlar.",
+      ],
+      excellent:[
+        "Ustalık, pes etmemenin sonucudur.",
+        "Mükemmellik böyle başlar — birer metinle.",
+      ],
+      keep:[
+        "Puan seni tanımlamaz. Geri dönüşün tanımlar.",
+        "Bugünün kafa karışıklığı yarının netliğidir.",
+      ],
+      levelUp:[
+        "Yeni bölüm açıldı. Bir sonraki sayfaya hoş geldin.",
+        "Bu seviyeyi sen kazandın. Geri çekilme.",
+      ],
+      streak:[
+        "Görünmek en nadir beceridir.",
+        "Seriler yorgun akşamlarda kurulur.",
+      ],
+    },
 };

@@ -136,4 +136,26 @@ export default {
       ynng:"'Nicht angegeben' bedeutet, der Text bestätigt noch verneint.",
     },
     practiceMore:"Übe diesen Typ mehr!",
+    motivational:{
+      generic:[
+        "Jedes Wort, das du lernst, öffnet eine neue Tür.",
+        "Kleine Schritte, jeden Tag.",
+      ],
+      excellent:[
+        "Meisterschaft ist das Ergebnis, nicht aufzugeben.",
+        "So beginnt Exzellenz — ein Text nach dem anderen.",
+      ],
+      keep:[
+        "Die Punktzahl definiert dich nicht. Deine Rückkehr tut es.",
+        "Die Verwirrung von heute ist die Klarheit von morgen.",
+      ],
+      levelUp:[
+        "Neues Kapitel freigeschaltet. Willkommen auf der nächsten Seite.",
+        "Du hast dieses Level verdient. Tritt nicht zurück.",
+      ],
+      streak:[
+        "Auftauchen ist die seltenste Fähigkeit.",
+        "Serien werden an müden Abenden gebaut.",
+      ],
+    },
 };
