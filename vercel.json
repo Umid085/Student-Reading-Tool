@@ -1,5 +1,13 @@
 {
   "rewrites": [
+    { "source": "/api/register", "destination": "/api/auth?action=register" },
+    { "source": "/api/refresh", "destination": "/api/auth?action=refresh" },
+    { "source": "/api/revoke", "destination": "/api/auth?action=revoke" },
+    { "source": "/api/push-config", "destination": "/api/push?action=config" },
+    { "source": "/api/push-subscribe", "destination": "/api/push?action=subscribe" },
+    { "source": "/api/cron-push", "destination": "/api/push?action=cron" },
+    { "source": "/api/teacher-bio", "destination": "/api/teacher?action=bio" },
+    { "source": "/api/teacher-search", "destination": "/api/teacher?action=search" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "crons": [

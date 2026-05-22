@@ -6,9 +6,9 @@ import { STRINGS, loadLocale } from "./locales";
 
 var API        = "/api/generate";
 var AUTH       = "/api/auth";
-var REGISTER   = "/api/register";
-var REFRESH    = "/api/refresh";
-var REVOKE     = "/api/revoke";
+var REGISTER   = "/api/auth?action=register";
+var REFRESH    = "/api/auth?action=refresh";
+var REVOKE     = "/api/auth?action=revoke";
 var USERS_API  = "/api/users";
 var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
