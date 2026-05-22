@@ -2658,7 +2658,7 @@ export default function App(){
       });
       var d=await r.json();
       if(!r.ok)throw new Error(d.error||"Save failed");
-      setTeacherBioMsg(teacherBio.public?"✓ Saved — your profile is public":"✓ Saved (private)");
+      setTeacherBioMsg(teacherBio.public?t("tch_bio_savedPublic"):t("tch_bio_savedPrivate"));
       try{track("teacher_bio_saved",{public:!!teacherBio.public,languages:teacherBio.languages.length,subjects:teacherBio.subjects.length});}catch(e){}
     }catch(e){
       setTeacherBioMsg("✗ "+(e.message||"Save failed"));
@@ -3916,20 +3916,20 @@ export default function App(){
               {myClasses.length>0&&(
                 <div style={{...CARD,marginBottom:14,borderColor:teacherBio.public?"rgba(244,114,182,0.4)":"rgba(255,255,255,0.08)",background:teacherBio.public?"linear-gradient(135deg,rgba(244,114,182,0.06),rgba(167,139,250,0.04))":"rgba(30,30,44,0.5)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                    <p style={{fontSize:11,fontWeight:700,color:teacherBio.public?"#f472b6":"#9ca3af",letterSpacing:0.6,margin:0}}>👤 PUBLIC PROFILE {teacherBio.public?"· LIVE":""}</p>
+                    <p style={{fontSize:11,fontWeight:700,color:teacherBio.public?"#f472b6":"#9ca3af",letterSpacing:0.6,margin:0}}>👤 {t("tch_bio_label")} {teacherBio.public?"· "+t("tch_bio_live"):""}</p>
                     {teacherBio.public&&(
-                      <button onClick={function(){window.open(window.location.origin+window.location.pathname+"?teacher="+encodeURIComponent(currentUser.name),"_blank");}} style={{...GHOST,fontSize:11,padding:"4px 10px"}}>View →</button>
+                      <button onClick={function(){window.open(window.location.origin+window.location.pathname+"?teacher="+encodeURIComponent(currentUser.name),"_blank");}} style={{...GHOST,fontSize:11,padding:"4px 10px"}}>{t("tch_bio_view")}</button>
                     )}
                   </div>
                   <input
-                    placeholder="Display name (e.g. Ms. Alice)"
+                    placeholder={t("tch_bio_displayName_ph")}
                     value={teacherBio.displayName}
                     maxLength={60}
                     onChange={function(e){setTeacherBio(function(b){return Object.assign({},b,{displayName:e.target.value});});}}
                     style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 8px"}}
                   />
                   <textarea
-                    placeholder="Short bio — qualifications, teaching style, what students can expect (max 500 chars)"
+                    placeholder={t("tch_bio_bio_ph")}
                     value={teacherBio.bio}
                     maxLength={500}
                     onChange={function(e){setTeacherBio(function(b){return Object.assign({},b,{bio:e.target.value});});}}
@@ -3937,23 +3937,23 @@ export default function App(){
                     style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 8px",resize:"vertical",fontFamily:"inherit"}}
                   />
                   <input
-                    placeholder="Languages you teach in, comma-separated (e.g. en, ru, uz)"
+                    placeholder={t("tch_bio_langs_ph")}
                     value={teacherBio.languages.join(", ")}
                     onChange={function(e){var arr=e.target.value.split(",").map(function(s){return s.trim();}).filter(Boolean).slice(0,5);setTeacherBio(function(b){return Object.assign({},b,{languages:arr});});}}
                     style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 8px"}}
                   />
                   <input
-                    placeholder="Subjects you teach, comma-separated (e.g. IELTS, Conversational, Business English)"
+                    placeholder={t("tch_bio_subjects_ph")}
                     value={teacherBio.subjects.join(", ")}
                     onChange={function(e){var arr=e.target.value.split(",").map(function(s){return s.trim();}).filter(Boolean).slice(0,5);setTeacherBio(function(b){return Object.assign({},b,{subjects:arr});});}}
                     style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 10px"}}
                   />
                   <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#d1d5db",cursor:"pointer",marginBottom:10}}>
                     <input type="checkbox" checked={!!teacherBio.public} onChange={function(e){setTeacherBio(function(b){return Object.assign({},b,{public:e.target.checked});});}}/>
-                    Make my profile public — students can find and subscribe to me
+                    {t("tch_bio_publicLabel")}
                   </label>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <button onClick={saveTeacherBio} disabled={teacherBioSaving} style={{...mkBtn("#f472b6"),padding:"9px 16px",fontSize:13,fontWeight:800}}>{teacherBioSaving?"Saving…":"Save Profile"}</button>
+                    <button onClick={saveTeacherBio} disabled={teacherBioSaving} style={{...mkBtn("#f472b6"),padding:"9px 16px",fontSize:13,fontWeight:800}}>{teacherBioSaving?t("tch_bio_saving"):t("tch_bio_save")}</button>
                     {teacherBioMsg&&<span style={{fontSize:11,color:teacherBioMsg.indexOf("✓")===0?"#5af0b3":"#f87171"}}>{teacherBioMsg}</span>}
                   </div>
                 </div>
@@ -4795,28 +4795,28 @@ export default function App(){
             <div style={{minHeight:"100vh",background:"#0d0d1a",padding:"20px 16px 80px"}}>
               <div style={{maxWidth:560,margin:"0 auto"}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-                  <button onClick={function(){setStage("home");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>← Back</button>
-                  <h1 style={{flex:1,margin:0,fontFamily:"'Outfit',sans-serif",fontSize:18,fontWeight:800,color:"#f472b6",textAlign:"center"}}>🔍 Find Teachers</h1>
+                  <button onClick={function(){setStage("home");}} style={{...GHOST,fontSize:12,padding:"6px 12px"}}>← {t("back")}</button>
+                  <h1 style={{flex:1,margin:0,fontFamily:"'Outfit',sans-serif",fontSize:18,fontWeight:800,color:"#f472b6",textAlign:"center"}}>{t("tch_findTeachers")}</h1>
                   <div style={{width:60}}/>
                 </div>
                 <input
                   autoFocus
-                  placeholder="Search by name, subject, or language…"
+                  placeholder={t("tch_search_ph")}
                   value={teacherSearchQuery}
                   onChange={function(e){onTeacherSearchInput(e.target.value);}}
                   style={{...INP,width:"100%",boxSizing:"border-box",margin:"0 0 14px",padding:"12px 14px",fontSize:14}}
                 />
                 {teacherSearchLoading&&(
-                  <div style={{textAlign:"center",padding:"24px 0",fontSize:12,color:"#6b7280"}}>Searching…</div>
+                  <div style={{textAlign:"center",padding:"24px 0",fontSize:12,color:"#6b7280"}}>{t("tch_search_loading")}</div>
                 )}
                 {!teacherSearchLoading&&teacherSearchResults.length===0&&(
                   <div style={{...CARD,textAlign:"center",padding:36,color:"#6b7280"}}>
-                    {teacherSearchQuery?"No teachers match that search yet.":"Type a name, subject (IELTS, TOEFL…) or language (en, ru, uz…) to start."}
+                    {teacherSearchQuery?t("tch_search_noResults"):t("tch_search_typeHint")}
                   </div>
                 )}
                 {!teacherSearchLoading&&teacherSearchResults.length>0&&(
                   <>
-                    <p style={{fontSize:11,color:"#6b7280",margin:"0 0 10px",letterSpacing:"0.08em"}}>{teacherSearchTotal} {teacherSearchTotal===1?"TEACHER":"TEACHERS"}{teacherSearchTotal>teacherSearchResults.length?" · showing top "+teacherSearchResults.length:""}</p>
+                    <p style={{fontSize:11,color:"#6b7280",margin:"0 0 10px",letterSpacing:"0.08em"}}>{teacherSearchTotal} {teacherSearchTotal===1?t("tch_search_teacher"):t("tch_search_teachers")}{teacherSearchTotal>teacherSearchResults.length?" · "+t("tch_search_showingTop").replace("{n}",teacherSearchResults.length):""}</p>
                     {teacherSearchResults.map(function(t){
                       var initial=(t.displayName||t.name||"?")[0].toUpperCase();
                       return(
@@ -4854,7 +4854,7 @@ export default function App(){
           return(
             <div style={{minHeight:"100vh",background:"#0d0d1a",padding:"24px 18px 64px",fontFamily:"'Inter',sans-serif"}}>
               <div style={{maxWidth:540,margin:"0 auto"}}>
-                <button onClick={function(){setViewedTeacher(null);setViewedTeacherErr("");setStage(currentUser?"home":"auth");}} style={{...GHOST,fontSize:12,marginBottom:14}}>← Back</button>
+                <button onClick={function(){setViewedTeacher(null);setViewedTeacherErr("");setStage(currentUser?"home":"auth");}} style={{...GHOST,fontSize:12,marginBottom:14}}>← {t("back")}</button>
                 {viewedTeacherErr&&(
                   <div style={{...CARD,textAlign:"center",padding:32}}>
                     <div style={{fontSize:48,marginBottom:10}}>🔒</div>
@@ -4862,7 +4862,7 @@ export default function App(){
                   </div>
                 )}
                 {!viewedTeacherErr&&!p&&(
-                  <div style={{...CARD,textAlign:"center",padding:32,color:"#6b7280"}}>Loading profile…</div>
+                  <div style={{...CARD,textAlign:"center",padding:32,color:"#6b7280"}}>{t("tch_profile_loading")}</div>
                 )}
                 {p&&(
                   <div>
@@ -4876,9 +4876,9 @@ export default function App(){
                       </div>
                       {p.bio&&<p style={{fontSize:14,lineHeight:1.55,color:"rgba(227,224,244,0.85)",margin:"0 0 14px"}}>{p.bio}</p>}
                       <div style={{display:"flex",gap:16,flexWrap:"wrap",margin:"0 0 14px"}}>
-                        <div><div style={{fontSize:20,fontWeight:800,color:"#f472b6",fontFamily:"'Outfit',sans-serif"}}>{p.classCount||0}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>Classes</div></div>
-                        <div><div style={{fontSize:20,fontWeight:800,color:"#a78bfa",fontFamily:"'Outfit',sans-serif"}}>{p.studentCount||0}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>Students</div></div>
-                        {social[p.name]&&social[p.name].subscribers&&<div><div style={{fontSize:20,fontWeight:800,color:"#5af0b3",fontFamily:"'Outfit',sans-serif"}}>{(social[p.name].subscribers||[]).length}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>Subscribers</div></div>}
+                        <div><div style={{fontSize:20,fontWeight:800,color:"#f472b6",fontFamily:"'Outfit',sans-serif"}}>{p.classCount||0}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t("tch_profile_classes")}</div></div>
+                        <div><div style={{fontSize:20,fontWeight:800,color:"#a78bfa",fontFamily:"'Outfit',sans-serif"}}>{p.studentCount||0}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t("tch_profile_students")}</div></div>
+                        {social[p.name]&&social[p.name].subscribers&&<div><div style={{fontSize:20,fontWeight:800,color:"#5af0b3",fontFamily:"'Outfit',sans-serif"}}>{(social[p.name].subscribers||[]).length}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700}}>{t("tch_profile_subscribers")}</div></div>}
                       </div>
                       {(p.languages.length>0||p.subjects.length>0)&&(
                         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
@@ -4887,13 +4887,16 @@ export default function App(){
                         </div>
                       )}
                       {!isOwnProfile&&currentUser&&(
-                        <button onClick={function(){isSubscribed?unsubscribeFromTeacher(p.name):subscribeToTeacher(p.name);}} style={{...mkBtn(isSubscribed?"#6b7280":"#f472b6"),width:"100%",padding:"11px 16px",fontSize:13,fontWeight:800,letterSpacing:"0.04em"}}>{isSubscribed?"✓ Subscribed — Unfollow":"⭐ Subscribe"}</button>
+                        <>
+                          <button onClick={function(){isSubscribed?unsubscribeFromTeacher(p.name):subscribeToTeacher(p.name);}} style={{...mkBtn(isSubscribed?"#6b7280":"#f472b6"),width:"100%",padding:"11px 16px",fontSize:13,fontWeight:800,letterSpacing:"0.04em"}}>{isSubscribed?t("tch_profile_subscribed"):t("tch_profile_subscribe")}</button>
+                          {isSubscribed&&<p style={{fontSize:10,color:"rgba(227,224,244,0.45)",margin:"5px 0 0",textAlign:"center"}}>{t("tch_profile_unfollowHint")}</p>}
+                        </>
                       )}
                       {!currentUser&&(
-                        <button onClick={function(){setStage("auth");}} style={{...mkBtn("#f472b6"),width:"100%",padding:"11px 16px",fontSize:13,fontWeight:800}}>Log in to subscribe</button>
+                        <button onClick={function(){setStage("auth");}} style={{...mkBtn("#f472b6"),width:"100%",padding:"11px 16px",fontSize:13,fontWeight:800}}>{t("tch_profile_loginToSubscribe")}</button>
                       )}
                       {isOwnProfile&&(
-                        <p style={{fontSize:11,color:"rgba(227,224,244,0.5)",margin:"6px 0 0",textAlign:"center"}}>This is your own public profile.</p>
+                        <p style={{fontSize:11,color:"rgba(227,224,244,0.5)",margin:"6px 0 0",textAlign:"center"}}>{t("tch_profile_ownProfile")}</p>
                       )}
                       {subscribeMsg&&<p style={{fontSize:11,color:subscribeMsg.indexOf("✓")===0?"#5af0b3":"#f87171",margin:"6px 0 0",textAlign:"center"}}>{subscribeMsg}</p>}
                     </div>
@@ -5597,7 +5600,7 @@ export default function App(){
                 </div>
                 <div className="lq-nav-grid">
                   <button type="button" onClick={function(){setStage("friends");}} className="lq-ghost-btn">{t("friends")}</button>
-                  <button type="button" onClick={function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}} className="lq-ghost-btn">🔍 Find Teachers</button>
+                  <button type="button" onClick={function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}} className="lq-ghost-btn">{t("tch_findTeachers")}</button>
                   <button type="button" onClick={function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}} className="lq-ghost-btn">🏫 Group Room</button>
                   <button type="button" onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} className="lq-ghost-btn">{t("vocab")}</button>
                   <button type="button" onClick={function(){setHistoryLevel("");setStage("history");}} className="lq-ghost-btn">{t("history")}</button>
