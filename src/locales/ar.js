@@ -130,6 +130,13 @@ export default {
     tch_search_teacher:"معلم",
     tch_search_teachers:"معلمين",
     tch_search_showingTop:"يتم عرض أول {n}",
+    room_recent_title:"الغرف الأخيرة",
+    room_role_owner:"المالك",
+    room_role_participant:"انضممت",
+    room_recent_rejoin:"اضغط للانضمام مرة أخرى",
+    room_time_now:"الآن",
+    room_time_min:"قبل {n} د",
+    room_time_hour:"قبل {n} س",
     qLabels:{mcq:"اختيار من متعدد",gap_word:"ملء الفراغ - كلمات",gap_sentence:"ملء الفراغ - جمل",matching:"المطابقة",heading:"مطابقة العناوين",qa:"إجابة مفتوحة",tfnm:"صحيح/خطأ/غير مذكور",ynng:"نعم/لا/غير محدد"},
     badgeNames:{
       first_steps:{name:"الخطوات الأولى",desc:"أكمل اختبارك الأول"},

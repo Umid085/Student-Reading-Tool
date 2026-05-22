@@ -130,6 +130,13 @@ export default {
     tch_search_teacher:"PROFESOR",
     tch_search_teachers:"PROFESORES",
     tch_search_showingTop:"mostrando los {n} primeros",
+    room_recent_title:"SALAS RECIENTES",
+    room_role_owner:"Anfitrión",
+    room_role_participant:"Unido",
+    room_recent_rejoin:"Toca para reincorporarte",
+    room_time_now:"justo ahora",
+    room_time_min:"hace {n} min",
+    room_time_hour:"hace {n} h",
     qLabels:{mcq:"Opción múltiple",gap_word:"Huecos - Palabras",gap_sentence:"Huecos - Oraciones",matching:"Emparejar",heading:"Emparejar títulos",qa:"Respuesta abierta",tfnm:"V/F/No mencionado",ynng:"Sí/No/No dado"},
     badgeNames:{
       first_steps:{name:"Primeros Pasos",desc:"Completa tu primer quiz"},

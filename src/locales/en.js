@@ -144,6 +144,13 @@ export default {
     tch_search_teacher:"TEACHER",
     tch_search_teachers:"TEACHERS",
     tch_search_showingTop:"showing top {n}",
+    room_recent_title:"RECENT ROOMS",
+    room_role_owner:"Owner",
+    room_role_participant:"Joined",
+    room_recent_rejoin:"Tap to rejoin",
+    room_time_now:"just now",
+    room_time_min:"{n}m ago",
+    room_time_hour:"{n}h ago",
     qLabels:{mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"},
     badgeNames:{
       first_steps:{name:"First Steps",desc:"Complete your first quiz"},

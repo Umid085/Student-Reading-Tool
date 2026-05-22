@@ -2695,6 +2695,38 @@ export default function App(){
     }catch(e){setSubscribeMsg("✗ "+(e.message||"Couldn't subscribe"));}
   }
   // ── F7 Group Reading Rooms ──────────────────────────────────────
+  // History helpers: keep up to 5 most-recent rooms per user, in localStorage.
+  // Rooms server-side expire after 24h — we mirror that locally on read so
+  // stale entries don't clutter the UI.
+  function roomHistoryKey(){
+    var who=currentUser?currentUser.name:"anon";
+    return "rq-room-history-"+who;
+  }
+  function loadRoomHistory(){
+    try{
+      var raw=localStorage.getItem(roomHistoryKey());
+      if(!raw)return[];
+      var arr=JSON.parse(raw);
+      if(!Array.isArray(arr))return[];
+      var cutoff=Date.now()-24*60*60*1000;
+      return arr.filter(function(e){return e&&e.code&&typeof e.lastSeen==="number"&&e.lastSeen>cutoff;});
+    }catch(e){return[];}
+  }
+  function saveRoomEntry(entry){
+    if(!entry||!entry.code)return;
+    try{
+      var hist=loadRoomHistory().filter(function(e){return e.code!==entry.code;});
+      hist.unshift(Object.assign({lastSeen:Date.now()},entry));
+      localStorage.setItem(roomHistoryKey(),JSON.stringify(hist.slice(0,5)));
+    }catch(e){}
+  }
+  function removeRoomEntry(code){
+    if(!code)return;
+    try{
+      var hist=loadRoomHistory().filter(function(e){return e.code!==code;});
+      localStorage.setItem(roomHistoryKey(),JSON.stringify(hist));
+    }catch(e){}
+  }
   async function roomCall(body){
     var r=await fetch("/api/room",{
       method:"POST",
@@ -2716,6 +2748,7 @@ export default function App(){
       setRoomCode(res.data.room.code);
       setRoomMyName(displayName);
       roomStartRef.current=Date.now();
+      saveRoomEntry({code:res.data.room.code,role:"owner",level:res.data.room.level||payload.level,topic:res.data.room.topic||null});
       setStage("room");
       try{track("room_created",{ownerType:payload.ownerType,level:payload.level});}catch(e){}
     }catch(e){setRoomMsg(e.message||"Couldn't create room");}
@@ -2727,11 +2760,15 @@ export default function App(){
     var displayName=currentUser?currentUser.name:((name||"").trim()||"guest"+Math.floor(Math.random()*1000));
     try{
       var res=await roomCall({action:"join",code:safe,name:displayName});
-      if(!res.ok)throw new Error(res.data.error||"Couldn't join room");
+      if(!res.ok){
+        if(res.status===410)removeRoomEntry(safe);
+        throw new Error(res.data.error||"Couldn't join room");
+      }
       setRoomState(res.data.room);
       setRoomCode(res.data.room.code);
       setRoomMyName(displayName);
       roomStartRef.current=Date.now();
+      saveRoomEntry({code:res.data.room.code,role:"participant",level:res.data.room.level||"B1",topic:res.data.room.topic||null});
       setStage("room");
       try{track("room_joined",{code:safe});}catch(e){}
     }catch(e){setRoomMsg(e.message||"Couldn't join room");}
@@ -2754,7 +2791,9 @@ export default function App(){
     try{
       var r=await fetch("/api/room?code="+encodeURIComponent(roomCode));
       if(r.status===410){
-        // Room expired — bounce back
+        // Room expired — drop it from history so it doesn't show as
+        // "rejoinable" on the entry screen, then bounce back.
+        removeRoomEntry(roomCode);
         setRoomState(null);setRoomCode("");setRoomMsg("This room has expired.");setStage("roomEntry");return;
       }
       if(!r.ok)return;
@@ -4623,6 +4662,13 @@ export default function App(){
 
         {/* ── ROOM ENTRY (F7b — create or join) ───────────────── */}
         {stage==="roomEntry"&&(function(){
+          var roomHist=loadRoomHistory();
+          function fmtAgo(ms){
+            var diff=Date.now()-ms;
+            if(diff<60000)return t("room_time_now");
+            if(diff<3600000)return t("room_time_min").replace("{n}",Math.floor(diff/60000));
+            return t("room_time_hour").replace("{n}",Math.floor(diff/3600000));
+          }
           return(
             <div style={{minHeight:"100vh",background:"#0d0d1a",padding:"20px 16px 80px"}}>
               <div style={{maxWidth:520,margin:"0 auto"}}>
@@ -4653,6 +4699,34 @@ export default function App(){
                   )}
                   <button disabled={!roomEntryCode||roomLoading} onClick={function(){joinRoom(roomEntryCode,roomEntryName);}} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",padding:"11px",fontSize:13,fontWeight:800,letterSpacing:"0.06em"}}>{roomLoading?"Joining…":"Join Room →"}</button>
                 </div>
+
+                {/* Recent rooms — rejoin in one tap, prunes anything older
+                    than 24h or that the server has already expired. */}
+                {roomHist.length>0&&(
+                  <div style={{...CARD,marginBottom:14,borderColor:"rgba(96,165,250,0.3)"}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#60a5fa",letterSpacing:0.6,margin:"0 0 8px"}}>🕒 {t("room_recent_title")}</p>
+                    {roomHist.map(function(h){
+                      var roleLbl=h.role==="owner"?t("room_role_owner"):t("room_role_participant");
+                      var roleClr=h.role==="owner"?"#c4b5fd":"#5af0b3";
+                      return(
+                        <button key={h.code} disabled={roomLoading} onClick={function(){joinRoom(h.code,roomEntryName);}} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 12px",margin:"0 0 8px",borderRadius:12,border:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.03)",color:"#e3e0f4",cursor:roomLoading?"wait":"pointer",fontFamily:"inherit",textAlign:"left",transition:"border-color 0.15s"}}
+                          onMouseEnter={function(e){e.currentTarget.style.borderColor="rgba(96,165,250,0.4)";}}
+                          onMouseLeave={function(e){e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";}}>
+                          <div style={{flexShrink:0,fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:800,letterSpacing:"0.1em",color:"#60a5fa",background:"rgba(96,165,250,0.08)",padding:"6px 10px",borderRadius:8}}>{h.code}</div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,color:"#e3e0f4",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.topic||(h.level+" room")}</div>
+                            <div style={{fontSize:10,color:"rgba(227,224,244,0.5)",marginTop:2}}>
+                              <span style={{color:roleClr,fontWeight:700}}>{roleLbl}</span>
+                              {" · "}<span>{h.level}</span>
+                              {" · "}<span>{fmtAgo(h.lastSeen)}</span>
+                            </div>
+                          </div>
+                          <div style={{flexShrink:0,fontSize:16,color:"#60a5fa"}}>›</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Create card — auth required (so we know who the owner is) */}
                 {currentUser&&(

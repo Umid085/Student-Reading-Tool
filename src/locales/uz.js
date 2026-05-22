@@ -144,6 +144,13 @@ export default {
     tch_search_teacher:"O'QITUVCHI",
     tch_search_teachers:"O'QITUVCHILAR",
     tch_search_showingTop:"birinchi {n} ko'rsatilmoqda",
+    room_recent_title:"SO'NGGI XONALAR",
+    room_role_owner:"Egasi",
+    room_role_participant:"Qo'shildim",
+    room_recent_rejoin:"Qayta kirish uchun bosing",
+    room_time_now:"hozir",
+    room_time_min:"{n} daq oldin",
+    room_time_hour:"{n} soat oldin",
     qLabels:{mcq:"Ko'p tanlovli",gap_word:"Bo'sh joy - So'zlar",gap_sentence:"Bo'sh joy - Gaplar",matching:"Mosligini topish",heading:"Sarlavhalarni moslash",qa:"Erkin javob",tfnm:"To'g'ri/Noto'g'ri/Aytilmagan",ynng:"Ha/Yo'q/Berilmagan"},
     badgeNames:{
       first_steps:{name:"Birinchi Qadamlar",desc:"Birinchi testni yakunlang"},

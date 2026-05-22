@@ -130,6 +130,13 @@ export default {
     tch_search_teacher:"ÖĞRETMEN",
     tch_search_teachers:"ÖĞRETMEN",
     tch_search_showingTop:"ilk {n} gösteriliyor",
+    room_recent_title:"SON ODALAR",
+    room_role_owner:"Sahip",
+    room_role_participant:"Katıldın",
+    room_recent_rejoin:"Tekrar katılmak için dokun",
+    room_time_now:"şimdi",
+    room_time_min:"{n} dk önce",
+    room_time_hour:"{n} sa önce",
     qLabels:{mcq:"Çoktan Seçmeli",gap_word:"Boşluk - Kelime",gap_sentence:"Boşluk - Cümle",matching:"Eşleştirme",heading:"Başlık Eşleştir",qa:"Açık Cevap",tfnm:"Doğru/Yanlış/Belirtilmemiş",ynng:"Evet/Hayır/Belirtilmedi"},
     badgeNames:{
       first_steps:{name:"İlk Adımlar",desc:"İlk testi tamamla"},

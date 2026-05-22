@@ -130,6 +130,13 @@ export default {
     tch_search_teacher:"PROFESSEUR",
     tch_search_teachers:"PROFESSEURS",
     tch_search_showingTop:"top {n} affichés",
+    room_recent_title:"SALONS RÉCENTS",
+    room_role_owner:"Hôte",
+    room_role_participant:"Rejoint",
+    room_recent_rejoin:"Touche pour rejoindre",
+    room_time_now:"à l'instant",
+    room_time_min:"il y a {n} min",
+    room_time_hour:"il y a {n} h",
     qLabels:{mcq:"Choix multiple",gap_word:"Texte à trous - Mots",gap_sentence:"Texte à trous - Phrases",matching:"Appariement",heading:"Apparier titres",qa:"Réponse libre",tfnm:"Vrai/Faux/Non mentionné",ynng:"Oui/Non/Non donné"},
     badgeNames:{
       first_steps:{name:"Premiers Pas",desc:"Termine ton premier quiz"},

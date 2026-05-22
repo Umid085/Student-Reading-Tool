@@ -130,6 +130,13 @@ export default {
     tch_search_teacher:"LEHRER",
     tch_search_teachers:"LEHRER",
     tch_search_showingTop:"top {n} angezeigt",
+    room_recent_title:"LETZTE RÄUME",
+    room_role_owner:"Besitzer",
+    room_role_participant:"Beigetreten",
+    room_recent_rejoin:"Tippen zum erneuten Betreten",
+    room_time_now:"gerade eben",
+    room_time_min:"vor {n} Min",
+    room_time_hour:"vor {n} Std",
     qLabels:{mcq:"Multiple-Choice",gap_word:"Lückentext - Wörter",gap_sentence:"Lückentext - Sätze",matching:"Zuordnung",heading:"Überschriften zuordnen",qa:"Freie Antwort",tfnm:"Wahr/Falsch/Nicht erwähnt",ynng:"Ja/Nein/Nicht angegeben"},
     badgeNames:{
       first_steps:{name:"Erste Schritte",desc:"Schließe deinen ersten Quiz ab"},

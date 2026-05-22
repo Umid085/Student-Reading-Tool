@@ -144,6 +144,13 @@ export default {
     tch_search_teacher:"УЧИТЕЛЬ",
     tch_search_teachers:"УЧИТЕЛЕЙ",
     tch_search_showingTop:"показаны первые {n}",
+    room_recent_title:"НЕДАВНИЕ КОМНАТЫ",
+    room_role_owner:"Владелец",
+    room_role_participant:"Участник",
+    room_recent_rejoin:"Нажмите, чтобы войти снова",
+    room_time_now:"только что",
+    room_time_min:"{n} мин назад",
+    room_time_hour:"{n} ч назад",
     qLabels:{mcq:"Множественный выбор",gap_word:"Пропуск - Слова",gap_sentence:"Пропуск - Предложения",matching:"Соответствие",heading:"Подбор заголовков",qa:"Свободный ответ",tfnm:"Верно/Неверно/Не упоминается",ynng:"Да/Нет/Не указано"},
     badgeNames:{
       first_steps:{name:"Первые шаги",desc:"Выполните первый тест"},
