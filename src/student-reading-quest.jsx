@@ -2085,7 +2085,13 @@ export default function App(){
         // matching/heading require complex formats Claude can't reliably produce — exclude from AI generation
         var AI_TYPES=["mcq","gap_word","gap_sentence","qa","tfnm","ynng"];
         var types=selectedTypes.filter(function(t){return AI_TYPES.indexOf(t)!==-1;});
-        if(!types.length)types=["mcq","gap_word","qa","tfnm"];
+        if(!types.length){
+          // User picked ONLY matching/heading — those need library stories.
+          // Tell them, don't silently swap to a different type mix.
+          setError(t("stu_errMatchingAiOnly")||"Matching & Heading questions only come from the Library — pick another type or clear the Topic field.");
+          setGenLoading(false);
+          return;
+        }
         var safeTopic=customTopic.trim().replace(/[\r\n"]+/g," ").replace(/\s+/g," ").slice(0,120);
         if(!safeTopic){setError(t("stu_errTopicEmpty"));setGenLoading(false);return;}
         // Independent topic translation (via MyMemory) so the backend can verify
@@ -2155,8 +2161,14 @@ export default function App(){
     }
     var randomIdx=Math.floor(Math.random()*pool.length);
     var story=pool[randomIdx];
-    setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);setCurrentStoryId(story.id);
-    var mq=null;for(var i=0;i<story.questions.length;i++){if(story.questions[i].type==="matching"){mq=story.questions[i];break;}}
+    // Respect the user's question-type selection. If at least one
+    // question of a selected type exists in this story, show only those;
+    // otherwise fall back to the full set (no library story has the user's
+    // chosen types at this level).
+    var filteredQs=story.questions.filter(function(q){return selectedTypes.indexOf(q.type)!==-1;});
+    var storyQs=filteredQs.length>0?filteredQs:story.questions;
+    setPassage(story.passage);setTopic(story.title);setQuestions(storyQs);setCurrentStoryId(story.id);
+    var mq=null;for(var i=0;i<storyQs.length;i++){if(storyQs[i].type==="matching"){mq=storyQs[i];break;}}
     setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights.map(function(v,i){return{idx:i,val:v};})):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
@@ -2194,8 +2206,12 @@ export default function App(){
 
   function startStoryFromLibrary(story){
     setLevel(story.level);
-    setPassage(story.passage);setTopic(story.title);setQuestions(story.questions);
-    var mq=null;for(var i=0;i<story.questions.length;i++){if(story.questions[i].type==="matching"){mq=story.questions[i];break;}}
+    // Same type filter as the auto-picked library path — respect the user's
+    // question-type selection. Fall back to all questions if none match.
+    var filteredLibQs=story.questions.filter(function(q){return selectedTypes.indexOf(q.type)!==-1;});
+    var libQs=filteredLibQs.length>0?filteredLibQs:story.questions;
+    setPassage(story.passage);setTopic(story.title);setQuestions(libQs);
+    var mq=null;for(var i=0;i<libQs.length;i++){if(libQs[i].type==="matching"){mq=libQs[i];break;}}
     setShuffledRights(mq&&mq.rights?shuffleArr(mq.rights.map(function(v,i){return{idx:i,val:v};})):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;
@@ -2216,8 +2232,13 @@ export default function App(){
     libraryUpgradeRef.current=story.id;
     getLibraryQuiz(story).then(function(aiQs){
       if(!aiQs||libraryUpgradeRef.current!==story.id)return;
-      setQuestions(aiQs);
-      var mq2=null;for(var j=0;j<aiQs.length;j++){if(aiQs[j].type==="matching"){mq2=aiQs[j];break;}}
+      // Apply the same type filter to the AI-upgraded quiz so it respects
+      // the user's selection. Cache stores all-types responses so the same
+      // upgrade can be shared across users with different type preferences.
+      var filteredAi=aiQs.filter(function(q){return selectedTypes.indexOf(q.type)!==-1;});
+      var finalQs=filteredAi.length>0?filteredAi:aiQs;
+      setQuestions(finalQs);
+      var mq2=null;for(var j=0;j<finalQs.length;j++){if(finalQs[j].type==="matching"){mq2=finalQs[j];break;}}
       setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights.map(function(v,i){return{idx:i,val:v};})):[]);
     });
   }
