@@ -1387,6 +1387,12 @@ export default function App(){
   var [quotesSaved,setQuotesSaved]=useState(false);
   // Feature 4 - Notifications
   var [notifPermission,setNotifPermission]=useState(typeof Notification!=="undefined"?Notification.permission:"denied");
+  // F4 — push reminders. pushSubscribed mirrors the server-side record;
+  // pushExamDate is the optional ISO date used by the cron to ramp messages.
+  var [pushSubscribed,setPushSubscribed]=useState(false);
+  var [pushExamDate,setPushExamDate]=useState("");
+  var [pushBusy,setPushBusy]=useState(false);
+  var [pushMsg,setPushMsg]=useState("");
   // Feature 1 - Auto Vocab
   var [autoVocabWords,setAutoVocabWords]=useState([]);
   var [autoVocabDismissed,setAutoVocabDismissed]=useState(false);
@@ -1640,6 +1646,11 @@ export default function App(){
       setShowPlacement(true);
     }
   },[currentUser]);
+
+  // F4 — load existing push subscription state when the settings stage opens.
+  useEffect(function(){
+    if(stage==="settings"&&currentUser)loadPushSubscription();
+  },[stage,currentUser]);
 
   // F5 — hydrate friend-nudge dismissal flag on login / day change.
   useEffect(function(){
@@ -3191,6 +3202,84 @@ export default function App(){
   function sendTestNotification(){
     if(typeof Notification==="undefined"||Notification.permission!=="granted")return;
     new Notification("Reading Quest 📖",{body:"Keep your streak alive — read something today!",icon:"/favicon.svg"});
+  }
+  // F4 — Web Push subscription helpers.
+  // urlBase64ToUint8Array converts the VAPID public key (URL-safe base64)
+  // into the Uint8Array the browser's PushManager expects.
+  function urlBase64ToUint8Array(b64){
+    var padding="=".repeat((4-b64.length%4)%4);
+    var s=(b64+padding).replace(/-/g,"+").replace(/_/g,"/");
+    var raw=atob(s);
+    var out=new Uint8Array(raw.length);
+    for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+    return out;
+  }
+  async function loadPushSubscription(){
+    if(!currentUser||!_sessionToken)return;
+    try{
+      var r=await fetch("/api/push-subscribe",{headers:{Authorization:"Bearer "+_sessionToken}});
+      if(r.ok){var d=await r.json();setPushSubscribed(true);setPushExamDate(d.examDate||"");}
+      else{setPushSubscribed(false);}
+    }catch(e){setPushSubscribed(false);}
+  }
+  async function enablePushReminders(){
+    if(pushBusy)return;
+    setPushBusy(true);setPushMsg("");
+    try{
+      if(!("serviceWorker" in navigator)||!("PushManager" in window))throw new Error("Push not supported on this device.");
+      var perm=await Notification.requestPermission();
+      setNotifPermission(perm);
+      if(perm!=="granted")throw new Error("Notifications blocked in your browser.");
+      var cfg=await fetch("/api/push-config").then(function(r){return r.ok?r.json():Promise.reject(new Error("Config unavailable"));});
+      if(!cfg.publicKey)throw new Error("Server missing VAPID key.");
+      var reg=await navigator.serviceWorker.ready;
+      var sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)});
+      var subJson=sub.toJSON();
+      var r=await fetch("/api/push-subscribe",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+_sessionToken},
+        body:JSON.stringify({subscription:subJson,examDate:pushExamDate||null,locale:uiLang||"en"}),
+      });
+      if(!r.ok){var ed=await r.json().catch(function(){return{};});throw new Error(ed.error||"Couldn't save subscription.");}
+      setPushSubscribed(true);
+      setPushMsg("✓ "+t("push_msg_enabled"));
+      try{track("push_enabled",{examDate:pushExamDate||""});}catch(e){}
+    }catch(e){setPushMsg("✗ "+(e.message||"Couldn't enable push."));}
+    finally{setPushBusy(false);}
+  }
+  async function disablePushReminders(){
+    if(pushBusy)return;
+    setPushBusy(true);setPushMsg("");
+    try{
+      if("serviceWorker" in navigator){
+        try{var reg=await navigator.serviceWorker.ready;var sub=await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe();}catch(e){}
+      }
+      await fetch("/api/push-subscribe",{method:"DELETE",headers:{Authorization:"Bearer "+_sessionToken}});
+      setPushSubscribed(false);
+      setPushMsg("✓ "+t("push_msg_disabled"));
+      try{track("push_disabled");}catch(e){}
+    }catch(e){setPushMsg("✗ "+(e.message||"Couldn't disable push."));}
+    finally{setPushBusy(false);}
+  }
+  async function saveExamDate(){
+    if(!pushSubscribed||pushBusy)return;
+    setPushBusy(true);setPushMsg("");
+    try{
+      if("serviceWorker" in navigator){
+        var reg=await navigator.serviceWorker.ready;
+        var sub=await reg.pushManager.getSubscription();
+        if(!sub)throw new Error("Subscription missing — re-enable push.");
+        var r=await fetch("/api/push-subscribe",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+_sessionToken},
+          body:JSON.stringify({subscription:sub.toJSON(),examDate:pushExamDate||null,locale:uiLang||"en"}),
+        });
+        if(!r.ok){var ed=await r.json().catch(function(){return{};});throw new Error(ed.error||"Couldn't update exam date.");}
+        setPushMsg("✓ "+t("push_msg_saved"));
+        try{track("push_exam_date_saved",{examDate:pushExamDate||""});}catch(e){}
+      }
+    }catch(e){setPushMsg("✗ "+(e.message||"Couldn't save."));}
+    finally{setPushBusy(false);}
   }
 
   // ── Feature 1: Auto Vocab ─────────────────────────────────────
@@ -7535,14 +7624,41 @@ export default function App(){
                     <span className="lq-set-section-line"/>
                   </div>
                   <div className="lq-set-card">
-                    <button type="button" className="lq-set-row" onClick={notifPermission==="granted"?sendTestNotification:requestNotifPermission}>
+                    <div className="lq-set-row no-click">
                       <div className="lq-set-row-ico">🔔</div>
                       <div className="lq-set-row-text">
-                        <p className="lq-set-row-h">Daily Reminders</p>
-                        <p className="lq-set-row-d">{notifPermission==="granted"?"Enabled — tap to send a test":notifPermission==="denied"?"Blocked — change in browser":"Tap to enable scheduled prompts"}</p>
+                        <p className="lq-set-row-h">{t("push_title")}</p>
+                        <p className="lq-set-row-d">{pushSubscribed?t("push_desc_on"):t("push_desc_off")}</p>
                       </div>
-                      <span className="lq-set-row-chev" style={{color:notifPermission==="granted"?"#5af0b3":undefined}}>{notifPermission==="granted"?"✓":"›"}</span>
-                    </button>
+                      <button type="button" className={"lq-set-toggle"+(pushSubscribed?" on":"")} disabled={pushBusy} onClick={pushSubscribed?disablePushReminders:enablePushReminders} aria-label={t("push_title")}/>
+                    </div>
+                    {pushSubscribed&&(
+                      <div className="lq-set-card-pad" style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
+                        <p style={{fontFamily:"'Inter',sans-serif",fontSize:11,fontWeight:700,color:"rgba(227,224,244,0.5)",letterSpacing:0.12,textTransform:"uppercase",margin:"0 0 8px"}}>{t("push_exam_label")}</p>
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          <input
+                            type="date"
+                            value={pushExamDate}
+                            min={new Date().toISOString().slice(0,10)}
+                            onChange={function(e){setPushExamDate(e.target.value);}}
+                            style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1px solid rgba(255,255,255,0.10)",background:"rgba(255,255,255,0.04)",color:"#e3e0f4",fontFamily:"inherit",fontSize:13,colorScheme:"dark"}}
+                          />
+                          <button type="button" onClick={saveExamDate} disabled={pushBusy} style={{padding:"10px 14px",borderRadius:12,border:"none",background:"#5af0b3",color:"#003825",fontFamily:"inherit",fontSize:12,fontWeight:800,cursor:pushBusy?"wait":"pointer"}}>{pushBusy?t("push_saving"):t("push_save")}</button>
+                        </div>
+                        <p style={{fontSize:11,color:"rgba(227,224,244,0.45)",margin:"8px 0 0",lineHeight:1.5}}>{t("push_exam_hint")}</p>
+                      </div>
+                    )}
+                    {pushMsg&&<p style={{margin:"8px 16px 14px",fontSize:11,color:pushMsg.indexOf("✓")===0?"#5af0b3":"#f87171"}}>{pushMsg}</p>}
+                    {notifPermission==="granted"&&(
+                      <button type="button" className="lq-set-row" onClick={sendTestNotification}>
+                        <div className="lq-set-row-ico">🧪</div>
+                        <div className="lq-set-row-text">
+                          <p className="lq-set-row-h">{t("push_test_title")}</p>
+                          <p className="lq-set-row-d">{t("push_test_desc")}</p>
+                        </div>
+                        <span className="lq-set-row-chev">›</span>
+                      </button>
+                    )}
                     {quotes.length>0&&(
                       <button type="button" className="lq-set-row" onClick={function(){setStage("quotes");}}>
                         <div className="lq-set-row-ico">🔖</div>
