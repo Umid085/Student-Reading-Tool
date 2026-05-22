@@ -7274,37 +7274,54 @@ export default function App(){
             </div>
 
             {/* SEARCH */}
-            {friendStage==="search"&&(
-              <div>
+            {friendStage==="search"&&(function(){
+              // Reusable row renderer for both search hits and suggestions.
+              function renderUserRow(u){
+                var isFriend=myData.friends.indexOf(u.name)!==-1;
+                var requested=(getSocial(social,u.name).requests||[]).indexOf(currentUser.name)!==-1;
+                var uData=getSocial(social,u.name);
+                var uGamesXp=u.games?u.games.reduce(function(s,g){return s+g.xp;},0):0;
+                var uTotalXp=Math.max(Number(u&&u.totalXp)||0,uGamesXp);
+                var uLevel=getUserLevel(uTotalXp);
+                return(<div key={u.name} className="rq-raised" style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#fff",flexShrink:0}}>{u.name[0].toUpperCase()}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
+                    <div style={{fontSize:11,color:"#6b7280"}}>Lvl {uLevel} | Games: {u.games?u.games.length:0} | {uTotalXp} XP | Likes: {uData.likes||0}</div>
+                  </div>
+                  <div style={{display:"flex",gap:5,flexShrink:0}}>
+                    <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>{t("viewLabel")}</button>
+                    {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>{t("addFriend")}</button>}
+                    {requested&&<span style={{background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.5)",color:"#a78bfa",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>📨 {t("requestSent")}</span>}
+                    {isFriend&&<span style={{background:"rgba(52,211,153,0.15)",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>✓ {t("friendBadge")}</span>}
+                  </div>
+                </div>);
+              }
+              // Suggested learners — top by XP, excluding self + already-friends.
+              // Surfaced when the search box is empty so users have something
+              // tappable on first visit instead of a blank page.
+              var suggested=(allUsers||[])
+                .filter(function(u){return u&&u.name&&u.name!==currentUser.name&&myData.friends.indexOf(u.name)===-1;})
+                .map(function(u){var g=(u.games||[]).reduce(function(s,gm){return s+gm.xp;},0);return Object.assign({},u,{_xp:Math.max(Number(u.totalXp)||0,g)});})
+                .sort(function(a,b){return b._xp-a._xp;})
+                .slice(0,8);
+              var hits=getSearchResults();
+              return(<div>
                 <div style={{position:"relative",marginBottom:8}}>
-                  <input style={{...INP,paddingLeft:36}} placeholder="Search by username (min 2 chars)..." value={searchQuery} onChange={function(e){setSearchQuery(e.target.value);}}/>
+                  <input style={{...INP,paddingLeft:36}} placeholder={t("stu_friends_search_ph")} value={searchQuery} onChange={function(e){setSearchQuery(e.target.value);}}/>
                   <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,opacity:0.5}}>🔍</span>
                 </div>
                 <button onClick={function(){loadUsers().then(function(u){setAllUsers(u);setSocialMsg(t("stu_socialUserListRefreshed"));});}} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>{t("stu_socialRefreshBtn")}</button>
-                {getSearchResults().map(function(u){
-                  var isFriend=myData.friends.indexOf(u.name)!==-1;
-                  var requested=(getSocial(social,u.name).requests||[]).indexOf(currentUser.name)!==-1;
-                  var uData=getSocial(social,u.name);
-                  var uGamesXp=u.games?u.games.reduce(function(s,g){return s+g.xp;},0):0;
-                  var uTotalXp=Math.max(Number(u&&u.totalXp)||0,uGamesXp);
-                  var uLevel=getUserLevel(uTotalXp);
-                  return(<div key={u.name} className="rq-raised" style={{...CARD,marginBottom:8,padding:14,display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#fff",flexShrink:0}}>{u.name[0].toUpperCase()}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:14,fontWeight:700,color:"#f3f4f6"}}>{u.name}</div>
-                      <div style={{fontSize:11,color:"#6b7280"}}>Lvl {uLevel} | Games: {u.games?u.games.length:0} | {uTotalXp} XP | Likes: {uData.likes||0}</div>
-                    </div>
-                    <div style={{display:"flex",gap:5}}>
-                      <button onClick={function(){setViewingUser(u.name);setStage("friendProfile");}} style={{...mkBtn("#374151"),padding:"5px 9px",fontSize:11}}>{t("viewLabel")}</button>
-                      {!isFriend&&!requested&&<button onClick={function(){sendRequest(u.name);}} style={{...mkBtn("#6366f1"),padding:"5px 9px",fontSize:11}}>{t("addFriend")}</button>}
-                      {requested&&<span style={{background:"rgba(99,102,241,0.2)",border:"1px solid rgba(99,102,241,0.5)",color:"#a78bfa",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>📨 {t("requestSent")}</span>}
-                      {isFriend&&<span style={{background:"rgba(52,211,153,0.15)",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",borderRadius:999,padding:"4px 9px",fontSize:11,fontWeight:700}}>✓ {t("friendBadge")}</span>}
-                    </div>
-                  </div>);
-                })}
-                {searchQuery.length>=2&&getSearchResults().length===0&&<p style={{color:"#6b7280",textAlign:"center",padding:20}}>No users found for "{searchQuery}"</p>}
-              </div>
-            )}
+                {searchQuery.length<2&&suggested.length>0&&(
+                  <div style={{marginBottom:6}}>
+                    <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.08em",color:"rgba(227,224,244,0.55)",margin:"0 0 6px 4px"}}>{t("stu_friends_suggested")}</p>
+                    <p style={{fontSize:11,color:"rgba(227,224,244,0.45)",margin:"0 0 10px 4px",lineHeight:1.5}}>{t("stu_friends_suggested_hint")}</p>
+                  </div>
+                )}
+                {searchQuery.length<2?suggested.map(renderUserRow):hits.map(renderUserRow)}
+                {searchQuery.length>=2&&hits.length===0&&<p style={{color:"#6b7280",textAlign:"center",padding:20}}>{t("stu_friends_search_noResults").replace("{q}",searchQuery)}</p>}
+              </div>);
+            })()}
 
             {/* REQUESTS */}
             {friendStage==="requests"&&(
@@ -7324,7 +7341,14 @@ export default function App(){
             {/* FRIENDS LIST */}
             {friendStage==="list"&&(
               <div>
-                {myData.friends.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>👋</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No friends yet</div><div style={{fontSize:13,color:"#6b7280"}}>Search to connect with other learners</div></div>}
+                {myData.friends.length===0&&(
+                  <div style={{...CARD,textAlign:"center",padding:36}}>
+                    <div style={{fontSize:48,marginBottom:12}}>👋</div>
+                    <div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:6}}>{t("stu_friends_empty_title")}</div>
+                    <div style={{fontSize:13,color:"#6b7280",lineHeight:1.5,marginBottom:16,maxWidth:300,margin:"0 auto 16px"}}>{t("stu_friends_empty_body")}</div>
+                    <button type="button" onClick={function(){setFriendStage("search");setSocialMsg("");}} style={{...mkBtn("#a78bfa","#0d0d1a"),padding:"10px 20px",fontSize:13,fontWeight:800,letterSpacing:"0.04em"}}>🔍 {t("stu_friends_empty_cta")}</button>
+                  </div>
+                )}
                 {myData.friends.map(function(fname){
                   var fu=null;for(var i=0;i<allUsers.length;i++){if(allUsers[i].name===fname){fu=allUsers[i];break;}}
                   var fuGames=fu&&fu.games?fu.games:[];
