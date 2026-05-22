@@ -155,6 +155,10 @@ export default {
     stu_resnudge_closingGap:"🎯 {xp} XP from overtaking {name} — one more quest!",
     stu_resnudge_defendingLead:"👑 Still leading {name} by {xp} XP — keep going!",
     stu_resnudge_cta_view:"View board",
+    home_quota_today:"today",
+    home_quota_low:"Almost out",
+    home_quota_full:"Library →",
+    home_quota_tip:"Daily AI quest limit. Resets at UTC midnight.\nTap to browse free library stories.",
     qLabels:{mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"},
     badgeNames:{
       first_steps:{name:"First Steps",desc:"Complete your first quiz"},

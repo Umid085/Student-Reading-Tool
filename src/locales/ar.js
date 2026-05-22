@@ -141,6 +141,10 @@ export default {
     stu_resnudge_closingGap:"🎯 يفصلك {xp} XP عن تجاوز {name} — اختبار آخر!",
     stu_resnudge_defendingLead:"👑 ما زلت متقدماً على {name} بـ {xp} XP — استمر!",
     stu_resnudge_cta_view:"عرض اللوحة",
+    home_quota_today:"اليوم",
+    home_quota_low:"على وشك النفاد",
+    home_quota_full:"المكتبة ←",
+    home_quota_tip:"الحد اليومي لاختبارات الذكاء الاصطناعي. يتجدد منتصف ليل UTC.\nاضغط لتصفح القصص المجانية.",
     qLabels:{mcq:"اختيار من متعدد",gap_word:"ملء الفراغ - كلمات",gap_sentence:"ملء الفراغ - جمل",matching:"المطابقة",heading:"مطابقة العناوين",qa:"إجابة مفتوحة",tfnm:"صحيح/خطأ/غير مذكور",ynng:"نعم/لا/غير محدد"},
     badgeNames:{
       first_steps:{name:"الخطوات الأولى",desc:"أكمل اختبارك الأول"},

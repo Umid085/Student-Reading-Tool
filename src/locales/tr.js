@@ -141,6 +141,10 @@ export default {
     stu_resnudge_closingGap:"🎯 {name} kullanıcısını geçmek için {xp} XP — bir quest daha!",
     stu_resnudge_defendingLead:"👑 Hâlâ {name} önünde {xp} XP — devam et!",
     stu_resnudge_cta_view:"Tabloyu gör",
+    home_quota_today:"bugün",
+    home_quota_low:"Bitmek üzere",
+    home_quota_full:"Kütüphane →",
+    home_quota_tip:"Günlük AI quest limiti. UTC gece yarısı yenilenir.\nÜcretsiz hikayelere göz atmak için dokun.",
     qLabels:{mcq:"Çoktan Seçmeli",gap_word:"Boşluk - Kelime",gap_sentence:"Boşluk - Cümle",matching:"Eşleştirme",heading:"Başlık Eşleştir",qa:"Açık Cevap",tfnm:"Doğru/Yanlış/Belirtilmemiş",ynng:"Evet/Hayır/Belirtilmedi"},
     badgeNames:{
       first_steps:{name:"İlk Adımlar",desc:"İlk testi tamamla"},

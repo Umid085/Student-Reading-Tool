@@ -155,6 +155,10 @@ export default {
     stu_resnudge_closingGap:"🎯 {xp} XP до обгона {name} — ещё один квест!",
     stu_resnudge_defendingLead:"👑 Всё ещё впереди {name} на {xp} XP — продолжай!",
     stu_resnudge_cta_view:"Открыть таблицу",
+    home_quota_today:"сегодня",
+    home_quota_low:"Почти закончились",
+    home_quota_full:"Библиотека →",
+    home_quota_tip:"Дневной лимит AI-квестов. Сбрасывается в полночь UTC.\nНажми, чтобы открыть бесплатные истории.",
     qLabels:{mcq:"Множественный выбор",gap_word:"Пропуск - Слова",gap_sentence:"Пропуск - Предложения",matching:"Соответствие",heading:"Подбор заголовков",qa:"Свободный ответ",tfnm:"Верно/Неверно/Не упоминается",ynng:"Да/Нет/Не указано"},
     badgeNames:{
       first_steps:{name:"Первые шаги",desc:"Выполните первый тест"},

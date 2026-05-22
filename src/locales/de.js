@@ -141,6 +141,10 @@ export default {
     stu_resnudge_closingGap:"🎯 {xp} XP, um {name} zu überholen — ein Quest mehr!",
     stu_resnudge_defendingLead:"👑 Immer noch {xp} XP vor {name} — weiter so!",
     stu_resnudge_cta_view:"Tabelle ansehen",
+    home_quota_today:"heute",
+    home_quota_low:"Fast aufgebraucht",
+    home_quota_full:"Bibliothek →",
+    home_quota_tip:"Tägliches KI-Quest-Limit. Reset um Mitternacht UTC.\nTippe für die kostenlose Bibliothek.",
     qLabels:{mcq:"Multiple-Choice",gap_word:"Lückentext - Wörter",gap_sentence:"Lückentext - Sätze",matching:"Zuordnung",heading:"Überschriften zuordnen",qa:"Freie Antwort",tfnm:"Wahr/Falsch/Nicht erwähnt",ynng:"Ja/Nein/Nicht angegeben"},
     badgeNames:{
       first_steps:{name:"Erste Schritte",desc:"Schließe deinen ersten Quiz ab"},

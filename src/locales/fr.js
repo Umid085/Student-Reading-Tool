@@ -141,6 +141,10 @@ export default {
     stu_resnudge_closingGap:"🎯 {xp} XP pour dépasser {name} — un quest de plus !",
     stu_resnudge_defendingLead:"👑 Toujours devant {name} de {xp} XP — continue !",
     stu_resnudge_cta_view:"Voir le classement",
+    home_quota_today:"aujourd'hui",
+    home_quota_low:"Presque épuisé",
+    home_quota_full:"Bibliothèque →",
+    home_quota_tip:"Limite quotidienne des quests IA. Reset à minuit UTC.\nTouche pour parcourir la bibliothèque gratuite.",
     qLabels:{mcq:"Choix multiple",gap_word:"Texte à trous - Mots",gap_sentence:"Texte à trous - Phrases",matching:"Appariement",heading:"Apparier titres",qa:"Réponse libre",tfnm:"Vrai/Faux/Non mentionné",ynng:"Oui/Non/Non donné"},
     badgeNames:{
       first_steps:{name:"Premiers Pas",desc:"Termine ton premier quiz"},

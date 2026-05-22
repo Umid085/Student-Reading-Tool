@@ -141,6 +141,10 @@ export default {
     stu_resnudge_closingGap:"🎯 {xp} XP para superar a {name} — ¡un quest más!",
     stu_resnudge_defendingLead:"👑 Sigues por delante de {name} por {xp} XP — ¡sigue así!",
     stu_resnudge_cta_view:"Ver tabla",
+    home_quota_today:"hoy",
+    home_quota_low:"Casi agotado",
+    home_quota_full:"Biblioteca →",
+    home_quota_tip:"Límite diario de quests IA. Se restablece a medianoche UTC.\nToca para ver historias gratis.",
     qLabels:{mcq:"Opción múltiple",gap_word:"Huecos - Palabras",gap_sentence:"Huecos - Oraciones",matching:"Emparejar",heading:"Emparejar títulos",qa:"Respuesta abierta",tfnm:"V/F/No mencionado",ynng:"Sí/No/No dado"},
     badgeNames:{
       first_steps:{name:"Primeros Pasos",desc:"Completa tu primer quiz"},

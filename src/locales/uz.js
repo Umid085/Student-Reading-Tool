@@ -155,6 +155,10 @@ export default {
     stu_resnudge_closingGap:"🎯 {name}dan o'tish uchun {xp} XP qoldi — yana bitta quest!",
     stu_resnudge_defendingLead:"👑 {name}dan {xp} XP oldindasiz — davom eting!",
     stu_resnudge_cta_view:"Jadvalni ko'rish",
+    home_quota_today:"bugun",
+    home_quota_low:"Tugayapti",
+    home_quota_full:"Kutubxona →",
+    home_quota_tip:"Kunlik AI quest chegarasi. UTC yarim tunda yangilanadi.\nBepul hikoyalarni ko'rish uchun bosing.",
     qLabels:{mcq:"Ko'p tanlovli",gap_word:"Bo'sh joy - So'zlar",gap_sentence:"Bo'sh joy - Gaplar",matching:"Mosligini topish",heading:"Sarlavhalarni moslash",qa:"Erkin javob",tfnm:"To'g'ri/Noto'g'ri/Aytilmagan",ynng:"Ha/Yo'q/Berilmagan"},
     badgeNames:{
       first_steps:{name:"Birinchi Qadamlar",desc:"Birinchi testni yakunlang"},

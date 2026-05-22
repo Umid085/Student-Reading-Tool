@@ -5301,10 +5301,21 @@ export default function App(){
                     var aiMax=lowLv?(userQuota.ai.maxLow||10):(userQuota.ai.maxHigh||6);
                     var aiUsed=userQuota.ai.used||0;
                     var pct=aiMax>0?aiUsed/aiMax:0;
-                    var tone=pct>=1?{bg:"rgba(239,68,68,0.18)",fg:"#f87171",bd:"rgba(239,68,68,0.4)"}
-                      :pct>=0.75?{bg:"rgba(245,158,11,0.18)",fg:"#fbbf24",bd:"rgba(245,158,11,0.4)"}
+                    var capped=pct>=1;
+                    var nearCap=pct>=0.75&&!capped;
+                    var tone=capped?{bg:"rgba(239,68,68,0.18)",fg:"#f87171",bd:"rgba(239,68,68,0.4)"}
+                      :nearCap?{bg:"rgba(245,158,11,0.18)",fg:"#fbbf24",bd:"rgba(245,158,11,0.4)"}
                       :{bg:"rgba(99,102,241,0.15)",fg:"#a78bfa",bd:"rgba(99,102,241,0.3)"};
-                    return<span className="lq-pill" title="Daily AI quest limit — resets at UTC midnight" style={{background:tone.bg,color:tone.fg,border:"1px solid "+tone.bd}}>🪙 {aiUsed} / {aiMax} today</span>;
+                    // When capped, the chip becomes a clickable jump to the
+                    // free Library so students aren't dead-ended for the day.
+                    var sliderInfo=userQuota.slider?" · 🪄 "+(userQuota.slider.used||0)+"/"+(userQuota.slider.max||30):"";
+                    var vocabInfo=userQuota.vocab?" · 🔤 "+(userQuota.vocab.used||0)+"/"+(userQuota.vocab.max||80):"";
+                    var tip=t("home_quota_tip")+"\n"+aiUsed+"/"+aiMax+" AI"+sliderInfo+vocabInfo;
+                    var trailing=capped?" · "+t("home_quota_full"):nearCap?" · "+t("home_quota_low"):" "+t("home_quota_today");
+                    var common={background:tone.bg,color:tone.fg,border:"1px solid "+tone.bd};
+                    return capped
+                      ? <button type="button" onClick={function(){setStage("library");}} className="lq-pill" title={tip} style={Object.assign({},common,{cursor:"pointer",fontFamily:"inherit"})}>🪙 {aiUsed} / {aiMax}{trailing}</button>
+                      : <span className="lq-pill" title={tip} style={common}>🪙 {aiUsed} / {aiMax}{trailing}</span>;
                   })()}
                 </div>
 
