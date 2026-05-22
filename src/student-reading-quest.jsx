@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { track, identify, resetIdentity } from "./observability";
+import { pickFriendNudge } from "./friendNudge";
 import { STORY_LIBRARY } from "./storyLibrary";
 import { STRINGS, loadLocale } from "./locales";
 
@@ -1285,6 +1286,10 @@ export default function App(){
   var [translating,setTranslating]=useState(false);
   // weekly board
   var [weeklyLb,setWeeklyLb]=useState([]);
+  // F5 — friend nudge home-screen banner (positive framing only).
+  // Dismissal persists to localStorage for one day so it doesn't bounce back
+  // on every home re-enter.
+  var [nudgeDismissedToday,setNudgeDismissedToday]=useState(false);
   // discuss
   var [discussStoryId,setDiscussStoryId]=useState(null);
   var [allDiscuss,setAllDiscuss]=useState({});
@@ -1632,6 +1637,16 @@ export default function App(){
       setShowPlacement(true);
     }
   },[currentUser]);
+
+  // F5 — hydrate friend-nudge dismissal flag on login / day change.
+  useEffect(function(){
+    if(!currentUser){setNudgeDismissedToday(false);return;}
+    try{
+      var d=localStorage.getItem("rq-nudge-dismiss-"+currentUser.name);
+      setNudgeDismissedToday(d===todayKey());
+    }catch(e){setNudgeDismissedToday(false);}
+  },[currentUser]);
+  var nudgeShownRef=useRef("");
 
   var lv=getLv(level);
   var q=questions&&questions.length>current?questions[current]:null;
@@ -3222,6 +3237,23 @@ export default function App(){
   })();
   var todayStr=todayKey();
   var playedToday=currentUser?(currentUser.games||[]).some(function(g){return g.date===todayStr;}):false;
+  // F5 — derive the friend-nudge for today. Banner appears only when this
+  // is non-null AND nudgeDismissedToday is false.
+  var friendNudge=(function(){
+    if(!currentUser||nudgeDismissedToday)return null;
+    var weeklyMap={};
+    (weeklyLb||[]).forEach(function(e){if(e&&e.name)weeklyMap[e.name]=Number(e.xp)||0;});
+    var rows=(myData.friends||[]).map(function(fn){
+      var u=(allUsers||[]).find(function(x){return x&&x.name===fn;})||{};
+      return{name:fn,weeklyXp:weeklyMap[fn]||0,streak:calcStreak(u.games||[])};
+    });
+    return pickFriendNudge({
+      currentUserName:currentUser.name,
+      friends:rows,
+      myWeeklyXp:weeklyMap[currentUser.name]||0,
+      playedToday:playedToday,
+    });
+  })();
   var weekDots=(function(){var dots=[];for(var di=6;di>=0;di--){var d=new Date();d.setDate(d.getDate()-di);d.setHours(0,0,0,0);var ds=d.toISOString().slice(0,10);var dn=["S","M","T","W","T","F","S"][d.getDay()];dots.push({played:currentUser?(currentUser.games||[]).some(function(g){return g.date===ds;}):false,day:dn,today:di===0});}return dots;})();
   var STREAK_MILESTONES={3:"Three days in a row! Keep going 💪",7:"One whole week! You're building a real habit 🔥",14:"Two weeks strong! Incredible consistency 🏆",30:"30-day legend! You're unstoppable 🌟"};
   var milestoneToShow=currentUser&&[3,7,14,30].indexOf(myStreak)!==-1&&!milestoneSeen&&!localStorage.getItem("rq-ms-"+currentUser.name+"-"+myStreak)?STREAK_MILESTONES[myStreak]:null;
@@ -5347,6 +5379,43 @@ export default function App(){
                     );})}
                   </div>
                 )}
+
+                {/* F5 — friend comparison nudge. Positive framing only; one
+                    nudge picked per day, dismissible until tomorrow. */}
+                {friendNudge&&(function(){
+                  var k=friendNudge.category;
+                  var p=friendNudge.params||{};
+                  var msg=t("stu_nudge_"+k)||"";
+                  Object.keys(p).forEach(function(key){msg=msg.replace("{"+key+"}",p[key]);});
+                  var ico=k==="streakMatch"?"🔥":k==="behind"?"🎯":k==="tied"?"🤝":k==="ahead"?"⭐":k==="topPack"?"👑":"👥";
+                  var ctaLabel=friendNudge.ctaTo==="friends"?t("stu_nudge_cta_friends"):t("stu_nudge_cta_play");
+                  var dayStamp=currentUser?currentUser.name+":"+todayStr+":"+k:"";
+                  if(dayStamp&&nudgeShownRef.current!==dayStamp){
+                    nudgeShownRef.current=dayStamp;
+                    try{track("friend_nudge_shown",{category:k});}catch(e){}
+                  }
+                  return(
+                    <div style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 14px",margin:"10px 0",borderRadius:16,border:"1px solid rgba(96,165,250,0.35)",background:"linear-gradient(135deg,rgba(96,165,250,0.12),rgba(52,211,153,0.06))",color:"#e3e0f4",fontFamily:"'Inter',sans-serif"}}>
+                      <div style={{flexShrink:0,width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#60a5fa,#5af0b3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,boxShadow:"0 4px 14px rgba(96,165,250,0.3)"}}>{ico}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:11,fontWeight:700,letterSpacing:"0.05em",color:"#60a5fa",textTransform:"uppercase"}}>{t("stu_nudge_title")}</div>
+                        <div style={{fontSize:13,color:"#e3e0f4",marginTop:2,lineHeight:1.4}}>{msg}</div>
+                        <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+                          <button type="button" onClick={function(){
+                            try{track("friend_nudge_cta",{category:k,to:friendNudge.ctaTo});}catch(e){}
+                            if(friendNudge.ctaTo==="friends"){setStage("friends");}
+                            else{var el=document.getElementById("rq-level-picker");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}
+                          }} style={{padding:"6px 12px",borderRadius:10,border:"none",background:"#60a5fa",color:"#0d0d1a",fontSize:12,fontWeight:700,cursor:"pointer"}}>{ctaLabel}</button>
+                          <button type="button" onClick={function(){
+                            try{track("friend_nudge_dismissed",{category:k});}catch(e){}
+                            try{if(currentUser)localStorage.setItem("rq-nudge-dismiss-"+currentUser.name,todayStr);}catch(e){}
+                            setNudgeDismissedToday(true);
+                          }} style={{padding:"6px 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"transparent",color:"rgba(227,224,244,0.7)",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t("stu_nudge_dismiss")}</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Slider Mode banner — dedicated surface so the new mode is
                     discoverable regardless of streak/daily/review slot pressure. */}
