@@ -109,7 +109,27 @@
       "Bash(sed -i 's/^\\\\\\(    home:\"Inicio\",\\\\\\)$/\\\\1\\\\n    welcomeTagline:\"Aprende inglés con IA\",\\\\n    welcomeSubhead:\"Lectura CEFR gratis + cuestionarios IA. 5 minutos al día, tu nivel, tu tema.\",\\\\n    welcomeCtaPrimary:\"Empezar — Gratis\",\\\\n    welcomeCtaDemo:\"Probar demo 2 min\",\\\\n    welcomeNoSignup:\"Sin registro\",\\\\n    welcomeBenefit1Title:\"Textos IA a tu nivel\",\\\\n    welcomeBenefit1Body:\"De A1 a C2. Cualquier tema \\\\\\\\u2014 clima, fútbol, IA. Siempre nuevo.\",\\\\n    welcomeBenefit2Title:\"XP y rachas\",\\\\n    welcomeBenefit2Body:\"Reto diario, clasificación, insignias. Hábito de lectura de 7 días.\",\\\\n    welcomeBenefit3Title:\"8 idiomas\",\\\\n    welcomeBenefit3Body:\"Interfaz en español, uzbeko, ruso, turco, árabe, alemán, francés, inglés.\",\\\\n    welcomeFooterAbout:\"Hecho para estudiantes. Gratis para siempre.\",\\\\n    welcomeAlreadyAccount:\"¿Ya tienes cuenta? Inicia sesión\",/' es.js)",
       "Bash(sed -i 's/^\\\\\\(    home:\"Accueil\",\\\\\\)$/\\\\1\\\\n    welcomeTagline:\"Apprends l'\\\\''anglais avec l'\\\\''IA\",\\\\n    welcomeSubhead:\"Lecture CEFR gratuite + quiz IA. 5 minutes par jour, ton niveau, ton sujet.\",\\\\n    welcomeCtaPrimary:\"Commencer — Gratuit\",\\\\n    welcomeCtaDemo:\"Essayer démo 2 min\",\\\\n    welcomeNoSignup:\"Pas d'\\\\''inscription\",\\\\n    welcomeBenefit1Title:\"Textes IA à ton niveau\",\\\\n    welcomeBenefit1Body:\"De A1 à C2. N'\\\\''importe quel sujet \\\\\\\\u2014 climat, foot, IA. Toujours frais.\",\\\\n    welcomeBenefit2Title:\"XP \\\\\\\\u0026 séries\",\\\\n    welcomeBenefit2Body:\"Défi quotidien, classement, badges. Habitude de 7 jours.\",\\\\n    welcomeBenefit3Title:\"8 langues\",\\\\n    welcomeBenefit3Body:\"Interface en français, ouzbek, russe, turc, arabe, allemand, espagnol, anglais.\",\\\\n    welcomeFooterAbout:\"Conçu pour les étudiants. Gratuit pour toujours.\",\\\\n    welcomeAlreadyAccount:\"Déjà un compte? Se connecter\",/' fr.js)",
       "Bash(git checkout *)",
-      "Bash(fc-list)"
+      "Bash(fc-list)",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('/tmp/users.json'\\)\\); print\\('users count:', len\\(d.get\\('users',[]\\)\\) if isinstance\\(d, dict\\) else 'shape error'\\); u=d.get\\('users',[]\\) if isinstance\\(d, dict\\) else []; print\\('sample:', u[:2] if u else 'EMPTY'\\)\")",
+      "Bash(grep -nE \"fetch\\\\\\(.*DB|fetch\\\\\\(\\\\\\\\\\\\`\\\\\\\\\\\\$\\\\{DB\\\\}\" api/storage.js api/users.js api/auth.js api/register.js api/refresh.js api/revoke.js netlify/functions/storage.js netlify/functions/users.js netlify/functions/auth.js netlify/functions/register.js)",
+      "Read(//home/umid/.agents/skills/webapp-testing/**)",
+      "Bash(python /tmp/verify_exit.py)",
+      "Bash(agent-browser click *)",
+      "Bash(agent-browser wait *)",
+      "Bash(agent-browser screenshot *)",
+      "Bash(agent-browser close *)",
+      "Bash(npx vitest *)",
+      "Bash(kill %1)",
+      "Bash(agent-browser get *)",
+      "Bash(npx *)",
+      "Bash(npm i *)",
+      "Bash(vercel --version)",
+      "Bash(vercel whoami *)",
+      "Bash(vercel firewall *)",
+      "Bash(vercel env *)",
+      "Bash(vercel ls *)",
+      "Bash(vercel inspect *)",
+      "Bash(vercel deploy *)"
     ]
   }
 }

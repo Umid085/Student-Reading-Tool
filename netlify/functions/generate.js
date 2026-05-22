@@ -128,6 +128,77 @@ export const handler = async function (event) {
     }
   }
 
+  // ── Mode 4: quiz-from-text — {mode:"quiz_from_text", passage, level, types} → {topic, questions} ──
+  if (body.mode === "quiz_from_text") {
+    const QFT_QUOTA = 15;
+    const qftDB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+    const qftUsername = extractUsername(event);
+    const qftQuota = await consumeUserQuota(qftDB, qftUsername, "quiz_from_text", { max: QFT_QUOTA });
+    if (qftQuota.exceeded) {
+      return {
+        statusCode: 429,
+        headers: { ...CORS, "Retry-After": String(Math.max(1, Math.ceil((qftQuota.resetAt - Date.now()) / 1000))) },
+        body: JSON.stringify({ error: `Daily quiz limit reached (${qftQuota.used}/${qftQuota.max}). Resets at UTC midnight.` }),
+      };
+    }
+    const passage = body.passage;
+    const qftLevel = body.level || "B1";
+    const qftTypes = Array.isArray(body.types) ? body.types : ["mcq", "tfnm", "qa"];
+    if (!passage || typeof passage !== "string" || passage.trim().length < 30) {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Passage must be at least 30 characters." }) };
+    }
+    if (passage.length > 4000) {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Passage too long (max 4000 characters)." }) };
+    }
+    const qftBaseTypes = qftTypes.filter((t) => SUPPORTED_AI_TYPES.has(t));
+    if (!qftBaseTypes.length) {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "No valid question types specified." }) };
+    }
+    const qftTarget = QUESTIONS_PER_LEVEL[qftLevel] || 6;
+    const qftOrdered = [];
+    for (let i = 0; i < qftTarget; i++) qftOrdered.push(qftBaseTypes[i % qftBaseTypes.length]);
+    const qftUniqueTypes = Array.from(new Set(qftOrdered));
+    const qftShapes = qftUniqueTypes.map((t) => `  ${t}: ${TYPE_EXAMPLES[t]}`).join("\n");
+    const qftPrompt = `You are a CEFR ${qftLevel} English language test designer.
+
+The passage below has already been written. Generate exactly ${qftTarget} comprehension questions about it, one per slot in this exact order: ${qftOrdered.join(", ")}
+
+Each question object must follow the JSON shape for its type:
+${qftShapes}
+
+<passage>
+${passage.trim()}
+</passage>
+
+Return ONLY this JSON, no markdown, no explanation:
+{
+  "topic": "short title for this passage, 3-6 words",
+  "questions": [ ${qftTarget} question objects in the order listed above ]
+}
+
+Rules:
+- All questions must be answerable ONLY from the passage — no outside knowledge.
+- answer = 0-based index of the correct option (mcq/gap_word/gap_sentence/tfnm/ynng).
+- When the same type appears multiple times, each occurrence MUST ask about a DIFFERENT detail from the passage — no repeated stems, no rephrased duplicates.
+- Keep question language appropriate for CEFR ${qftLevel}.
+- Explanations should cite the passage briefly.`;
+    try {
+      const msg = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        messages: [{ role: "user", content: qftPrompt }],
+      });
+      const raw = msg.content[0].text.trim();
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("No JSON in response");
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (!parsed.questions || !Array.isArray(parsed.questions)) throw new Error("Invalid response structure");
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ topic: parsed.topic || "Custom Passage", questions: parsed.questions }) };
+    } catch (e) {
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "Failed to generate quiz. Please try again." }) };
+    }
+  }
+
   // ── Mode 3: slider micro-card — {mode:"micro", level, topic?} → {passage, question} ──
   if (body.mode === "micro") {
     const sLevel = (typeof body.level === "string" ? body.level.toUpperCase() : "B1");

@@ -1766,7 +1766,7 @@ export default function App(){
       asgn=Object.assign({},base,{storyId:assignStoryId,topic:story?story.title:"Library Story",level:story?story.level:assignLevel,passage:null,questions:null});
     } else if(assignType==="custom_text"){
       try{
-        var rc=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:assignCustomText.trim(),level:assignLevel,types:["mcq","gap_word","qa","tfnm"]})});
+        var rc=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"quiz_from_text",passage:assignCustomText.trim(),level:assignLevel,types:["mcq","gap_word","qa","tfnm"]})});
         var dc=await rc.json();
         if(!rc.ok||dc.error)throw new Error(dc.error||"Generation failed");
         asgn=Object.assign({},base,{storyId:null,topic:dc.topic||"Custom Passage",level:assignLevel,passage:assignCustomText.trim(),questions:dc.questions});
@@ -2181,7 +2181,7 @@ export default function App(){
       if(cached&&Array.isArray(cached)&&cached.length>=target)return cached;
     }catch(e){}
     try{
-      var r=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:story.passage,level:story.level,types:["mcq","gap_word","qa","tfnm"]})});
+      var r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"quiz_from_text",passage:story.passage,level:story.level,types:["mcq","gap_word","qa","tfnm"]})});
       if(!r.ok)return null;
       var d=await r.json();
       if(d&&Array.isArray(d.questions)&&d.questions.length>=3){
@@ -2642,7 +2642,7 @@ export default function App(){
   async function loadOwnTeacherBio(){
     if(!currentUser||!_sessionToken)return;
     try{
-      var r=await fetch("/api/teacher-bio?name="+encodeURIComponent(currentUser.name));
+      var r=await fetch("/api/teacher?action=bio&name="+encodeURIComponent(currentUser.name));
       if(r.ok){
         var d=await r.json();
         setTeacherBio({
@@ -2659,7 +2659,7 @@ export default function App(){
     if(!currentUser||!_sessionToken)return;
     setTeacherBioSaving(true);setTeacherBioMsg("");
     try{
-      var r=await fetch("/api/teacher-bio",{
+      var r=await fetch("/api/teacher?action=bio",{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":"Bearer "+_sessionToken},
         body:JSON.stringify({
@@ -2683,7 +2683,7 @@ export default function App(){
   async function loadPublicTeacherProfile(name){
     setViewedTeacher(null);setViewedTeacherErr("");
     try{
-      var r=await fetch("/api/teacher-bio?name="+encodeURIComponent(name));
+      var r=await fetch("/api/teacher?action=bio&name="+encodeURIComponent(name));
       if(r.status===404){setViewedTeacherErr("This teacher's profile is private or doesn't exist.");return;}
       if(!r.ok)throw new Error("Couldn't load profile");
       var d=await r.json();
@@ -2833,7 +2833,7 @@ export default function App(){
   async function runTeacherSearch(q){
     setTeacherSearchLoading(true);
     try{
-      var r=await fetch("/api/teacher-search?q="+encodeURIComponent(q||""));
+      var r=await fetch("/api/teacher?action=search&q="+encodeURIComponent(q||""));
       if(!r.ok)throw new Error("Search failed");
       var d=await r.json();
       setTeacherSearchResults(Array.isArray(d.results)?d.results:[]);
@@ -3217,7 +3217,7 @@ export default function App(){
   async function loadPushSubscription(){
     if(!currentUser||!_sessionToken)return;
     try{
-      var r=await fetch("/api/push-subscribe",{headers:{Authorization:"Bearer "+_sessionToken}});
+      var r=await fetch("/api/push?action=subscribe",{headers:{Authorization:"Bearer "+_sessionToken}});
       if(r.ok){var d=await r.json();setPushSubscribed(true);setPushExamDate(d.examDate||"");}
       else{setPushSubscribed(false);}
     }catch(e){setPushSubscribed(false);}
@@ -3230,12 +3230,12 @@ export default function App(){
       var perm=await Notification.requestPermission();
       setNotifPermission(perm);
       if(perm!=="granted")throw new Error("Notifications blocked in your browser.");
-      var cfg=await fetch("/api/push-config").then(function(r){return r.ok?r.json():Promise.reject(new Error("Config unavailable"));});
+      var cfg=await fetch("/api/push?action=config").then(function(r){return r.ok?r.json():Promise.reject(new Error("Config unavailable"));});
       if(!cfg.publicKey)throw new Error("Server missing VAPID key.");
       var reg=await navigator.serviceWorker.ready;
       var sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)});
       var subJson=sub.toJSON();
-      var r=await fetch("/api/push-subscribe",{
+      var r=await fetch("/api/push?action=subscribe",{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":"Bearer "+_sessionToken},
         body:JSON.stringify({subscription:subJson,examDate:pushExamDate||null,locale:uiLang||"en"}),
@@ -3254,7 +3254,7 @@ export default function App(){
       if("serviceWorker" in navigator){
         try{var reg=await navigator.serviceWorker.ready;var sub=await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe();}catch(e){}
       }
-      await fetch("/api/push-subscribe",{method:"DELETE",headers:{Authorization:"Bearer "+_sessionToken}});
+      await fetch("/api/push?action=subscribe",{method:"DELETE",headers:{Authorization:"Bearer "+_sessionToken}});
       setPushSubscribed(false);
       setPushMsg("✓ "+t("push_msg_disabled"));
       try{track("push_disabled");}catch(e){}
@@ -3269,7 +3269,7 @@ export default function App(){
         var reg=await navigator.serviceWorker.ready;
         var sub=await reg.pushManager.getSubscription();
         if(!sub)throw new Error("Subscription missing — re-enable push.");
-        var r=await fetch("/api/push-subscribe",{
+        var r=await fetch("/api/push?action=subscribe",{
           method:"POST",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+_sessionToken},
           body:JSON.stringify({subscription:sub.toJSON(),examDate:pushExamDate||null,locale:uiLang||"en"}),
@@ -3307,7 +3307,7 @@ export default function App(){
     if(!level){setCustomTextError(t("stu_errCustomTextLevel"));return;}
     setCustomTextError("");setCustomTextLoading(true);
     try{
-      var r=await fetch("/api/quiz-from-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passage:customText.trim(),level:level,types:selectedTypes.slice(0,3)})});
+      var r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"quiz_from_text",passage:customText.trim(),level:level,types:selectedTypes.slice(0,3)})});
       var d=await r.json();
       if(!r.ok||d.error)throw new Error(d.error||"Failed to generate quiz");
       // Reset every run-scoped piece of state so we don't inherit anything
