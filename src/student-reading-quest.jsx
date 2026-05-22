@@ -5631,6 +5631,26 @@ export default function App(){
                   </button>
                 )}
 
+                {/* Discover row — surfaces the social features that were
+                    previously buried in the "More" grid at the very bottom
+                    of the home scroll. Horizontal scroll-snap so it stays
+                    a single row even with future additions. */}
+                <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,margin:"4px -4px 14px",scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch"}}>
+                  {[
+                    {key:"friends",ico:"👥",label:t("friends"),accent:"#a78bfa",bg:"rgba(167,139,250,0.10)",bd:"rgba(167,139,250,0.32)",onClick:function(){setStage("friends");}},
+                    {key:"leaderboard",ico:"🏆",label:t("leaderboard"),accent:"#fbbf24",bg:"rgba(251,191,36,0.10)",bd:"rgba(251,191,36,0.32)",onClick:function(){setLbLevel("A1");setStage("leaderboard");}},
+                    {key:"room",ico:"🏫",label:t("home_discover_room")||"Group Room",accent:"#34d399",bg:"rgba(52,211,153,0.10)",bd:"rgba(52,211,153,0.32)",onClick:function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}},
+                    {key:"teachers",ico:"🔍",label:t("tch_findTeachers").replace(/^🔍\s*/,""),accent:"#f472b6",bg:"rgba(244,114,182,0.10)",bd:"rgba(244,114,182,0.32)",onClick:function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}},
+                  ].map(function(item){return(
+                    <button key={item.key} type="button" onClick={item.onClick} style={{flex:"0 0 116px",scrollSnapAlign:"start",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,padding:"12px 8px",borderRadius:16,border:"1px solid "+item.bd,background:item.bg,color:"#e3e0f4",cursor:"pointer",fontFamily:"'Inter',sans-serif",transition:"transform 0.12s, border-color 0.12s"}}
+                      onMouseEnter={function(e){e.currentTarget.style.borderColor=item.accent;}}
+                      onMouseLeave={function(e){e.currentTarget.style.borderColor=item.bd;}}>
+                      <span style={{fontSize:24,lineHeight:1}}>{item.ico}</span>
+                      <span style={{fontSize:11,fontWeight:700,color:item.accent,letterSpacing:"0.02em",textAlign:"center",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{item.label}</span>
+                    </button>
+                  );})}
+                </div>
+
                 <div className="lq-section-h" id="rq-level-picker">
                   <div className="h-lbl"><span className="h-ico">✦</span>{t("chooseLevel")}</div>
                 </div>

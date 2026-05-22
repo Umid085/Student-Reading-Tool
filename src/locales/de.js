@@ -102,6 +102,7 @@ export default {
     stu_nudge_cta_friends:"Freunde finden",
     stu_nudge_dismiss:"Nicht jetzt",
     tch_findTeachers:"🔍 Lehrer finden",
+    home_discover_room:"Gruppenraum",
     tch_bio_label:"ÖFFENTLICHES PROFIL",
     tch_bio_live:"LIVE",
     tch_bio_view:"Ansehen →",

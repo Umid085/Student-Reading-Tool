@@ -102,6 +102,7 @@ export default {
     stu_nudge_cta_friends:"ابحث عن أصدقاء",
     stu_nudge_dismiss:"ليس الآن",
     tch_findTeachers:"🔍 ابحث عن معلمين",
+    home_discover_room:"غرفة جماعية",
     tch_bio_label:"الملف العام",
     tch_bio_live:"مباشر",
     tch_bio_view:"عرض →",

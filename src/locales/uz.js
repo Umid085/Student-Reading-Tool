@@ -116,6 +116,7 @@ export default {
     stu_nudge_cta_friends:"Do'st topish",
     stu_nudge_dismiss:"Hozir emas",
     tch_findTeachers:"🔍 O'qituvchi topish",
+    home_discover_room:"Guruh xona",
     tch_bio_label:"OMMAVIY PROFIL",
     tch_bio_live:"FAOL",
     tch_bio_view:"Ko'rish →",

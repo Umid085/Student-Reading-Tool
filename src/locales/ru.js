@@ -116,6 +116,7 @@ export default {
     stu_nudge_cta_friends:"Найти друзей",
     stu_nudge_dismiss:"Не сейчас",
     tch_findTeachers:"🔍 Найти учителя",
+    home_discover_room:"Группа",
     tch_bio_label:"ПУБЛИЧНЫЙ ПРОФИЛЬ",
     tch_bio_live:"АКТИВЕН",
     tch_bio_view:"Открыть →",

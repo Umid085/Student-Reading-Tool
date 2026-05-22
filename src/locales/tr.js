@@ -102,6 +102,7 @@ export default {
     stu_nudge_cta_friends:"Arkadaş bul",
     stu_nudge_dismiss:"Şimdi değil",
     tch_findTeachers:"🔍 Öğretmen Bul",
+    home_discover_room:"Grup Oda",
     tch_bio_label:"GENEL PROFİL",
     tch_bio_live:"YAYINDA",
     tch_bio_view:"Görüntüle →",

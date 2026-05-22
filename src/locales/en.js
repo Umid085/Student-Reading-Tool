@@ -116,6 +116,7 @@ export default {
     stu_nudge_cta_friends:"Find friends",
     stu_nudge_dismiss:"Not now",
     tch_findTeachers:"🔍 Find Teachers",
+    home_discover_room:"Group Room",
     tch_bio_label:"PUBLIC PROFILE",
     tch_bio_live:"LIVE",
     tch_bio_view:"View →",
