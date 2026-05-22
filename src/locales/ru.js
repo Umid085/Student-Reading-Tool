@@ -151,6 +151,10 @@ export default {
     room_time_now:"только что",
     room_time_min:"{n} мин назад",
     room_time_hour:"{n} ч назад",
+    stu_resnudge_passedFriend:"🎉 Ты только что обогнал {name} в недельной таблице!",
+    stu_resnudge_closingGap:"🎯 {xp} XP до обгона {name} — ещё один квест!",
+    stu_resnudge_defendingLead:"👑 Всё ещё впереди {name} на {xp} XP — продолжай!",
+    stu_resnudge_cta_view:"Открыть таблицу",
     qLabels:{mcq:"Множественный выбор",gap_word:"Пропуск - Слова",gap_sentence:"Пропуск - Предложения",matching:"Соответствие",heading:"Подбор заголовков",qa:"Свободный ответ",tfnm:"Верно/Неверно/Не упоминается",ynng:"Да/Нет/Не указано"},
     badgeNames:{
       first_steps:{name:"Первые шаги",desc:"Выполните первый тест"},

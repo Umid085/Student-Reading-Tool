@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickFriendNudge } from "../src/friendNudge.js";
+import { pickFriendNudge, pickResultNudge } from "../src/friendNudge.js";
 
 const me = "alice";
 
@@ -135,5 +135,91 @@ describe("pickFriendNudge", () => {
       expect(c).not.toBeNull();
       expect(["play", "friends"]).toContain(c.ctaTo);
     });
+  });
+});
+
+describe("pickResultNudge", () => {
+  it("returns null when no friends", () => {
+    expect(pickResultNudge({ currentUserName: me, friends: [], myNewWeeklyXp: 500, xpEarned: 100 })).toBeNull();
+  });
+
+  it("returns null without a current user", () => {
+    expect(pickResultNudge({ friends: [row("bob", 100)], myNewWeeklyXp: 500, xpEarned: 100 })).toBeNull();
+  });
+
+  it("fires passedFriend when the quiz crosses over a friend's XP", () => {
+    // bob had 250. I was at 200 (newXp - earnedXp = 280-80 = 200). Now I'm at 280.
+    const n = pickResultNudge({
+      currentUserName: me,
+      friends: [row("bob", 250)],
+      myNewWeeklyXp: 280,
+      xpEarned: 80,
+    });
+    expect(n).toEqual({ category: "passedFriend", params: { name: "bob" }, ctaTo: "weekly" });
+  });
+
+  it("passedFriend picks the highest-XP friend leapfrogged (if multiple)", () => {
+    const n = pickResultNudge({
+      currentUserName: me,
+      friends: [row("bob", 220), row("carl", 270), row("dee", 100)],
+      myNewWeeklyXp: 280,
+      xpEarned: 100,
+    });
+    expect(n.params.name).toBe("carl"); // both bob (220) and carl (270) were passed; carl was higher
+  });
+
+  it("fires closingGap when a friend is within 200 XP ahead", () => {
+    const n = pickResultNudge({
+      currentUserName: me,
+      friends: [row("bob", 450)],
+      myNewWeeklyXp: 300,
+      xpEarned: 50,
+    });
+    expect(n).toEqual({ category: "closingGap", params: { name: "bob", xp: 150 }, ctaTo: "play" });
+  });
+
+  it("does NOT fire closingGap for an unbeatable gap (>200 XP)", () => {
+    const n = pickResultNudge({
+      currentUserName: me,
+      friends: [row("bob", 1000)],
+      myNewWeeklyXp: 100,
+      xpEarned: 50,
+    });
+    expect(n).toBeNull();
+  });
+
+  it("fires defendingLead when closest friend is within 100 XP behind", () => {
+    // bob was at 250 before AND after the quiz. I was at 280, now at 300.
+    // prevXp = 280, bob (250) < prevXp → not "passed". Lead = 50.
+    const n = pickResultNudge({
+      currentUserName: me,
+      friends: [row("bob", 250)],
+      myNewWeeklyXp: 300,
+      xpEarned: 20,
+    });
+    expect(n).toEqual({ category: "defendingLead", params: { name: "bob", xp: 50 }, ctaTo: "play" });
+  });
+
+  it("does NOT fire defendingLead for a wide lead", () => {
+    const n = pickResultNudge({
+      currentUserName: me,
+      friends: [row("bob", 100)],
+      myNewWeeklyXp: 800,
+      xpEarned: 50,
+    });
+    expect(n).toBeNull();
+  });
+
+  it("passedFriend wins over closingGap when both could apply", () => {
+    // bob had 290, I went 280→320 (xpEarned=40). I passed bob.
+    // carl is at 400 — 80 ahead → would be closingGap, but passedFriend wins.
+    const n = pickResultNudge({
+      currentUserName: me,
+      friends: [row("bob", 290), row("carl", 400)],
+      myNewWeeklyXp: 320,
+      xpEarned: 40,
+    });
+    expect(n.category).toBe("passedFriend");
+    expect(n.params.name).toBe("bob");
   });
 });

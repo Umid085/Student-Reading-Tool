@@ -137,6 +137,10 @@ export default {
     room_time_now:"à l'instant",
     room_time_min:"il y a {n} min",
     room_time_hour:"il y a {n} h",
+    stu_resnudge_passedFriend:"🎉 Tu viens de doubler {name} au classement hebdo !",
+    stu_resnudge_closingGap:"🎯 {xp} XP pour dépasser {name} — un quest de plus !",
+    stu_resnudge_defendingLead:"👑 Toujours devant {name} de {xp} XP — continue !",
+    stu_resnudge_cta_view:"Voir le classement",
     qLabels:{mcq:"Choix multiple",gap_word:"Texte à trous - Mots",gap_sentence:"Texte à trous - Phrases",matching:"Appariement",heading:"Apparier titres",qa:"Réponse libre",tfnm:"Vrai/Faux/Non mentionné",ynng:"Oui/Non/Non donné"},
     badgeNames:{
       first_steps:{name:"Premiers Pas",desc:"Termine ton premier quiz"},

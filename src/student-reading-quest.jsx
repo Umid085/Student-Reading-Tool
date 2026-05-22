@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { track, identify, resetIdentity } from "./observability";
-import { pickFriendNudge } from "./friendNudge";
+import { pickFriendNudge, pickResultNudge } from "./friendNudge";
 import { STORY_LIBRARY } from "./storyLibrary";
 import { STRINGS, loadLocale } from "./locales";
 
@@ -6260,6 +6260,20 @@ export default function App(){
             :motivCategory==="excellent"?"#5af0b3"
             :motivCategory==="good"?"#fbbf24"
             :"#c4b5fd";
+          // F5 result-screen nudge — frame what THIS quiz did to my weekly
+          // standing against friends. Reuses pickResultNudge for testability.
+          var resultNudge=(function(){
+            if(!currentUser)return null;
+            var weeklyMap={};
+            (weeklyLb||[]).forEach(function(e){if(e&&e.name)weeklyMap[e.name]=Number(e.xp)||0;});
+            var rows=(myData.friends||[]).map(function(fn){return{name:fn,weeklyXp:weeklyMap[fn]||0};});
+            return pickResultNudge({
+              currentUserName:currentUser.name,
+              friends:rows,
+              myNewWeeklyXp:weeklyMap[currentUser.name]||0,
+              xpEarned:Number(result.xp)||0,
+            });
+          })();
           return(
           <>
             <style>{`
@@ -6289,6 +6303,23 @@ export default function App(){
               </div>
 
               <div className="lq-res-content">
+                {resultNudge&&(function(){
+                  var rn=resultNudge;
+                  var msg=t("stu_resnudge_"+rn.category)||"";
+                  Object.keys(rn.params||{}).forEach(function(k){msg=msg.replace("{"+k+"}",rn.params[k]);});
+                  var accent=rn.category==="passedFriend"?"#5af0b3":rn.category==="closingGap"?"#fbbf24":"#c4b5fd";
+                  var ctaLabel=rn.ctaTo==="weekly"?t("stu_resnudge_cta_view"):t("stu_nudge_cta_play");
+                  return(
+                    <div style={{margin:"0 0 12px",padding:"12px 14px",borderRadius:14,background:"rgba("+hex2rgb(accent)+",0.08)",border:"1px solid rgba("+hex2rgb(accent)+",0.4)"}}>
+                      <div style={{fontSize:13,color:"#e3e0f4",lineHeight:1.4,marginBottom:8}}>{msg}</div>
+                      <button type="button" onClick={function(){
+                        try{track("result_nudge_cta",{category:rn.category,to:rn.ctaTo});}catch(e){}
+                        if(rn.ctaTo==="weekly")setStage("weekly");
+                        else{setStage("home");setTimeout(function(){var el=document.getElementById("rq-level-picker");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},80);}
+                      }} style={{padding:"6px 14px",borderRadius:10,border:"none",background:accent,color:"#0d0d1a",fontSize:12,fontWeight:800,cursor:"pointer"}}>{ctaLabel} →</button>
+                    </div>
+                  );
+                })()}
                 {motivQuote&&(
                   <div style={{margin:"0 0 12px",padding:"12px 16px",borderRadius:14,background:"rgba("+hex2rgb(motivAccent)+",0.06)",border:"1px solid rgba("+hex2rgb(motivAccent)+",0.28)",textAlign:"center"}}>
                     <p style={{margin:0,fontFamily:"'Newsreader','Inter',serif",fontSize:14,fontStyle:"italic",color:"rgba(227,224,244,0.85)",lineHeight:1.5}}>

@@ -151,6 +151,10 @@ export default {
     room_time_now:"hozir",
     room_time_min:"{n} daq oldin",
     room_time_hour:"{n} soat oldin",
+    stu_resnudge_passedFriend:"🎉 Haftalik jadvalda {name}dan o'zib ketdingiz!",
+    stu_resnudge_closingGap:"🎯 {name}dan o'tish uchun {xp} XP qoldi — yana bitta quest!",
+    stu_resnudge_defendingLead:"👑 {name}dan {xp} XP oldindasiz — davom eting!",
+    stu_resnudge_cta_view:"Jadvalni ko'rish",
     qLabels:{mcq:"Ko'p tanlovli",gap_word:"Bo'sh joy - So'zlar",gap_sentence:"Bo'sh joy - Gaplar",matching:"Mosligini topish",heading:"Sarlavhalarni moslash",qa:"Erkin javob",tfnm:"To'g'ri/Noto'g'ri/Aytilmagan",ynng:"Ha/Yo'q/Berilmagan"},
     badgeNames:{
       first_steps:{name:"Birinchi Qadamlar",desc:"Birinchi testni yakunlang"},

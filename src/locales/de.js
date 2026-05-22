@@ -137,6 +137,10 @@ export default {
     room_time_now:"gerade eben",
     room_time_min:"vor {n} Min",
     room_time_hour:"vor {n} Std",
+    stu_resnudge_passedFriend:"🎉 Du hast gerade {name} auf der Wochentabelle überholt!",
+    stu_resnudge_closingGap:"🎯 {xp} XP, um {name} zu überholen — ein Quest mehr!",
+    stu_resnudge_defendingLead:"👑 Immer noch {xp} XP vor {name} — weiter so!",
+    stu_resnudge_cta_view:"Tabelle ansehen",
     qLabels:{mcq:"Multiple-Choice",gap_word:"Lückentext - Wörter",gap_sentence:"Lückentext - Sätze",matching:"Zuordnung",heading:"Überschriften zuordnen",qa:"Freie Antwort",tfnm:"Wahr/Falsch/Nicht erwähnt",ynng:"Ja/Nein/Nicht angegeben"},
     badgeNames:{
       first_steps:{name:"Erste Schritte",desc:"Schließe deinen ersten Quiz ab"},

@@ -151,6 +151,10 @@ export default {
     room_time_now:"just now",
     room_time_min:"{n}m ago",
     room_time_hour:"{n}h ago",
+    stu_resnudge_passedFriend:"🎉 You just passed {name} on the weekly board!",
+    stu_resnudge_closingGap:"🎯 {xp} XP from overtaking {name} — one more quest!",
+    stu_resnudge_defendingLead:"👑 Still leading {name} by {xp} XP — keep going!",
+    stu_resnudge_cta_view:"View board",
     qLabels:{mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"},
     badgeNames:{
       first_steps:{name:"First Steps",desc:"Complete your first quiz"},

@@ -137,6 +137,10 @@ export default {
     room_time_now:"şimdi",
     room_time_min:"{n} dk önce",
     room_time_hour:"{n} sa önce",
+    stu_resnudge_passedFriend:"🎉 Haftalık tabloda {name} kullanıcısını geçtin!",
+    stu_resnudge_closingGap:"🎯 {name} kullanıcısını geçmek için {xp} XP — bir quest daha!",
+    stu_resnudge_defendingLead:"👑 Hâlâ {name} önünde {xp} XP — devam et!",
+    stu_resnudge_cta_view:"Tabloyu gör",
     qLabels:{mcq:"Çoktan Seçmeli",gap_word:"Boşluk - Kelime",gap_sentence:"Boşluk - Cümle",matching:"Eşleştirme",heading:"Başlık Eşleştir",qa:"Açık Cevap",tfnm:"Doğru/Yanlış/Belirtilmemiş",ynng:"Evet/Hayır/Belirtilmedi"},
     badgeNames:{
       first_steps:{name:"İlk Adımlar",desc:"İlk testi tamamla"},

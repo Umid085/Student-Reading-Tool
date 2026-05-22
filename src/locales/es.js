@@ -137,6 +137,10 @@ export default {
     room_time_now:"justo ahora",
     room_time_min:"hace {n} min",
     room_time_hour:"hace {n} h",
+    stu_resnudge_passedFriend:"🎉 ¡Acabas de superar a {name} en la tabla semanal!",
+    stu_resnudge_closingGap:"🎯 {xp} XP para superar a {name} — ¡un quest más!",
+    stu_resnudge_defendingLead:"👑 Sigues por delante de {name} por {xp} XP — ¡sigue así!",
+    stu_resnudge_cta_view:"Ver tabla",
     qLabels:{mcq:"Opción múltiple",gap_word:"Huecos - Palabras",gap_sentence:"Huecos - Oraciones",matching:"Emparejar",heading:"Emparejar títulos",qa:"Respuesta abierta",tfnm:"V/F/No mencionado",ynng:"Sí/No/No dado"},
     badgeNames:{
       first_steps:{name:"Primeros Pasos",desc:"Completa tu primer quiz"},

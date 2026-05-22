@@ -137,6 +137,10 @@ export default {
     room_time_now:"الآن",
     room_time_min:"قبل {n} د",
     room_time_hour:"قبل {n} س",
+    stu_resnudge_passedFriend:"🎉 لقد تجاوزت {name} في لوحة الأسبوع!",
+    stu_resnudge_closingGap:"🎯 يفصلك {xp} XP عن تجاوز {name} — اختبار آخر!",
+    stu_resnudge_defendingLead:"👑 ما زلت متقدماً على {name} بـ {xp} XP — استمر!",
+    stu_resnudge_cta_view:"عرض اللوحة",
     qLabels:{mcq:"اختيار من متعدد",gap_word:"ملء الفراغ - كلمات",gap_sentence:"ملء الفراغ - جمل",matching:"المطابقة",heading:"مطابقة العناوين",qa:"إجابة مفتوحة",tfnm:"صحيح/خطأ/غير مذكور",ynng:"نعم/لا/غير محدد"},
     badgeNames:{
       first_steps:{name:"الخطوات الأولى",desc:"أكمل اختبارك الأول"},
