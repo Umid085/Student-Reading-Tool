@@ -1344,6 +1344,9 @@ export default function App(){
   var [sliderLoading,setSliderLoading]=useState(false);
   var [sliderCapHit,setSliderCapHit]=useState(false);
   var [sliderError,setSliderError]=useState("");
+  // F3 polish — when the user finishes the day's deck (or chooses to stop
+  // mid-session), flip this to render a summary instead of bouncing to home.
+  var [sliderEnded,setSliderEnded]=useState(false);
   var sliderStartRef=useRef({});
   // F6 — Teacher public profile state. `teacherBio` is the form-bound
   // editor on the teacher dashboard; `viewedTeacher` holds the
@@ -2580,7 +2583,7 @@ export default function App(){
   }
   async function startSliderSession(){
     if(sliderLoading)return;
-    setSliderLoading(true);setSliderCapHit(false);setSliderError("");
+    setSliderLoading(true);setSliderCapHit(false);setSliderError("");setSliderEnded(false);
     setSliderCards([]);setSliderIdx(0);setSliderAnswers({});
     sliderStartRef.current={};
     try{track("slider_session_start",{level:level||"B1"});}catch(e){}
@@ -8227,6 +8230,13 @@ export default function App(){
           var correctIdx=current?current.question.answer:null;
           var isCorrect=answered&&pickedIdx===correctIdx;
           var progressLabel=(sliderIdx+1)+" / "+Math.max(sliderCards.length,sliderIdx+1);
+          // Session summary stats — only meaningful when ≥1 card was answered.
+          var ansCount=Object.keys(sliderAnswers).length;
+          var correctCount=Object.keys(sliderAnswers).reduce(function(s,k){
+            var card=sliderCards[Number(k)];
+            return s+(card&&card.question.answer===sliderAnswers[k]?1:0);
+          },0);
+          var accuracyPct=ansCount>0?Math.round((correctCount/ansCount)*100):0;
           return(
             <>
               <style>{`
@@ -8268,40 +8278,62 @@ export default function App(){
               `}</style>
               <div className="sl-wrap">
                 <header className="sl-topbar">
-                  <button type="button" className="sl-back" onClick={function(){setStage("home");}} aria-label="Exit slider">
+                  <button type="button" className="sl-back" onClick={function(){
+                    // Show summary if the user has answered ≥1 card; otherwise
+                    // exit straight to home (no point celebrating zero work).
+                    if(ansCount>0&&!sliderEnded){setSliderEnded(true);return;}
+                    setStage("home");
+                  }} aria-label={t("slider_exit")}>
                     <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                    Exit
+                    {t("slider_exit")}
                   </button>
                   <div className="sl-title">🪄 Slider · {level||"B1"}</div>
                   <span className="sl-progress">{progressLabel}</span>
                 </header>
 
-                {sliderError&&!current&&(
+                {sliderEnded&&(
+                  <div className="sl-end">
+                    <div className="sl-end-icon">{accuracyPct>=80?"🌟":accuracyPct>=60?"🎯":"📖"}</div>
+                    <h2 className="sl-end-h">{t("slider_summary_title")}</h2>
+                    <p className="sl-end-p">{t("slider_summary_body")}</p>
+                    <div style={{display:"flex",gap:14,marginTop:8}}>
+                      <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#f472b6",fontFamily:"'Outfit',sans-serif"}}>{ansCount}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,marginTop:2}}>{t("slider_summary_cards")}</div></div>
+                      <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#5af0b3",fontFamily:"'Outfit',sans-serif"}}>{correctCount}</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,marginTop:2}}>{t("slider_summary_correct")}</div></div>
+                      <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#a78bfa",fontFamily:"'Outfit',sans-serif"}}>{accuracyPct}%</div><div style={{fontSize:10,color:"rgba(227,224,244,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,marginTop:2}}>{t("slider_summary_accuracy")}</div></div>
+                    </div>
+                    <div style={{display:"flex",gap:8,marginTop:10}}>
+                      {!sliderCapHit&&<button className="sl-end-btn" onClick={startSliderSession}>{t("slider_summary_new")}</button>}
+                      <button className="sl-end-btn" onClick={function(){setStage("home");}} style={{background:"rgba(255,255,255,0.04)",borderColor:"rgba(255,255,255,0.12)",color:"rgba(227,224,244,0.8)"}}>{t("slider_back_home")}</button>
+                    </div>
+                  </div>
+                )}
+
+                {!sliderEnded&&sliderError&&!current&&(
                   <div className="sl-end">
                     <div className="sl-end-icon">⚠️</div>
-                    <h2 className="sl-end-h">Couldn't load cards</h2>
+                    <h2 className="sl-end-h">{t("slider_err_title")}</h2>
                     <p className="sl-end-p">{sliderError}</p>
-                    <button className="sl-end-btn" onClick={startSliderSession}>Retry</button>
+                    <button className="sl-end-btn" onClick={startSliderSession}>{t("slider_err_retry")}</button>
                   </div>
                 )}
 
-                {sliderCapHit&&!current&&(
+                {!sliderEnded&&sliderCapHit&&!current&&(
                   <div className="sl-end">
                     <div className="sl-end-icon">🌙</div>
-                    <h2 className="sl-end-h">Daily slider cap reached</h2>
-                    <p className="sl-end-p">You've used today's slider quota. Resets at UTC midnight — try the library or a custom passage in the meantime.</p>
-                    <button className="sl-end-btn" onClick={function(){setStage("home");}}>Back home</button>
+                    <h2 className="sl-end-h">{t("slider_cap_title")}</h2>
+                    <p className="sl-end-p">{t("slider_cap_body")}</p>
+                    <button className="sl-end-btn" onClick={function(){setStage("home");}}>{t("slider_back_home")}</button>
                   </div>
                 )}
 
-                {sliderLoading&&!current&&!sliderCapHit&&!sliderError&&(
+                {!sliderEnded&&sliderLoading&&!current&&!sliderCapHit&&!sliderError&&(
                   <div className="sl-skel">
                     <div className="sl-spin"/>
-                    <div>Picking your first card…</div>
+                    <div>{t("slider_loading_first")}</div>
                   </div>
                 )}
 
-                {current&&(
+                {!sliderEnded&&current&&(
                   <div className="sl-card" key={sliderIdx}>
                     {current.topic&&<div className="sl-topic">{current.topic}</div>}
                     <p className="sl-passage">{current.passage}</p>
@@ -8323,18 +8355,20 @@ export default function App(){
                     </div>
                     {answered&&current.question.explanation&&(
                       <div className="sl-explain">
-                        <b>{isCorrect?"Right":"Heads-up"}</b>{current.question.explanation}
+                        <b>{isCorrect?t("slider_explain_right"):t("slider_explain_wrong")}</b>{current.question.explanation}
                       </div>
                     )}
                   </div>
                 )}
 
-                {current&&answered&&(
+                {!sliderEnded&&current&&answered&&(
                   <div className="sl-nav">
-                    <button className="sl-nav-btn sl-nav-next" disabled={sliderIdx>=sliderCards.length-1&&!sliderLoading&&sliderCapHit} onClick={function(){
+                    <button className="sl-nav-btn sl-nav-next" disabled={sliderIdx>=sliderCards.length-1&&!sliderLoading&&sliderCapHit&&false} onClick={function(){
                       var next=sliderIdx+1;
                       if(next>=sliderCards.length){
-                        if(sliderCapHit){setStage("home");return;}
+                        // Cap hit means no more cards are coming — show the
+                        // summary instead of dead-ending the user.
+                        if(sliderCapHit){setSliderEnded(true);return;}
                         // No card ready yet — kick off a fetch and stay put
                         ensureSliderAhead(sliderIdx);
                         return;
@@ -8342,7 +8376,7 @@ export default function App(){
                       sliderStartRef.current[next]=Date.now();
                       setSliderIdx(next);
                     }}>
-                      {sliderIdx>=sliderCards.length-1&&sliderCapHit?"Finish →":"Next Card →"}
+                      {sliderIdx>=sliderCards.length-1&&sliderCapHit?t("slider_finish"):t("slider_next")}
                     </button>
                   </div>
                 )}
