@@ -2413,18 +2413,27 @@ export default function App(){
         });
         if(matchingAsgn){doCompleteAssignment(matchingAsgn.id,pct,finalXp,timeSecs);setActiveAssignmentId(null);}
       }
-      // save missed questions to SRS review queue
-      var REVIEW_TYPES=["mcq","gap_word","gap_sentence","tfnm","ynng","qa"];
-      var missed=[];var todayLoc=todayKey();
-      for(var ri=0;ri<questions.length;ri++){if(!ansArr[ri]&&REVIEW_TYPES.indexOf(questions[ri].type)!==-1){missed.push({id:todayLoc+"-"+ri+"-"+Math.random().toString(36).slice(2),q:questions[ri],topic:topic,level:lvObj.key,date:todayLoc,nextReview:todayLoc,srInterval:0});}}
-      if(missed.length>0&&currentUser){
-        var rqExist=[];try{rqExist=JSON.parse(localStorage.getItem("rq-review-"+currentUser.name)||"[]");}catch(e){}
-        var rqTexts=new Set(rqExist.map(function(r){return r.q.q||r.q.sentence||r.q.instruction||"";}));
-        var rqNew=missed.filter(function(r){return !rqTexts.has(r.q.q||r.q.sentence||r.q.instruction||"");});
-        var rqUpdated=rqExist.concat(rqNew).slice(-60);
-        localStorage.setItem("rq-review-"+currentUser.name,JSON.stringify(rqUpdated));
-        setReviewQueue(rqUpdated);
-      }
+      // save missed questions to SRS review queue. Wrapped + guarded: a
+      // legacy/corrupt review entry (missing `.q`) must never throw here,
+      // because the game is already saved above and an exception would fall
+      // to the catch below and wipe the user's result to 0.
+      try{
+        var REVIEW_TYPES=["mcq","gap_word","gap_sentence","tfnm","ynng","qa"];
+        var missed=[];var todayLoc=todayKey();
+        for(var ri=0;ri<questions.length;ri++){if(!ansArr[ri]&&REVIEW_TYPES.indexOf(questions[ri].type)!==-1){missed.push({id:todayLoc+"-"+ri+"-"+Math.random().toString(36).slice(2),q:questions[ri],topic:topic,level:lvObj.key,date:todayLoc,nextReview:todayLoc,srInterval:0});}}
+        if(missed.length>0&&currentUser){
+          var rqExist=[];try{rqExist=JSON.parse(localStorage.getItem("rq-review-"+currentUser.name)||"[]");}catch(e){}
+          // Drop any malformed entries lacking a question object before reading
+          // its text fields, so `r.q.q` can't blow up on legacy data.
+          rqExist=(Array.isArray(rqExist)?rqExist:[]).filter(function(r){return r&&r.q;});
+          var qText=function(r){return (r&&r.q&&(r.q.q||r.q.sentence||r.q.instruction))||"";};
+          var rqTexts=new Set(rqExist.map(qText));
+          var rqNew=missed.filter(function(r){return !rqTexts.has(qText(r));});
+          var rqUpdated=rqExist.concat(rqNew).slice(-60);
+          localStorage.setItem("rq-review-"+currentUser.name,JSON.stringify(rqUpdated));
+          setReviewQueue(rqUpdated);
+        }
+      }catch(e){console.warn("SRS review-queue update failed:",e);}
       setResult({level:lvObj.key,xp:finalXp,score:totalEarned,maxScore:totalMax,pct:pct,stars:stars,timeBonus:tb,timeSecs:timeSecs,rank:rank,answers:ansArr,typeStats:typeStats,wasDaily:wasDaily,newBadges:newBadgeIds,newQuests:newQuestItems,questBonus:questBonus,wpm:wpm,storyId:currentStoryId||null,earnedShield:newShields>shields,newStreakVal:newStreakVal,completedGoals:completedGoalIds,wasChallenge:wasChallenge,leveledUp:leveledUp,newAppLevel:newAppLevel});
       stopMusic();playSfx("complete");
       setStage("result");
@@ -2432,7 +2441,33 @@ export default function App(){
       // Refresh the quota chip so users see their daily counter tick up
       // immediately on return-to-home, without waiting for a full reload.
       loadUserQuota().then(function(q){setUserQuota(q);});
-    }catch(e){console.error("doFinish error:",e);setResult({xp:0,score:0,maxScore:0,pct:0,stars:0,timeBonus:0,timeSecs:0,rank:0,answers:[],typeStats:{},wasDaily:false,newBadges:[],newQuests:[],questBonus:0,wpm:0,storyId:null,earnedShield:false,newStreakVal:0,completedGoals:[]});setStage("result");track("quiz_failed",{error:String(e&&e.message||e)});}
+    }catch(e){
+      console.error("doFinish error:",e);
+      // A failure in a post-scoring step (badges, quests, goals, leaderboards,
+      // SRS, …) must NOT throw away the score the user just earned. The core
+      // scoring vars are declared with `var` at the top of the try, so they're
+      // hoisted into this scope and already hold the real results by the time
+      // any side-effect can throw — fall back to those instead of zeros.
+      setResult({
+        level:(typeof lvObj!=="undefined"&&lvObj?lvObj.key:level)||"",
+        xp:(typeof finalXp!=="undefined"?finalXp:0)||0,
+        score:(typeof totalEarned!=="undefined"?totalEarned:0)||0,
+        maxScore:(typeof totalMax!=="undefined"?totalMax:0)||0,
+        pct:(typeof pct!=="undefined"?pct:0)||0,
+        stars:(typeof stars!=="undefined"?stars:1)||1,
+        timeBonus:(typeof tb!=="undefined"?tb:0)||0,
+        timeSecs:(typeof timeSecs!=="undefined"?timeSecs:0)||0,
+        rank:0,
+        answers:(typeof ansArr!=="undefined"?ansArr:[])||[],
+        typeStats:(typeof typeStats!=="undefined"?typeStats:{})||{},
+        wasDaily:false,newBadges:[],newQuests:[],questBonus:0,
+        wpm:(typeof wpm!=="undefined"?wpm:0)||0,
+        storyId:currentStoryId||null,
+        earnedShield:false,newStreakVal:0,completedGoals:[]
+      });
+      setStage("result");
+      track("quiz_failed",{error:String(e&&e.message||e)});
+    }
   }
 
   // No-signup demo quiz. Standalone flow that doesn't touch user state.
