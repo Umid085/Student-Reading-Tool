@@ -125,6 +125,15 @@ Locale-formatted dates were removed in favour of ISO so a user crossing timezone
 
 All writes go to localStorage first (sync), then fire-and-forget to Firebase via `/api/storage` (async). Reads pull from Firebase if available, fall back to localStorage on error.
 
+### Known limitations (storage security debt)
+
+Two structural issues were identified in the May 2026 backend review and **left unfixed by decision** (tracked, not yet scheduled):
+
+1. **`/api/storage` enforces authentication, not authorization.** The POST path verifies the Bearer token is a valid, unexpired token for *some* user, but never binds that user to the key being written. Any logged-in user can PUT to any key that passes `ALLOWED_KEYS` and isn't in `WRITE_BLOCKED` (i.e. everything except `rq-auth-v6`) — including `rq-classes-v1`, `rq-assignments-v1`, `rq-boards-v6`, `rq-social-v6`. Teacher/class ownership is enforced only by browser UI gates (`isTeacherOf`), which a direct API call bypasses.
+2. **Whole-array lost-update races.** `doCompleteAssignment` and `doJoinClass`/`doPostAnnouncement` read a stale in-memory snapshot, mutate it, and PUT the *entire* `rq-assignments-v1` / `rq-classes-v1` array. Concurrent writers clobber each other (a completion or class-join is silently dropped). Same class as the quota-counter and room-participant races that were fixed via ETag CAS / per-child writes.
+
+Recommended fix for both: dedicated authenticated mutation endpoints (one per class/assignment/score action) that derive the actor from `extractUsername(req)` and do per-child Firebase writes server-side, instead of routing through the generic whole-array `/api/storage` proxy.
+
 ### Authentication (current state)
 
 The auth story has been hardened in three layers:
