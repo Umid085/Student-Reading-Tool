@@ -44,9 +44,23 @@ export function initObservability() {
         persistence: "localStorage",
       });
       posthogReady = true;
+      // Tag every event with the chosen UI language. IP geo (auto-enriched by
+      // PostHog cloud) tells us where the device is; the picked locale reveals
+      // which market the user actually belongs to — the signal that matters for
+      // go-to-market decisions. Registered as a super-property so it rides on
+      // all events + retention cohorts.
+      try { posthog.register({ ui_lang: localStorage.getItem("rq-uilang") || "en" }); } catch (_) {}
     } catch (e) {
       console.warn("PostHog init failed:", e);
     }
+  }
+}
+
+// Update super-properties attached to all subsequent events (e.g. when the
+// user switches interface language). No-ops until PostHog is initialized.
+export function setSuperProps(props = {}) {
+  if (posthogReady) {
+    try { posthog.register(props); } catch (_) {}
   }
 }
 
