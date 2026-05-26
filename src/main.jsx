@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import App from "./student-reading-quest.jsx";
 import { initObservability, ErrorBoundary } from "./observability";
 
@@ -25,6 +26,7 @@ createRoot(document.getElementById("root")).render(
       <App />
     </ErrorBoundary>
     <Analytics />
+    <SpeedInsights />
   </StrictMode>
 );
 
