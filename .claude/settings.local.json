@@ -129,7 +129,11 @@
       "Bash(vercel env *)",
       "Bash(vercel ls *)",
       "Bash(vercel inspect *)",
-      "Bash(vercel deploy *)"
+      "Bash(vercel deploy *)",
+      "Bash(grep -nA8 -i \"console\")",
+      "Bash(sed -n '1,60p' package.json)",
+      "Bash(sed -n '1,60p' netlify/functions/auth.js)",
+      "Bash(xdg-open \"https://us.posthog.com\")"
     ]
   }
 }
