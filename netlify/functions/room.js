@@ -67,6 +67,33 @@ async function fbPatch(DB, code, partial) {
   } catch (_) { return false; }
 }
 
+// Write a single nested child (e.g. one participant) instead of PATCHing the
+// whole `participants` map. PATCHing the map is a read-modify-write on shared
+// state: two players joining/answering at once each send back their own stale
+// snapshot and the last write wins, silently dropping the other. Writing only
+// `participants/<key>` makes each player's update independent and collision-free.
+async function fbPutChild(DB, code, childPath, value) {
+  try {
+    const url = `${DB}/rq/rq-rooms-v1/${safeCode(code)}/${childPath}.json` + fbAuthSuffix();
+    const r = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(value),
+    });
+    return r.ok;
+  } catch (_) { return false; }
+}
+
+// Firebase keys may not contain . $ # [ ] / or control chars. clean() already
+// strips \r\n\t; this maps the remaining illegal chars to "_" so a participant
+// (esp. an anonymous display name) can safely be used as a child key. The
+// original display name is stored in the record's `name` field. The server
+// echoes the resulting key back as `youKey` so the client doesn't have to
+// reproduce this sanitization.
+function roomKey(name) {
+  return (String(name || "").replace(/[.$#/[\]\x00-\x1f\x7f]/g, "_").slice(0, NAME_MAX)) || "_";
+}
+
 async function fbDelete(DB, code) {
   try { await fetch(roomUrl(DB, code) + fbAuthSuffix(), { method: "DELETE" }); } catch (_) {}
 }
@@ -165,6 +192,7 @@ export const handler = async function (event) {
     if (!code) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "Couldn't allocate room code, please retry" }) };
 
     const now = Date.now();
+    const ownerKey = roomKey(ownerName);
     const room = {
       code,
       ownerName,
@@ -173,14 +201,14 @@ export const handler = async function (event) {
       topic: topic || null,
       passage: card.passage,
       question: card.question,
-      participants: { [ownerName]: { joined: now, role: "owner" } },
+      participants: { [ownerKey]: { name: ownerName, joined: now, role: "owner" } },
       createdAt: now,
       expiresAt: now + ROOM_TTL_MS,
       status: "waiting",
     };
     const ok = await fbPut(DB, code, room);
     if (!ok) return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Room write failed" }) };
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ room }) };
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ room, youKey: ownerKey }) };
   }
 
   if (action === "join") {
@@ -195,13 +223,15 @@ export const handler = async function (event) {
     if (!name) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Missing 'name'" }) };
     const room = await getActiveRoom(DB, code);
     if (!room) return { statusCode: 410, headers: CORS, body: JSON.stringify({ error: "Room not found or expired" }) };
+    const pkey = roomKey(name);
     const participants = room.participants || {};
-    if (!participants[name]) {
-      participants[name] = { joined: Date.now() };
-      await fbPatch(DB, code, { participants });
+    if (!participants[pkey]) {
+      const rec = { name, joined: Date.now() };
+      await fbPutChild(DB, code, "participants/" + pkey, rec);
+      participants[pkey] = rec;
       room.participants = participants;
     }
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ room }) };
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ room, youKey: pkey }) };
   }
 
   if (action === "answer") {
@@ -221,19 +251,21 @@ export const handler = async function (event) {
     }
     const room = await getActiveRoom(DB, code);
     if (!room) return { statusCode: 410, headers: CORS, body: JSON.stringify({ error: "Room not found or expired" }) };
+    const pkey = roomKey(name);
     const participants = room.participants || {};
-    const me = participants[name] || { joined: Date.now() };
+    const me = participants[pkey] || { name, joined: Date.now() };
     if (typeof me.answerIdx === "number") {
       return { statusCode: 409, headers: CORS, body: JSON.stringify({ error: "Already answered", room }) };
     }
+    me.name = me.name || name;
     me.answerIdx = optionIdx;
     me.elapsedMs = elapsedMs;
     me.finishedAt = Date.now();
     me.correct = !!room.question && optionIdx === room.question.answer;
-    participants[name] = me;
-    await fbPatch(DB, code, { participants });
+    await fbPutChild(DB, code, "participants/" + pkey, me);
+    participants[pkey] = me;
     room.participants = participants;
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ room }) };
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ room, youKey: pkey }) };
   }
 
   return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Unknown action" }) };

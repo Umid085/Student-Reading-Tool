@@ -22,7 +22,14 @@ function makeFetch(responses) {
   let i = 0;
   return vi.fn(async () => {
     const r = responses[i++] || { ok: true, json: null };
-    return { ok: r.ok !== false, json: async () => r.json, text: async () => "" };
+    return {
+      ok: r.ok !== false,
+      status: r.status || (r.ok === false ? 500 : 200),
+      // consumeUserQuota reads the ETag header for its compare-and-swap.
+      headers: { get: (h) => (String(h).toLowerCase() === "etag" ? (r.etag || "etag0") : null) },
+      json: async () => r.json,
+      text: async () => "",
+    };
   });
 }
 
@@ -75,27 +82,41 @@ describe("_userQuota.js — consumeUserQuota", () => {
     expect(q.exceeded).toBe(false);
   });
 
-  it("allows the call when under the cap and increments the counter", async () => {
+  it("allows the call when under the cap and writes the incremented count via CAS", async () => {
     global.fetch = makeFetch([
-      { ok: true, json: { n: 4 } }, // read
-      { ok: true, json: {} },       // write
+      { ok: true, json: { n: 4 }, etag: "e1" }, // read (value + ETag)
+      { ok: true, json: {} },                    // conditional write
     ]);
     const q = await consumeUserQuota("https://x.fb", "alice", "ai", { max: 10 });
     expect(q.exceeded).toBe(false);
     expect(q.used).toBe(5);
-    // Two fetch calls: read + fire-and-forget increment
+    // Two fetch calls: ETag read + conditional (if-match) write
     expect(global.fetch).toHaveBeenCalledTimes(2);
     const putCall = global.fetch.mock.calls[1];
     expect(putCall[1].method).toBe("PUT");
+    expect(putCall[1].headers["if-match"]).toBe("e1");
     expect(JSON.parse(putCall[1].body).n).toBe(5);
   });
 
-  it("refuses the call when used >= max and does NOT increment", async () => {
-    global.fetch = makeFetch([{ ok: true, json: { n: 10 } }]);
+  it("retries on a 412 (concurrent write) then succeeds", async () => {
+    global.fetch = makeFetch([
+      { ok: true, json: { n: 4 }, etag: "e1" }, // read 1
+      { ok: false, status: 412 },               // write 1 — ETag moved under us
+      { ok: true, json: { n: 5 }, etag: "e2" }, // re-read
+      { ok: true, json: {} },                    // write 2 — success
+    ]);
+    const q = await consumeUserQuota("https://x.fb", "alice", "ai", { max: 10 });
+    expect(q.exceeded).toBe(false);
+    expect(q.used).toBe(6);
+    expect(global.fetch).toHaveBeenCalledTimes(4);
+  });
+
+  it("refuses the call when used >= max and does NOT write", async () => {
+    global.fetch = makeFetch([{ ok: true, json: { n: 10 }, etag: "e1" }]);
     const q = await consumeUserQuota("https://x.fb", "alice", "ai", { max: 10 });
     expect(q.exceeded).toBe(true);
     expect(q.used).toBe(10);
-    // Only the read call — no increment
+    // Only the read call — the cap check returns before any write
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 

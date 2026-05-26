@@ -2925,7 +2925,10 @@ export default function App(){
       if(!res.ok)throw new Error(res.data.error||"Couldn't create room");
       setRoomState(res.data.room);
       setRoomCode(res.data.room.code);
-      setRoomMyName(displayName);
+      // Use the server's canonical participant key (display names with
+      // Firebase-illegal chars get sanitized into the key); falls back to the
+      // display name for older servers that don't echo youKey.
+      setRoomMyName(res.data.youKey||displayName);
       roomStartRef.current=Date.now();
       saveRoomEntry({code:res.data.room.code,role:"owner",level:res.data.room.level||payload.level,topic:res.data.room.topic||null});
       setStage("room");
@@ -2945,7 +2948,7 @@ export default function App(){
       }
       setRoomState(res.data.room);
       setRoomCode(res.data.room.code);
-      setRoomMyName(displayName);
+      setRoomMyName(res.data.youKey||displayName);
       roomStartRef.current=Date.now();
       saveRoomEntry({code:res.data.room.code,role:"participant",level:res.data.room.level||"B1",topic:res.data.room.topic||null});
       setStage("room");
@@ -5052,7 +5055,10 @@ export default function App(){
           var me=r.participants&&r.participants[roomMyName];
           var hasAnswered=me&&typeof me.answerIdx==="number";
           var isCorrect=hasAnswered&&me.correct;
-          var pList=Object.keys(r.participants||{}).map(function(n){return Object.assign({name:n},r.participants[n]);});
+          // `n` is the Firebase participant key (a sanitized display name).
+          // Keep it as `.key` for identity/"me" matching against roomMyName;
+          // the record's own `.name` (if present) overrides for display.
+          var pList=Object.keys(r.participants||{}).map(function(n){return Object.assign({name:n,key:n},r.participants[n]);});
           var answeredCount=pList.filter(function(p){return typeof p.answerIdx==="number";}).length;
           var pUrl=window.location.origin+window.location.pathname+"?room="+r.code;
           return(
@@ -5079,7 +5085,7 @@ export default function App(){
                     {pList.map(function(p){
                       var color=typeof p.answerIdx==="number"?(p.correct?"#34d399":"#f87171"):"rgba(227,224,244,0.5)";
                       var bg=typeof p.answerIdx==="number"?(p.correct?"rgba(52,211,153,0.14)":"rgba(239,68,68,0.12)"):"rgba(255,255,255,0.04)";
-                      return<span key={p.name} style={{padding:"3px 10px",borderRadius:999,background:bg,color:color,fontSize:11,fontWeight:700,fontFamily:"'Inter',sans-serif"}}>{p.name===roomMyName?"⭐ "+p.name+" (you)":p.name}{typeof p.answerIdx==="number"?(p.correct?" ✓":" ✕"):" …"}</span>;
+                      return<span key={p.key} style={{padding:"3px 10px",borderRadius:999,background:bg,color:color,fontSize:11,fontWeight:700,fontFamily:"'Inter',sans-serif"}}>{p.key===roomMyName?"⭐ "+p.name+" (you)":p.name}{typeof p.answerIdx==="number"?(p.correct?" ✓":" ✕"):" …"}</span>;
                     })}
                   </div>
                 </div>
@@ -5138,13 +5144,13 @@ export default function App(){
                       <div style={{display:"flex",flexDirection:"column",gap:6}}>
                         {sorted.map(function(p,i){
                           var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1)+".";
-                          var isMe=p.name===roomMyName;
+                          var isMe=p.key===roomMyName;
                           var fg=p.correct?"#5af0b3":"#f87171";
                           var bg=isMe?"rgba(251,191,36,0.10)":"rgba(255,255,255,0.03)";
                           var bd=isMe?"rgba(251,191,36,0.4)":"rgba(255,255,255,0.06)";
                           var sec=p.elapsedMs?Math.max(0,Math.round(p.elapsedMs/100)/10).toFixed(1)+"s":"–";
                           return(
-                            <div key={p.name} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:bg,border:"1px solid "+bd}}>
+                            <div key={p.key} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:bg,border:"1px solid "+bd}}>
                               <span style={{width:24,fontFamily:"'Outfit',sans-serif",fontWeight:800,fontSize:13,color:i<3?"#fbbf24":"#6b7280",textAlign:"center"}}>{medal}</span>
                               <span style={{flex:1,fontFamily:"'Inter',sans-serif",fontSize:13,fontWeight:isMe?800:600,color:isMe?"#fbbf24":"#e3e0f4"}}>{p.name}{isMe?" (you)":""}</span>
                               <span style={{fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:fg,fontWeight:700}}>{p.correct?"✓":"✕"} {sec}</span>

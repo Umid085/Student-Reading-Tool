@@ -241,9 +241,11 @@ describe("api/generate.js", () => {
     const realFetch = global.fetch;
     // _rateLimit short-circuits without a fetch when ip is empty (no
     // x-forwarded-for header in the test). The only fetch is the quota
-    // GET, which we mock to return n=10 — the A1-B1 cap is 10 → blocked.
+    // GET (the ETag compare-and-swap returns early on the cap check, before
+    // any conditional write), which we mock to return n=10 — the A1-B1 cap
+    // is 10 → blocked.
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ n: 10, ts: Date.now() }) });
+      .mockResolvedValueOnce({ ok: true, headers: { get: () => "e0" }, json: async () => ({ n: 10, ts: Date.now() }) });
     try {
       const handler = await loadHandler();
       const r = await runHandler(handler, {
@@ -306,6 +308,7 @@ describe("api/generate.js", () => {
     const realFetch = global.fetch;
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
+      headers: { get: () => "e0" },
       json: async () => ({ n: 30 }), // SLIDER_QUOTA cap
     });
     try {

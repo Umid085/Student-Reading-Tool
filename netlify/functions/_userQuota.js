@@ -45,19 +45,35 @@ export async function consumeUserQuota(DB, username, endpoint, opts) {
   const max = (opts && typeof opts.max === "number") ? opts.max : 10;
   if (process.env.RATE_LIMIT_DISABLED) return { exceeded: false, used: 0, max };
   if (!DB || !username) return { exceeded: false, used: 0, max, anonymous: true };
+  const url = fbUrl(DB, username, endpoint) + fbAuthSuffix();
+  // Atomic compare-and-swap via Firebase ETags. The old fire-and-forget
+  // read-then-write let N concurrent requests from one user all read the same
+  // `n`, all pass the cap check, and all write `n+1` — advancing the counter
+  // by 1 total and blowing past the daily cap. Instead: GET the value + its
+  // ETag, then PUT `n+1` only if the ETag still matches. A 412 means a
+  // concurrent write landed first, so re-read and retry. Fail OPEN on any
+  // error so a Firebase hiccup never locks a paying user out.
+  let used = 0;
   try {
-    const r = await fetch(fbUrl(DB, username, endpoint) + fbAuthSuffix());
-    const data = await r.json();
-    const used = data && typeof data.n === "number" ? data.n : 0;
-    if (used >= max) {
-      return { exceeded: true, used, max, resetAt: nextMidnightUTC() };
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const r = await fetch(url, { headers: { "X-Firebase-ETag": "true" } });
+      const etag = r.headers.get("etag") || "null_etag";
+      const data = await r.json();
+      used = data && typeof data.n === "number" ? data.n : 0;
+      if (used >= max) {
+        return { exceeded: true, used, max, resetAt: nextMidnightUTC() };
+      }
+      const w = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "if-match": etag },
+        body: JSON.stringify({ n: used + 1, ts: Date.now() }),
+      });
+      if (w.ok) return { exceeded: false, used: used + 1, max, resetAt: nextMidnightUTC() };
+      if (w.status !== 412) return { exceeded: false, used: used + 1, max, failedWrite: true };
+      // 412 Precondition Failed: the ETag moved under us — loop to re-read.
     }
-    fetch(fbUrl(DB, username, endpoint) + fbAuthSuffix(), {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ n: used + 1, ts: Date.now() }),
-    }).catch(function () {});
-    return { exceeded: false, used: used + 1, max, resetAt: nextMidnightUTC() };
+    // Lost the CAS race 5× (pathological contention) — fail open.
+    return { exceeded: false, used, max, failedWrite: true };
   } catch (_) {
     return { exceeded: false, used: 0, max, failedRead: true };
   }
