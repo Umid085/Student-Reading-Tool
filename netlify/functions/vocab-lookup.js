@@ -3,10 +3,12 @@
 // B1+   → dictionaryapi.dev for phonetic/audio/def, Claude for situational example.
 // Shared cache at rq/rq-vocab-cache-v1/<key>.json in Firebase RTDB.
 import Anthropic from "@anthropic-ai/sdk";
+import { checkRateLimit } from "./_rateLimit.js";
 import { consumeUserQuota } from "./_userQuota.js";
 import { extractUsername } from "./_session.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const RATE_LIMIT_MAX = 200; // per IP per 15-min window — vocab lookups are frequent
 const VOCAB_QUOTA = 80;
 
 const LOW_TIER = new Set(["A1", "A2"]);
@@ -113,6 +115,15 @@ export const handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: {}, body: "" };
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+  }
+  // IP rate limit before any Claude path. Anonymous callers bypass the
+  // per-user quota, so without this the Netlify deploy is an unauthenticated
+  // Anthropic-spend vector. Mirrors api/vocab-lookup.js.
+  const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+  const ip = ((event.headers && (event.headers["x-forwarded-for"] || event.headers["client-ip"])) || "").split(",")[0].trim();
+  const rl = await checkRateLimit(DB, ip, { max: RATE_LIMIT_MAX, bucket: "vocab" });
+  if (rl.limited) {
+    return { statusCode: 429, headers: { "Retry-After": String(rl.retryAfter) }, body: JSON.stringify({ error: "Too many vocab lookups. Slow down." }) };
   }
   if (!process.env.ANTHROPIC_API_KEY) {
     return { statusCode: 503, body: JSON.stringify({ error: "ANTHROPIC_API_KEY not set" }) };
