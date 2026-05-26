@@ -12,6 +12,11 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes("node_modules")) {
             if (id.includes("react") || id.includes("scheduler")) return "react-vendor";
+            // The Firebase Auth/Analytics SDK is only ever reached via dynamic
+            // import in src/firebase.js (social-login click / analytics init).
+            // Give it its own chunk so it loads on demand instead of being
+            // merged into the eagerly-loaded vendor chunk (~52 KB gz).
+            if (/[\\/]node_modules[\\/](@firebase|firebase|idb)[\\/]/.test(id)) return "firebase";
             return "vendor";
           }
           // Static story library (~190 lines of inline data) lives in its

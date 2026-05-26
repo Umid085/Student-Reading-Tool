@@ -3,12 +3,14 @@ import { track, identify, resetIdentity } from "./observability";
 import { pickFriendNudge, pickResultNudge } from "./friendNudge";
 import { STORY_LIBRARY } from "./storyLibrary";
 import { STRINGS, loadLocale } from "./locales";
+import { firebaseReady, signInWithProvider, initAnalytics } from "./firebase";
 
 var API        = "/api/generate";
 var AUTH       = "/api/auth";
 var REGISTER   = "/api/auth?action=register";
 var REFRESH    = "/api/auth?action=refresh";
 var REVOKE     = "/api/auth?action=revoke";
+var OAUTH      = "/api/auth?action=oauth";
 var USERS_API  = "/api/users";
 var _sessionToken = null;
 var USERS_KEY    = "rq-users-v6";
@@ -1162,6 +1164,13 @@ export default function App(){
   var [passInput,setPassInput]=useState("");
   var [authMode,setAuthMode]=useState("register");
   var [showPass,setShowPass]=useState(false);
+  // social login (Firebase Auth front door)
+  var [oauthBusy,setOauthBusy]=useState(false);
+  // When a verified social user has no account yet, the server returns
+  // needsUsername; we stash the Firebase ID token + suggested name and show a
+  // one-field username picker before creating the account.
+  var [oauthPending,setOauthPending]=useState(null); // { credential, suggestedName, email }
+  var [oauthUsername,setOauthUsername]=useState("");
   // Sean Ellis PMF survey — shown once after 5+ completed quizzes per user
   var [seModal,setSeModal]=useState(false);
   // quiz hints
@@ -1523,6 +1532,13 @@ export default function App(){
     });
   },[]);
 
+  // GA4 via Firebase Analytics. Deferred a couple seconds so loading the SDK
+  // chunk doesn't compete with first paint; no-ops if Firebase isn't configured.
+  useEffect(function(){
+    var id=setTimeout(function(){initAnalytics();},2500);
+    return function(){clearTimeout(id);};
+  },[]);
+
   // Social data is a single shared doc loaded once at boot. Re-pull it when the
   // user lands on a screen that surfaces incoming items — friend requests +
   // challenges show on `friends`, received challenges show on `home` — so they
@@ -1727,6 +1743,61 @@ export default function App(){
     setCurrentUser(found);setStage(role==="teacher"?"teacherDashboard":"home");
     identify(found.name);
     track("user_login",{isTeacher:role==="teacher",gameCount:(found.games||[]).length,totalXp:Number(found.totalXp)||0});
+  }
+
+  // ── social login (Firebase Auth) ────────────────────────────
+  // Finish a social sign-in once the server has minted our own session tokens.
+  // Mirrors the doLogin success tail; the profile may have just been created
+  // server-side, so fall back to a minimal user object if loadUsers races.
+  async function finishOAuthLogin(d){
+    _sessionToken=d.token;
+    var fresh=await loadUsers();setAllUsers(fresh);
+    var found=null;for(var i=0;i<fresh.length;i++){if(fresh[i].name.toLowerCase()===String(d.name).toLowerCase()){found=fresh[i];break;}}
+    if(!found)found={name:d.name,games:[],joined:todayKey()};
+    else found=Object.assign({},found,{games:Array.isArray(found.games)?found.games:[]});
+    localStorage.setItem("rq-session",found.name);
+    localStorage.setItem(CREDS_KEY,JSON.stringify({name:found.name,refreshToken:d.refreshToken||""}));
+    var role=localStorage.getItem("rq-role-"+found.name);
+    setOauthPending(null);setOauthUsername("");
+    setCurrentUser(found);setStage(role==="teacher"?"teacherDashboard":"home");
+    identify(found.name);
+    track("user_login",{method:"oauth"});
+  }
+
+  async function doSocialLogin(provider){
+    if(oauthBusy)return;
+    setAuthErr("");setOauthBusy(true);
+    try{
+      var idToken=await signInWithProvider(provider);
+      var r=await fetch(OAUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:idToken})});
+      var d=await r.json();
+      if(r.status===429){setAuthErr(t("stu_authTooManyAttempts"));return;}
+      if(!r.ok){setAuthErr((d&&d.error)||t("stu_authServerError"));return;}
+      if(d.needsUsername){setOauthPending({credential:idToken,suggestedName:d.suggestedName||"",email:d.email||""});setOauthUsername(d.suggestedName||"");return;}
+      if(d.token){await finishOAuthLogin(d);return;}
+      setAuthErr(t("stu_authServerError"));
+    }catch(e){
+      // signInWithPopup throws auth/popup-closed-by-user when the user bails —
+      // that's not an error worth shouting about.
+      var code=e&&e.code?String(e.code):"";
+      if(code.indexOf("popup-closed")===-1&&code.indexOf("cancelled-popup")===-1){setAuthErr(t("stu_authSocialFailed"));}
+    }finally{setOauthBusy(false);}
+  }
+
+  async function submitOAuthUsername(){
+    if(!oauthPending||oauthBusy)return;
+    var uname=oauthUsername.trim();
+    if(!/^[a-zA-Z0-9_]{2,30}$/.test(uname)){setAuthErr(t("stu_authNameRules"));return;}
+    setAuthErr("");setOauthBusy(true);
+    try{
+      var r=await fetch(OAUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:oauthPending.credential,username:uname})});
+      var d=await r.json();
+      if(r.status===409){setAuthErr("Username taken.");return;}
+      if(!r.ok){setAuthErr((d&&d.error)||t("stu_authServerError"));return;}
+      if(d.token){await finishOAuthLogin(d);return;}
+      setAuthErr(t("stu_authServerError"));
+    }catch(e){setAuthErr(t("stu_authServerError"));}
+    finally{setOauthBusy(false);}
   }
 
   // ── teacher class actions ───────────────────────────────────
@@ -3867,6 +3938,16 @@ export default function App(){
               .lq-submit:hover{filter:brightness(1.08);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(52,211,153,0.4),0 0 40px rgba(52,211,153,0.3)}
               .lq-submit:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
               .lq-submit:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+              .lq-or{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:rgba(227,224,244,0.4);font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase}
+              .lq-or::before,.lq-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,0.10)}
+              .lq-social{display:flex;flex-direction:column;gap:10px}
+              .lq-social-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 16px;border-radius:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#e3e0f4;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s}
+              .lq-social-btn:hover{background:rgba(255,255,255,0.10);border-color:rgba(255,255,255,0.2)}
+              .lq-social-btn:active{transform:scale(0.98)}
+              .lq-social-btn:disabled{opacity:0.55;cursor:not-allowed}
+              .lq-oauth-pick-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:18px;color:#e3e0f4;margin:4px 0 6px;text-align:center}
+              .lq-oauth-pick-hint{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.55);margin:0 0 16px;text-align:center}
+              .lq-oauth-cancel{display:block;margin:12px auto 0;background:none;border:none;color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;text-decoration:underline}
               .lq-fineprint{text-align:center;margin:22px 0 0;font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.45)}
               .lq-fineprint a{color:#5af0b3;text-decoration:underline}
               .lq-footer{display:flex;align-items:center;justify-content:center;gap:18px;margin:32px 0 8px;opacity:0.25}
@@ -3928,9 +4009,39 @@ export default function App(){
 
                 {authErr&&<ErrorBanner message={authErr} marginBottom={12}/>}
 
-                <button type="button" onClick={authMode==="login"?doLogin:doRegister} className="lq-submit">{authMode==="login"?t("login"):t("register")}</button>
+                {oauthPending ? (
+                  /* A verified social user with no account yet — pick a username. */
+                  <div>
+                    <p className="lq-oauth-pick-title">{t("stu_authPickUsername")}</p>
+                    <p className="lq-oauth-pick-hint">{oauthPending.email?oauthPending.email+" · ":""}{t("stu_authPickUsernameHint")}</p>
+                    <div className="lq-field">
+                      <div className="lq-input-wrap">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <input className="lq-input" type="text" autoFocus placeholder="QuestMaster42" value={oauthUsername} onChange={function(e){setOauthUsername(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")submitOAuthUsername();}}/>
+                      </div>
+                    </div>
+                    <button type="button" onClick={submitOAuthUsername} disabled={oauthBusy} className="lq-submit">{oauthBusy?"…":t("stu_authContinue")}</button>
+                    <button type="button" className="lq-oauth-cancel" onClick={function(){setOauthPending(null);setOauthUsername("");setAuthErr("");}}>{t("back")}</button>
+                  </div>
+                ) : (
+                  <>
+                    <button type="button" onClick={authMode==="login"?doLogin:doRegister} className="lq-submit">{authMode==="login"?t("login"):t("register")}</button>
 
-                <p className="lq-fineprint">By joining, you agree to the <a href="#" onClick={function(e){e.preventDefault();}}>Quest Rules</a></p>
+                    {firebaseReady&&(
+                      <>
+                        <div className="lq-or"><span>{t("stu_authOr")}</span></div>
+                        <div className="lq-social">
+                          {/* Add "apple" / "facebook" here once enabled in the Firebase console. */}
+                          {[{id:"google",label:"Google",icon:(<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>)}].map(function(p){
+                            return<button key={p.id} type="button" className="lq-social-btn" disabled={oauthBusy} onClick={function(){doSocialLogin(p.id);}}>{p.icon}<span>{oauthBusy?"…":p.label}</span></button>;
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    <p className="lq-fineprint">By joining, you agree to the <a href="#" onClick={function(e){e.preventDefault();}}>Quest Rules</a></p>
+                  </>
+                )}
               </section>
 
               <div className="lq-footer">
