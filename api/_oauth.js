@@ -47,13 +47,15 @@ export async function verifyFirebaseIdToken(credential) {
     });
     if (!payload.sub) return { ok: false, error: "Token missing subject" };
     if (!payload.email) return { ok: false, error: "Account has no email" };
-    if (payload.email_verified === false) return { ok: false, error: "Email not verified" };
+    // Require an explicit `true`: a missing claim must NOT be treated as
+    // verified, since the email is then trusted to match/link accounts.
+    if (payload.email_verified !== true) return { ok: false, error: "Email not verified" };
     return {
       ok: true,
       provider: (payload.firebase && payload.firebase.sign_in_provider) || "firebase",
       firebaseUid: String(payload.sub),
       email: String(payload.email).toLowerCase(),
-      emailVerified: payload.email_verified !== false,
+      emailVerified: payload.email_verified === true,
       name: payload.name || payload.display_name || "",
     };
   } catch (_) {

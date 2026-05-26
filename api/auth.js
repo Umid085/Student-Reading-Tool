@@ -54,7 +54,7 @@ async function doLogin({ name, hash, legacy }, secret, DB) {
     return { status: 502, body: { error: `Firebase: ${authData.error}` } };
   }
   if (Array.isArray(authData)) {
-    const authUser = authData.find((u) => u.name.toLowerCase() === name.toLowerCase());
+    const authUser = authData.find((u) => u && u.name && u.name.toLowerCase() === name.toLowerCase());
     if (authUser) {
       const v = verifyPassword(hash, authUser.hash);
       if (v.ok) {
@@ -76,7 +76,7 @@ async function doLogin({ name, hash, legacy }, secret, DB) {
     return { status: 502, body: { error: `Firebase: ${profiles.error}` } };
   }
   if (!Array.isArray(profiles)) return { status: 401, body: { error: "Invalid credentials" } };
-  const profileUser = profiles.find((u) => u.name.toLowerCase() === name.toLowerCase());
+  const profileUser = profiles.find((u) => u && u.name && u.name.toLowerCase() === name.toLowerCase());
   if (!profileUser) return { status: 401, body: { error: "Invalid credentials" } };
   const v = verifyPassword(hash, profileUser.hash);
   const legacyMatches = !v.ok && legacy && verifyPassword(legacy, profileUser.hash).ok;
@@ -98,7 +98,7 @@ async function doRegister({ name, hash }, secret, DB) {
     return { status: 502, body: { error: `Firebase: ${profiles.error}` } };
   }
   const profileList = Array.isArray(profiles) ? profiles : [];
-  if (profileList.some((u) => u.name.toLowerCase() === name.toLowerCase())) {
+  if (profileList.some((u) => u && u.name && u.name.toLowerCase() === name.toLowerCase())) {
     return { status: 409, body: { error: "Username taken" } };
   }
   const joined = new Date().toISOString().slice(0, 10);
