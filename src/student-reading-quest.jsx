@@ -1523,6 +1523,19 @@ export default function App(){
     });
   },[]);
 
+  // Social data is a single shared doc loaded once at boot. Re-pull it when the
+  // user lands on a screen that surfaces incoming items — friend requests +
+  // challenges show on `friends`, received challenges show on `home` — so they
+  // aren't stuck displaying a stale snapshot from page-load. Without this, a
+  // request/challenge sent after the recipient's session started never appears.
+  useEffect(function(){
+    if(!currentUser)return;
+    if(stage!=="home"&&stage!=="friends")return;
+    var cancelled=false;
+    loadSocial().then(function(v){if(!cancelled&&v&&typeof v==="object")setSocial(v);}).catch(function(){});
+    return function(){cancelled=true;};
+  },[stage,currentUser&&currentUser.name]);
+
   // first-time-user coach: show 3-step modal on home if 0 games and not dismissed
   useEffect(function(){
     if(stage!=="home"||!currentUser)return;
@@ -1918,38 +1931,48 @@ export default function App(){
   }
 
   // ── social actions ─────────────────────────────────────────
+  // The social graph is one shared Firebase doc keyed by username, and our
+  // in-memory `social` is a snapshot from page-load. Writing the whole doc back
+  // from a stale snapshot silently clobbers requests/challenges other users
+  // added since — which is the deeper reason they "disappear". Re-pull the
+  // latest doc right before each mutation so we merge onto current data.
+  async function freshSocial(){
+    try{var v=await loadSocial();if(v&&typeof v==="object")return v;}catch(e){}
+    return social;
+  }
+
   async function sendRequest(to){
     if(!currentUser||to===currentUser.name)return;
-    var r=doSendRequest(social,currentUser.name,to);
+    var r=doSendRequest(await freshSocial(),currentUser.name,to);
     if(!r.ok){setSocialMsg(r.err);return;}
     await saveSocial(r.social);setSocial(r.social);setSocialMsg(t("stu_socialRequestSent").replace("{name}",to));
   }
 
   async function acceptRequest(from){
-    var n=doAcceptRequest(social,currentUser.name,from);
+    var n=doAcceptRequest(await freshSocial(),currentUser.name,from);
     await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialFriendsNow").replace("{name}",from));
   }
 
   async function declineRequest(from){
-    var n=doDeclineRequest(social,currentUser.name,from);
+    var n=doDeclineRequest(await freshSocial(),currentUser.name,from);
     await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialDeclined"));
   }
 
   async function removeFriend(friend){
-    var n=doRemoveFriend(social,currentUser.name,friend);
+    var n=doRemoveFriend(await freshSocial(),currentUser.name,friend);
     await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialRemoved").replace("{name}",friend));
   }
 
   async function likeProfile(target){
     if(!currentUser||target===currentUser.name)return;
-    var r=doLikeProfile(social,currentUser.name,target);
+    var r=doLikeProfile(await freshSocial(),currentUser.name,target);
     if(!r.ok){setSocialMsg(r.err);return;}
     await saveSocial(r.social);setSocial(r.social);setSocialMsg(t("stu_socialLiked").replace("{name}",target));
   }
 
   async function sendChallenge(){
     if(!challengeTarget||!currentUser)return;
-    var n=doSendChallenge(social,currentUser.name,challengeTarget,challengeLevel,challengeTypes);
+    var n=doSendChallenge(await freshSocial(),currentUser.name,challengeTarget,challengeLevel,challengeTypes);
     await saveSocial(n);setSocial(n);
     setSocialMsg(t("stu_socialChallengeSent").replace("{name}",challengeTarget));
     setChallengeTarget(null);
@@ -1957,14 +1980,23 @@ export default function App(){
 
   async function sendStoryChallenge(friendName){
     if(!friendName||!currentUser||!result||!result.storyId)return;
-    var n=doSendChallenge(social,currentUser.name,friendName,result.level||level,selectedTypes||["mcq","qa"],result.storyId,topic,result.pct);
+    var n=doSendChallenge(await freshSocial(),currentUser.name,friendName,result.level||level,selectedTypes||["mcq","qa"],result.storyId,topic,result.pct);
     await saveSocial(n);setSocial(n);
     setStoryChallengeMsg("⚔️ Challenge sent to "+friendName+"!");
     setStoryChallengeOpen(false);
   }
 
   async function respondChallenge(idx,status,challenge){
-    var n=doRespondChallenge(social,currentUser.name,idx,status);
+    // Re-pull fresh, then resolve the target by challenge id (challenges are
+    // append-only, but matching by id is robust to any index drift).
+    var base=await freshSocial();
+    var ri=idx;
+    if(challenge&&challenge.id){
+      var arr=getSocial(base,currentUser.name).challenges;
+      var found=arr.findIndex(function(c){return c&&c.id===challenge.id;});
+      if(found!==-1)ri=found;
+    }
+    var n=doRespondChallenge(base,currentUser.name,ri,status);
     await saveSocial(n);setSocial(n);
     if(status==="accepted"&&challenge){
       setActiveChallengeIdx(idx);
@@ -2365,7 +2397,7 @@ export default function App(){
       setBoards(nb);
 
       if(activeChallengeIdx!==null&&activeChallengeFrom&&currentUser){
-        try{var nc=doCompleteChallenge(social,currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});await saveSocial(nc);setSocial(nc);}catch(e){console.warn("saveSocial failed:",e);}
+        try{var nc=doCompleteChallenge(await freshSocial(),currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});await saveSocial(nc);setSocial(nc);}catch(e){console.warn("saveSocial failed:",e);}
         setActiveChallengeIdx(null);setActiveChallengeFrom("");
       }
 
@@ -2751,7 +2783,7 @@ export default function App(){
     if(teacherName===currentUser.name){setSubscribeMsg("You can't subscribe to yourself");return;}
     setSubscribeMsg("");
     try{
-      var nSocial=Object.assign({},social);
+      var nSocial=Object.assign({},await freshSocial());
       var entry=Object.assign({},nSocial[currentUser.name]||{friends:[],requests:[],likes:[],challenges:[]});
       entry.subscribed=Array.from(new Set((entry.subscribed||[]).concat([teacherName])));
       nSocial[currentUser.name]=entry;
@@ -2903,16 +2935,16 @@ export default function App(){
     teacherSearchTimerRef.current=setTimeout(function(){runTeacherSearch(q);},250);
   }
 
-  function unsubscribeFromTeacher(teacherName){
+  async function unsubscribeFromTeacher(teacherName){
     if(!currentUser)return;
-    var nSocial=Object.assign({},social);
+    var nSocial=Object.assign({},await freshSocial());
     var entry=Object.assign({},nSocial[currentUser.name]||{});
     entry.subscribed=(entry.subscribed||[]).filter(function(n){return n!==teacherName;});
     nSocial[currentUser.name]=entry;
     var tEntry=Object.assign({},nSocial[teacherName]||{});
     tEntry.subscribers=(tEntry.subscribers||[]).filter(function(n){return n!==currentUser.name;});
     nSocial[teacherName]=tEntry;
-    setSocial(nSocial);saveSocial(nSocial);
+    setSocial(nSocial);await saveSocial(nSocial);
     setSubscribeMsg("Unsubscribed");
   }
 
@@ -5579,7 +5611,7 @@ export default function App(){
                               {tl&&<div style={{fontSize:10,color:tl==="expired"?"#f87171":"rgba(227,224,244,0.5)",marginTop:1}}>⏱ {tl}</div>}
                             </div>
                             <button type="button" onClick={function(){respondChallenge(realIdx,"accepted",c);}} className="lq-chal-mini-btn" style={{background:"#5af0b3"}}>Accept</button>
-                            <button type="button" onClick={function(){respondChallenge(realIdx,"declined",null);}} className="lq-chal-mini-btn" style={{background:"#374151",color:"#9ca3af"}}>✕</button>
+                            <button type="button" onClick={function(){respondChallenge(realIdx,"declined",c);}} className="lq-chal-mini-btn" style={{background:"#374151",color:"#9ca3af"}}>✕</button>
                           </div>);
                         })}
                       </>
@@ -7346,7 +7378,7 @@ export default function App(){
                   <input style={{...INP,paddingLeft:36}} placeholder={t("stu_friends_search_ph")} value={searchQuery} onChange={function(e){setSearchQuery(e.target.value);}}/>
                   <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,opacity:0.5}}>🔍</span>
                 </div>
-                <button onClick={function(){loadUsers().then(function(u){setAllUsers(u);setSocialMsg(t("stu_socialUserListRefreshed"));});}} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>{t("stu_socialRefreshBtn")}</button>
+                <button onClick={function(){Promise.all([loadUsers(),loadSocial()]).then(function(r){setAllUsers(r[0]);if(r[1]&&typeof r[1]==="object")setSocial(r[1]);setSocialMsg(t("stu_socialUserListRefreshed"));});}} style={{...mkBtn("#374151"),width:"100%",marginBottom:12,fontSize:13,padding:"9px 0"}}>{t("stu_socialRefreshBtn")}</button>
                 {searchQuery.length<2&&suggested.length>0&&(
                   <div style={{marginBottom:6}}>
                     <p style={{fontSize:11,fontWeight:700,letterSpacing:"0.08em",color:"rgba(227,224,244,0.55)",margin:"0 0 6px 4px"}}>{t("stu_friends_suggested")}</p>
