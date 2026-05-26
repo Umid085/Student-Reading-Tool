@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { checkRateLimit } from "./_rateLimit.js";
 import { consumeUserQuota } from "./_userQuota.js";
 import { extractUsername } from "./_session.js";
 import { getRandomFromPool, addToPool } from "./_sliderPool.js";
@@ -7,6 +8,9 @@ const AI_LOW_TIER = new Set(["A1", "A2", "B1"]);
 const AI_QUOTA_LOW = 10;
 const AI_QUOTA_HIGH = 6;
 const SLIDER_QUOTA = 30;
+const AI_RATE_LIMIT_MAX = 60; // requests per 15-minute window (IP-based)
+const USER_MSG_MAX_LEN = 4000;
+const MAX_TOKENS_CAP = 2048;
 
 const MICRO_WORDS = {
   A1: "55-75", A2: "65-90", B1: "80-110",
@@ -108,20 +112,36 @@ export const handler = async function (event) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Invalid JSON body" }) };
   }
 
+  // IP rate limit (anonymous callers are exempt from the per-user quota, so
+  // this is the only throttle on free-form/Mode-1 abuse). Mirrors api/generate.js.
+  const rlDB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
+  const rlIp = ((event.headers && (event.headers["x-forwarded-for"] || event.headers["client-ip"])) || "").split(",")[0].trim();
+  const rl = await checkRateLimit(rlDB, rlIp, { max: AI_RATE_LIMIT_MAX, bucket: "ai" });
+  if (rl.limited) {
+    return { statusCode: 429, headers: { ...CORS, "Retry-After": String(rl.retryAfter) }, body: JSON.stringify({ error: "Too many AI requests. Try again later." }) };
+  }
+
   // ── Mode 1: generic proxy — {messages:[{role,content}]} → {content:[{type,text}]} ──
   if (body.messages && Array.isArray(body.messages)) {
-    const userMessage = body.messages[body.messages.length - 1]?.content || "";
+    let userMessage = body.messages[body.messages.length - 1]?.content || "";
     if (!userMessage) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "No message provided" }) };
     }
-    const maxTokens = body.max_tokens || 4096;
+    if (typeof userMessage === "string" && userMessage.length > USER_MSG_MAX_LEN) {
+      userMessage = userMessage.slice(0, USER_MSG_MAX_LEN);
+    }
+    const requestedTokens = Number(body.max_tokens) || 4096;
+    const maxTokens = Math.min(MAX_TOKENS_CAP, Math.max(1, requestedTokens));
     try {
       const msg = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: maxTokens,
         messages: [{ role: "user", content: userMessage }],
       });
-      const text = msg.content[0].text;
+      const text = msg.content?.[0]?.text || "";
+      if (!text) {
+        return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Empty model response" }) };
+      }
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ content: [{ type: "text", text }] }) };
     } catch (e) {
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
@@ -188,7 +208,9 @@ Rules:
         max_tokens: 4096,
         messages: [{ role: "user", content: qftPrompt }],
       });
-      const raw = msg.content[0].text.trim();
+      const rawText = msg.content?.[0]?.text;
+      if (!rawText) return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Empty model response" }) };
+      const raw = rawText.trim();
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("No JSON in response");
       const parsed = JSON.parse(jsonMatch[0]);
@@ -371,7 +393,11 @@ Return ONLY this JSON, no markdown, no explanation:
       messages: [{ role: "user", content: prompt }],
     });
 
-    const raw = msg.content[0].text.trim();
+    const rawText = msg.content?.[0]?.text;
+    if (!rawText) {
+      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Empty model response" }) };
+    }
+    const raw = rawText.trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
 

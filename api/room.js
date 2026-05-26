@@ -260,7 +260,7 @@ export default async function handler(req, res) {
     me.answerIdx = optionIdx;
     me.elapsedMs = elapsedMs;
     me.finishedAt = Date.now();
-    me.correct = optionIdx === room.question.answer;
+    me.correct = !!room.question && optionIdx === room.question.answer;
     participants[name] = me;
     await fbPatch(DB, code, { participants });
     room.participants = participants;

@@ -1,10 +1,13 @@
 // Group Reading Rooms (F7) — Netlify shape. Mirrors api/room.js.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { checkRateLimit } from "./_rateLimit.js";
 import { extractUsername } from "./_session.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+const RATE_LIMIT_MAX_CREATE = 10; // per IP per 15 min — create is expensive
+const RATE_LIMIT_MAX_OTHER = 120; // join/answer/state are cheap
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const NAME_MAX = 40;
 const TOPIC_MAX = 80;
@@ -113,8 +116,13 @@ export const handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
   const DB = (process.env.FIREBASE_DB_URL || "").replace(/\/$/, "");
   if (!DB) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "FIREBASE_DB_URL not set" }) };
+  const ip = ((event.headers && (event.headers["x-forwarded-for"] || event.headers["client-ip"])) || "").split(",")[0].trim();
 
   if (event.httpMethod === "GET") {
+    const rl = await checkRateLimit(DB, ip, { max: RATE_LIMIT_MAX_OTHER, bucket: "room-poll" });
+    if (rl.limited) {
+      return { statusCode: 429, headers: { ...CORS, "Retry-After": String(rl.retryAfter) }, body: JSON.stringify({ error: "Too many polls. Slow down." }) };
+    }
     const code = safeCode(((event.queryStringParameters || {}).code) || "");
     if (!code) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Missing 'code'" }) };
     const room = await getActiveRoom(DB, code);
@@ -133,6 +141,10 @@ export const handler = async function (event) {
   const action = body.action || "";
 
   if (action === "create") {
+    const rl = await checkRateLimit(DB, ip, { max: RATE_LIMIT_MAX_CREATE, bucket: "room-create" });
+    if (rl.limited) {
+      return { statusCode: 429, headers: { ...CORS, "Retry-After": String(rl.retryAfter) }, body: JSON.stringify({ error: "Too many rooms created. Slow down." }) };
+    }
     if (!process.env.ANTHROPIC_API_KEY) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: "ANTHROPIC_API_KEY not set" }) };
     const username = extractUsername(event);
     const ownerName = username || clean(body.ownerName, NAME_MAX) || "anonymous";
@@ -172,6 +184,10 @@ export const handler = async function (event) {
   }
 
   if (action === "join") {
+    const rl = await checkRateLimit(DB, ip, { max: RATE_LIMIT_MAX_OTHER, bucket: "room-join" });
+    if (rl.limited) {
+      return { statusCode: 429, headers: { ...CORS, "Retry-After": String(rl.retryAfter) }, body: JSON.stringify({ error: "Too many joins. Slow down." }) };
+    }
     const code = safeCode(body.code);
     const username = extractUsername(event);
     const name = clean(username || body.name || "", NAME_MAX);
@@ -189,6 +205,10 @@ export const handler = async function (event) {
   }
 
   if (action === "answer") {
+    const rl = await checkRateLimit(DB, ip, { max: RATE_LIMIT_MAX_OTHER, bucket: "room-answer" });
+    if (rl.limited) {
+      return { statusCode: 429, headers: { ...CORS, "Retry-After": String(rl.retryAfter) }, body: JSON.stringify({ error: "Too many answers." }) };
+    }
     const code = safeCode(body.code);
     const username = extractUsername(event);
     const name = clean(username || body.name || "", NAME_MAX);
@@ -209,7 +229,7 @@ export const handler = async function (event) {
     me.answerIdx = optionIdx;
     me.elapsedMs = elapsedMs;
     me.finishedAt = Date.now();
-    me.correct = optionIdx === room.question.answer;
+    me.correct = !!room.question && optionIdx === room.question.answer;
     participants[name] = me;
     await fbPatch(DB, code, { participants });
     room.participants = participants;

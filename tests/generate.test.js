@@ -73,7 +73,7 @@ describe("generate.js", () => {
     expect(JSON.parse(res.body).error).toMatch(/rate limited/);
   });
 
-  it("passes max_tokens from body to Claude", async () => {
+  it("clamps max_tokens at 2048 even when caller asks for more", async () => {
     mockCreate.mockResolvedValue({
       content: [{ type: "text", text: "Response" }],
     });
@@ -87,7 +87,7 @@ describe("generate.js", () => {
     );
     expect(res.statusCode).toBe(200);
     expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ max_tokens: 4000 })
+      expect.objectContaining({ max_tokens: 2048 })
     );
   });
 });

@@ -205,7 +205,9 @@ Rules:
         max_tokens: 4096,
         messages: [{ role: "user", content: qftPrompt }],
       });
-      const raw = msg.content[0].text.trim();
+      const rawText = msg.content?.[0]?.text;
+      if (!rawText) return res.status(502).json({ error: "Empty model response" });
+      const raw = rawText.trim();
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("No JSON in response");
       const parsed = JSON.parse(jsonMatch[0]);
