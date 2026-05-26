@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { track, identify, resetIdentity } from "./observability";
+import { track, identify, resetIdentity, setSuperProps } from "./observability";
 import { pickFriendNudge, pickResultNudge } from "./friendNudge";
 import { STORY_LIBRARY } from "./storyLibrary";
 import { STRINGS, loadLocale } from "./locales";
@@ -168,6 +168,7 @@ var SRS_INTERVALS=[1,3,7,14]; // days between reviews
 // Returns ISO yyyy-mm-dd so cross-locale Date parsing is reliable.
 function srsNextDate(days){var d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
 function srsDueToday(word){
+  if(!word)return false; // guard against null/legacy entries in a vocab array
   if(word.status==="known")return false;
   if(!word.nextReview)return true; // legacy words without SRS — treat as due
   var today=new Date();today.setHours(0,0,0,0);
@@ -1460,6 +1461,7 @@ export default function App(){
   // and dynamic-imported by loadLocale().
   var [localesVersion,setLocalesVersion]=useState(0);
   useEffect(function(){
+    try{setSuperProps({ui_lang:uiLang});}catch(e){}
     if(uiLang==="en")return;
     var cancelled=false;
     loadLocale(uiLang).then(function(){
@@ -1636,7 +1638,11 @@ export default function App(){
     setGoals(gd||{});
     var rqk="rq-review-"+currentUser.name;
     var rqd=null;try{rqd=JSON.parse(localStorage.getItem(rqk));}catch(e){}
-    setReviewQueue(asArray(rqd));
+    // Drop null / legacy entries that lack a `.q` object: the review render
+    // reads `item.q.type` directly, so a malformed entry would crash the
+    // review (and home-screen count) via ErrorBoundary. asArray only strips
+    // nulls when the input is an object, not when it's already an array.
+    setReviewQueue(asArray(rqd).filter(function(r){return r&&r.q;}));
   },[currentUser]);
 
   // pull fresh users when entering friends page or typing a search
