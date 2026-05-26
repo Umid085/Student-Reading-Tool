@@ -5,6 +5,7 @@ import { createHmac } from "crypto";
 import { checkRateLimit } from "./_rateLimit.js";
 import { hashPassword, verifyPassword } from "./_passwordHash.js";
 import { issueRefreshToken, verifyRefreshToken, refreshTokenId } from "./_refreshToken.js";
+import { verifyProviderCredential } from "./_oauth.js";
 
 const ALLOWED_NAME = /^[a-zA-Z0-9_]{2,30}$/;
 const PRUNE_HORIZON_MS = 31 * 24 * 60 * 60 * 1000;
@@ -142,6 +143,82 @@ async function doRevoke({ name, refreshToken }, secret, DB) {
   }
 }
 
+// Derive a clean default username from a provider's display name / email
+// local-part so the picker isn't blank. Output always satisfies ALLOWED_NAME.
+function suggestUsername(email, name) {
+  let base = (name || (email ? email.split("@")[0] : "") || "user")
+    .replace(/[^a-zA-Z0-9_]/g, "")
+    .slice(0, 24);
+  if (base.length < 2) base = (base + "user").slice(0, 24);
+  return base;
+}
+
+// Social login. Verify the provider credential → trusted identity, then:
+//   1. match an existing account by provider sub, else by verified email
+//      (existing password-only accounts have no email on file, so they're
+//       never silently claimed — linking those is the authenticated flow);
+//   2. otherwise it's a new user — ask the client for a username, then create
+//      the account and mint our own tokens.
+async function doOAuth(body, secret, DB) {
+  const { provider, credential, username } = body || {};
+  const id = await verifyProviderCredential(provider, credential);
+  if (!id.ok) return { status: 401, body: { error: id.error || "OAuth verification failed" } };
+
+  const fb = fbAuthSuffix();
+  const ar = await fetch(`${DB}/rq/rq-auth-v6.json${fb}`);
+  const authData = await ar.json();
+  if (authData && typeof authData === "object" && !Array.isArray(authData) && typeof authData.error === "string") {
+    return { status: 502, body: { error: `Firebase: ${authData.error}` } };
+  }
+  const authList = Array.isArray(authData) ? authData : [];
+
+  let match = authList.find((u) => u && u.firebaseUid && u.firebaseUid === id.firebaseUid);
+  if (!match && id.email) {
+    match = authList.find((u) => u && typeof u.email === "string" && u.email.toLowerCase() === id.email);
+  }
+  if (match) {
+    // Backfill the Firebase uid / email when we matched on email so next time
+    // is a direct uid hit.
+    if (match.firebaseUid !== id.firebaseUid || !match.email) {
+      const updated = authList.map((u) => (u === match ? Object.assign({}, u, { firebaseUid: id.firebaseUid, email: u.email || id.email }) : u));
+      await fetch(`${DB}/rq/rq-auth-v6.json${fb}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updated) });
+    }
+    return { status: 200, body: { token: issueAccessToken(match.name, secret), refreshToken: issueRefreshToken(match.name, secret), name: match.name } };
+  }
+
+  if (!username) {
+    return { status: 200, body: { needsUsername: true, email: id.email, suggestedName: suggestUsername(id.email, id.name), provider: id.provider } };
+  }
+  if (!ALLOWED_NAME.test(username)) {
+    return { status: 400, body: { error: "Username must be 2–30 letters, numbers, or underscores", code: "invalid_username" } };
+  }
+  if (authList.some((u) => u && u.name && u.name.toLowerCase() === username.toLowerCase())) {
+    return { status: 409, body: { error: "Username taken", code: "username_taken" } };
+  }
+  const pr = await fetch(`${DB}/rq/rq-users-v6.json${fb}`);
+  const profiles = await pr.json();
+  if (profiles && typeof profiles === "object" && !Array.isArray(profiles) && typeof profiles.error === "string") {
+    return { status: 502, body: { error: `Firebase: ${profiles.error}` } };
+  }
+  const profileList = Array.isArray(profiles) ? profiles : [];
+  if (profileList.some((u) => u && u.name && u.name.toLowerCase() === username.toLowerCase())) {
+    return { status: 409, body: { error: "Username taken", code: "username_taken" } };
+  }
+  const joined = new Date().toISOString().slice(0, 10);
+  const wp = await fetch(`${DB}/rq/rq-users-v6.json${fb}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileList.concat([{ name: username, games: [], joined }])),
+  });
+  if (!wp.ok) {
+    let errText = ""; try { errText = await wp.text(); } catch (_) {}
+    return { status: 502, body: { error: `Firebase profile write failed (${wp.status}): ${errText.slice(0, 200)}` } };
+  }
+  const newAuth = { name: username, email: id.email, firebaseUid: id.firebaseUid, provider: id.provider };
+  await fetch(`${DB}/rq/rq-auth-v6.json${fb}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(authList.concat([newAuth])),
+  });
+  return { status: 200, body: { token: issueAccessToken(username, secret), refreshToken: issueRefreshToken(username, secret), name: username } };
+}
+
 export const handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "Method not allowed" }) };
@@ -162,6 +239,18 @@ export const handler = async function (event) {
   const qa = event.queryStringParameters && event.queryStringParameters.action;
   const action = String(qa || body.action || "login").toLowerCase();
 
+  // OAuth derives the account from the verified provider credential, so unlike
+  // the other actions it has no `name` on the first call — dispatch before the
+  // name guard.
+  if (action === "oauth") {
+    try {
+      const r = await doOAuth(body, secret, DB);
+      return { statusCode: r.status, headers: CORS, body: JSON.stringify(r.body) };
+    } catch (e) {
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
   if (!body.name) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Missing credentials" }) };
 
   let result;
@@ -179,7 +268,7 @@ export const handler = async function (event) {
       if (!body.refreshToken) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Missing credentials" }) };
       result = await doRevoke(body, secret, DB);
     } else {
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Unknown 'action' (expected login|register|refresh|revoke)" }) };
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Unknown 'action' (expected login|register|refresh|revoke|oauth)" }) };
     }
   } catch (e) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
