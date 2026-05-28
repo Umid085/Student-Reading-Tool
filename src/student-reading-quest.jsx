@@ -1165,6 +1165,9 @@ export default function App(){
   var [passInput,setPassInput]=useState("");
   var [authMode,setAuthMode]=useState("register");
   var [showPass,setShowPass]=useState(false);
+  // Phase 2.2 — welcome-hero sample MCQ. null until the user picks an option,
+  // then one of "a"/"b"/"c". Purely local; resets on reload (a sample, not a quiz).
+  var [samplePicked,setSamplePicked]=useState(null);
   // social login (Firebase Auth front door)
   var [oauthBusy,setOauthBusy]=useState(false);
   // When a verified social user has no account yet, the server returns
@@ -4091,8 +4094,22 @@ export default function App(){
               .wc-cta-primary{width:100%;padding:16px 20px;border:none;border-radius:18px;background:var(--rq-accent);color:#0d0d1a;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(var(--rq-accent-rgb),0.28),0 0 30px rgba(var(--rq-accent-rgb),0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
               .wc-cta-primary:hover{filter:brightness(1.08);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(52,211,153,0.4),0 0 40px rgba(52,211,153,0.3)}
               .wc-cta-primary:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
-              .wc-cta-demo{width:100%;padding:15px 20px;border:1px solid rgba(167,139,250,0.45);border-radius:18px;background:rgba(167,139,250,0.08);color:#c4b5fd;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.2s}
-              .wc-cta-demo:hover{background:rgba(167,139,250,0.14);border-color:#a78bfa;color:#e3e0f4}
+              .wc-cta-demo{width:100%;padding:16px 20px;border:1px solid rgba(167,139,250,0.55);border-radius:18px;background:rgba(167,139,250,0.18);color:#e3d4ff;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(167,139,250,0.28),0 0 30px rgba(167,139,250,0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
+              .wc-cta-demo:hover{filter:brightness(1.08);background:rgba(167,139,250,0.24);border-color:#a78bfa;color:#fff;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(167,139,250,0.4),0 0 40px rgba(167,139,250,0.3)}
+              .wc-cta-demo:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(167,139,250,0.3)}
+              .wc-sample{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;padding:18px;margin:0 0 22px;border-radius:20px;background:rgba(18,18,31,0.7);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px)}
+              .wc-sample-label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.18em;color:#5af0b3;text-transform:uppercase;text-align:center}
+              .wc-sample-passage{font-family:'Inter',sans-serif;font-size:13px;line-height:1.55;color:rgba(227,224,244,0.82);text-align:left;padding:4px 2px 0}
+              .wc-sample-question{font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#e3e0f4;text-align:left;margin-top:6px}
+              .wc-sample-options{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+              .wc-sample-opt{padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(227,224,244,0.9);font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;text-align:left;transition:all 0.15s}
+              .wc-sample-opt:hover:not(:disabled){background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.18)}
+              .wc-sample-opt:disabled{cursor:default}
+              .wc-sample-opt.is-correct{background:rgba(52,211,153,0.18);border-color:rgba(52,211,153,0.6);color:#5af0b3}
+              .wc-sample-opt.is-wrong{background:rgba(239,68,68,0.18);border-color:rgba(239,68,68,0.5);color:#fca5a5}
+              .wc-sample-feedback{font-family:'Inter',sans-serif;font-size:11px;text-align:center;margin-top:2px;padding:4px 6px}
+              .wc-sample-feedback.is-correct{color:#5af0b3}
+              .wc-sample-feedback.is-wrong{color:#fca5a5}
               .wc-nosignup{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.4);text-align:center;letter-spacing:0.06em;margin:0 0 36px}
               .wc-benefits{width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;margin-bottom:32px}
               .wc-benefit{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:18px;background:rgba(18,18,31,0.55);border:1px solid rgba(255,255,255,0.07);backdrop-filter:blur(10px)}
@@ -4109,9 +4126,35 @@ export default function App(){
               <p className="wc-tagline">{t("welcomeTagline")}</p>
               <p className="wc-subhead">{t("welcomeSubhead")}</p>
               <button type="button" onClick={function(){var langs=["en","uz","ru","tr","ar","de","es","fr"];var i=langs.indexOf(uiLang);var nx=langs[(i+1)%langs.length];setUiLang(nx);try{localStorage.setItem("rq-uilang",nx);}catch(e){}}} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:999,padding:"6px 12px",fontFamily:"'Inter',sans-serif",fontSize:11,color:"rgba(227,224,244,0.65)",cursor:"pointer",letterSpacing:"0.04em",zIndex:10,display:"inline-flex",alignItems:"center",gap:6}} aria-label="Language">{({en:"🇬🇧",uz:"🇺🇿",ru:"🇷🇺",tr:"🇹🇷",ar:"🇦🇪",de:"🇩🇪",es:"🇪🇸",fr:"🇫🇷"})[uiLang]||"🌐"}<span>{uiLang.toUpperCase()}</span></button>
+              {/* Phase 2.2 — interactive A2-level sample. Passage + question
+                  stay English (matches in-app content); only labels and
+                  feedback are localized. Single useState, no AI call. */}
+              <div className="wc-sample">
+                <div className="wc-sample-label">{t("samplePreviewLabel")}</div>
+                <div className="wc-sample-passage">Maya works at a small bookshop. Every morning she opens the doors at nine. She loves helping people find new books to read.</div>
+                <div className="wc-sample-question">What does Maya enjoy about her job?</div>
+                <div className="wc-sample-options">
+                  {[
+                    {key:"a",text:"Counting books",correct:false},
+                    {key:"b",text:"Helping customers find books",correct:true},
+                    {key:"c",text:"Closing the shop early",correct:false}
+                  ].map(function(opt){
+                    var picked=samplePicked===opt.key;
+                    var state=samplePicked?(opt.correct?"is-correct":(picked?"is-wrong":"")):"";
+                    return<button key={opt.key} type="button" disabled={!!samplePicked} className={"wc-sample-opt"+(state?" "+state:"")} onClick={function(){
+                      if(samplePicked)return;
+                      setSamplePicked(opt.key);
+                      try{track("sample_mcq_answered",{correct:opt.correct});}catch(e){}
+                    }}>{opt.text}</button>;
+                  })}
+                </div>
+                {samplePicked&&(
+                  <div className={"wc-sample-feedback "+(samplePicked==="b"?"is-correct":"is-wrong")}>{samplePicked==="b"?t("sampleCorrectMsg"):t("sampleTryAgainMsg")}</div>
+                )}
+              </div>
               <div className="wc-ctas">
                 <button type="button" className="wc-cta-primary" onClick={function(){try{track("welcome_cta_signup");}catch(e){}setAuthMode("register");setStage("auth");}}>{t("welcomeCtaPrimary")}</button>
-                <button type="button" className="wc-cta-demo" onClick={startDemoQuiz}>▶ {t("welcomeCtaDemo")}</button>
+                <button type="button" className="wc-cta-demo" onClick={function(){try{track("demo_started",{from:"welcome"});}catch(e){}startDemoQuiz();}}>▶ {t("welcomeCtaDemo")}</button>
               </div>
               <p className="wc-nosignup">{t("welcomeNoSignup")}</p>
               <div className="wc-benefits">
