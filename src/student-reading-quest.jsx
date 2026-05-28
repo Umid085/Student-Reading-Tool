@@ -1576,7 +1576,7 @@ export default function App(){
     if(stage!=="home"||!currentUser)return;
     if((currentUser.games||[]).length>0)return;
     try{if(localStorage.getItem("rq-coach-done-"+currentUser.name)==="1")return;}catch(e){}
-    if(coachStep===0){setCoachStep(1);try{track("onboarding_shown");}catch(e){}}
+    if(coachStep===0){setCoachStep(1);try{track("onboarding_shown");}catch(e){}try{track("onboarding_step",{step:1});}catch(e){}}
   },[stage,currentUser]);
   function dismissCoach(){
     setCoachStep(0);
@@ -1790,36 +1790,45 @@ export default function App(){
   async function doSocialLogin(provider){
     if(oauthBusy)return;
     setAuthErr("");setOauthBusy(true);
+    try{track("oauth_started",{provider:provider});}catch(e){}
     try{
       var idToken=await signInWithProvider(provider);
       var r=await fetch(OAUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:idToken})});
       var d=await r.json();
-      if(r.status===429){setAuthErr(t("stu_authTooManyAttempts"));return;}
-      if(!r.ok){setAuthErr((d&&d.error)||t("stu_authServerError"));return;}
-      if(d.needsUsername){setOauthPending({credential:idToken,suggestedName:d.suggestedName||"",email:d.email||""});setOauthUsername(d.suggestedName||"");return;}
-      if(d.token){await finishOAuthLogin(d);return;}
+      if(r.status===429){try{track("oauth_failed",{provider:provider,reason:"rate_limited"});}catch(e){}setAuthErr(t("stu_authTooManyAttempts"));return;}
+      if(!r.ok){try{track("oauth_failed",{provider:provider,reason:"server_"+r.status});}catch(e){}setAuthErr((d&&d.error)||t("stu_authServerError"));return;}
+      if(d.needsUsername){try{track("oauth_username_required",{provider:provider});}catch(e){}setOauthPending({credential:idToken,suggestedName:d.suggestedName||"",email:d.email||"",provider:provider});setOauthUsername(d.suggestedName||"");return;}
+      if(d.token){try{track("oauth_login_completed",{provider:provider});}catch(e){}await finishOAuthLogin(d);return;}
+      try{track("oauth_failed",{provider:provider,reason:"empty_response"});}catch(e){}
       setAuthErr(t("stu_authServerError"));
     }catch(e){
       // signInWithPopup throws auth/popup-closed-by-user when the user bails —
       // that's not an error worth shouting about.
       var code=e&&e.code?String(e.code):"";
-      if(code.indexOf("popup-closed")===-1&&code.indexOf("cancelled-popup")===-1){setAuthErr(t("stu_authSocialFailed"));}
+      if(code.indexOf("popup-closed")!==-1||code.indexOf("cancelled-popup")!==-1){
+        try{track("oauth_failed",{provider:provider,reason:"popup_closed"});}catch(e2){}
+      } else {
+        try{track("oauth_failed",{provider:provider,reason:code||"unknown"});}catch(e2){}
+        setAuthErr(t("stu_authSocialFailed"));
+      }
     }finally{setOauthBusy(false);}
   }
 
   async function submitOAuthUsername(){
     if(!oauthPending||oauthBusy)return;
     var uname=oauthUsername.trim();
+    var prov=oauthPending.provider||"unknown";
     if(!/^[a-zA-Z0-9_]{2,30}$/.test(uname)){setAuthErr(t("stu_authNameRules"));return;}
     setAuthErr("");setOauthBusy(true);
     try{
       var r=await fetch(OAUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:oauthPending.credential,username:uname})});
       var d=await r.json();
-      if(r.status===409){setAuthErr("Username taken.");return;}
-      if(!r.ok){setAuthErr((d&&d.error)||t("stu_authServerError"));return;}
-      if(d.token){await finishOAuthLogin(d);return;}
+      if(r.status===409){try{track("oauth_failed",{provider:prov,reason:"username_taken"});}catch(e){}setAuthErr("Username taken.");return;}
+      if(!r.ok){try{track("oauth_failed",{provider:prov,reason:"server_"+r.status});}catch(e){}setAuthErr((d&&d.error)||t("stu_authServerError"));return;}
+      if(d.token){try{track("oauth_signup_completed",{provider:prov});}catch(e){}await finishOAuthLogin(d);return;}
+      try{track("oauth_failed",{provider:prov,reason:"empty_response"});}catch(e){}
       setAuthErr(t("stu_authServerError"));
-    }catch(e){setAuthErr(t("stu_authServerError"));}
+    }catch(e){try{track("oauth_failed",{provider:prov,reason:"exception"});}catch(e2){}setAuthErr(t("stu_authServerError"));}
     finally{setOauthBusy(false);}
   }
 
@@ -3923,11 +3932,6 @@ export default function App(){
               .lq-brand{font-family:'Outfit',sans-serif;font-weight:700;font-size:34px;letter-spacing:-0.02em;color:var(--rq-accent);line-height:1.05;margin:0;text-shadow:0 0 15px rgba(var(--rq-accent-rgb),0.7),0 0 30px rgba(var(--rq-accent-rgb),0.45),0 0 60px rgba(var(--rq-accent-rgb),0.25)}
               @media(min-width:480px){.lq-brand{font-size:42px}}
               .lq-tagline{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:rgba(227,224,244,0.55);letter-spacing:0.22em;text-transform:uppercase;margin:14px 0 0;text-align:center}
-              .lq-langrow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:28px 0 24px;max-width:340px}
-              .lq-lang-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:500;color:rgba(227,224,244,0.65);cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.04em;transition:all 0.2s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-              .lq-lang-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18);color:#e3e0f4}
-              .lq-lang-btn:active{transform:scale(0.95)}
-              .lq-lang-btn.is-active{background:rgba(var(--rq-accent-rgb),0.14);border-color:rgba(var(--rq-accent-rgb),0.45);color:var(--rq-accent)}
               .lq-glass{position:relative;width:100%;max-width:440px;background:rgba(18,18,31,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:32px;padding:28px 24px 24px;backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);box-shadow:0 20px 50px rgba(0,0,0,0.5),inset 0 1px 1px rgba(255,255,255,0.05);overflow:hidden}
               .lq-glass::before,.lq-glass::after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0}
               .lq-glass::before{top:-40px;right:-40px;background:rgba(99,102,241,0.18)}
@@ -3984,12 +3988,7 @@ export default function App(){
               <button type="button" onClick={function(){setStage("welcome");setAuthErr("");}} style={{position:"absolute",top:16,left:16,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:999,padding:"6px 12px",fontFamily:"'Inter',sans-serif",fontSize:11,color:"rgba(227,224,244,0.65)",cursor:"pointer",letterSpacing:"0.04em"}}>← {t("back")}</button>
               <h1 className="lq-brand">Reading Quest</h1>
               <p className="lq-tagline">6 Question Types · Friends · Compete</p>
-              <div className="lq-langrow">
-                {[{c:"en",f:"🇬🇧"},{c:"uz",f:"🇺🇿"},{c:"ru",f:"🇷🇺"},{c:"tr",f:"🇹🇷"},{c:"ar",f:"🇦🇪"},{c:"de",f:"🇩🇪"},{c:"es",f:"🇪🇸"},{c:"fr",f:"🇫🇷"}].map(function(opt){
-                  var active=uiLang===opt.c;
-                  return<button key={opt.c} type="button" onClick={function(){setUiLang(opt.c);try{localStorage.setItem("rq-uilang",opt.c);}catch(e){}}} className={"lq-lang-btn"+(active?" is-active":"")}><span>{opt.f}</span><span>{opt.c.toUpperCase()}</span></button>;
-                })}
-              </div>
+              <button type="button" onClick={function(){var langs=["en","uz","ru","tr","ar","de","es","fr"];var i=langs.indexOf(uiLang);var nx=langs[(i+1)%langs.length];setUiLang(nx);try{localStorage.setItem("rq-uilang",nx);}catch(e){}}} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:999,padding:"6px 12px",fontFamily:"'Inter',sans-serif",fontSize:11,color:"rgba(227,224,244,0.65)",cursor:"pointer",letterSpacing:"0.04em",zIndex:10,display:"inline-flex",alignItems:"center",gap:6}} aria-label="Language">{({en:"🇬🇧",uz:"🇺🇿",ru:"🇷🇺",tr:"🇹🇷",ar:"🇦🇪",de:"🇩🇪",es:"🇪🇸",fr:"🇫🇷"})[uiLang]||"🌐"}<span>{uiLang.toUpperCase()}</span></button>
               <section className="lq-glass">
                 <div className="lq-toggle">
                   <div className={"lq-toggle-pill"+(authMode==="login"?" is-login":"")}/>
@@ -4088,10 +4087,6 @@ export default function App(){
               @media(min-width:480px){.wc-brand{font-size:48px}}
               .wc-tagline{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:#e3e0f4;letter-spacing:0.04em;margin:18px 0 8px;text-align:center}
               .wc-subhead{font-family:'Inter',sans-serif;font-size:13px;line-height:1.55;color:rgba(227,224,244,0.62);text-align:center;max-width:340px;margin:0 0 28px;padding:0 8px}
-              .wc-langrow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 0 24px;max-width:340px}
-              .wc-lang-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:500;color:rgba(227,224,244,0.65);cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.04em;transition:all 0.2s}
-              .wc-lang-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18);color:#e3e0f4}
-              .wc-lang-btn.is-active{background:rgba(52,211,153,0.14);border-color:rgba(52,211,153,0.45);color:#5af0b3}
               .wc-ctas{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
               .wc-cta-primary{width:100%;padding:16px 20px;border:none;border-radius:18px;background:var(--rq-accent);color:#0d0d1a;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(var(--rq-accent-rgb),0.28),0 0 30px rgba(var(--rq-accent-rgb),0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
               .wc-cta-primary:hover{filter:brightness(1.08);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(52,211,153,0.4),0 0 40px rgba(52,211,153,0.3)}
@@ -4113,12 +4108,7 @@ export default function App(){
               <h1 className="wc-brand">Reading Quest</h1>
               <p className="wc-tagline">{t("welcomeTagline")}</p>
               <p className="wc-subhead">{t("welcomeSubhead")}</p>
-              <div className="wc-langrow">
-                {[{c:"en",f:"🇬🇧"},{c:"uz",f:"🇺🇿"},{c:"ru",f:"🇷🇺"},{c:"tr",f:"🇹🇷"},{c:"ar",f:"🇦🇪"},{c:"de",f:"🇩🇪"},{c:"es",f:"🇪🇸"},{c:"fr",f:"🇫🇷"}].map(function(opt){
-                  var active=uiLang===opt.c;
-                  return<button key={opt.c} type="button" onClick={function(){setUiLang(opt.c);try{localStorage.setItem("rq-uilang",opt.c);}catch(e){}}} className={"wc-lang-btn"+(active?" is-active":"")}><span>{opt.f}</span><span>{opt.c.toUpperCase()}</span></button>;
-                })}
-              </div>
+              <button type="button" onClick={function(){var langs=["en","uz","ru","tr","ar","de","es","fr"];var i=langs.indexOf(uiLang);var nx=langs[(i+1)%langs.length];setUiLang(nx);try{localStorage.setItem("rq-uilang",nx);}catch(e){}}} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:999,padding:"6px 12px",fontFamily:"'Inter',sans-serif",fontSize:11,color:"rgba(227,224,244,0.65)",cursor:"pointer",letterSpacing:"0.04em",zIndex:10,display:"inline-flex",alignItems:"center",gap:6}} aria-label="Language">{({en:"🇬🇧",uz:"🇺🇿",ru:"🇷🇺",tr:"🇹🇷",ar:"🇦🇪",de:"🇩🇪",es:"🇪🇸",fr:"🇫🇷"})[uiLang]||"🌐"}<span>{uiLang.toUpperCase()}</span></button>
               <div className="wc-ctas">
                 <button type="button" className="wc-cta-primary" onClick={function(){try{track("welcome_cta_signup");}catch(e){}setAuthMode("register");setStage("auth");}}>{t("welcomeCtaPrimary")}</button>
                 <button type="button" className="wc-cta-demo" onClick={startDemoQuiz}>▶ {t("welcomeCtaDemo")}</button>
@@ -5791,6 +5781,12 @@ export default function App(){
                 {/* F5 — friend comparison nudge. Positive framing only; one
                     nudge picked per day, dismissible until tomorrow. */}
                 {friendNudge&&(function(){
+                  // Cap: render the nudge at most once per user per day.
+                  // Persisted across reloads so a user opening the app multiple
+                  // times sees a single nudge (and we emit a single
+                  // friend_nudge_shown event), not 12.
+                  var shownKey=currentUser?"rq-nudge-shown-"+currentUser.name:"";
+                  try{if(shownKey&&localStorage.getItem(shownKey)===todayStr)return null;}catch(e){}
                   var k=friendNudge.category;
                   var p=friendNudge.params||{};
                   var msg=t("stu_nudge_"+k)||"";
@@ -5801,6 +5797,7 @@ export default function App(){
                   if(dayStamp&&nudgeShownRef.current!==dayStamp){
                     nudgeShownRef.current=dayStamp;
                     try{track("friend_nudge_shown",{category:k});}catch(e){}
+                    try{if(shownKey)localStorage.setItem(shownKey,todayStr);}catch(e){}
                   }
                   return(
                     <div style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 14px",margin:"10px 0",borderRadius:16,border:"1px solid rgba(96,165,250,0.35)",background:"linear-gradient(135deg,rgba(96,165,250,0.12),rgba(52,211,153,0.06))",color:"#e3e0f4",fontFamily:"'Inter',sans-serif"}}>
