@@ -1454,8 +1454,25 @@ export default function App(){
   var [portfolioShareData,setPortfolioShareData]=useState(null);
   var [portfolioLink,setPortfolioLink]=useState("");
   var [portfolioLinkCopied,setPortfolioLinkCopied]=useState(false);
-  // ui language
-  var [uiLang,setUiLang]=useState(function(){try{return localStorage.getItem("rq-uilang")||"en";}catch(e){return"en";}});
+  // ui language: ?lang=xx URL param wins (and persists to localStorage so the
+  // user keeps the language on return visits without the param), then stored
+  // preference, then the browser's navigator.language, then English.
+  var [uiLang,setUiLang]=useState(function(){
+    var langs=["en","uz","ru","tr","ar","de","es","fr"];
+    try{
+      var params=new URLSearchParams(window.location.search);
+      var urlLang=(params.get("lang")||"").toLowerCase();
+      if(urlLang&&langs.indexOf(urlLang)!==-1){
+        try{localStorage.setItem("rq-uilang",urlLang);}catch(e){}
+        return urlLang;
+      }
+      var stored=localStorage.getItem("rq-uilang");
+      if(stored&&langs.indexOf(stored)!==-1)return stored;
+      var nav=(navigator.language||"").slice(0,2).toLowerCase();
+      if(nav&&langs.indexOf(nav)!==-1)return nav;
+      return"en";
+    }catch(e){return"en";}
+  });
   // Bumps when the active locale finishes loading so render-cached t() calls
   // re-read STRINGS. English is bundled inline; other locales are chunked
   // and dynamic-imported by loadLocale().
