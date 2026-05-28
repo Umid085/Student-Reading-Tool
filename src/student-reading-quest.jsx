@@ -3990,7 +3990,7 @@ export default function App(){
             <div className="lq-auth-wrap">
               <button type="button" onClick={function(){setStage("welcome");setAuthErr("");}} style={{position:"absolute",top:16,left:16,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:999,padding:"6px 12px",fontFamily:"'Inter',sans-serif",fontSize:11,color:"rgba(227,224,244,0.65)",cursor:"pointer",letterSpacing:"0.04em"}}>← {t("back")}</button>
               <h1 className="lq-brand">Reading Quest</h1>
-              <p className="lq-tagline">6 Question Types · Friends · Compete</p>
+              <p className="lq-tagline">{t("authTagline")}</p>
               <button type="button" onClick={function(){var langs=["en","uz","ru","tr","ar","de","es","fr"];var i=langs.indexOf(uiLang);var nx=langs[(i+1)%langs.length];setUiLang(nx);try{localStorage.setItem("rq-uilang",nx);}catch(e){}}} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.10)",borderRadius:999,padding:"6px 12px",fontFamily:"'Inter',sans-serif",fontSize:11,color:"rgba(227,224,244,0.65)",cursor:"pointer",letterSpacing:"0.04em",zIndex:10,display:"inline-flex",alignItems:"center",gap:6}} aria-label="Language">{({en:"🇬🇧",uz:"🇺🇿",ru:"🇷🇺",tr:"🇹🇷",ar:"🇦🇪",de:"🇩🇪",es:"🇪🇸",fr:"🇫🇷"})[uiLang]||"🌐"}<span>{uiLang.toUpperCase()}</span></button>
               <section className="lq-glass">
                 <div className="lq-toggle">
@@ -4003,12 +4003,12 @@ export default function App(){
                     <button type="button" onClick={function(){setIsTeacherReg(false);}} className={"lq-role"+(!isTeacherReg?" is-student-active":"")}>
                       <span className="lq-role-check" style={{color:"#a5b4fc"}}>✓</span>
                       <div className="lq-role-ico">🎓</div>
-                      <span className="lq-role-label">Student</span>
+                      <span className="lq-role-label">{t("roleStudent")}</span>
                     </button>
                     <button type="button" onClick={function(){setIsTeacherReg(true);}} className={"lq-role"+(isTeacherReg?" is-teacher-active":"")}>
                       <span className="lq-role-check" style={{color:"#7dd3fc"}}>✓</span>
                       <div className="lq-role-ico">📡</div>
-                      <span className="lq-role-label">Teacher</span>
+                      <span className="lq-role-label">{t("roleTeacher")}</span>
                     </button>
                   </div>
                 )}
@@ -4067,7 +4067,7 @@ export default function App(){
                       </>
                     )}
 
-                    <p className="lq-fineprint">By joining, you agree to the <a href="#" onClick={function(e){e.preventDefault();}}>Quest Rules</a></p>
+                    <p className="lq-fineprint">{t("authFineprintBefore")} <a href="#" onClick={function(e){e.preventDefault();}}>{t("authQuestRules")}</a></p>
                   </>
                 )}
               </section>
