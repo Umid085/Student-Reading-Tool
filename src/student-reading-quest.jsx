@@ -4239,13 +4239,13 @@ export default function App(){
                 </div>
                 <div className="dm-card">
                   {atIntro&&(<>
-                    <p className="dm-meta">📖 {DEMO_QUIZ.level} · Demo passage</p>
+                    <p className="dm-meta">📖 {DEMO_QUIZ.level} · {t("demoPassageLabel")}</p>
                     <h2 className="dm-title">{DEMO_QUIZ.title}</h2>
                     <div className="dm-passage">{DEMO_QUIZ.passage.split(/\n{2,}/).map(function(p,i){return<p key={i}>{p}</p>;})}</div>
-                    <button type="button" className="dm-cta" onClick={function(){try{track("welcome_demo_quiz_start");}catch(e){}nextStep();}}>{t("welcomeCtaPrimary")?"Begin Quiz →":"Begin Quiz →"}</button>
+                    <button type="button" className="dm-cta" onClick={function(){try{track("welcome_demo_quiz_start");}catch(e){}nextStep();}}>{t("demoBeginQuiz")}</button>
                   </>)}
                   {atQuestion&&(<>
-                    <p className="dm-meta">Question {demoStep} of {totalSteps}</p>
+                    <p className="dm-meta">{t("demoQuestionOf").replace("{n}",demoStep).replace("{total}",totalSteps)}</p>
                     <h2 className="dm-q">{curQ.q}</h2>
                     <div className="dm-opts">
                       {curQ.options.map(function(opt,i){
@@ -4258,19 +4258,19 @@ export default function App(){
                       })}
                     </div>
                     {curAns!=null&&(
-                      <div className="dm-explain"><strong>{curAns===curQ.answer?"✓ Correct.":"✕ Not quite."}</strong> {curQ.explain}</div>
+                      <div className="dm-explain"><strong>{curAns===curQ.answer?t("demoCorrectShort"):t("demoWrongShort")}</strong> {curQ.explain}</div>
                     )}
                     {curAns!=null&&(
-                      <button type="button" className="dm-cta" onClick={nextStep}>{demoStep===totalSteps?"See result →":"Next →"}</button>
+                      <button type="button" className="dm-cta" onClick={nextStep}>{demoStep===totalSteps?t("demoSeeResult"):t("demoNext")}</button>
                     )}
                   </>)}
                   {atResult&&(<>
-                    <p className="dm-meta">🎉 You finished the demo</p>
+                    <p className="dm-meta">{t("demoFinishedTitle")}</p>
                     <div className="dm-result-num">{correct}/{totalSteps}</div>
-                    <p className="dm-result-label">{correct===totalSteps?"PERFECT SCORE":correct>=totalSteps*0.6?"NICE WORK":"GOOD TRY"}</p>
+                    <p className="dm-result-label">{correct===totalSteps?t("demoScorePerfect"):correct>=totalSteps*0.6?t("demoScoreNice"):t("demoScoreGood")}</p>
                     <div className="dm-result-cta">
                       <button type="button" className="dm-cta" onClick={function(){try{track("welcome_demo_completed",{score:correct});}catch(e){}setAuthMode("register");setStage("auth");}}>{t("welcomeCtaPrimary")}</button>
-                      <button type="button" className="dm-result-ghost" onClick={tryAgain}>🔁 Try again</button>
+                      <button type="button" className="dm-result-ghost" onClick={tryAgain}>{t("demoTryAgain")}</button>
                       <button type="button" className="dm-result-ghost" onClick={function(){setStage("welcome");}}>← {t("back")}</button>
                     </div>
                   </>)}
