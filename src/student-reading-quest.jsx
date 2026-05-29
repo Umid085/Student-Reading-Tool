@@ -1491,6 +1491,18 @@ export default function App(){
   },[uiLang]);
 
   function t(key){void localesVersion;return(STRINGS[uiLang]&&STRINGS[uiLang][key])||STRINGS.en[key]||key;}
+
+  // Phase 4 — keep <html lang> and <title> in sync with the active uiLang.
+  // Helps screen readers announce the right language, helps Google's
+  // language-detection treat the page as ru/tr/uz/... rather than always
+  // English, and gives translated locales a proper localized title bar.
+  // localesVersion is in the dep list so this re-runs after the lazy
+  // locale chunk loads (when the t() call would otherwise return the
+  // English fallback).
+  useEffect(function(){
+    try{document.documentElement.lang=uiLang;}catch(e){}
+    try{var tagline=t("welcomeTagline");document.title=tagline?"Reading Quest — "+tagline:"Reading Quest";}catch(e){}
+  },[uiLang,localesVersion]);
   // Looks up a localized question-type label (e.g. "Multiple Choice" → "Choix
   // multiple"). Falls back to the English table Q_LABELS when the language
   // doesn't define the lookup, then to the raw type key as a last resort.
