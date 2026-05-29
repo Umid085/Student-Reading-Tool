@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ücretsiz CEFR İngilizce Okuma Metinleri (A1-C2) — Reading Quest</title>
+  <meta name="description" content="A1'den C2'ye CEFR seviyene özel ücretsiz İngilizce okuma metinleri ve yapay zeka destekli quiz'ler. Kayıt gerekmez. Günde 5 dakika yeterli.">
+  <meta name="keywords" content="ücretsiz İngilizce okuma, CEFR ingilizce, A1 B1 B2 C1 ingilizce, İngilizce metin oku, yapay zeka İngilizce, IELTS reading, İngilizce öğrenme">
+  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large">
+  <meta name="theme-color" content="#0d0d1a">
+  <link rel="canonical" href="https://student-reading-tool.vercel.app/learn/ingilizce-okuma-tr/">
+  <link rel="alternate" hreflang="tr" href="https://student-reading-tool.vercel.app/learn/ingilizce-okuma-tr/">
+  <link rel="alternate" hreflang="ru" href="https://student-reading-tool.vercel.app/learn/anglijskij-cefr-ru/">
+  <link rel="alternate" hreflang="uz" href="https://student-reading-tool.vercel.app/learn/ingliz-tili-okish-uz/">
+  <link rel="alternate" hreflang="en" href="https://student-reading-tool.vercel.app/">
+  <link rel="alternate" hreflang="x-default" href="https://student-reading-tool.vercel.app/">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta property="og:title" content="Ücretsiz CEFR İngilizce Okuma Metinleri (A1-C2)">
+  <meta property="og:description" content="A1'den C2'ye CEFR seviyene özel, yapay zeka tarafından oluşturulan İngilizce okuma metinleri ve quiz'ler. Kayıt gerekmez.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://student-reading-tool.vercel.app/learn/ingilizce-okuma-tr/">
+  <meta property="og:image" content="https://student-reading-tool.vercel.app/og-image.png">
+  <meta property="og:locale" content="tr_TR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Ücretsiz CEFR İngilizce Okuma Metinleri (A1-C2)">
+  <meta name="twitter:description" content="A1'den C2'ye CEFR seviyene özel yapay zeka destekli İngilizce okuma + quiz. Kayıt gerekmez.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:#0d0d1a;color:#e3e0f4;font-family:'Inter',sans-serif;font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+    .container{max-width:760px;margin:0 auto;padding:32px 20px 80px}
+    .lang-pill{position:fixed;top:14px;right:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:600;color:rgba(227,224,244,0.7);text-decoration:none;display:inline-flex;align-items:center;gap:6px;backdrop-filter:blur(8px);z-index:10}
+    .lang-pill:hover{background:rgba(255,255,255,0.10);color:#e3e0f4}
+    .hero{text-align:center;padding:48px 0 32px}
+    .brand{font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;color:#5af0b3;letter-spacing:-0.01em;margin:0 0 24px;text-shadow:0 0 18px rgba(90,240,179,0.4)}
+    h1{font-family:'Outfit',sans-serif;font-size:34px;font-weight:800;line-height:1.15;margin:0 0 16px;letter-spacing:-0.02em;color:#e3e0f4}
+    @media(min-width:640px){h1{font-size:42px}}
+    .lede{font-size:17px;line-height:1.5;color:rgba(227,224,244,0.72);max-width:580px;margin:0 auto 28px}
+    .cta-primary{display:inline-flex;align-items:center;gap:8px;background:#5af0b3;color:#003825;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;padding:16px 28px;border-radius:18px;text-decoration:none;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(90,240,179,0.28);transition:all 0.2s}
+    .cta-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+    .cta-primary:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4)}
+    .cta-sub{display:block;font-size:12px;color:rgba(227,224,244,0.45);margin-top:10px;letter-spacing:0.04em}
+    h2{font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;line-height:1.25;margin:48px 0 14px;color:#e3e0f4;letter-spacing:-0.01em}
+    p{margin:0 0 16px}
+    strong{color:#e3e0f4;font-weight:700}
+    ul{padding-left:22px;margin:0 0 18px}
+    li{margin-bottom:8px}
+    .levels{display:grid;grid-template-columns:1fr;gap:10px;margin:18px 0 24px}
+    @media(min-width:640px){.levels{grid-template-columns:1fr 1fr}}
+    .level{background:rgba(30,30,44,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px}
+    .level-tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px}
+    .level-tag.a1{color:#34d399}.level-tag.a2{color:#5af0b3}.level-tag.b1{color:#a78bfa}.level-tag.b2{color:#c4b5fd}.level-tag.c1{color:#fbbf24}.level-tag.c2{color:#fb923c}
+    .level p{font-size:13px;color:rgba(227,224,244,0.7);margin:0;line-height:1.5}
+    .faq{margin:28px 0 0}
+    .faq-item{border-top:1px solid rgba(255,255,255,0.07);padding:18px 0}
+    .faq-q{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:#e3e0f4;margin:0 0 6px}
+    .faq-a{font-size:15px;color:rgba(227,224,244,0.72);margin:0;line-height:1.6}
+    .cta-block{margin:48px 0 0;padding:28px 22px;background:rgba(90,240,179,0.06);border:1px solid rgba(90,240,179,0.25);border-radius:22px;text-align:center}
+    .cta-block h3{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;margin:0 0 8px;color:#5af0b3}
+    .cta-block p{font-size:14px;color:rgba(227,224,244,0.7);margin:0 0 20px}
+    footer{margin-top:64px;padding-top:28px;border-top:1px solid rgba(255,255,255,0.08);text-align:center;font-size:12px;color:rgba(227,224,244,0.4)}
+    footer a{color:#5af0b3;text-decoration:none}
+    footer a:hover{text-decoration:underline}
+    .langs{margin-top:10px;display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+    .langs a{color:rgba(227,224,244,0.55)}
+  </style>
+</head>
+<body>
+  <a class="lang-pill" href="/?lang=tr&amp;utm_source=seo&amp;utm_medium=organic&amp;utm_campaign=ingilizce-okuma-tr">🇹🇷 TR</a>
+  <main class="container">
+    <header class="hero">
+      <p class="brand">Reading Quest</p>
+      <h1>Ücretsiz CEFR İngilizce Okuma Metinleri (A1-C2)</h1>
+      <p class="lede">A1'den C2'ye seviyene özel, yapay zeka tarafından oluşturulan İngilizce okuma metinleri ve quiz'ler. Kayıt gerekmez. Günde 5 dakika, kendi temanı seç, ilerlemeni izle.</p>
+      <a class="cta-primary" href="/?lang=tr&amp;utm_source=seo&amp;utm_medium=organic&amp;utm_campaign=ingilizce-okuma-tr&amp;utm_content=hero">Ücretsiz Başla →</a>
+      <span class="cta-sub">Kayıt gerekmez · 2 dakikada dene</span>
+    </header>
+
+    <article>
+      <h2>CEFR Nedir ve Neden Önemli?</h2>
+      <p>CEFR (Common European Framework of Reference for Languages), İngilizce dahil yabancı dil seviyelerini ölçen uluslararası bir standarttır. A1 (başlangıç) ile C2 (anadil seviyesi) arasında altı seviye vardır. Üniversite başvuruları, vize işlemleri, IELTS-TOEFL hazırlığı ve iş başvurularında giderek daha sık karşına çıkar.</p>
+      <p>Türkiye'de İngilizce öğrenenlerin çoğunluğu A2-B2 aralığındadır. Sorun şu: seviyeden bağımsız metin okumak ya çok kolay (öğrenme yok), ya çok zor (her cümlede sözlük gerekiyor, motivasyon düşüyor). <strong>Doğru seviyede metin bulmak en önemli adım</strong> — ve bu sitenin var olma sebebi.</p>
+
+      <h2>Reading Quest Nasıl Çalışır?</h2>
+      <p>Üç adım:</p>
+      <ul>
+        <li><strong>Seviyeni seç</strong> (A1-C2). Emin değilsen kısa bir seviye testi yap.</li>
+        <li><strong>Konunu seç</strong> — futbol, iklim, yapay zeka, müzik, ne olursa. Veya hazır kütüphaneden bir hikaye seç.</li>
+        <li><strong>Oku ve quiz çöz</strong>. Yapay zeka senin seviyene tam uygun yeni bir metin üretir. Sonunda 5-15 sorulu bir anlama testi.</li>
+      </ul>
+      <p>Her metin <strong>tek seferlik ve sana özel</strong>. Aynı metni başkası okumaz. Sözlüğe takılmadan akıcı okumayı öğrenmek için ideal yapı.</p>
+
+      <h2>Hangi Seviye Sana Uygun?</h2>
+      <div class="levels">
+        <div class="level"><div class="level-tag a1">A1</div><p>Başlangıç. Tanıdık günlük ifadeler, basit cümleler. Hiç İngilizce bilmiyorsan buradan başla.</p></div>
+        <div class="level"><div class="level-tag a2">A2</div><p>Temel. Alışveriş, iş, aile gibi tanıdık konularda kısa metinler.</p></div>
+        <div class="level"><div class="level-tag b1">B1</div><p>Orta. Lise mezunu seviyesi. Tanıdık konularda makaleler ve hikayeler.</p></div>
+        <div class="level"><div class="level-tag b2">B2</div><p>Orta-üst. IELTS 5.5-6.5 civarı. Soyut konularda akıcı okuma.</p></div>
+        <div class="level"><div class="level-tag c1">C1</div><p>İleri. IELTS 7+. Karmaşık makaleler, akademik metinler.</p></div>
+        <div class="level"><div class="level-tag c2">C2</div><p>Ustalık. Anadil seviyesi. Edebi metinler, ince anlam farkları.</p></div>
+      </div>
+      <p>Emin değilsen, uygulamada hızlı bir seviye testi var. 5 dakikada hangi seviyede başlaman gerektiğini söyler.</p>
+
+      <h2>Sıkça Sorulan Sorular</h2>
+      <div class="faq">
+        <div class="faq-item">
+          <p class="faq-q">Gerçekten tamamen ücretsiz mi?</p>
+          <p class="faq-a">Evet. Kayıt gerekmez, kredi kartı istemez, reklam göstermez. 2 dakikalık demo'yu hesap açmadan deneyebilirsin. Kalıcı bir hesap istersen (XP, seri, arkadaşlar için) yine ücretsiz.</p>
+        </div>
+        <div class="faq-item">
+          <p class="faq-q">Günde ne kadar zaman ayırmam gerekir?</p>
+          <p class="faq-a">5-15 dakika yeterli. Bir metin + quiz ortalama 8 dakika sürer. Daha az veya daha fazla — tamamen sana kalmış. Önemli olan düzenlilik.</p>
+        </div>
+        <div class="faq-item">
+          <p class="faq-q">IELTS / TOEFL hazırlığı için uygun mu?</p>
+          <p class="faq-a">Evet. IELTS reading'in B2-C1 seviyesinde metinler ve "True / False / Not Given" tipi sorular var. Resmi sınav formatına benzer alıştırma için B2 ve C1 seviyelerini seç.</p>
+        </div>
+        <div class="faq-item">
+          <p class="faq-q">Hangi cihazlarda çalışır?</p>
+          <p class="faq-a">Her modern tarayıcıda — telefon, tablet, bilgisayar. Uygulama indirmen gerekmez, ama istersen ana ekrana ekleyebilirsin (PWA).</p>
+        </div>
+        <div class="faq-item">
+          <p class="faq-q">Arayüz Türkçe mi?</p>
+          <p class="faq-a">Evet. Arayüz Türkçe (kayıt, menü, butonlar, geri bildirim). Okuduğun İngilizce metinler, doğal olarak, İngilizce — öğrendiğin dil. Anadil arayüzü öğrenmeyi engellemez, hızlandırır.</p>
+        </div>
+      </div>
+
+      <div class="cta-block">
+        <h3>Hazır mısın?</h3>
+        <p>İlk metin yapay zeka tarafından senin için bir dakika içinde oluşturulacak. Demo'yu kayıt açmadan deneyebilirsin.</p>
+        <a class="cta-primary" href="/?lang=tr&amp;utm_source=seo&amp;utm_medium=organic&amp;utm_campaign=ingilizce-okuma-tr&amp;utm_content=cta-block">Ücretsiz Dene →</a>
+      </div>
+    </article>
+
+    <footer>
+      <p>Reading Quest — Yapay zeka destekli ücretsiz İngilizce öğrenme platformu.</p>
+      <div class="langs">
+        <a href="/learn/anglijskij-cefr-ru/" hreflang="ru">Русский</a>
+        <a href="/learn/ingliz-tili-okish-uz/" hreflang="uz">Oʻzbek</a>
+        <a href="/" hreflang="en">English</a>
+      </div>
+    </footer>
+  </main>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Ücretsiz CEFR İngilizce Okuma Metinleri (A1-C2)",
+    "description": "A1'den C2'ye CEFR seviyene özel ücretsiz İngilizce okuma metinleri ve yapay zeka destekli quiz'ler.",
+    "image": "https://student-reading-tool.vercel.app/og-image.png",
+    "author": {"@type": "Organization", "name": "Reading Quest"},
+    "publisher": {"@type": "Organization", "name": "Reading Quest", "logo": {"@type": "ImageObject", "url": "https://student-reading-tool.vercel.app/favicon.svg"}},
+    "datePublished": "2026-05-29",
+    "inLanguage": "tr"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type": "Question", "name": "Gerçekten tamamen ücretsiz mi?", "acceptedAnswer": {"@type": "Answer", "text": "Evet. Kayıt gerekmez, kredi kartı istemez, reklam göstermez. 2 dakikalık demo'yu hesap açmadan deneyebilirsin."}},
+      {"@type": "Question", "name": "Günde ne kadar zaman ayırmam gerekir?", "acceptedAnswer": {"@type": "Answer", "text": "5-15 dakika yeterli. Bir metin + quiz ortalama 8 dakika sürer."}},
+      {"@type": "Question", "name": "IELTS / TOEFL hazırlığı için uygun mu?", "acceptedAnswer": {"@type": "Answer", "text": "Evet. B2-C1 seviyelerinde IELTS reading formatına benzer metinler ve sorular var."}},
+      {"@type": "Question", "name": "Hangi cihazlarda çalışır?", "acceptedAnswer": {"@type": "Answer", "text": "Her modern tarayıcıda — telefon, tablet, bilgisayar. PWA olarak da yüklenebilir."}},
+      {"@type": "Question", "name": "Arayüz Türkçe mi?", "acceptedAnswer": {"@type": "Answer", "text": "Evet. Arayüz Türkçe; okuduğun İngilizce metinler İngilizce."}}
+    ]
+  }
+  </script>
+</body>
+</html>
