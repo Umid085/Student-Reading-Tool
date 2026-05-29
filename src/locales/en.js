@@ -25,7 +25,7 @@ export default {
     welcomeTagline:"Learn English with AI",
     welcomeSubhead:"Free CEFR reading + AI quizzes. 5 minutes a day, your level, your topic.",
     welcomeCtaPrimary:"Get Started — Free",
-    welcomeCtaDemo:"Try a 2-min Demo",
+    welcomeCtaDemo:"2-min demo",
     welcomeNoSignup:"No signup needed",
     samplePreviewLabel:"Quick Preview",
     authTagline:"6 Question Types · Friends · Compete",

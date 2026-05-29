@@ -25,7 +25,7 @@ export default {
     welcomeTagline:"AI bilan ingliz tilini o'rgan",
     welcomeSubhead:"Bepul CEFR matn + AI viktorinalar. Kuniga 5 daqiqa, sizning darajangiz, sizning mavzuingiz.",
     welcomeCtaPrimary:"Boshlash — Bepul",
-    welcomeCtaDemo:"2 daqiqali demoni sinab ko'r",
+    welcomeCtaDemo:"2 daqiqalik demo",
     welcomeNoSignup:"Ro'yxatdan o'tish shart emas",
     samplePreviewLabel:"Tezkor namuna",
     authTagline:"6 ta savol turi · Do'stlar · Tanlov",

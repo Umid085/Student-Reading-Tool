@@ -25,7 +25,7 @@ export default {
     welcomeTagline:"Aprende inglés con IA",
     welcomeSubhead:"Lectura CEFR gratis + cuestionarios IA. 5 minutos al día, tu nivel, tu tema.",
     welcomeCtaPrimary:"Empezar — Gratis",
-    welcomeCtaDemo:"Probar demo 2 min",
+    welcomeCtaDemo:"Demo 2 min",
     welcomeNoSignup:"Sin registro",
     samplePreviewLabel:"Vista previa",
     authTagline:"6 Tipos de Preguntas · Amigos · Competencia",

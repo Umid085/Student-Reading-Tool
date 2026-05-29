@@ -4192,19 +4192,19 @@ export default function App(){
         {stage==="welcome"&&(
           <>
             <style>{`
-              .wc-wrap{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;padding:24px 0 40px}
+              .wc-wrap{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;padding:16px 0 40px}
               .wc-brand{font-family:'Outfit',sans-serif;font-weight:700;font-size:38px;letter-spacing:-0.02em;color:var(--rq-accent);line-height:1.05;margin:0;text-align:center;text-shadow:0 0 15px rgba(var(--rq-accent-rgb),0.7),0 0 30px rgba(var(--rq-accent-rgb),0.45),0 0 60px rgba(var(--rq-accent-rgb),0.25)}
               @media(min-width:480px){.wc-brand{font-size:48px}}
-              .wc-tagline{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:#e3e0f4;letter-spacing:0.04em;margin:18px 0 8px;text-align:center}
-              .wc-subhead{font-family:'Inter',sans-serif;font-size:13px;line-height:1.55;color:rgba(227,224,244,0.62);text-align:center;max-width:340px;margin:0 0 28px;padding:0 8px}
+              .wc-tagline{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:#e3e0f4;letter-spacing:0.04em;margin:12px 0 6px;text-align:center}
+              .wc-subhead{font-family:'Inter',sans-serif;font-size:13px;line-height:1.55;color:rgba(227,224,244,0.62);text-align:center;max-width:340px;margin:0 0 16px;padding:0 8px}
               .wc-ctas{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
               .wc-cta-primary{width:100%;padding:16px 20px;border:none;border-radius:18px;background:var(--rq-accent);color:#0d0d1a;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(var(--rq-accent-rgb),0.28),0 0 30px rgba(var(--rq-accent-rgb),0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
               .wc-cta-primary:hover{filter:brightness(1.08);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(52,211,153,0.4),0 0 40px rgba(52,211,153,0.3)}
               .wc-cta-primary:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
-              .wc-cta-demo{width:100%;padding:16px 20px;border:1px solid rgba(167,139,250,0.55);border-radius:18px;background:rgba(167,139,250,0.18);color:#e3d4ff;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(167,139,250,0.28),0 0 30px rgba(167,139,250,0.18);transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}
-              .wc-cta-demo:hover{filter:brightness(1.08);background:rgba(167,139,250,0.24);border-color:#a78bfa;color:#fff;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 14px 32px rgba(167,139,250,0.4),0 0 40px rgba(167,139,250,0.3)}
-              .wc-cta-demo:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(167,139,250,0.3)}
-              .wc-sample{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;padding:18px;margin:0 0 22px;border-radius:20px;background:rgba(18,18,31,0.7);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px)}
+              .wc-cta-demo{width:100%;padding:11px 20px;border:1px solid rgba(167,139,250,0.28);border-radius:14px;background:transparent;color:rgba(227,212,255,0.78);font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s}
+              .wc-cta-demo:hover{background:rgba(167,139,250,0.10);border-color:rgba(167,139,250,0.5);color:#fff}
+              .wc-cta-demo:active{transform:translateY(1px)}
+              .wc-sample{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;padding:14px;margin:0 0 14px;border-radius:20px;background:rgba(18,18,31,0.7);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px)}
               .wc-sample-label{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.18em;color:#5af0b3;text-transform:uppercase;text-align:center}
               .wc-sample-passage{font-family:'Inter',sans-serif;font-size:13px;line-height:1.55;color:rgba(227,224,244,0.82);text-align:left;padding:4px 2px 0}
               .wc-sample-question{font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#e3e0f4;text-align:left;margin-top:6px}
@@ -4217,6 +4217,9 @@ export default function App(){
               .wc-sample-feedback{font-family:'Inter',sans-serif;font-size:11px;text-align:center;margin-top:2px;padding:4px 6px}
               .wc-sample-feedback.is-correct{color:#5af0b3}
               .wc-sample-feedback.is-wrong{color:#fca5a5}
+              .wc-sample-cta{width:100%;margin-top:4px;padding:13px 16px;border:none;border-radius:14px;background:var(--rq-accent);color:#0d0d1a;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;box-shadow:0 3px 0 0 rgba(0,0,0,0.35),0 8px 20px rgba(var(--rq-accent-rgb),0.32);transition:all 0.18s cubic-bezier(0.4,0,0.2,1)}
+              .wc-sample-cta:hover{filter:brightness(1.08)}
+              .wc-sample-cta:active{transform:translateY(2px);box-shadow:0 1px 0 0 rgba(0,0,0,0.35)}
               .wc-nosignup{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.4);text-align:center;letter-spacing:0.06em;margin:0 0 36px}
               .wc-benefits{width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;margin-bottom:32px}
               .wc-benefit{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:18px;background:rgba(18,18,31,0.55);border:1px solid rgba(255,255,255,0.07);backdrop-filter:blur(10px)}
@@ -4258,9 +4261,15 @@ export default function App(){
                 {samplePicked&&(
                   <div className={"wc-sample-feedback "+(samplePicked==="b"?"is-correct":"is-wrong")}>{samplePicked==="b"?t("sampleCorrectMsg"):t("sampleTryAgainMsg")}</div>
                 )}
+                {/* Capture peak intent: a correct answer is the moment of highest
+                    motivation, so surface the signup CTA right here instead of
+                    making the user scroll down to the main CTA block. */}
+                {samplePicked==="b"&&(
+                  <button type="button" className="wc-sample-cta" onClick={function(){try{track("welcome_cta_signup",{from:"sample"});}catch(e){}setAuthMode("register");setStage("auth");}}>{t("welcomeCtaPrimary")}</button>
+                )}
               </div>
               <div className="wc-ctas">
-                <button type="button" className="wc-cta-primary" onClick={function(){try{track("welcome_cta_signup");}catch(e){}setAuthMode("register");setStage("auth");}}>{t("welcomeCtaPrimary")}</button>
+                <button type="button" className="wc-cta-primary" onClick={function(){try{track("welcome_cta_signup",{from:"hero"});}catch(e){}setAuthMode("register");setStage("auth");}}>{t("welcomeCtaPrimary")}</button>
                 <button type="button" className="wc-cta-demo" onClick={function(){try{track("demo_started",{from:"welcome"});}catch(e){}startDemoQuiz();}}>▶ {t("welcomeCtaDemo")}</button>
               </div>
               <p className="wc-nosignup">{t("welcomeNoSignup")}</p>
