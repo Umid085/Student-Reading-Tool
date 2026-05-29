@@ -3900,33 +3900,33 @@ export default function App(){
               {onboardStep===1&&(
                 <div>
                   <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>🏫</div>
-                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>Create your first class</h2>
-                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 20px",lineHeight:1.5}}>Give it a name your students will recognise — e.g. "B1 Morning Group"</p>
-                  <input value={newClassName} onChange={function(e){setNewClassName(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doOnboardCreateClass();}} placeholder="Class name…" style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:12,fontSize:15}}/>
-                  <button onClick={doOnboardCreateClass} disabled={!newClassName.trim()} style={{...mkBtn(newClassName.trim()?"#6366f1":"#374151"),width:"100%",padding:"12px",fontSize:15,fontWeight:800,marginBottom:10}}>Create Class →</button>
-                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>Skip setup for now</button>
+                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>{t("tch_wiz1Title")}</h2>
+                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 20px",lineHeight:1.5}}>{t("tch_wiz1Body")}</p>
+                  <input value={newClassName} onChange={function(e){setNewClassName(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doOnboardCreateClass();}} placeholder={t("tch_wiz1Placeholder")} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:12,fontSize:15}}/>
+                  <button onClick={doOnboardCreateClass} disabled={!newClassName.trim()} style={{...mkBtn(newClassName.trim()?"#6366f1":"#374151"),width:"100%",padding:"12px",fontSize:15,fontWeight:800,marginBottom:10}}>{t("tch_wiz1Cta")}</button>
+                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>{t("tch_wiz1Skip")}</button>
                 </div>
               )}
 
               {onboardStep===2&&(
                 <div>
                   <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>📢</div>
-                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>Share this code with students</h2>
-                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 20px",lineHeight:1.5}}>Students enter this code on their home screen to join your class instantly.</p>
+                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>{t("tch_wiz2Title")}</h2>
+                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 20px",lineHeight:1.5}}>{t("tch_wiz2Body")}</p>
                   <div style={{background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.3)",borderRadius:14,padding:"20px 16px",textAlign:"center",marginBottom:12}}>
                     <div style={{fontSize:40,fontWeight:900,letterSpacing:10,color:"#34d399",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>{onboardClassCode}</div>
                     <button onClick={function(){try{navigator.clipboard.writeText(onboardClassCode);setCopyMsg(t("tch_copied"));}catch(e){setCopyMsg(onboardClassCode);}setTimeout(function(){setCopyMsg("");},2000);}} style={{...GHOST,fontSize:12,padding:"5px 14px"}}>{copyMsg||t("tch_copyCode")}</button>
                   </div>
-                  <button onClick={function(){setOnboardStep(3);}} style={{...mkBtn("#6366f1"),width:"100%",padding:"12px",fontSize:15,fontWeight:800,marginBottom:10}}>Next: Create an Assignment →</button>
-                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>Skip for now — I'll do this later</button>
+                  <button onClick={function(){setOnboardStep(3);}} style={{...mkBtn("#6366f1"),width:"100%",padding:"12px",fontSize:15,fontWeight:800,marginBottom:10}}>{t("tch_wiz2Cta")}</button>
+                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>{t("tch_wiz2Skip")}</button>
                 </div>
               )}
 
               {onboardStep===3&&(
                 <div>
                   <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>📋</div>
-                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>Create your first assignment</h2>
-                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 16px",lineHeight:1.5}}>Pick a story from the library or let AI generate one on any topic.</p>
+                  <h2 style={{textAlign:"center",fontSize:20,fontWeight:900,color:"#f3f4f6",margin:"0 0 6px"}}>{t("tch_wiz3Title")}</h2>
+                  <p style={{textAlign:"center",fontSize:13,color:"#6b7280",margin:"0 0 16px",lineHeight:1.5}}>{t("tch_wiz3Body")}</p>
                   <div style={{display:"flex",gap:6,marginBottom:12}}>
                     {[["library",t("tch_typeLibrary")],["ai_topic",t("tch_typeAi")],["custom_text",t("tch_typeCustom")]].map(function(opt){return(
                       <button key={opt[0]} onClick={function(){setAssignType(opt[0]);}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"2px solid "+(assignType===opt[0]?"#6366f1":"rgba(255,255,255,0.1)"),background:assignType===opt[0]?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)",color:assignType===opt[0]?"#a78bfa":"#9ca3af",fontFamily:"inherit",fontWeight:700,fontSize:11,cursor:"pointer"}}>{opt[1]}</button>
@@ -3960,8 +3960,8 @@ export default function App(){
                   <input type="date" value={assignDue} onChange={function(e){setAssignDue(e.target.value);}} style={{...INP,width:"100%",boxSizing:"border-box",marginBottom:12,color:assignDue?"#f3f4f6":"#6b7280"}} placeholder="Due date (optional)"/>
                   {assignMsg&&<p style={{fontSize:12,color:assignMsg.startsWith("✓")?"#34d399":"#f87171",margin:"0 0 10px",textAlign:"center"}}>{assignMsg}</p>}
                   <button onClick={doCreateAssignment} disabled={assignLoading} style={{...mkBtn("#6366f1"),width:"100%",padding:"12px",fontSize:14,fontWeight:800,marginBottom:8}}>{assignLoading?t("tch_generating"):t("tch_assignBtn")}</button>
-                  {assignMsg.startsWith("✓")&&<button onClick={doFinishOnboarding} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800,marginBottom:8}}>✓ Finish Setup →</button>}
-                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>Skip — I'll add assignments later</button>
+                  {assignMsg.startsWith("✓")&&<button onClick={doFinishOnboarding} style={{...mkBtn("#34d399","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800,marginBottom:8}}>{t("tch_wiz3Finish")}</button>}
+                  <button onClick={doFinishOnboarding} style={{...GHOST,width:"100%",fontSize:12,color:"#4b5563"}}>{t("tch_wiz3Skip")}</button>
                 </div>
               )}
             </div>
