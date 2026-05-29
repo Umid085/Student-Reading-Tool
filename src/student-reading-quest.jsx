@@ -666,6 +666,28 @@ async function apiSet(key,val){
     }
   }catch(e){console.warn("Firebase write error for key "+key+": "+e.message);}
 }
+// Authenticated classroom mutations. Class/assignment writes go through this
+// ownership-checked endpoint (NOT the generic storage proxy, which now blocks
+// those keys). Attaches the session token and retries once on a 401 after
+// refreshing — same pattern as apiSet. Returns {ok,status,data}.
+async function classroomCall(action,payload){
+  var doFetch=async function(){
+    var hdrs={"Content-Type":"application/json"};
+    if(_sessionToken)hdrs["Authorization"]="Bearer "+_sessionToken;
+    var r=await fetch("/api/classroom?action="+encodeURIComponent(action),{method:"POST",headers:hdrs,body:JSON.stringify(payload||{})});
+    var d=null;try{d=await r.json();}catch(e){}
+    return{ok:r.ok,status:r.status,data:d||{}};
+  };
+  var res=await doFetch();
+  if(res.status===401){
+    var creds=null;try{creds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
+    if(creds&&creds.name&&(creds.refreshToken||creds.hash)){
+      await getSessionToken(creds.name,creds);
+      if(_sessionToken)res=await doFetch();
+    }
+  }
+  return res;
+}
 async function loadUsers(){
   try{
     var r=await fetch(USERS_API);
@@ -745,10 +767,12 @@ function generateClassCode(){var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",r="";for(v
 // Firebase returns arrays-with-gaps as objects with numeric string keys. Coerce
 // to an array so downstream `.filter`/`.map` doesn't crash the whole app.
 function asArray(v){if(Array.isArray(v))return v;if(v&&typeof v==="object")return Object.keys(v).filter(function(k){return /^\d+$/.test(k);}).sort(function(a,b){return Number(a)-Number(b);}).map(function(k){return v[k];}).filter(function(x){return x!=null;});return[];}
+// Reads stay on the open proxy; class/assignment WRITES now go through the
+// authenticated /api/classroom router (see classroomCall), so the old
+// saveClassesRemote / saveAssignmentsRemote whole-array PUT helpers were
+// removed when storage.js began blocking direct writes to these keys.
 async function loadClasses(){try{var v=await apiGet(CLASSES_KEY);var arr=asArray(v);if(arr.length||Array.isArray(v))return arr;}catch(e){}try{var lv=localStorage.getItem(CLASSES_KEY);return asArray(lv?JSON.parse(lv):[]);}catch(e){return[];}}
-async function saveClassesRemote(v){try{localStorage.setItem(CLASSES_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(CLASSES_KEY,v);}catch(e){}}
 async function loadAssignments(){try{var v=await apiGet(ASSIGNMENTS_KEY);var arr=asArray(v);if(arr.length||Array.isArray(v))return arr;}catch(e){}try{var lv=localStorage.getItem(ASSIGNMENTS_KEY);return asArray(lv?JSON.parse(lv):[]);}catch(e){return[];}}
-async function saveAssignmentsRemote(v){try{localStorage.setItem(ASSIGNMENTS_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(ASSIGNMENTS_KEY,v);}catch(e){}}
 
 // ── social helpers ────────────────────────────────────────────
 function getSocial(social,name){
@@ -1856,28 +1880,30 @@ export default function App(){
 
   async function doCreateClass(){
     if(!currentUser||!newClassName.trim())return;
-    var code=uniqueClassCode();
-    var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:todayKey(),targetLevel:"B1"};
-    var updated=classes.concat([cls]);
-    setClasses(updated);
+    // Server mints the code + sets teacherName from the token, then returns the
+    // full updated list. We sync state from the response rather than guessing.
+    var res=await classroomCall("createClass",{name:newClassName.trim(),targetLevel:"B1"});
+    if(!res.ok){setJoinClassMsg(res.data.error||"Couldn't create class. Try again.");return;}
+    setClasses(asArray(res.data.classes));
+    try{localStorage.setItem(CLASSES_KEY,JSON.stringify(res.data.classes));}catch(e){}
     setNewClassName("");
-    await saveClassesRemote(updated);
   }
 
   async function doJoinClass(){
     if(!currentUser||!joinClassCode.trim())return;
     var code=joinClassCode.trim().toUpperCase();
-    var cls=classes.find(function(c){return c.id===code;});
-    if(!cls){setJoinClassMsg("Class not found. Check the code and try again.");return;}
-    if((cls.students||[]).indexOf(currentUser.name)!==-1){setJoinClassMsg("You are already in "+cls.name+"!");return;}
-    var updated=classes.map(function(c){
-      if(c.id!==code)return c;
-      return Object.assign({},c,{students:(c.students||[]).concat([currentUser.name])});
-    });
-    setClasses(updated);
+    var existing=classes.find(function(c){return c.id===code;});
+    if(existing&&(existing.students||[]).indexOf(currentUser.name)!==-1){setJoinClassMsg("You are already in "+existing.name+"!");return;}
+    var res=await classroomCall("joinClass",{code:code});
+    if(!res.ok){
+      setJoinClassMsg(res.status===404?"Class not found. Check the code and try again.":(res.data.error||"Couldn't join. Try again."));
+      return;
+    }
+    setClasses(asArray(res.data.classes));
+    try{localStorage.setItem(CLASSES_KEY,JSON.stringify(res.data.classes));}catch(e){}
+    var joined=asArray(res.data.classes).find(function(c){return c.id===code;});
     setJoinClassCode("");
-    setJoinClassMsg("✓ Joined "+cls.name+"!");
-    await saveClassesRemote(updated);
+    setJoinClassMsg("✓ Joined "+(joined?joined.name:"class")+"!");
   }
 
   // ── assignment actions ──────────────────────────────────────
@@ -1889,47 +1915,54 @@ export default function App(){
     if(assignType==="ai_topic"&&!assignTopic.trim()){setAssignMsg("Enter a topic first.");return;}
     if(assignType==="custom_text"&&assignCustomText.trim().length<150){setAssignMsg("Paste at least 150 characters of text so the AI can generate a full quiz.");return;}
     setAssignLoading(true);
-    var id="asgn-"+Date.now();
-    var base={id:id,classId:currentClass.id,teacherName:currentUser.name,type:assignType,dueDate:assignDue||null,createdAt:new Date().toISOString(),completions:{}};
-    var asgn;
+    // Generate the quiz content client-side, then hand the payload to the
+    // ownership-checked endpoint (it sets id/teacherName/completions + persists).
+    var payload={classId:currentClass.id,type:assignType,dueDate:assignDue||null,level:assignLevel};
     if(assignType==="library"){
       var story=STORY_LIBRARY.find(function(s){return s.id===assignStoryId;});
-      asgn=Object.assign({},base,{storyId:assignStoryId,topic:story?story.title:"Library Story",level:story?story.level:assignLevel,passage:null,questions:null});
+      payload.storyId=assignStoryId;payload.topic=story?story.title:"Library Story";payload.level=story?story.level:assignLevel;payload.passage=null;payload.questions=null;
     } else if(assignType==="custom_text"){
       try{
         var rc=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"quiz_from_text",passage:assignCustomText.trim(),level:assignLevel,types:["mcq","gap_word","qa","tfnm"]})});
         var dc=await rc.json();
         if(!rc.ok||dc.error)throw new Error(dc.error||"Generation failed");
-        asgn=Object.assign({},base,{storyId:null,topic:dc.topic||"Custom Passage",level:assignLevel,passage:assignCustomText.trim(),questions:dc.questions});
+        payload.storyId=null;payload.topic=dc.topic||"Custom Passage";payload.passage=assignCustomText.trim();payload.questions=dc.questions;
       }catch(e){setAssignMsg("Quiz generation failed: "+e.message);setAssignLoading(false);return;}
     } else {
       try{
         var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({level:assignLevel,topic:assignTopic.trim(),types:["mcq","gap_word","qa","tfnm"]})});
         var d=await r.json();
         if(!r.ok||d.error)throw new Error(d.error||"Generation failed");
-        asgn=Object.assign({},base,{storyId:null,topic:assignTopic.trim(),level:assignLevel,passage:d.passage,questions:d.questions});
+        payload.storyId=null;payload.topic=assignTopic.trim();payload.passage=d.passage;payload.questions=d.questions;
       }catch(e){setAssignMsg("AI generation failed: "+e.message);setAssignLoading(false);return;}
     }
-    var updated=assignments.concat([asgn]);
-    setAssignments(updated);
+    var res=await classroomCall("createAssignment",payload);
+    if(!res.ok){setAssignMsg(res.data.error||"Couldn't save assignment. Try again.");setAssignLoading(false);return;}
+    setAssignments(asArray(res.data.assignments));
+    try{localStorage.setItem(ASSIGNMENTS_KEY,JSON.stringify(res.data.assignments));}catch(e){}
     setAssignStoryId("");setAssignTopic("");setAssignDue("");setAssignCustomText("");
     setAssignMsg("✓ Assignment created!");
     setAssignLoading(false);
-    await saveAssignmentsRemote(updated);
   }
 
   function doCompleteAssignment(asgnId,pct,xp,timeSecs){
     if(!currentUser)return;
-    // Compute outside setter so React strict-mode doesn't double-trigger the
-    // remote save, and so the save uses the same snapshot we render with.
-    var updated=assignments.map(function(a){
+    // Optimistic local update for instant UI, then persist via the endpoint,
+    // which writes only THIS student's completion child (race-free) and returns
+    // the reconciled list.
+    var optimistic=assignments.map(function(a){
       if(a.id!==asgnId)return a;
       var comps=Object.assign({},a.completions);
       comps[currentUser.name]={pct:pct,xp:xp,timeSecs:timeSecs,completedAt:new Date().toISOString()};
       return Object.assign({},a,{completions:comps});
     });
-    setAssignments(updated);
-    saveAssignmentsRemote(updated).catch(function(e){console.error("doCompleteAssignment save failed:",e);});
+    setAssignments(optimistic);
+    classroomCall("completeAssignment",{assignmentId:asgnId,pct:pct,xp:xp,timeSecs:timeSecs}).then(function(res){
+      if(res.ok&&res.data.assignments){
+        setAssignments(asArray(res.data.assignments));
+        try{localStorage.setItem(ASSIGNMENTS_KEY,JSON.stringify(res.data.assignments));}catch(e){}
+      }
+    }).catch(function(e){console.error("doCompleteAssignment save failed:",e);});
   }
 
   function doExportClassCSV(){
@@ -1972,29 +2005,25 @@ export default function App(){
   async function doPostAnnouncement(){
     if(!currentClass||!currentUser||!announcementText.trim())return;
     if(!isTeacherOf(currentClass))return;
-    var updated=classes.map(function(c){
-      if(c.id!==currentClass.id)return c;
-      return Object.assign({},c,{announcement:{text:announcementText.trim(),date:todayKey(),teacherName:currentUser.name}});
-    });
-    setClasses(updated);
-    var next=updated.find(function(c){return c.id===currentClass.id;});
-    if(next)setCurrentClass(next); // class was deleted in another tab — leave currentClass alone rather than nuking it
+    var res=await classroomCall("announce",{classId:currentClass.id,text:announcementText.trim()});
+    if(!res.ok){setAnnouncementMsg(res.data.error||"Couldn't post.");setTimeout(function(){setAnnouncementMsg("");},3000);return;}
+    setClasses(asArray(res.data.classes));
+    try{localStorage.setItem(CLASSES_KEY,JSON.stringify(res.data.classes));}catch(e){}
+    var next=asArray(res.data.classes).find(function(c){return c.id===currentClass.id;});
+    if(next)setCurrentClass(next);
     setAnnouncementText("");
     setAnnouncementMsg(t("tch_postedToast"));
     setTimeout(function(){setAnnouncementMsg("");},3000);
-    await saveClassesRemote(updated);
   }
 
   async function doClearAnnouncement(){
     if(!currentClass||!isTeacherOf(currentClass))return;
-    var updated=classes.map(function(c){
-      if(c.id!==currentClass.id)return c;
-      var n=Object.assign({},c);delete n.announcement;return n;
-    });
-    setClasses(updated);
-    var next=updated.find(function(c){return c.id===currentClass.id;});
+    var res=await classroomCall("clearAnnounce",{classId:currentClass.id});
+    if(!res.ok)return;
+    setClasses(asArray(res.data.classes));
+    try{localStorage.setItem(CLASSES_KEY,JSON.stringify(res.data.classes));}catch(e){}
+    var next=asArray(res.data.classes).find(function(c){return c.id===currentClass.id;});
     if(next)setCurrentClass(next);
-    await saveClassesRemote(updated);
   }
 
   function doFinishOnboarding(){
@@ -2007,11 +2036,12 @@ export default function App(){
 
   function doOnboardCreateClass(){
     if(!currentUser||!newClassName.trim())return;
-    var code=uniqueClassCode();
-    var cls={id:code,name:newClassName.trim(),teacherName:currentUser.name,students:[],created:todayKey(),announcement:null};
-    var updated=classes.concat([cls]);
-    setClasses(updated);setCurrentClass(cls);setNewClassName("");setOnboardClassCode(code);setOnboardStep(2);
-    saveClassesRemote(updated);
+    classroomCall("createClass",{name:newClassName.trim(),targetLevel:"B1"}).then(function(res){
+      if(!res.ok||!res.data.class)return;
+      setClasses(asArray(res.data.classes));
+      try{localStorage.setItem(CLASSES_KEY,JSON.stringify(res.data.classes));}catch(e){}
+      setCurrentClass(res.data.class);setNewClassName("");setOnboardClassCode(res.data.class.id);setOnboardStep(2);
+    });
   }
 
   function generateReportLink(sName){
