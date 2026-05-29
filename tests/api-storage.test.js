@@ -70,12 +70,12 @@ describe("api/storage.js", () => {
     const payload = JSON.stringify([{ name: "Bob" }]);
     const r = await runHandler(handler, {
       method: "POST",
-      body: { key: "rq-boards-v6", value: payload },
+      body: { key: "rq-favs-v1", value: payload },
     });
     expect(r.statusCode).toBe(200);
     expect(JSON.parse(r.body).ok).toBe(true);
     expect(fetch).toHaveBeenCalledWith(
-      "https://fake.firebaseio.com/rq/rq-boards-v6.json",
+      "https://fake.firebaseio.com/rq/rq-favs-v1.json",
       expect.objectContaining({ method: "PUT", body: payload })
     );
   });

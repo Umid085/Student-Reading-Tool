@@ -688,6 +688,30 @@ async function classroomCall(action,payload){
   }
   return res;
 }
+// Authenticated leaderboard + social-graph mutations. These three keys
+// (rq-boards-v6 / rq-weekly-v1 / rq-social-v6) are write-blocked in the storage
+// proxy; mutations go through this per-child compare-and-swap endpoint instead,
+// so a signed-in user can no longer clobber the whole board or write into other
+// users' nodes. Same Bearer + 401-refresh-retry pattern as classroomCall.
+// Returns {ok,status,data}.
+async function communityCall(action,payload){
+  var doFetch=async function(){
+    var hdrs={"Content-Type":"application/json"};
+    if(_sessionToken)hdrs["Authorization"]="Bearer "+_sessionToken;
+    var r=await fetch("/api/community?action="+encodeURIComponent(action),{method:"POST",headers:hdrs,body:JSON.stringify(payload||{})});
+    var d=null;try{d=await r.json();}catch(e){}
+    return{ok:r.ok,status:r.status,data:d||{}};
+  };
+  var res=await doFetch();
+  if(res.status===401){
+    var creds=null;try{creds=JSON.parse(localStorage.getItem(CREDS_KEY));}catch(e){}
+    if(creds&&creds.name&&(creds.refreshToken||creds.hash)){
+      await getSessionToken(creds.name,creds);
+      if(_sessionToken)res=await doFetch();
+    }
+  }
+  return res;
+}
 async function loadUsers(){
   try{
     var r=await fetch(USERS_API);
@@ -718,7 +742,9 @@ async function saveUsers(u){
   }
 }
 async function loadBoards(){try{var v=await apiGet(BOARDS_KEY);if(v)return v;}catch(e){}try{var lv=localStorage.getItem(BOARDS_KEY);return lv?JSON.parse(lv):{};}catch(e2){return {};}}
-async function saveBoards(b){try{localStorage.setItem(BOARDS_KEY,JSON.stringify(b));}catch(e){}try{await apiSet(BOARDS_KEY,b);}catch(e){console.warn("saveBoards failed:",e);}}
+// Local cache only — the authoritative remote write is the /api/community
+// submitScore action (the storage proxy now blocks BOARDS_KEY).
+async function saveBoards(b){try{localStorage.setItem(BOARDS_KEY,JSON.stringify(b));}catch(e){}}
 async function loadSocial(){
   var v=await apiGet(SOCIAL_KEY)||{};
   if(v._likes&&!v["!likes"]){v["!likes"]=v._likes;delete v._likes;}
@@ -735,7 +761,9 @@ async function loadSocial(){
   }
   return v;
 }
-async function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}try{await apiSet(SOCIAL_KEY,s);}catch(e){console.warn("saveSocial failed:",e);}}
+// Local cache + optimistic state only — the authoritative remote write is the
+// matching /api/community social action (the storage proxy now blocks SOCIAL_KEY).
+async function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}}
 async function loadVocab(){var v=await apiGet(VOCAB_KEY);return v||{};}
 async function saveVocab(v){await apiSet(VOCAB_KEY,v);}
 async function loadDaily(){var v=await apiGet(DAILY_KEY);return v||null;}
@@ -745,7 +773,9 @@ async function saveDailyLb(d){try{localStorage.setItem(DAILY_LB_KEY,JSON.stringi
 async function loadFavs(){var v=await apiGet(FAVS_KEY);return v||{};}
 async function saveFavs(v){await apiSet(FAVS_KEY,v);}
 async function loadWeeklyLb(){try{var v=await apiGet(WEEKLY_KEY);if(v)return v;}catch(e){}try{var lv=localStorage.getItem(WEEKLY_KEY);return lv?JSON.parse(lv):{};}catch(e2){return {};}}
-async function saveWeeklyLb(v){try{localStorage.setItem(WEEKLY_KEY,JSON.stringify(v));}catch(e){}try{await apiSet(WEEKLY_KEY,v);}catch(e){console.warn("saveWeeklyLb failed:",e);}}
+// Local cache only — the authoritative remote write is the /api/community
+// submitWeekly action (the storage proxy now blocks WEEKLY_KEY).
+async function saveWeeklyLb(v){try{localStorage.setItem(WEEKLY_KEY,JSON.stringify(v));}catch(e){}}
 async function loadDiscuss(){var v=await apiGet(DISCUSS_KEY);return v||{};}
 async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
 // Per-user daily quota. Server-managed counters in Firebase; the chip on
@@ -1274,6 +1304,7 @@ export default function App(){
   var [challengeLevel,setChallengeLevel]=useState("B1");
   var [challengeTypes,setChallengeTypes]=useState(["mcq","qa"]);
   var [activeChallengeIdx,setActiveChallengeIdx]=useState(null);
+  var [activeChallengeId,setActiveChallengeId]=useState(null); // challenge.id of the in-progress challenge (server resolves completion by id)
   var [activeChallengeFrom,setActiveChallengeFrom]=useState("");
   var [storyChallengeOpen,setStoryChallengeOpen]=useState(false);
   var [storyChallengeMsg,setStoryChallengeMsg]=useState("");
@@ -2089,25 +2120,34 @@ export default function App(){
     return social;
   }
 
+  // Each social action applies an optimistic local update (the pure do* helper +
+  // setSocial + saveSocial cache) AND persists through the authenticated
+  // /api/community endpoint, which does the per-child compare-and-swap write.
   async function sendRequest(to){
     if(!currentUser||to===currentUser.name)return;
     var r=doSendRequest(await freshSocial(),currentUser.name,to);
     if(!r.ok){setSocialMsg(r.err);return;}
+    var res=await communityCall("sendRequest",{to:to});
+    if(!res.ok||res.data.ok===false){setSocialMsg((res.data&&res.data.err)||t("stu_socialError"));return;}
     await saveSocial(r.social);setSocial(r.social);setSocialMsg(t("stu_socialRequestSent").replace("{name}",to));
   }
 
   async function acceptRequest(from){
     var n=doAcceptRequest(await freshSocial(),currentUser.name,from);
+    var res=await communityCall("acceptRequest",{from:from});
+    if(!res.ok){setSocialMsg(t("stu_socialError"));return;}
     await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialFriendsNow").replace("{name}",from));
   }
 
   async function declineRequest(from){
     var n=doDeclineRequest(await freshSocial(),currentUser.name,from);
+    await communityCall("declineRequest",{from:from});
     await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialDeclined"));
   }
 
   async function removeFriend(friend){
     var n=doRemoveFriend(await freshSocial(),currentUser.name,friend);
+    await communityCall("removeFriend",{friend:friend});
     await saveSocial(n);setSocial(n);setSocialMsg(t("stu_socialRemoved").replace("{name}",friend));
   }
 
@@ -2115,11 +2155,15 @@ export default function App(){
     if(!currentUser||target===currentUser.name)return;
     var r=doLikeProfile(await freshSocial(),currentUser.name,target);
     if(!r.ok){setSocialMsg(r.err);return;}
+    var res=await communityCall("likeProfile",{target:target});
+    if(!res.ok||res.data.ok===false){setSocialMsg((res.data&&res.data.err)||t("stu_socialError"));return;}
     await saveSocial(r.social);setSocial(r.social);setSocialMsg(t("stu_socialLiked").replace("{name}",target));
   }
 
   async function sendChallenge(){
     if(!challengeTarget||!currentUser)return;
+    var res=await communityCall("sendChallenge",{to:challengeTarget,level:challengeLevel,types:challengeTypes});
+    if(!res.ok){setSocialMsg(t("stu_socialError"));return;}
     var n=doSendChallenge(await freshSocial(),currentUser.name,challengeTarget,challengeLevel,challengeTypes);
     await saveSocial(n);setSocial(n);
     setSocialMsg(t("stu_socialChallengeSent").replace("{name}",challengeTarget));
@@ -2128,6 +2172,8 @@ export default function App(){
 
   async function sendStoryChallenge(friendName){
     if(!friendName||!currentUser||!result||!result.storyId)return;
+    var res=await communityCall("sendChallenge",{to:friendName,level:result.level||level,types:selectedTypes||["mcq","qa"],storyId:result.storyId,storyTitle:topic,senderPct:result.pct});
+    if(!res.ok)return;
     var n=doSendChallenge(await freshSocial(),currentUser.name,friendName,result.level||level,selectedTypes||["mcq","qa"],result.storyId,topic,result.pct);
     await saveSocial(n);setSocial(n);
     setStoryChallengeMsg("⚔️ Challenge sent to "+friendName+"!");
@@ -2145,9 +2191,11 @@ export default function App(){
       if(found!==-1)ri=found;
     }
     var n=doRespondChallenge(base,currentUser.name,ri,status);
+    if(challenge&&challenge.id)await communityCall("respondChallenge",{id:challenge.id,status:status});
     await saveSocial(n);setSocial(n);
     if(status==="accepted"&&challenge){
       setActiveChallengeIdx(idx);
+      setActiveChallengeId(challenge.id||null);
       setActiveChallengeFrom(challenge.from||"");
       setLevel(challenge.level);
       setSelectedTypes(challenge.types||["mcq","qa"]);
@@ -2541,12 +2589,14 @@ export default function App(){
       var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
       var nb=Object.assign({},boards);
       var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,100);
-      try{await saveBoards(nb);}catch(e){console.warn("saveBoards failed:",e);}
+      try{await saveBoards(nb);}catch(e){console.warn("saveBoards cache failed:",e);}
       setBoards(nb);
+      // Authoritative remote write (per-level CAS) via /api/community.
+      try{await communityCall("submitScore",{level:lvObj.key,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic});}catch(e){console.warn("submitScore failed:",e);}
 
       if(activeChallengeIdx!==null&&activeChallengeFrom&&currentUser){
-        try{var nc=doCompleteChallenge(await freshSocial(),currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});await saveSocial(nc);setSocial(nc);}catch(e){console.warn("saveSocial failed:",e);}
-        setActiveChallengeIdx(null);setActiveChallengeFrom("");
+        try{var nc=doCompleteChallenge(await freshSocial(),currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});await saveSocial(nc);setSocial(nc);if(activeChallengeId)await communityCall("completeChallenge",{id:activeChallengeId,result:{pct:pct,xp:finalXp,timeSecs:timeSecs}});}catch(e){console.warn("completeChallenge failed:",e);}
+        setActiveChallengeIdx(null);setActiveChallengeId(null);setActiveChallengeFrom("");
       }
 
       var wasDaily=isDailyGame;
@@ -2559,7 +2609,7 @@ export default function App(){
       }
 
       var wk=getWeekId();
-      try{var wlb=await loadWeeklyLb();var wToday=(wlb&&wlb[wk])||[];var wExisting=wToday.find(function(e){return e.name===currentUser.name;});var wEntry=wExisting?{name:wExisting.name,xp:wExisting.xp+finalXp,games:(wExisting.games||0)+1}:{name:currentUser.name,xp:finalXp,games:1};var wFiltered=wToday.filter(function(e){return e.name!==currentUser.name;});var wMerged=wFiltered.concat([wEntry]);wMerged.sort(function(a,b){return b.xp-a.xp;});var nwlb={};for(var wk2 in wlb)nwlb[wk2]=wlb[wk2];nwlb[wk]=wMerged.slice(0,30);saveWeeklyLb(nwlb);setWeeklyLb(wMerged.slice(0,30));}catch(e){console.warn("weeklyLb failed:",e);}
+      try{var wlb=await loadWeeklyLb();var wToday=(wlb&&wlb[wk])||[];var wExisting=wToday.find(function(e){return e.name===currentUser.name;});var wEntry=wExisting?{name:wExisting.name,xp:wExisting.xp+finalXp,games:(wExisting.games||0)+1}:{name:currentUser.name,xp:finalXp,games:1};var wFiltered=wToday.filter(function(e){return e.name!==currentUser.name;});var wMerged=wFiltered.concat([wEntry]);wMerged.sort(function(a,b){return b.xp-a.xp;});var nwlb={};for(var wk2 in wlb)nwlb[wk2]=wlb[wk2];nwlb[wk]=wMerged.slice(0,30);saveWeeklyLb(nwlb);communityCall("submitWeekly",{xp:finalXp});setWeeklyLb(wMerged.slice(0,30));}catch(e){console.warn("weeklyLb failed:",e);}
 
       var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
       if(newQuestItems.length>0){
@@ -2939,6 +2989,8 @@ export default function App(){
       var tEntry=Object.assign({},nSocial[teacherName]||{});
       tEntry.subscribers=Array.from(new Set((tEntry.subscribers||[]).concat([currentUser.name])));
       nSocial[teacherName]=tEntry;
+      var res=await communityCall("subscribe",{teacher:teacherName});
+      if(!res.ok){setSubscribeMsg("✗ Couldn't subscribe");return;}
       setSocial(nSocial);await saveSocial(nSocial);
       setSubscribeMsg("✓ Subscribed");
       try{track("teacher_subscribed",{teacher:teacherName});}catch(e){}
@@ -3095,6 +3147,7 @@ export default function App(){
     var tEntry=Object.assign({},nSocial[teacherName]||{});
     tEntry.subscribers=(tEntry.subscribers||[]).filter(function(n){return n!==currentUser.name;});
     nSocial[teacherName]=tEntry;
+    await communityCall("unsubscribe",{teacher:teacherName});
     setSocial(nSocial);await saveSocial(nSocial);
     setSubscribeMsg("Unsubscribed");
   }
@@ -6307,7 +6360,7 @@ export default function App(){
                 <header className="lq-read-topbar">
                   <button type="button" className="lq-r-btn lq-r-exit" onClick={function(){setStage("home");}} aria-label="Exit reading">
                     <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                    <span className="lq-r-exit-lbl">Exit</span>
+                    <span className="lq-r-exit-lbl">{t("readingExitLbl")}</span>
                   </button>
                   <h1 className="lq-r-title">Reading Quest</h1>
                   {currentStoryId&&<button type="button" className={"lq-r-btn"+(isFav?" is-fav":"")} onClick={function(){toggleFav(currentStoryId,topic,level);}} aria-label="Favorite">
@@ -6348,7 +6401,7 @@ export default function App(){
                     {activeSentence!==null?<SentencePassage/>:<WordTokens/>}
                   </article>
 
-                  <p className="lq-read-foot-hint">{activeSentence!==null?"Tap a sentence to listen":hlMode?"Highlight mode: tap to mark words":"Tap any word to look it up"}</p>
+                  <p className="lq-read-foot-hint">{activeSentence!==null?t("readingHintListen"):hlMode?t("readingHintHighlight"):t("readingHintLookup")}</p>
 
                   {activeSentence&&(
                     <div className="lq-panel" style={{borderColor:"rgba(99,102,241,0.35)",background:"rgba(99,102,241,0.07)"}}>
@@ -6358,7 +6411,7 @@ export default function App(){
                       </div>
                       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
                         <button type="button" className="lq-mini-btn is-on" onClick={function(){translateSentence(activeSentence);}}>{translating?"…":"🌐 Translate"}</button>
-                        <button type="button" className={"lq-mini-btn"+(quotesSaved?" is-amber":"")} onClick={function(){saveSentenceQuote(activeSentence);}} title="Save to Quote Book">{quotesSaved?"✓ Saved":"🔖 Save"}</button>
+                        <button type="button" className={"lq-mini-btn"+(quotesSaved?" is-amber":"")} onClick={function(){saveSentenceQuote(activeSentence);}} title="Save to Quote Book">{quotesSaved?t("readingSaved"):t("readingSave")}</button>
                         <select className="lq-trans-select" value={translateLang} onChange={function(e){setTranslateLang(e.target.value);try{localStorage.setItem("rq-translate-lang",e.target.value);}catch(ex){}}}>
                           <option value="uz">Uzbek</option><option value="ru">Russian</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="de">German</option>
                         </select>
@@ -6406,7 +6459,7 @@ export default function App(){
                         <p className="lq-pron-h">🎤 Pronunciation Check</p>
                         {!pronSentence?(
                           <>
-                            <p style={{fontSize:12,color:"rgba(227,224,244,0.55)",margin:"0 0 10px"}}>Tap a sentence to practise:</p>
+                            <p style={{fontSize:12,color:"rgba(227,224,244,0.55)",margin:"0 0 10px"}}>{t("readingHintPractise")}</p>
                             <div style={{display:"flex",flexDirection:"column",gap:6}}>
                               {sentences.map(function(s,i){return<button key={i} type="button" className="lq-pron-sent" onClick={function(){setPronSentence(s);setPronResult(null);}}>{s}</button>;})}
                             </div>
@@ -6466,7 +6519,7 @@ export default function App(){
                     }}>⚡ RSVP</button>
                     {(function(){
                       var srSupported=typeof window!=="undefined"&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
-                      return<button type="button" disabled={!srSupported} title={srSupported?undefined:"Speech recognition isn't supported here"} className={"lq-mini-btn"+(pronMode?" is-on":"")} onClick={function(){if(!srSupported)return;setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={!srSupported?{opacity:0.5,cursor:"not-allowed"}:{}}>🎤 {pronMode?"Exit":"Pronounce"}</button>;
+                      return<button type="button" disabled={!srSupported} title={srSupported?undefined:"Speech recognition isn't supported here"} className={"lq-mini-btn"+(pronMode?" is-on":"")} onClick={function(){if(!srSupported)return;setPronMode(function(p){return!p;});setPronSentence("");setPronResult(null);setPronRecording(false);}} style={!srSupported?{opacity:0.5,cursor:"not-allowed"}:{}}>{pronMode?t("readingPronExit"):t("readingPronounce")}</button>;
                     })()}
                   </div>
 
@@ -6617,7 +6670,7 @@ export default function App(){
               `}</style>
               <div className="lq-quiz-wrap">
                 <header className="lq-quiz-top">
-                  <button type="button" className="ico-btn" onClick={function(){if(confirm("Exit quiz? Progress will be lost."))doRestart();}} aria-label="Exit">
+                  <button type="button" className="ico-btn" onClick={function(){if(confirm(t("quizExitConfirm")))doRestart();}} aria-label="Exit">
                     <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                   </button>
                   <div className="lq-quiz-counter">Question {current+1} <span className="total">/ {questions.length}</span></div>
@@ -6775,7 +6828,7 @@ export default function App(){
                 {result.leveledUp&&(
                   <div className="rq-pop" style={{margin:"0 0 12px",padding:"14px 16px",borderRadius:14,background:"linear-gradient(135deg,rgba(52,211,153,0.14),rgba(167,139,250,0.08))",border:"1px solid rgba(52,211,153,0.5)",textAlign:"center"}}>
                     <div style={{fontSize:28,lineHeight:1,marginBottom:4}}>🎖️</div>
-                    <div style={{fontSize:14,fontWeight:800,color:"#5af0b3",letterSpacing:"0.03em",textTransform:"uppercase"}}>LEVEL {result.newAppLevel} UNLOCKED</div>
+                    <div style={{fontSize:14,fontWeight:800,color:"#5af0b3",letterSpacing:"0.03em",textTransform:"uppercase"}}>{t("resultLevelUnlocked").replace("{n}",result.newAppLevel)}</div>
                   </div>
                 )}
                 <div className="lq-res-score-card">
@@ -6784,10 +6837,10 @@ export default function App(){
                   <div className="lq-res-stars">{"⭐".repeat(result.stars)+"☆".repeat(5-result.stars)}</div>
                   <div className="lq-res-stat-grid">
                     {[
-                      {v:"+"+result.xp,l:"XP earned",c:rsLvColor},
-                      {v:result.pct+"%",l:"Accuracy",c:rsPctColor},
-                      {v:formatTime(result.timeSecs),l:"Time",c:"#a78bfa"},
-                      {v:"#"+(result.rank+1),l:"Rank",c:"#fbbf24"},
+                      {v:"+"+result.xp,l:t("resultXpEarned"),c:rsLvColor},
+                      {v:result.pct+"%",l:t("resultAccuracy"),c:rsPctColor},
+                      {v:formatTime(result.timeSecs),l:t("resultTime"),c:"#a78bfa"},
+                      {v:"#"+(result.rank+1),l:t("resultRank"),c:"#fbbf24"},
                       (result.wpm>0?{v:result.wpm,l:"WPM",c:"#5af0b3"}:null)
                     ].filter(Boolean).map(function(s){return<div key={s.l} className="lq-res-stat"><div className="lq-res-stat-v" style={{color:s.c}}>{s.v}</div><div className="lq-res-stat-l">{s.l}</div></div>;})}
                   </div>
@@ -7092,22 +7145,22 @@ export default function App(){
                   </div>
                 )}
                 {rq2.type==="qa"&&(
-                  <textarea value={reviewAns||""} onChange={function(e){if(!reviewConfirmed)setReviewAns(e.target.value);}} disabled={reviewConfirmed} placeholder="Type your answer…" style={{width:"100%",minHeight:70,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:13,padding:"9px 12px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+                  <textarea value={reviewAns||""} onChange={function(e){if(!reviewConfirmed)setReviewAns(e.target.value);}} disabled={reviewConfirmed} placeholder={t("reviewTypeAnswer")} style={{width:"100%",minHeight:70,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:13,padding:"9px 12px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
                 )}
                 {reviewConfirmed&&rq2.explanation&&(
                   <div style={{marginTop:10,padding:"9px 12px",borderRadius:10,background:isCorrect?"rgba(52,211,153,0.08)":"rgba(239,68,68,0.08)",border:"1px solid "+(isCorrect?"rgba(52,211,153,0.3)":"rgba(239,68,68,0.3)")}}>
-                    <div style={{fontSize:12,fontWeight:700,color:isCorrect?"#34d399":"#f87171",marginBottom:3}}>{isCorrect?"✓ Correct!":"✗ Incorrect"}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:isCorrect?"#34d399":"#f87171",marginBottom:3}}>{isCorrect?t("reviewCorrectFull"):t("reviewIncorrectFull")}</div>
                     <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>{rq2.explanation}</div>
                   </div>
                 )}
               </div>
               {!reviewConfirmed?(
-                <button onClick={function(){setReviewConfirmed(true);}} disabled={reviewAns===null} style={{...mkBtn(reviewAns!==null?"#a855f7":"#374151","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800}}>Check Answer</button>
+                <button onClick={function(){setReviewConfirmed(true);}} disabled={reviewAns===null} style={{...mkBtn(reviewAns!==null?"#a855f7":"#374151","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800}}>{t("reviewCheckAnswer")}</button>
               ):(
-                <button onClick={function(){advanceReview(isCorrect);}} style={{...mkBtn(isCorrect?"#34d399":"#6366f1","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800}}>{isCorrect?"Next →":"Got it — Next →"}</button>
+                <button onClick={function(){advanceReview(isCorrect);}} style={{...mkBtn(isCorrect?"#34d399":"#6366f1","#0d0d1a"),width:"100%",padding:"12px",fontSize:14,fontWeight:800}}>{isCorrect?t("reviewNextCorrect"):t("reviewNextIncorrect")}</button>
               )}
               <div style={{marginTop:8,textAlign:"center",fontSize:11,color:"#4b5563"}}>
-                {(item.srInterval||0)===0?"Next review: tomorrow":("Next review in "+(SRS_INTERVALS[Math.min((item.srInterval||0)+1,SRS_INTERVALS.length-1)])+"d if correct")}
+                {(item.srInterval||0)===0?t("reviewNextTomorrow"):t("reviewNextInDays").replace("{d}",SRS_INTERVALS[Math.min((item.srInterval||0)+1,SRS_INTERVALS.length-1)])}
               </div>
             </div>
           );
