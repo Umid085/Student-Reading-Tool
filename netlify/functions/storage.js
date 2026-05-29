@@ -11,7 +11,12 @@ const ALLOWED_KEYS = /^rq-[a-z0-9_-]{1,60}$/;
 const MAX_VALUE_BYTES = 512 * 1024; // 512 KB
 // Credentials must never flow through the public storage endpoint
 const READ_BLOCKED = new Set(["rq-users-v6", "rq-auth-v6"]);
-const WRITE_BLOCKED = new Set(["rq-auth-v6"]);
+// rq-classes-v1 / rq-assignments-v1 are mutated only via the authenticated
+// /api/classroom router (ownership-checked, per-child / ETag-CAS writes).
+// Blocking them here closes the authorization hole where any signed-in user
+// could overwrite the whole class/assignment list through this generic proxy.
+// Reads stay open (the lists aren't secret).
+const WRITE_BLOCKED = new Set(["rq-auth-v6", "rq-classes-v1", "rq-assignments-v1"]);
 
 function validateToken(token, secret) {
   if (!token || !secret) return false;
