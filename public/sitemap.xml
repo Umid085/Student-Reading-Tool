@@ -101,4 +101,10 @@
   <url><loc>https://student-reading-tool.vercel.app/learn/c1-ingilizce-tr/</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://student-reading-tool.vercel.app/learn/c2-ingilizce-tr/</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
 
+  <!-- Level-specific landing pages: Russian A1-B2 (C1/C2 deferred) -->
+  <url><loc>https://student-reading-tool.vercel.app/learn/a1-anglijskij-ru/</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://student-reading-tool.vercel.app/learn/a2-anglijskij-ru/</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://student-reading-tool.vercel.app/learn/b1-anglijskij-ru/</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://student-reading-tool.vercel.app/learn/b2-anglijskij-ru/</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
 </urlset>
