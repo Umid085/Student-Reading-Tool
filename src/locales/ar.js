@@ -25,7 +25,7 @@ export default {
     welcomeTagline:"تعلم الإنجليزية مع الذكاء الاصطناعي",
     welcomeSubhead:"قراءة CEFR مجانية + اختبارات الذكاء الاصطناعي. 5 دقائق يوميا، حسب مستواك وموضوعك.",
     welcomeCtaPrimary:"ابدأ — مجانا",
-    welcomeCtaDemo:"جرّب العرض 2 دقيقة",
+    welcomeCtaDemo:"عرض دقيقتين",
     welcomeNoSignup:"لا حاجة للتسجيل",
     samplePreviewLabel:"معاينة سريعة",
     authTagline:"6 أنواع أسئلة · أصدقاء · منافسة",

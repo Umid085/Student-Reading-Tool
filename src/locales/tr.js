@@ -26,7 +26,7 @@ export default {
     welcomeTagline:"Yapay zeka ile İngilizce öğren",
     welcomeSubhead:"Ücretsiz CEFR okuma + AI sınavları. Günde 5 dakika, seviyene göre, konuna göre.",
     welcomeCtaPrimary:"Başla — Ücretsiz",
-    welcomeCtaDemo:"2 dk Demo Dene",
+    welcomeCtaDemo:"2 dk demo",
     welcomeNoSignup:"Kayıt gerekmez",
     samplePreviewLabel:"Hızlı Örnek",
     authTagline:"6 Soru Türü · Arkadaşlar · Yarış",

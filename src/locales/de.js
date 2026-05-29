@@ -25,7 +25,7 @@ export default {
     welcomeTagline:"Englisch mit KI lernen",
     welcomeSubhead:"Kostenloses CEFR-Lesen + KI-Quiz. 5 Minuten täglich, dein Niveau, dein Thema.",
     welcomeCtaPrimary:"Loslegen — Kostenlos",
-    welcomeCtaDemo:"2-Min-Demo testen",
+    welcomeCtaDemo:"2-Min-Demo",
     welcomeNoSignup:"Keine Anmeldung nötig",
     samplePreviewLabel:"Kurze Vorschau",
     authTagline:"6 Fragetypen · Freunde · Wettkampf",

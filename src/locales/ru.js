@@ -25,7 +25,7 @@ export default {
     welcomeTagline:"Учи английский с ИИ",
     welcomeSubhead:"Бесплатное чтение CEFR + ИИ-викторины. 5 минут в день, твой уровень, твоя тема.",
     welcomeCtaPrimary:"Начать — бесплатно",
-    welcomeCtaDemo:"Попробовать демо 2 мин",
+    welcomeCtaDemo:"Демо 2 мин",
     welcomeNoSignup:"Регистрация не нужна",
     samplePreviewLabel:"Быстрый пример",
     authTagline:"6 типов вопросов · Друзья · Соревнование",
