@@ -3877,13 +3877,25 @@ export default function App(){
         {!isOnline&&<div style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"9px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#f87171",fontWeight:600}}>📡 You're offline — reading the library still works!</div>}
 
         {/* ── PWA INSTALL BANNER ───────────────────────────── */}
-        {installPrompt&&<div style={{background:"rgba(99,102,241,0.12)",border:"1px solid rgba(99,102,241,0.35)",borderRadius:10,padding:"9px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}}>
-          <span style={{fontSize:12,color:"#a78bfa",fontWeight:600}}>📲 Install Reading Quest as an app</span>
-          <div style={{display:"flex",gap:6,flexShrink:0}}>
-            <button onClick={async function(){var r=await installPrompt.prompt();if(r&&r.outcome==="accepted")setInstallPrompt(null);}} style={{...mkBtn("#6366f1"),padding:"5px 12px",fontSize:11}}>Install</button>
-            <button onClick={function(){setInstallPrompt(null);}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:14,cursor:"pointer"}}>✕</button>
-          </div>
-        </div>}
+        {/* Phase 4 — only surface the install prompt after the user has
+            actually used the app: never on welcome/auth (first impression
+            must stay CTA-dominant), never for accounts with 0 games, and
+            never after they've dismissed it once (persisted across visits). */}
+        {(function(){
+          if(!installPrompt)return null;
+          if(stage==="welcome"||stage==="auth")return null;
+          if(!currentUser||!Array.isArray(currentUser.games)||currentUser.games.length<1)return null;
+          try{if(localStorage.getItem("rq-install-dismissed")==="1")return null;}catch(e){}
+          return(
+            <div style={{background:"rgba(99,102,241,0.12)",border:"1px solid rgba(99,102,241,0.35)",borderRadius:10,padding:"9px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}}>
+              <span style={{fontSize:12,color:"#a78bfa",fontWeight:600}}>📲 Install Reading Quest as an app</span>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                <button onClick={async function(){var r=await installPrompt.prompt();if(r&&r.outcome==="accepted")setInstallPrompt(null);}} style={{...mkBtn("#6366f1"),padding:"5px 12px",fontSize:11}}>Install</button>
+                <button onClick={function(){setInstallPrompt(null);try{localStorage.setItem("rq-install-dismissed","1");}catch(e){}}} style={{background:"transparent",border:"none",color:"#6b7280",fontSize:14,cursor:"pointer"}}>✕</button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── PLACEMENT TEST MODAL ─────────────────────────── */}
         {showPlacement&&(
