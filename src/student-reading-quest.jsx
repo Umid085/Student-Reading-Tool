@@ -4230,6 +4230,9 @@ export default function App(){
               .wc-footer-about{font-family:'Inter',sans-serif;font-size:11px;color:rgba(227,224,244,0.35);margin:0 0 14px;letter-spacing:0.04em}
               .wc-login-link{background:none;border:none;color:#5af0b3;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;padding:8px 14px;text-decoration:underline}
               .wc-login-link:hover{color:#7df5c7}
+              .wc-learn{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;margin:18px 0 2px}
+              .wc-learn a{color:rgba(227,224,244,0.5);font-family:'Inter',sans-serif;font-size:12px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.12);padding-bottom:1px}
+              .wc-learn a:hover{color:#7df5c7;border-color:#7df5c7}
             `}</style>
             <div className="wc-wrap">
               <h1 className="wc-brand">Reading Quest</h1>
@@ -4288,6 +4291,14 @@ export default function App(){
               <div className="wc-footer">
                 <p className="wc-footer-about">{t("welcomeFooterAbout")}</p>
                 <button type="button" className="wc-login-link" onClick={function(){try{track("welcome_cta_login");}catch(e){}setAuthMode("login");setStage("auth");}}>{t("welcomeAlreadyAccount")}</button>
+                {/* Real crawlable anchors into the static /learn/ SEO landing
+                    pages — gives Google an internal-link path from the rendered
+                    homepage to the localized pages (was sitemap-only before). */}
+                <nav className="wc-learn" aria-label="Learn English by language">
+                  <a href="/learn/ingilizce-okuma-tr/" hrefLang="tr">Türkçe</a>
+                  <a href="/learn/anglijskij-cefr-ru/" hrefLang="ru">Русский</a>
+                  <a href="/learn/ingliz-tili-okish-uz/" hrefLang="uz">Oʻzbek</a>
+                </nav>
               </div>
             </div>
           </>
