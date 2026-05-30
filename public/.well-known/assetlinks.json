@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.student_reading_tool.twa",
+        "sha256_cert_fingerprints": ["21:96:EA:4C:65:0B:87:13:86:97:BD:1F:97:F5:2D:68:57:85:39:FD:21:EA:F5:D2:D8:A0:77:9A:43:1E:8B:9E"]
+      }
+    }]
