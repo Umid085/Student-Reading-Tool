@@ -1760,14 +1760,7 @@ export default function App(){
     };
   },[]);
 
-  // Placement test: show once for new users with no games
-  useEffect(function(){
-    if(!currentUser)return;
-    var done=false;try{done=!!localStorage.getItem("rq-placement-done-"+currentUser.name);}catch(e){}
-    if(!done&&(!currentUser.games||currentUser.games.length===0)){
-      setShowPlacement(true);
-    }
-  },[currentUser]);
+  // Placement test auto-popup removed — it must never pop up for new users.
 
   // F4 — load existing push subscription state when the settings stage opens.
   useEffect(function(){
@@ -5604,7 +5597,7 @@ export default function App(){
           var todayGamesHome=(currentUser.games||[]).filter(function(g){return g.date===today;});
           var doneCountHome=dailyQuests.filter(function(q){return questsDone[q.id];}).length;
           var allDoneHome=dailyQuests.length>0&&dailyQuests.every(function(q){return questsDone[q.id]||checkQuest(q.id,todayGamesHome,vocab.length,{dailyDone:dailyDoneTodayHome,streak:myStreak});});
-          var showPmtPrompt=(currentUser.games||[]).length===0&&!localStorage.getItem("rq-pmt-"+currentUser.name);
+          var showPmtPrompt=false; // placement-test prompt removed — must not appear
           var myClassBanner=myClasses4[0]||null;
           // Pick top 2 quick actions from highest-priority items
           var quickActions=[];
