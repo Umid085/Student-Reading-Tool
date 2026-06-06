@@ -108,6 +108,8 @@ export default {
     shareResultTitle:"Share my result",
     shareResultText:"I just scored {pct}% on a {level} Reading Quest quiz! Try it free:",
     shareCopied:"Copied to clipboard!",
+    inviteFriends:"Invite friends",
+    inviteShareText:"I'm learning English with Reading Quest — free AI reading passages and quizzes for your level. Join me:",
     playToday:"Play today",keepStreak:"Keep {n}-day streak",startYourStreak:"Start your streak",saveStreak:"Save Streak",useShield:"Use shield",reviewLabel:"Review",missedQuestion:"missed question",missedQuestions:"missed questions",vocabReview:"Vocab review",wordsLabel:"words",wordLabel:"word",
     library:"Library",
     profile:"Profile",

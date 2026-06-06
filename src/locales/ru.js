@@ -108,6 +108,8 @@ export default {
     shareResultTitle:"Поделиться результатом",
     shareResultText:"Я набрал {pct}% в тесте Reading Quest уровня {level}! Попробуй бесплатно:",
     shareCopied:"Скопировано!",
+    inviteFriends:"Пригласить друзей",
+    inviteShareText:"Я учу английский с Reading Quest — бесплатные тексты и тесты от ИИ под твой уровень. Присоединяйся:",
     playToday:"Играть",keepStreak:"Серия {n} дней",startYourStreak:"Начать серию",saveStreak:"Спасти серию",useShield:"Использовать щит",reviewLabel:"Повтор",missedQuestion:"пропущенный вопрос",missedQuestions:"пропущенных вопросов",vocabReview:"Повтор слов",wordsLabel:"слов",wordLabel:"слово",
     library:"Библиотека",
     profile:"Профиль",
