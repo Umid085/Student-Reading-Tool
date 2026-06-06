@@ -3366,7 +3366,7 @@ export default function App(){
   // ── social share ──────────────────────────────────────────
   function doShare(){
     var lvKey=result.level||level;
-    var inviteUrl="https://student-reading-tool.vercel.app/welcome";
+    var inviteUrl="https://student-reading-tool.vercel.app/welcome?utm_source=share&utm_medium=referral&utm_campaign=result";
     var shareText=(t("shareResultText")||"I just scored {pct}% on a {level} Reading Quest quiz! Try it free:").replace("{pct}",result.pct).replace("{level}",lvKey);
     var shareBody=shareText+" "+inviteUrl;
     try{track("share_attempt",{pct:result.pct,level:lvKey,hasNativeShare:!!navigator.share});}catch(e){}
@@ -3438,6 +3438,31 @@ export default function App(){
         }
       },"image/png");
     }catch(e){console.error("share failed",e);}
+  }
+
+  // Invite/word-of-mouth share (home screen). Telegram is our main acquisition
+  // channel, so the link carries a UTM tag to make those shares attributable in
+  // PostHog (otherwise they land as $direct). Uses the native share sheet where
+  // available (mobile / in-app browsers), falls back to clipboard.
+  function inviteFriends(from){
+    var url="https://student-reading-tool.vercel.app/welcome?utm_source=share&utm_medium=referral&utm_campaign=invite";
+    var text=t("inviteShareText");
+    var body=text+" "+url;
+    function copyInvite(){
+      try{
+        navigator.clipboard.writeText(body).then(function(){
+          setShareToast(t("shareCopied"));
+          try{track("invite_share_copied",{from:from||"home"});}catch(e){}
+          setTimeout(function(){setShareToast("");},2200);
+        }).catch(function(){});
+      }catch(e){}
+    }
+    try{track("invite_share_attempt",{from:from||"home",hasNativeShare:!!navigator.share});}catch(e){}
+    if(navigator.share){
+      navigator.share({title:"Reading Quest",text:text,url:url}).then(function(){try{track("invite_share_native",{from:from||"home"});}catch(e){}}).catch(function(){copyInvite();});
+    }else{
+      copyInvite();
+    }
   }
 
   function selectRandomTheme(){
@@ -5915,6 +5940,17 @@ export default function App(){
                     </div>
                   </div>
                 )}
+
+                <div className="lq-banner" style={{borderColor:"rgba(90,240,179,0.35)",background:"rgba(90,240,179,0.05)"}}>
+                  <div className="ico">💚</div>
+                  <div className="meta">
+                    <p className="lq-banner-t" style={{color:"#5af0b3",fontSize:14}}>{t("inviteFriends")}</p>
+                    <p className="lq-banner-d">{t("inviteShareText")}</p>
+                    <div className="lq-banner-action">
+                      <button type="button" onClick={function(){inviteFriends("home");}} className="lq-ghost-btn" style={{background:"#5af0b3",color:"#0d0d1a",border:"none"}}>📤 {t("inviteFriends")}</button>
+                    </div>
+                  </div>
+                </div>
 
                 {(liveChallenges.length>0||completedSentChallenges.length>0)&&(
                   <div className="lq-card-glass" style={{borderColor:"rgba(245,158,11,0.35)",background:"rgba(245,158,11,0.04)"}}>

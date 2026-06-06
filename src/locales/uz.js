@@ -108,6 +108,8 @@ export default {
     shareResultTitle:"Natijani ulashish",
     shareResultText:"Men {level} Reading Quest testida {pct}% oldim! Bepul sinab ko'r:",
     shareCopied:"Nusxalandi!",
+    inviteFriends:"Do'stlarni taklif qilish",
+    inviteShareText:"Men Reading Quest bilan ingliz tilini o'rganyapman — darajangizga mos bepul AI matnlar va testlar. Qo'shiling:",
     playToday:"Bugun o'yna",keepStreak:"{n}-kunlik seriyani saqla",startYourStreak:"Seriyani boshla",saveStreak:"Seriyani saqla",useShield:"Qalqondan foydalan",reviewLabel:"Takrorlash",missedQuestion:"qoldirilgan savol",missedQuestions:"qoldirilgan savol",vocabReview:"So'z takrori",wordsLabel:"so'z",wordLabel:"so'z",
     library:"Kutubxona",
     profile:"Profil",
