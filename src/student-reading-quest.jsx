@@ -3,7 +3,7 @@ import { track, identify, resetIdentity, setSuperProps } from "./observability";
 import { pickFriendNudge, pickResultNudge } from "./friendNudge";
 import { STORY_LIBRARY } from "./storyLibrary";
 import { STRINGS, loadLocale } from "./locales";
-import { firebaseReady, signInWithProvider, initAnalytics } from "./firebase";
+import { firebaseReady, signInWithProvider, getPendingRedirectToken, initAnalytics } from "./firebase";
 
 var API        = "/api/generate";
 var AUTH       = "/api/auth";
@@ -1850,20 +1850,29 @@ export default function App(){
     track("user_login",{method:"oauth"});
   }
 
+  // Exchange a Firebase ID token for our own session tokens. Shared by the
+  // popup path (doSocialLogin) and the redirect-return path (mount effect).
+  async function exchangeOAuthCredential(idToken,provider){
+    var r=await fetch(OAUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:idToken})});
+    var d=await r.json();
+    if(r.status===429){try{track("oauth_failed",{provider:provider,reason:"rate_limited"});}catch(e){}setAuthErr(t("stu_authTooManyAttempts"));return;}
+    if(!r.ok){try{track("oauth_failed",{provider:provider,reason:"server_"+r.status});}catch(e){}setAuthErr((d&&d.error)||t("stu_authServerError"));return;}
+    if(d.needsUsername){try{track("oauth_username_required",{provider:provider});}catch(e){}setOauthPending({credential:idToken,suggestedName:d.suggestedName||"",email:d.email||"",provider:provider});setOauthUsername(d.suggestedName||"");return;}
+    if(d.token){try{track("oauth_login_completed",{provider:provider});}catch(e){}await finishOAuthLogin(d);return;}
+    try{track("oauth_failed",{provider:provider,reason:"empty_response"});}catch(e){}
+    setAuthErr(t("stu_authServerError"));
+  }
+
   async function doSocialLogin(provider){
     if(oauthBusy)return;
     setAuthErr("");setOauthBusy(true);
     try{track("oauth_started",{provider:provider});}catch(e){}
     try{
-      var idToken=await signInWithProvider(provider);
-      var r=await fetch(OAUTH,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential:idToken})});
-      var d=await r.json();
-      if(r.status===429){try{track("oauth_failed",{provider:provider,reason:"rate_limited"});}catch(e){}setAuthErr(t("stu_authTooManyAttempts"));return;}
-      if(!r.ok){try{track("oauth_failed",{provider:provider,reason:"server_"+r.status});}catch(e){}setAuthErr((d&&d.error)||t("stu_authServerError"));return;}
-      if(d.needsUsername){try{track("oauth_username_required",{provider:provider});}catch(e){}setOauthPending({credential:idToken,suggestedName:d.suggestedName||"",email:d.email||"",provider:provider});setOauthUsername(d.suggestedName||"");return;}
-      if(d.token){try{track("oauth_login_completed",{provider:provider});}catch(e){}await finishOAuthLogin(d);return;}
-      try{track("oauth_failed",{provider:provider,reason:"empty_response"});}catch(e){}
-      setAuthErr(t("stu_authServerError"));
+      var res=await signInWithProvider(provider);
+      // Popup was blocked (e.g. Telegram in-app browser) → page is navigating to
+      // the provider; we'll finish on the redirect-return effect below.
+      if(res&&res.redirecting)return;
+      await exchangeOAuthCredential(res.idToken,provider);
     }catch(e){
       // signInWithPopup throws auth/popup-closed-by-user when the user bails —
       // that's not an error worth shouting about.
@@ -1894,6 +1903,26 @@ export default function App(){
     }catch(e){try{track("oauth_failed",{provider:prov,reason:"exception"});}catch(e2){}setAuthErr(t("stu_authServerError"));}
     finally{setOauthBusy(false);}
   }
+
+  // Finish a redirect-based social sign-in (popup-blocked fallback). Runs once on
+  // mount: if we're returning from signInWithRedirect, resolve the result and run
+  // the same server exchange as the popup path.
+  useEffect(function(){
+    var cancelled=false;
+    (async function(){
+      try{
+        var pend=await getPendingRedirectToken();
+        if(cancelled||!pend||!pend.idToken)return;
+        try{track("oauth_started",{provider:pend.provider,via:"redirect"});}catch(e){}
+        setOauthBusy(true);
+        try{await exchangeOAuthCredential(pend.idToken,pend.provider);}
+        finally{if(!cancelled)setOauthBusy(false);}
+      }catch(e){
+        try{track("oauth_failed",{provider:"redirect",reason:(e&&e.code)?String(e.code):"redirect_result"});}catch(e2){}
+      }
+    })();
+    return function(){cancelled=true;};
+  },[]);
 
   // ── teacher class actions ───────────────────────────────────
   function isTeacherOf(cls){return !!(cls&&currentUser&&cls.teacherName===currentUser.name);}
