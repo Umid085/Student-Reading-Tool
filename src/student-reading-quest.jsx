@@ -978,8 +978,12 @@ function GameChart(props){
   if(!games.length)return<div style={{textAlign:"center",padding:20,color:"#6b7280"}}>No games to chart yet</div>;
 
   var w=320,h=200,pad=40;
+  // labelGap reserves headroom above the tallest point so its value label
+  // (drawn ~12px above the point) stays inside the chart frame instead of
+  // spilling over the top edge once a high score becomes the new maximum.
+  var labelGap=18;
   var maxXp=Math.max.apply(null,[1].concat(games.map(function(g){return g.xp;})));
-  var scale=function(val,max,size){return(val/max)*(size-pad*2)+pad;};
+  var scale=function(val,max,size){return(val/max)*(size-pad*2-labelGap)+pad;};
 
   var points=games.map(function(g,i){
     var x=pad+(i/(games.length-1||1))*(w-pad*2);
@@ -1012,7 +1016,7 @@ function GameChart(props){
             <g key={"point-"+i}>
               <circle cx={p.x} cy={p.y} r="4" fill="#a78bfa" opacity="0.6"/>
               <circle cx={p.x} cy={p.y} r="5.5" fill="none" stroke="#a78bfa" strokeWidth="1.5" opacity="0.3"/>
-              <text x={p.x} y={p.y-12} textAnchor="middle" fontSize="11" fill="#a78bfa" fontWeight="700">{p.xp}</text>
+              <text x={p.x} y={Math.max(pad-4,p.y-12)} textAnchor="middle" fontSize="11" fill="#a78bfa" fontWeight="700">{p.xp}</text>
             </g>
           );
         })}
@@ -8668,7 +8672,7 @@ export default function App(){
             var pStr=pts.join(" ");
             var areaD="M "+pts[0]+" L "+pts.slice(1).join(" L ")+" L "+(W-2)+","+(H-2)+" L 2,"+  (H-2)+" Z";
             return(
-              <svg width={W} height={H} style={{overflow:"visible"}}>
+              <svg viewBox={"0 0 "+W+" "+H} width="100%" preserveAspectRatio="none" style={{display:"block",maxWidth:W,height:H,overflow:"visible"}}>
                 {fill&&<path d={areaD} fill={fill} opacity={0.15}/>}
                 <polyline points={pStr} fill="none" stroke={col} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"/>
                 {vals.map(function(v,i){
