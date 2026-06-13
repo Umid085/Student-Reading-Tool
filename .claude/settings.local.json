@@ -139,7 +139,10 @@
       "Bash(pkill -f \"vite\")",
       "Bash(pkill -f \"npm run dev\")",
       "Bash(git commit *)",
-      "Bash(gh pr create --base main --head fix-leaderboard-anticheat-and-chart-overflow --title 'Leaderboard anti-cheat + profile chart overflow fixes' --body ' *)"
+      "Bash(gh pr create --base main --head fix-leaderboard-anticheat-and-chart-overflow --title 'Leaderboard anti-cheat + profile chart overflow fixes' --body ' *)",
+      "Bash(git pull *)",
+      "Bash(git merge *)",
+      "Bash(git stash *)"
     ]
   }
 }
