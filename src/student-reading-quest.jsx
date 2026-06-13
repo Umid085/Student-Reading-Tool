@@ -67,6 +67,13 @@ var PRESET_THEMES = [
 var Q_LABELS = {mcq:"Multiple Choice",gap_word:"Gap Fill - Words",gap_sentence:"Gap Fill - Sentences",matching:"Matching",heading:"Match Headings",qa:"Open Answer",tfnm:"True/False/Not Mentioned",ynng:"Yes/No/Not Given"};
 var Q_XP = {mcq:1,gap_word:1,gap_sentence:1,matching:3,heading:3,qa:2,tfnm:1,ynng:1};
 
+// Leaderboard anti-cheat thresholds. Random guessing on multiple-choice scores
+// ~25% on average, so PASS_PCT=60 means a guesser can never earn time/streak
+// bonuses or a board entry. MAX_PLAUSIBLE_WPM flags a "read" that was actually
+// skipped (nobody reads faster than ~600 wpm with comprehension).
+var PASS_PCT = 60;
+var MAX_PLAUSIBLE_WPM = 600;
+
 var Q_HINTS = {
   mcq:"Read all options before choosing. Eliminate clearly wrong answers first. Watch for absolute words like 'always' or 'never' — they're often traps.",
   gap_word:"Think about grammar (noun/verb/adjective?) and meaning. Re-read the sentence with your choice to hear if it sounds natural.",
@@ -2564,10 +2571,23 @@ export default function App(){
       var pct=totalMax>0?Math.round((totalEarned/totalMax)*100):0;
       var stars=pct>=90?5:pct>=75?4:pct>=60?3:pct>=40?2:1;
       var lvObj=lv||LEVELS[0];
-      var tb=Math.round(lvObj.timeBonus*Math.max(0,(lvObj.timeLimit-timeSecs)/lvObj.timeLimit));
+      // Anti-cheat: bonuses and the leaderboard require genuine comprehension
+      // (>=PASS_PCT) AND a plausible reading time. Random guessing falls below
+      // PASS_PCT; skipping the passage reads faster than MAX_PLAUSIBLE_WPM.
+      // Base XP for correct answers is always kept so personal progress still
+      // counts — only the bonuses + board entry are gated (see `qualifies`).
+      var passageWordCount=passage.split(/\s+/).filter(Boolean).length;
+      var minReadSecs=Math.max(3,Math.round(passageWordCount/MAX_PLAUSIBLE_WPM*60));
+      var readEnough=readingTimerSecs>=minReadSecs;
+      var qualifies=pct>=PASS_PCT&&readEnough;
+      // Time bonus scales with accuracy so a near-miss still feels fair, and is
+      // withheld entirely on a fail or a skipped passage.
+      var tbRaw=Math.round(lvObj.timeBonus*Math.max(0,(lvObj.timeLimit-timeSecs)/lvObj.timeLimit));
+      var tb=qualifies?Math.round(tbRaw*(pct/100)):0;
       // Streak bonus uses maxStreak so it's awarded once-per-run when the
       // streak ever reached 3, not only when the last answer was correct.
-      var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+(Math.max(streak,maxStreak)>=3?50:0);
+      var streakBonus=(qualifies&&Math.max(streak,maxStreak)>=3)?50:0;
+      var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+streakBonus;
       var wasChallenge=challengeMode&&!timeExpired;
       if(wasChallenge)finalXp=Math.round(finalXp*1.5);
       var today=todayKey();
@@ -2608,13 +2628,18 @@ export default function App(){
       var sKey2="rq-streak-data-v1-"+updatedUser.name;
       localStorage.setItem(sKey2,JSON.stringify({shields:newShields,shieldDates:shieldDates,longestStreak:newLongest}));
 
-      var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
-      var nb=Object.assign({},boards);
-      var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,100);
-      try{await saveBoards(nb);}catch(e){console.warn("saveBoards cache failed:",e);}
-      setBoards(nb);
-      // Authoritative remote write (per-level CAS) via /api/community.
-      try{await communityCall("submitScore",{level:lvObj.key,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic});}catch(e){console.warn("submitScore failed:",e);}
+      // Leaderboard entry only for runs that pass the anti-cheat gate; random
+      // guessers and passage-skippers still keep their personal XP/history but
+      // never appear on the per-level or weekly boards.
+      if(qualifies){
+        var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
+        var nb=Object.assign({},boards);
+        var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,100);
+        try{await saveBoards(nb);}catch(e){console.warn("saveBoards cache failed:",e);}
+        setBoards(nb);
+        // Authoritative remote write (per-level CAS) via /api/community.
+        try{await communityCall("submitScore",{level:lvObj.key,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic});}catch(e){console.warn("submitScore failed:",e);}
+      }
 
       if(activeChallengeIdx!==null&&activeChallengeFrom&&currentUser){
         try{var nc=doCompleteChallenge(await freshSocial(),currentUser.name,activeChallengeIdx,{pct:pct,xp:finalXp,timeSecs:timeSecs});await saveSocial(nc);setSocial(nc);if(activeChallengeId)await communityCall("completeChallenge",{id:activeChallengeId,result:{pct:pct,xp:finalXp,timeSecs:timeSecs}});}catch(e){console.warn("completeChallenge failed:",e);}
@@ -2631,9 +2656,13 @@ export default function App(){
       }
 
       var wk=getWeekId();
-      try{var wlb=await loadWeeklyLb();var wToday=(wlb&&wlb[wk])||[];var wExisting=wToday.find(function(e){return e.name===currentUser.name;});var wEntry=wExisting?{name:wExisting.name,xp:wExisting.xp+finalXp,games:(wExisting.games||0)+1}:{name:currentUser.name,xp:finalXp,games:1};var wFiltered=wToday.filter(function(e){return e.name!==currentUser.name;});var wMerged=wFiltered.concat([wEntry]);wMerged.sort(function(a,b){return b.xp-a.xp;});var nwlb={};for(var wk2 in wlb)nwlb[wk2]=wlb[wk2];nwlb[wk]=wMerged.slice(0,30);saveWeeklyLb(nwlb);communityCall("submitWeekly",{xp:finalXp});setWeeklyLb(wMerged.slice(0,30));}catch(e){console.warn("weeklyLb failed:",e);}
+      if(qualifies){
+        try{var wlb=await loadWeeklyLb();var wToday=(wlb&&wlb[wk])||[];var wExisting=wToday.find(function(e){return e.name===currentUser.name;});var wEntry=wExisting?{name:wExisting.name,xp:wExisting.xp+finalXp,games:(wExisting.games||0)+1}:{name:currentUser.name,xp:finalXp,games:1};var wFiltered=wToday.filter(function(e){return e.name!==currentUser.name;});var wMerged=wFiltered.concat([wEntry]);wMerged.sort(function(a,b){return b.xp-a.xp;});var nwlb={};for(var wk2 in wlb)nwlb[wk2]=wlb[wk2];nwlb[wk]=wMerged.slice(0,30);saveWeeklyLb(nwlb);communityCall("submitWeekly",{xp:finalXp});setWeeklyLb(wMerged.slice(0,30));}catch(e){console.warn("weeklyLb failed:",e);}
+      }
 
-      var rank=0;for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}
+      // rank is -1 for runs that didn't qualify for the leaderboard (nb is only
+      // assigned inside the qualifies block above).
+      var rank=-1;if(qualifies&&nb&&nb[lvObj.key]){for(var r=0;r<nb[lvObj.key].length;r++){if(nb[lvObj.key][r].name===currentUser.name&&nb[lvObj.key][r].xp===finalXp&&nb[lvObj.key][r].date===today){rank=r;break;}}}
       if(newQuestItems.length>0){
         var nqd={};for(var qk in questsDone)nqd[qk]=questsDone[qk];
         newQuestItems.forEach(function(q){nqd[q.id]=true;});
@@ -6918,7 +6947,7 @@ export default function App(){
                       {v:"+"+result.xp,l:t("resultXpEarned"),c:rsLvColor},
                       {v:result.pct+"%",l:t("resultAccuracy"),c:rsPctColor},
                       {v:formatTime(result.timeSecs),l:t("resultTime"),c:"#a78bfa"},
-                      {v:"#"+(result.rank+1),l:t("resultRank"),c:"#fbbf24"},
+                      {v:result.rank>=0?"#"+(result.rank+1):"—",l:t("resultRank"),c:"#fbbf24"},
                       (result.wpm>0?{v:result.wpm,l:"WPM",c:"#5af0b3"}:null)
                     ].filter(Boolean).map(function(s){return<div key={s.l} className="lq-res-stat"><div className="lq-res-stat-v" style={{color:s.c}}>{s.v}</div><div className="lq-res-stat-l">{s.l}</div></div>;})}
                   </div>

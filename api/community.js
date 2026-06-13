@@ -40,6 +40,24 @@ const NAME_MAX = 60;
 const RATE_LIMIT_MAX = 120; // per IP per 15 min (social actions are frequent)
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// ── Leaderboard anti-cheat (server-authoritative) ─────────────────────
+// The client computes XP, but a direct API caller could forge it. We reject
+// runs that didn't pass (PASS_PCT) and clamp the submitted XP to the theoretical
+// max for the level so a forged `xp: 9999999` can't take first place. These
+// mirror LEVELS/Q_XP/PASS_PCT in src/student-reading-quest.jsx — keep in sync.
+const PASS_PCT = 60;
+const LEVEL_MULT = { A1: 1, A2: 1.5, B1: 2, B2: 2.5, C1: 3, C2: 4 };
+const LEVEL_TIME_BONUS = { A1: 200, A2: 200, B1: 300, B2: 300, C1: 400, C2: 400 };
+const QUEST_XP_HEADROOM = 2000; // generous allowance for daily-quest bonuses
+const MAX_GAME_XP = 60000;      // absolute per-game ceiling (weekly has no level context)
+
+// Theoretical max XP for one game at a level given its total point pool.
+function maxGameXp(level, total) {
+  const base = Math.max(0, total) * (LEVEL_MULT[level] || 1) * 100;
+  const raw = base + (LEVEL_TIME_BONUS[level] || 200) + 50 + QUEST_XP_HEADROOM;
+  return Math.min(MAX_GAME_XP, Math.ceil(raw * 1.5)); // ×1.5 = challenge mode
+}
+
 function fbAuth() {
   return process.env.FIREBASE_DB_SECRET ? `?auth=${process.env.FIREBASE_DB_SECRET}` : "";
 }
@@ -148,9 +166,15 @@ export default async function handler(req, res) {
     if (action === "submitScore") {
       const level = String(body.level || "").toUpperCase();
       if (!LEVELS.has(level)) return res.status(400).json({ error: "Invalid level" });
+      const pct = Math.max(0, Math.min(100, num(body.pct)));
+      // Anti-cheat gate: random guessing (~25% on MCQ) never reaches the board.
+      if (pct < PASS_PCT) return res.status(200).json({ ok: false, err: "Score below leaderboard threshold" });
+      const total = num(body.total);
+      // Clamp forged XP to what's actually achievable for this level + score.
+      const xp = Math.max(0, Math.min(num(body.xp), maxGameXp(level, total)));
       const entry = {
-        name: actor, xp: num(body.xp), score: num(body.score), total: num(body.total),
-        pct: Math.max(0, Math.min(100, num(body.pct))), timeSecs: num(body.timeSecs),
+        name: actor, xp, score: num(body.score), total,
+        pct, timeSecs: num(body.timeSecs),
         topic: clean(body.topic, NAME_MAX) || "", date: todayISO(),
       };
       const out = await casChild(DB, BOARDS_KEY, level, (raw) => {
@@ -164,7 +188,9 @@ export default async function handler(req, res) {
 
     // ── submitWeekly (per-ISO-week XP board) ──────────────────────
     if (action === "submitWeekly") {
-      const xp = num(body.xp);
+      // No level context here, so clamp to the absolute per-game ceiling to stop
+      // a forged weekly bump. Negative/NaN coerces to 0.
+      const xp = Math.max(0, Math.min(num(body.xp), MAX_GAME_XP));
       const wk = getWeekId();
       const out = await casChild(DB, WEEKLY_KEY, wk, (raw) => {
         const arr = asArr(raw);

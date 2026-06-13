@@ -101,7 +101,7 @@ describe("api/community.js", () => {
     it("replaces the actor's own prior entry (no duplicate) and sorts desc", async () => {
       const fm = makeFetch([{ json: [{ name: "bob", xp: 10 }, { name: "carol", xp: 500 }] }, { json: {} }]);
       global.fetch = fm;
-      const r = await post(await loadHandler(), "submitScore", { level: "A1", xp: 50 });
+      const r = await post(await loadHandler(), "submitScore", { level: "A1", xp: 50, pct: 80 });
       const board = JSON.parse(r.body).board;
       expect(board.filter((e) => e.name === "bob")).toHaveLength(1);
       expect(board[0].name).toBe("carol"); // 500 > 50
@@ -109,8 +109,27 @@ describe("api/community.js", () => {
 
     it("retries on a 412 and succeeds", async () => {
       global.fetch = makeFetch([{ json: [] }, { ok: false, status: 412 }, { json: [] }, { json: {} }]);
-      const r = await post(await loadHandler(), "submitScore", { level: "A1", xp: 5 });
+      const r = await post(await loadHandler(), "submitScore", { level: "A1", xp: 5, pct: 80 });
       expect(r.statusCode).toBe(200);
+    });
+
+    it("rejects a sub-threshold (random-guess) score without touching the board", async () => {
+      const fm = makeFetch([{ json: [{ name: "alice", xp: 999 }] }, { json: {} }]);
+      global.fetch = fm;
+      const r = await post(await loadHandler(), "submitScore", { level: "A1", xp: 9999999, score: 1, total: 5, pct: 20 });
+      expect(r.statusCode).toBe(200);
+      const body = JSON.parse(r.body);
+      expect(body.ok).toBe(false);
+      expect(putUrls(fm)).toHaveLength(0); // no write at all
+    });
+
+    it("clamps a forged XP down to the level's theoretical max", async () => {
+      const fm = makeFetch([{ json: [] }, { json: {} }]);
+      global.fetch = fm;
+      // C2: total 5 → max (5*4*100 + 400 + 50 + 2000) * 1.5 = 6675
+      const r = await post(await loadHandler(), "submitScore", { level: "C2", xp: 9999999, score: 5, total: 5, pct: 100, timeSecs: 30 });
+      const me = JSON.parse(r.body).board.find((e) => e.name === "bob");
+      expect(me.xp).toBe(6675);
     });
   });
 
@@ -252,7 +271,7 @@ describe("api/community.js", () => {
   it("coerces a gappy {0:..,2:..} array before mutating (submitScore)", async () => {
     const fm = makeFetch([{ json: { 0: { name: "alice", xp: 9 }, 2: { name: "carol", xp: 8 } } }, { json: {} }]);
     global.fetch = fm;
-    const r = await post(await loadHandler(), "submitScore", { level: "A1", xp: 5 });
+    const r = await post(await loadHandler(), "submitScore", { level: "A1", xp: 5, pct: 80 });
     expect(r.statusCode).toBe(200);
     const board = JSON.parse(r.body).board;
     expect(Array.isArray(board)).toBe(true);

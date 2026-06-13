@@ -74,6 +74,20 @@ describe("netlify/functions/community.js", () => {
     expect(board[0].name).toBe("bob");
   });
 
+  it("submitScore rejects a sub-threshold score and clamps forged XP", async () => {
+    const fm = makeFetch([{ json: [] }, { json: {} }]);
+    global.fetch = fm;
+    const reject = await handler(evt("submitScore", { level: "A1", xp: 9999999, score: 1, total: 5, pct: 20 }));
+    expect(JSON.parse(reject.body).ok).toBe(false);
+    expect(putUrls(fm)).toHaveLength(0);
+
+    const fm2 = makeFetch([{ json: [] }, { json: {} }]);
+    global.fetch = fm2;
+    // C2: total 5 → (5*4*100 + 400 + 50 + 2000) * 1.5 = 6675
+    const ok = await handler(evt("submitScore", { level: "C2", xp: 9999999, score: 5, total: 5, pct: 100 }));
+    expect(JSON.parse(ok.body).board.find((e) => e.name === "bob").xp).toBe(6675);
+  });
+
   it("submitWeekly accumulates onto the actor's week entry", async () => {
     global.fetch = makeFetch([{ json: [{ name: "bob", xp: 100, games: 1 }] }, { json: {} }]);
     const r = await handler(evt("submitWeekly", { xp: 25 }));
