@@ -133,7 +133,13 @@
       "Bash(grep -nA8 -i \"console\")",
       "Bash(sed -n '1,60p' package.json)",
       "Bash(sed -n '1,60p' netlify/functions/auth.js)",
-      "Bash(xdg-open \"https://us.posthog.com\")"
+      "Bash(xdg-open \"https://us.posthog.com\")",
+      "Skill(run)",
+      "Bash(grep -iA3 \"viewport\\\\|emulate\\\\|device\")",
+      "Bash(pkill -f \"vite\")",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(git commit *)",
+      "Bash(gh pr create --base main --head fix-leaderboard-anticheat-and-chart-overflow --title 'Leaderboard anti-cheat + profile chart overflow fixes' --body ' *)"
     ]
   }
 }
