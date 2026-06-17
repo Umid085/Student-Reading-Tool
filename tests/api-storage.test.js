@@ -70,12 +70,12 @@ describe("api/storage.js", () => {
     const payload = JSON.stringify([{ name: "Bob" }]);
     const r = await runHandler(handler, {
       method: "POST",
-      body: { key: "rq-favs-v1", value: payload },
+      body: { key: "rq-libqs-test", value: payload },
     });
     expect(r.statusCode).toBe(200);
     expect(JSON.parse(r.body).ok).toBe(true);
     expect(fetch).toHaveBeenCalledWith(
-      "https://fake.firebaseio.com/rq/rq-favs-v1.json",
+      "https://fake.firebaseio.com/rq/rq-libqs-test.json",
       expect.objectContaining({ method: "PUT", body: payload })
     );
   });
@@ -110,6 +110,24 @@ describe("api/storage.js", () => {
       body: { key: "rq-auth-v6", value: "[]" },
     });
     expect(r.statusCode).toBe(400);
+  });
+
+  // These four moved to the authenticated /api/community router (per-child CAS,
+  // actor forced from token). Direct whole-object writes are now blocked here.
+  it.each(["rq-vocab-v1", "rq-favs-v1", "rq-daily-lb-v1", "rq-discuss-v1"])(
+    "POST %s returns 400 (write-blocked — use /api/community)",
+    async (key) => {
+      const handler = await loadHandler();
+      const r = await runHandler(handler, { method: "POST", body: { key, value: "{}" } });
+      expect(r.statusCode).toBe(400);
+    }
+  );
+
+  it("GET rq-discuss-v1 stays open (reads aren't blocked)", async () => {
+    fetch.mockResolvedValue({ json: async () => ({}) });
+    const handler = await loadHandler();
+    const r = await runHandler(handler, { method: "GET", query: { key: "rq-discuss-v1" } });
+    expect(r.statusCode).toBe(200);
   });
 
   it("returns 405 for unsupported methods", async () => {

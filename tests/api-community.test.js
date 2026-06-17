@@ -277,4 +277,115 @@ describe("api/community.js", () => {
     expect(Array.isArray(board)).toBe(true);
     expect(board.find((e) => e.name === "alice")).toBeDefined();
   });
+
+  // ── saveVocab (per-user child) ──────────────────────────────
+  describe("saveVocab", () => {
+    it("400 when vocab is not an array", async () => {
+      expect((await post(await loadHandler(), "saveVocab", { vocab: "nope" })).statusCode).toBe(400);
+    });
+    it("writes ONLY the actor's own child, normalizes entry shape", async () => {
+      const fm = makeFetch([{ json: null }, { json: {} }]);
+      global.fetch = fm;
+      const r = await post(await loadHandler(), "saveVocab", { vocab: [{ word: "cat", def: "a pet" }] });
+      expect(r.statusCode).toBe(200);
+      expect(putUrls(fm)[0]).toContain("/rq-vocab-v1/bob.json"); // child = token user, not the body
+      const body = putBodies(fm)[0];
+      expect(body[0].word).toBe("cat");
+      expect(body[0].status).toBe("new");      // defaulted
+      expect(body[0].nextReview).toBe(null);   // non-string → null
+    });
+    it("drops wordless entries and clamps overlong fields", async () => {
+      const fm = makeFetch([{ json: null }, { json: {} }]);
+      global.fetch = fm;
+      const r = await post(await loadHandler(), "saveVocab", { vocab: [{ word: "" }, { def: "x" }, { word: "a".repeat(200) }] });
+      const body = putBodies(fm)[0];
+      expect(body).toHaveLength(1);
+      expect(body[0].word.length).toBe(80);
+    });
+    it("caps at VOCAB_MAX (500) entries", async () => {
+      const big = Array.from({ length: 600 }, (_, i) => ({ word: "w" + i }));
+      const fm = makeFetch([{ json: null }, { json: {} }]);
+      global.fetch = fm;
+      await post(await loadHandler(), "saveVocab", { vocab: big });
+      expect(putBodies(fm)[0]).toHaveLength(500);
+    });
+  });
+
+  // ── saveFavs (per-user child) ───────────────────────────────
+  describe("saveFavs", () => {
+    it("400 when favs is not an array", async () => {
+      expect((await post(await loadHandler(), "saveFavs", { favs: { id: "x" } })).statusCode).toBe(400);
+    });
+    it("writes the actor's own child preserving {id,title,level,date}", async () => {
+      const fm = makeFetch([{ json: null }, { json: {} }]);
+      global.fetch = fm;
+      const r = await post(await loadHandler(), "saveFavs", { favs: [{ id: "s1", title: "Story", level: "B1", date: "2026-06-17" }] });
+      expect(r.statusCode).toBe(200);
+      expect(putUrls(fm)[0]).toContain("/rq-favs-v1/bob.json");
+      expect(putBodies(fm)[0][0]).toMatchObject({ id: "s1", title: "Story", level: "B1", date: "2026-06-17" });
+    });
+    it("drops entries without an id and caps at FAVS_MAX (500)", async () => {
+      const big = Array.from({ length: 600 }, (_, i) => ({ id: "s" + i }));
+      const fm = makeFetch([{ json: null }, { json: {} }]);
+      global.fetch = fm;
+      await post(await loadHandler(), "saveFavs", { favs: [{ title: "no id" }].concat(big) });
+      expect(putBodies(fm)[0]).toHaveLength(500);
+    });
+  });
+
+  // ── submitDailyScore (daily leaderboard) ────────────────────
+  describe("submitDailyScore", () => {
+    it("writes today's child, forces name from token, preserves others", async () => {
+      const fm = makeFetch([{ json: [{ name: "alice", xp: 50 }] }, { json: {} }]);
+      global.fetch = fm;
+      const r = await post(await loadHandler(), "submitDailyScore", { name: "impostor", xp: 80, pct: 90, timeSecs: 30 });
+      expect(r.statusCode).toBe(200);
+      expect(putUrls(fm)[0]).toMatch(/\/rq-daily-lb-v1\/\d{4}-\d{2}-\d{2}\.json/);
+      const board = JSON.parse(r.body).board;
+      expect(board.some((e) => e.name === "impostor")).toBe(false);
+      expect(board.find((e) => e.name === "bob")).toBeDefined();
+      expect(board.find((e) => e.name === "alice")).toBeDefined();
+    });
+    it("clamps forged xp to MAX_GAME_XP, replaces the actor's prior entry, sorts desc", async () => {
+      const fm = makeFetch([{ json: [{ name: "bob", xp: 10 }, { name: "carol", xp: 5000 }] }, { json: {} }]);
+      global.fetch = fm;
+      const r = await post(await loadHandler(), "submitDailyScore", { xp: 9999999, pct: 100 });
+      const board = JSON.parse(r.body).board;
+      expect(board.filter((e) => e.name === "bob")).toHaveLength(1);
+      expect(board.find((e) => e.name === "bob").xp).toBe(60000);
+      expect(board[0].name).toBe("bob"); // 60000 > 5000
+    });
+  });
+
+  // ── postDiscuss (story thread) ──────────────────────────────
+  describe("postDiscuss", () => {
+    it("400 on a missing storyId", async () => {
+      expect((await post(await loadHandler(), "postDiscuss", { text: "hello there" })).statusCode).toBe(400);
+    });
+    it("400 on text shorter than 3 chars (no fetch)", async () => {
+      const fm = makeFetch([]);
+      global.fetch = fm;
+      expect((await post(await loadHandler(), "postDiscuss", { storyId: "s1", text: "hi" })).statusCode).toBe(400);
+      expect(putUrls(fm)).toHaveLength(0);
+    });
+    it("authors the post as the token user and prepends newest", async () => {
+      const fm = makeFetch([{ json: [{ user: "alice", text: "old", date: "2020-01-01" }] }, { json: {} }]);
+      global.fetch = fm;
+      const r = await post(await loadHandler(), "postDiscuss", { storyId: "s1", text: "great story", user: "impostor" });
+      expect(r.statusCode).toBe(200);
+      expect(putUrls(fm)[0]).toContain("/rq-discuss-v1/s1.json");
+      const arr = putBodies(fm)[0];
+      expect(arr[0].user).toBe("bob");          // forced, not "impostor"
+      expect(arr[0].text).toBe("great story");
+      expect(arr[1].user).toBe("alice");        // existing post kept after
+    });
+    it("rejects a second post the same day with no write", async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const fm = makeFetch([{ json: [{ user: "bob", text: "already", date: today }] }]);
+      global.fetch = fm;
+      const r = await post(await loadHandler(), "postDiscuss", { storyId: "s1", text: "again today" });
+      expect(JSON.parse(r.body).ok).toBe(false);
+      expect(putUrls(fm)).toHaveLength(0);
+    });
+  });
 });

@@ -24,6 +24,9 @@ function makeFetch(seq) {
 function putUrls(fm) {
   return fm.mock.calls.filter((c) => c[1] && c[1].method === "PUT").map((c) => c[0]);
 }
+function putBodies(fm) {
+  return fm.mock.calls.filter((c) => c[1] && c[1].method === "PUT").map((c) => JSON.parse(c[1].body));
+}
 
 const SECRET = "test-secret";
 const auth = (name) => makeBearer(name, SECRET, Date.now() + 60_000);
@@ -125,5 +128,52 @@ describe("netlify/functions/community.js", () => {
     const urls = putUrls(fm);
     expect(urls[0]).toContain("/rq-social-v6/bob/subscribed.json");
     expect(urls[1]).toContain("/rq-social-v6/ms_smith/subscribers.json");
+  });
+
+  it("saveVocab 400 on non-array; otherwise writes the actor's own child", async () => {
+    expect((await handler(evt("saveVocab", { vocab: "nope" }))).statusCode).toBe(400);
+    const fm = makeFetch([{ json: null }, { json: {} }]);
+    global.fetch = fm;
+    const r = await handler(evt("saveVocab", { vocab: [{ word: "cat", def: "a pet" }] }));
+    expect(r.statusCode).toBe(200);
+    expect(putUrls(fm)[0]).toContain("/rq-vocab-v1/bob.json");
+    expect(putBodies(fm)[0][0].word).toBe("cat");
+  });
+
+  it("saveFavs writes the actor's own child preserving entry shape", async () => {
+    const fm = makeFetch([{ json: null }, { json: {} }]);
+    global.fetch = fm;
+    const r = await handler(evt("saveFavs", { favs: [{ id: "s1", title: "Story", level: "B1", date: "2026-06-17" }] }));
+    expect(r.statusCode).toBe(200);
+    expect(putUrls(fm)[0]).toContain("/rq-favs-v1/bob.json");
+    expect(putBodies(fm)[0][0]).toMatchObject({ id: "s1", title: "Story" });
+  });
+
+  it("submitDailyScore forces name, clamps xp, writes today's child", async () => {
+    const fm = makeFetch([{ json: [{ name: "alice", xp: 50 }] }, { json: {} }]);
+    global.fetch = fm;
+    const r = await handler(evt("submitDailyScore", { name: "impostor", xp: 9999999, pct: 100 }));
+    expect(r.statusCode).toBe(200);
+    expect(putUrls(fm)[0]).toMatch(/\/rq-daily-lb-v1\/\d{4}-\d{2}-\d{2}\.json/);
+    const board = JSON.parse(r.body).board;
+    expect(board.some((e) => e.name === "impostor")).toBe(false);
+    expect(board.find((e) => e.name === "bob").xp).toBe(60000);
+    expect(board.find((e) => e.name === "alice")).toBeDefined();
+  });
+
+  it("postDiscuss authors as the token user; rejects a second post the same day", async () => {
+    const fm = makeFetch([{ json: [{ user: "alice", text: "old", date: "2020-01-01" }] }, { json: {} }]);
+    global.fetch = fm;
+    const r = await handler(evt("postDiscuss", { storyId: "s1", text: "great story", user: "impostor" }));
+    expect(r.statusCode).toBe(200);
+    expect(putUrls(fm)[0]).toContain("/rq-discuss-v1/s1.json");
+    expect(putBodies(fm)[0][0].user).toBe("bob");
+
+    const today = new Date().toISOString().slice(0, 10);
+    const fm2 = makeFetch([{ json: [{ user: "bob", text: "already", date: today }] }]);
+    global.fetch = fm2;
+    const r2 = await handler(evt("postDiscuss", { storyId: "s1", text: "again today" }));
+    expect(JSON.parse(r2.body).ok).toBe(false);
+    expect(putUrls(fm2)).toHaveLength(0);
   });
 });

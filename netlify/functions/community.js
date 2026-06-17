@@ -1,11 +1,13 @@
-// Community mutations (leaderboards + social graph) — Netlify shape. Mirrors api/community.js.
+// Community mutations (leaderboards + social graph + per-user vocab/favs +
+// daily leaderboard + story discussion) — Netlify shape. Mirrors api/community.js.
 //
 // Actor identity comes ONLY from the verified session token. Every write is a
 // per-child / per-key ETag compare-and-swap so concurrent writers to different
 // children never collide. Direct writes to rq-boards-v6 / rq-weekly-v1 /
-// rq-social-v6 are blocked in storage.js, so this is the only mutation path.
-// Reads stay on the open /api/storage GET. Cross-user actions do two sequential
-// per-child CAS writes (not atomic, but idempotent → client retry self-heals).
+// rq-social-v6 / rq-vocab-v1 / rq-favs-v1 / rq-daily-lb-v1 / rq-discuss-v1 are
+// blocked in storage.js, so this is the only mutation path. Reads stay on the
+// open /api/storage GET. Cross-user actions do two sequential per-child CAS
+// writes (not atomic, but idempotent → client retry self-heals).
 // Leaderboard scope: closes clobber/impersonation, NOT self-score-inflation.
 
 import { extractUsername } from "./_session.js";
@@ -14,12 +16,21 @@ import { checkRateLimit } from "./_rateLimit.js";
 const BOARDS_KEY = "rq-boards-v6";
 const WEEKLY_KEY = "rq-weekly-v1";
 const SOCIAL_KEY = "rq-social-v6";
+const VOCAB_KEY = "rq-vocab-v1";
+const FAVS_KEY = "rq-favs-v1";
+const DAILY_LB_KEY = "rq-daily-lb-v1";
+const DISCUSS_KEY = "rq-discuss-v1";
 const LIKES_CHILD = "!likes";
 const LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const NAME_RE = /^[A-Za-z0-9_]{2,30}$/;
 const NAME_MAX = 60;
 const RATE_LIMIT_MAX = 120;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const VOCAB_MAX = 500;
+const FAVS_MAX = 500;
+const DISCUSS_TEXT_MAX = 200;
+const DISCUSS_CAP = 50;
+const DAILY_LB_CAP = 100;
 
 // ── Leaderboard anti-cheat (server-authoritative) ─────────────────────
 // Mirrors api/community.js — reject sub-threshold runs and clamp forged XP.
@@ -319,6 +330,77 @@ export const handler = async function (event) {
       const add = action === "subscribe";
       await casSetMember(DB, actor, "subscribed", teacher, add);
       await casSetMember(DB, teacher, "subscribers", actor, add);
+      return json(200, { ok: true });
+    }
+
+    // ── saveVocab (actor writes ONLY their own vocab child) ───────
+    if (action === "saveVocab") {
+      if (!Array.isArray(body.vocab)) return json(400, { error: "vocab must be an array" });
+      const cleaned = body.vocab
+        .filter((e) => e && typeof e === "object" && clean(e.word, 80))
+        .map((e) => ({
+          word: clean(e.word, 80),
+          level: clean(e.level, 4),
+          topic: clean(e.topic, 60),
+          date: clean(e.date, 10),
+          status: clean(e.status, 12) || "new",
+          def: clean(e.def, 500),
+          example: clean(e.example, 500),
+          srInterval: num(e.srInterval),
+          nextReview: typeof e.nextReview === "string" ? clean(e.nextReview, 10) : null,
+        }))
+        .slice(0, VOCAB_MAX);
+      await casChild(DB, VOCAB_KEY, actor, () => ({ value: cleaned, result: cleaned }));
+      return json(200, { ok: true });
+    }
+
+    // ── saveFavs (actor writes ONLY their own favourites child) ───
+    if (action === "saveFavs") {
+      if (!Array.isArray(body.favs)) return json(400, { error: "favs must be an array" });
+      const cleaned = body.favs
+        .filter((f) => f && typeof f === "object" && clean(f.id, 60))
+        .map((f) => ({
+          id: clean(f.id, 60),
+          title: clean(f.title, NAME_MAX),
+          level: clean(f.level, 4),
+          date: clean(f.date, 10),
+        }))
+        .slice(0, FAVS_MAX);
+      await casChild(DB, FAVS_KEY, actor, () => ({ value: cleaned, result: cleaned }));
+      return json(200, { ok: true });
+    }
+
+    // ── submitDailyScore (daily-challenge leaderboard) ────────────
+    if (action === "submitDailyScore") {
+      const xp = Math.max(0, Math.min(num(body.xp), MAX_GAME_XP));
+      const pct = Math.max(0, Math.min(100, num(body.pct)));
+      const entry = { name: actor, xp, pct, timeSecs: num(body.timeSecs) };
+      const day = todayISO();
+      const out = await casChild(DB, DAILY_LB_KEY, day, (raw) => {
+        const merged = asArr(raw).filter((e) => e && e.name !== actor).concat([entry]);
+        merged.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+        const top = merged.slice(0, DAILY_LB_CAP);
+        return { value: top, result: top };
+      });
+      return json(200, { ok: true, day, board: out.result });
+    }
+
+    // ── postDiscuss (append one post to a story thread) ───────────
+    if (action === "postDiscuss") {
+      const storyId = clean(body.storyId, 60);
+      const text = clean(body.text, DISCUSS_TEXT_MAX);
+      if (!storyId) return json(400, { error: "Invalid story" });
+      if (text.length < 3) return json(400, { error: "Post too short" });
+      const day = todayISO();
+      const out = await casChild(DB, DISCUSS_KEY, storyId, (raw) => {
+        const arr = asArr(raw);
+        if (arr.some((p) => p && p.user === actor && p.date === day))
+          return { abort: true, status: 200, body: { ok: false, err: "Already posted today" } };
+        const post = { user: actor, text, date: day };
+        const next = [post].concat(arr).slice(0, DISCUSS_CAP);
+        return { value: next, result: next };
+      });
+      if (out.abort) return json(out.status, out.body);
       return json(200, { ok: true });
     }
 

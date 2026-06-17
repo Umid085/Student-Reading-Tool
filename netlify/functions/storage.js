@@ -13,11 +13,15 @@ const MAX_VALUE_BYTES = 512 * 1024; // 512 KB
 const READ_BLOCKED = new Set(["rq-users-v6", "rq-auth-v6"]);
 // These keys are mutated only via authenticated, ownership/actor-checked routers
 // that do per-child / ETag-CAS writes — /api/classroom for classes+assignments,
-// /api/community for leaderboards (rq-boards-v6, rq-weekly-v1) and the social
-// graph (rq-social-v6). Blocking them here closes the authorization hole where
-// any signed-in user could overwrite the whole list through this generic proxy.
-// Reads stay open (the lists aren't secret).
-const WRITE_BLOCKED = new Set(["rq-auth-v6", "rq-classes-v1", "rq-assignments-v1", "rq-boards-v6", "rq-weekly-v1", "rq-social-v6"]);
+// /api/community for leaderboards (rq-boards-v6, rq-weekly-v1, rq-daily-lb-v1),
+// the social graph (rq-social-v6), and per-user vocab/favs + story discussion
+// (rq-vocab-v1, rq-favs-v1, rq-discuss-v1). Blocking them here closes the
+// authorization hole where any signed-in user could overwrite the whole list
+// (or another user's data) through this generic proxy. Reads stay open (the
+// lists aren't secret). rq-daily-v1 (the daily-challenge config) is intentionally
+// left writable: it's deterministic-by-date, so every client computes the same
+// record and a forged write is at most low-impact griefing, not impersonation.
+const WRITE_BLOCKED = new Set(["rq-auth-v6", "rq-classes-v1", "rq-assignments-v1", "rq-boards-v6", "rq-weekly-v1", "rq-social-v6", "rq-vocab-v1", "rq-favs-v1", "rq-daily-lb-v1", "rq-discuss-v1"]);
 
 function validateToken(token, secret) {
   if (!token || !secret) return false;

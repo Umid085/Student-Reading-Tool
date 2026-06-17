@@ -772,19 +772,28 @@ async function loadSocial(){
 // matching /api/community social action (the storage proxy now blocks SOCIAL_KEY).
 async function saveSocial(s){try{localStorage.setItem(SOCIAL_KEY,JSON.stringify(s));}catch(e){}}
 async function loadVocab(){var v=await apiGet(VOCAB_KEY);return v||{};}
-async function saveVocab(v){await apiSet(VOCAB_KEY,v);}
+// Local cache only — the authoritative remote write is the /api/community
+// saveVocab action (the storage proxy now blocks VOCAB_KEY). Callers send only
+// the actor's own array via communityCall, never the whole multi-user object.
+async function saveVocab(v){try{localStorage.setItem(VOCAB_KEY,JSON.stringify(v));}catch(e){}}
 async function loadDaily(){var v=await apiGet(DAILY_KEY);return v||null;}
 async function saveDaily(d){try{localStorage.setItem(DAILY_KEY,JSON.stringify(d));}catch(e){}try{await apiSet(DAILY_KEY,d);}catch(e){console.warn("saveDaily failed:",e);}}
 async function loadDailyLb(){try{var v=await apiGet(DAILY_LB_KEY);if(v)return v;}catch(e){}try{var lv=localStorage.getItem(DAILY_LB_KEY);return lv?JSON.parse(lv):{};}catch(e2){return {};}}
-async function saveDailyLb(d){try{localStorage.setItem(DAILY_LB_KEY,JSON.stringify(d));}catch(e){}try{await apiSet(DAILY_LB_KEY,d);}catch(e){console.warn("saveDailyLb failed:",e);}}
+// Local cache only — the authoritative remote write is the /api/community
+// submitDailyScore action (the storage proxy now blocks DAILY_LB_KEY).
+async function saveDailyLb(d){try{localStorage.setItem(DAILY_LB_KEY,JSON.stringify(d));}catch(e){}}
 async function loadFavs(){var v=await apiGet(FAVS_KEY);return v||{};}
-async function saveFavs(v){await apiSet(FAVS_KEY,v);}
+// Local cache only — the authoritative remote write is the /api/community
+// saveFavs action (the storage proxy now blocks FAVS_KEY).
+async function saveFavs(v){try{localStorage.setItem(FAVS_KEY,JSON.stringify(v));}catch(e){}}
 async function loadWeeklyLb(){try{var v=await apiGet(WEEKLY_KEY);if(v)return v;}catch(e){}try{var lv=localStorage.getItem(WEEKLY_KEY);return lv?JSON.parse(lv):{};}catch(e2){return {};}}
 // Local cache only — the authoritative remote write is the /api/community
 // submitWeekly action (the storage proxy now blocks WEEKLY_KEY).
 async function saveWeeklyLb(v){try{localStorage.setItem(WEEKLY_KEY,JSON.stringify(v));}catch(e){}}
 async function loadDiscuss(){var v=await apiGet(DISCUSS_KEY);return v||{};}
-async function saveDiscuss(v){await apiSet(DISCUSS_KEY,v);}
+// Local cache only — the authoritative remote write is the /api/community
+// postDiscuss action (the storage proxy now blocks DISCUSS_KEY).
+async function saveDiscuss(v){try{localStorage.setItem(DISCUSS_KEY,JSON.stringify(v));}catch(e){}}
 // Per-user daily quota. Server-managed counters in Firebase; the chip on
 // the home screen reads `used` and `maxLow`/`maxHigh` for the "ai" bucket
 // and renders a colour by % of cap. Returns null when unauthenticated or
@@ -2305,6 +2314,8 @@ export default function App(){
     var nFavs=existed?favs.filter(function(f){return f.id!==storyId;}):favs.concat([{id:storyId,title:storyTitle,level:storyLevel,date:todayKey()}]);
     var nAll={};for(var k in allFavs)nAll[k]=allFavs[k];nAll[currentUser.name]=nFavs;
     setFavs(nFavs);setAllFavs(nAll);saveFavs(nAll);
+    // Authoritative remote write (own favourites child) via /api/community.
+    communityCall("saveFavs",{favs:nFavs}).catch(function(){});
   }
 
   async function lookupWord(word){
@@ -2518,6 +2529,8 @@ export default function App(){
         var nv=vocab.concat(newEntries);
         var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;
         setVocab(nv);setAllVocab(nAll);saveVocab(nAll);
+        // Authoritative remote write (own vocab child) via /api/community.
+        communityCall("saveVocab",{vocab:nv}).catch(function(){});
       }
     }
     // Feature 1: extract auto-vocab from passage
@@ -2655,7 +2668,9 @@ export default function App(){
         var done={date:today,xp:finalXp,pct:pct,timeSecs:timeSecs};
         localStorage.setItem("rq-daily-done-"+currentUser.name,JSON.stringify(done));
         setDailyDone(done);
-        try{var dlb=await loadDailyLb();var todayDlb=(dlb&&dlb[today])||[];var dfiltered=todayDlb.filter(function(e){return e.name!==currentUser.name;});var dEntry={name:currentUser.name,xp:finalXp,pct:pct,timeSecs:timeSecs};var dmerged=dfiltered.concat([dEntry]);dmerged.sort(function(a,b){return b.xp-a.xp;});var ndlb={};for(var dk in dlb)ndlb[dk]=dlb[dk];ndlb[today]=dmerged;saveDailyLb(ndlb);setDailyLb(dmerged);}catch(e){console.warn("dailyLb failed:",e);}
+        try{var dlb=await loadDailyLb();var todayDlb=(dlb&&dlb[today])||[];var dfiltered=todayDlb.filter(function(e){return e.name!==currentUser.name;});var dEntry={name:currentUser.name,xp:finalXp,pct:pct,timeSecs:timeSecs};var dmerged=dfiltered.concat([dEntry]);dmerged.sort(function(a,b){return b.xp-a.xp;});var ndlb={};for(var dk in dlb)ndlb[dk]=dlb[dk];ndlb[today]=dmerged;saveDailyLb(ndlb);setDailyLb(dmerged);
+        // Authoritative remote write (name forced + xp clamped server-side) via /api/community.
+        communityCall("submitDailyScore",{xp:finalXp,pct:pct,timeSecs:timeSecs}).catch(function(){});}catch(e){console.warn("dailyLb failed:",e);}
         setIsDailyGame(false);
       }
 
@@ -7124,7 +7139,7 @@ export default function App(){
                   if(!toAdd.length){setAutoVocabDismissed(true);return;}
                   var newEntries=toAdd.map(function(w){return{word:w,level:level,topic:topic,date:today,status:"new",def:"",example:"",srInterval:0,nextReview:srsNextDate(SRS_INTERVALS[0])};});
                   var nv=vocab.concat(newEntries);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;
-                  setVocab(nv);setAllVocab(nAll);saveVocab(nAll);setAutoVocabDismissed(true);
+                  setVocab(nv);setAllVocab(nAll);saveVocab(nAll);communityCall("saveVocab",{vocab:nv}).catch(function(){});setAutoVocabDismissed(true);
                 }} style={{...mkBtn("#06b6d4","#0d0d1a"),fontSize:12,padding:"7px 14px"}}>+ Add {autoVocabWords.filter(function(w){return!vocab.some(function(v){return v.word===w;});}).length} to Vocab</button>
               </div>
             )}
@@ -7285,7 +7300,7 @@ export default function App(){
           var display=vocabFilter==="due"?dueWords:vocabFilter==="review"?reviewWords:words;
           var safeIdx=display.length>0?vocabCard%display.length:0;
           var curWord=display.length>0?display[safeIdx]:null;
-          function saveVocabUpdate(nv){setVocab(nv);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;setAllVocab(nAll);saveVocab(nAll);}
+          function saveVocabUpdate(nv){setVocab(nv);var nAll={};for(var k in allVocab)nAll[k]=allVocab[k];nAll[currentUser.name]=nv;setAllVocab(nAll);saveVocab(nAll);communityCall("saveVocab",{vocab:nv}).catch(function(){});}
           function advanceSRS(word,hard){
             var cur=word.srInterval||0;
             var next=hard?0:Math.min(cur+1,SRS_INTERVALS.length);
@@ -8863,7 +8878,12 @@ export default function App(){
               </div>
 
               {games.length===0&&<div style={{...CARD,textAlign:"center",padding:36}}><div style={{fontSize:48,marginBottom:12}}>📊</div><div style={{fontSize:16,fontWeight:800,color:"#f3f4f6",marginBottom:4}}>No data yet</div><div style={{fontSize:13,color:"#6b7280",marginBottom:14}}>Complete quizzes to see your stats</div><button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),marginTop:8}}>Start Playing</button></div>}
-              <button onClick={doRestart} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>{t("startReading")}</button>
+              <button onClick={function(){
+                // Return to the reading page: if a passage is still loaded, jump
+                // straight back to it; otherwise open the library to pick a read.
+                if(passage&&questions&&questions.length){setStage("reading");}
+                else{setStage("library");}
+              }} style={{...mkBtn("#06b6d4","#0d0d1a"),width:"100%",marginTop:4}}>{t("startReading")}</button>
             </div>
           );
         })()}
@@ -9793,6 +9813,8 @@ export default function App(){
             var newPosts=[newPost].concat(posts).slice(0,50);
             var nAll={};for(var k in allDiscuss)nAll[k]=allDiscuss[k];nAll[discussStoryId]=newPosts;
             setAllDiscuss(nAll);saveDiscuss(nAll);setDiscussInput("");
+            // Authoritative remote write (author forced + 1/day enforced server-side) via /api/community.
+            communityCall("postDiscuss",{storyId:discussStoryId,text:newPost.text}).catch(function(){});
           }
           return(
             <div>
