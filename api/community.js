@@ -1,4 +1,5 @@
-// Community mutations (leaderboards + social graph) — single authenticated router.
+// Community mutations (leaderboards + social graph + per-user vocab/favs +
+// daily leaderboard + story discussion) — single authenticated router.
 //
 // WHY THIS EXISTS: scores, weekly XP, and the social graph used to be written
 // through the generic `/api/storage` proxy as whole-structure PUTs from the
@@ -9,9 +10,15 @@
 // This endpoint fixes both: the actor is taken from the SESSION TOKEN (never the
 // request body), and every write is a per-child / per-key ETag compare-and-swap
 // so two writers touching different children never collide and same-child
-// contention resolves on retry. Direct writes to the three keys are blocked in
+// contention resolves on retry. Direct writes to these keys are blocked in
 // `storage.js`, so this is the only mutation path. Reads stay on the open
 // `/api/storage` GET — these lists aren't secret.
+//
+// The same per-child fix covers four more keys that were also whole-object
+// PUTs through the proxy: rq-vocab-v1 / rq-favs-v1 (per-user children, so you
+// can only write your own), rq-daily-lb-v1 (daily leaderboard, name forced +
+// xp clamped like submitWeekly), and rq-discuss-v1 (posts authored as the
+// token user, 1/day enforced server-side).
 //
 // SCOPE LIMIT (leaderboards): forcing the actor's name from the token closes the
 // clobber + impersonation hole (you can't overwrite the board or post as someone
@@ -33,12 +40,21 @@ import { checkRateLimit } from "./_rateLimit.js";
 const BOARDS_KEY = "rq-boards-v6";
 const WEEKLY_KEY = "rq-weekly-v1";
 const SOCIAL_KEY = "rq-social-v6";
+const VOCAB_KEY = "rq-vocab-v1";
+const FAVS_KEY = "rq-favs-v1";
+const DAILY_LB_KEY = "rq-daily-lb-v1";
+const DISCUSS_KEY = "rq-discuss-v1";
 const LIKES_CHILD = "!likes";
 const LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const NAME_RE = /^[A-Za-z0-9_]{2,30}$/;
 const NAME_MAX = 60;
 const RATE_LIMIT_MAX = 120; // per IP per 15 min (social actions are frequent)
 const DAY_MS = 24 * 60 * 60 * 1000;
+const VOCAB_MAX = 500;        // vocab entries kept per user
+const FAVS_MAX = 500;         // favourited stories kept per user
+const DISCUSS_TEXT_MAX = 200; // matches the client textarea cap
+const DISCUSS_CAP = 50;       // newest-first posts kept per story
+const DAILY_LB_CAP = 100;     // daily-challenge leaderboard size
 
 // ── Leaderboard anti-cheat (server-authoritative) ─────────────────────
 // The client computes XP, but a direct API caller could forge it. We reject
@@ -360,6 +376,88 @@ export default async function handler(req, res) {
       const add = action === "subscribe";
       await casSetMember(DB, actor, "subscribed", teacher, add);
       await casSetMember(DB, teacher, "subscribers", actor, add);
+      return res.status(200).json({ ok: true });
+    }
+
+    // ── saveVocab (actor writes ONLY their own vocab child) ───────
+    // rq-vocab-v1 is {[user]: [entries]}. The client used to PUT the whole
+    // object through /api/storage; now it sends just its own array and we
+    // write the per-user child, so no one can overwrite another user's vocab.
+    // Last-write-wins per actor (the client always sends its full array).
+    if (action === "saveVocab") {
+      if (!Array.isArray(body.vocab)) return res.status(400).json({ error: "vocab must be an array" });
+      const cleaned = body.vocab
+        .filter((e) => e && typeof e === "object" && clean(e.word, 80))
+        .map((e) => ({
+          word: clean(e.word, 80),
+          level: clean(e.level, 4),
+          topic: clean(e.topic, 60),
+          date: clean(e.date, 10),
+          status: clean(e.status, 12) || "new",
+          def: clean(e.def, 500),
+          example: clean(e.example, 500),
+          srInterval: num(e.srInterval),
+          nextReview: typeof e.nextReview === "string" ? clean(e.nextReview, 10) : null,
+        }))
+        .slice(0, VOCAB_MAX);
+      await casChild(DB, VOCAB_KEY, actor, () => ({ value: cleaned, result: cleaned }));
+      return res.status(200).json({ ok: true });
+    }
+
+    // ── saveFavs (actor writes ONLY their own favourites child) ───
+    // rq-favs-v1 is {[user]: [{id,title,level,date}]}. Same per-child fix.
+    if (action === "saveFavs") {
+      if (!Array.isArray(body.favs)) return res.status(400).json({ error: "favs must be an array" });
+      const cleaned = body.favs
+        .filter((f) => f && typeof f === "object" && clean(f.id, 60))
+        .map((f) => ({
+          id: clean(f.id, 60),
+          title: clean(f.title, NAME_MAX),
+          level: clean(f.level, 4),
+          date: clean(f.date, 10),
+        }))
+        .slice(0, FAVS_MAX);
+      await casChild(DB, FAVS_KEY, actor, () => ({ value: cleaned, result: cleaned }));
+      return res.status(200).json({ ok: true });
+    }
+
+    // ── submitDailyScore (daily-challenge leaderboard) ────────────
+    // rq-daily-lb-v1 is {[dateISO]: [entries]}. Mirrors submitWeekly: the
+    // name is forced from the token and xp is clamped, so a direct caller
+    // can't forge another user's entry or take first with a bogus score.
+    if (action === "submitDailyScore") {
+      const xp = Math.max(0, Math.min(num(body.xp), MAX_GAME_XP));
+      const pct = Math.max(0, Math.min(100, num(body.pct)));
+      const entry = { name: actor, xp, pct, timeSecs: num(body.timeSecs) };
+      const day = todayISO();
+      const out = await casChild(DB, DAILY_LB_KEY, day, (raw) => {
+        const merged = asArr(raw).filter((e) => e && e.name !== actor).concat([entry]);
+        merged.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+        const top = merged.slice(0, DAILY_LB_CAP);
+        return { value: top, result: top };
+      });
+      return res.status(200).json({ ok: true, day, board: out.result });
+    }
+
+    // ── postDiscuss (append one post to a story thread) ───────────
+    // rq-discuss-v1 is {[storyId]: [{user,text,date}]}. The author is forced
+    // from the token (no impersonation) and the 1-post-per-day cap is enforced
+    // server-side; newest-first, capped at DISCUSS_CAP.
+    if (action === "postDiscuss") {
+      const storyId = clean(body.storyId, 60);
+      const text = clean(body.text, DISCUSS_TEXT_MAX);
+      if (!storyId) return res.status(400).json({ error: "Invalid story" });
+      if (text.length < 3) return res.status(400).json({ error: "Post too short" });
+      const day = todayISO();
+      const out = await casChild(DB, DISCUSS_KEY, storyId, (raw) => {
+        const arr = asArr(raw);
+        if (arr.some((p) => p && p.user === actor && p.date === day))
+          return { abort: true, status: 200, body: { ok: false, err: "Already posted today" } };
+        const post = { user: actor, text, date: day };
+        const next = [post].concat(arr).slice(0, DISCUSS_CAP);
+        return { value: next, result: next };
+      });
+      if (out.abort) return res.status(out.status).json(out.body);
       return res.status(200).json({ ok: true });
     }
 

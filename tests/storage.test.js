@@ -121,6 +121,26 @@ describe("storage.js", () => {
     expect(res.statusCode).toBe(400);
   });
 
+  // Moved to the authenticated /api/community router (per-child CAS, actor
+  // forced from token). Direct whole-object writes are now blocked here.
+  it.each(["rq-vocab-v1", "rq-favs-v1", "rq-daily-lb-v1", "rq-discuss-v1"])(
+    "POST %s returns 400 (write-blocked — use /api/community)",
+    async (key) => {
+      const handler = await loadHandler();
+      const res = await handler(
+        makeEvent({ httpMethod: "POST", body: JSON.stringify({ key, value: "{}" }) })
+      );
+      expect(res.statusCode).toBe(400);
+    }
+  );
+
+  it("GET rq-discuss-v1 stays open (reads aren't blocked)", async () => {
+    fetch.mockResolvedValue({ json: async () => ({}) });
+    const handler = await loadHandler();
+    const res = await handler(makeEvent({ queryStringParameters: { key: "rq-discuss-v1" } }));
+    expect(res.statusCode).toBe(200);
+  });
+
   it("returns 405 for unsupported methods", async () => {
     const handler = await loadHandler();
     const res = await handler(makeEvent({ httpMethod: "DELETE" }));
