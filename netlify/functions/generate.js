@@ -331,7 +331,11 @@ Reply with ONLY a JSON object, no prose around it:
   // Expand the requested types to the level-appropriate question count by
   // cycling through them in order. e.g. C2 + [mcq, gap_word, qa, tfnm] → 15
   // items, with each type appearing 3–4 times.
-  const targetCount = QUESTIONS_PER_LEVEL[level] || 6;
+  // Caller can override the question count (quest-config popup); clamp to 3–20.
+  const reqCount = Number(body.num_questions);
+  const targetCount = Number.isFinite(reqCount)
+    ? Math.max(3, Math.min(20, Math.round(reqCount)))
+    : (QUESTIONS_PER_LEVEL[level] || 6);
   const validTypes = [];
   for (let i = 0; i < targetCount; i++) {
     validTypes.push(baseTypes[i % baseTypes.length]);

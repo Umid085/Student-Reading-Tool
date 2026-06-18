@@ -36,6 +36,9 @@ var LEVELS = [
   {key:"C1",color:"#6366f1",glow:"rgba(99,102,241,0.25)", mult:3,  timeLimit:210,timeBonus:400,desc:"Advanced"},
   {key:"C2",color:"#ec4899",glow:"rgba(236,72,153,0.25)", mult:4,  timeLimit:210,timeBonus:400,desc:"Mastery"}
 ];
+// Default question count per CEFR level (mirrors QUESTIONS_PER_LEVEL in the
+// generate backend). Used to seed the editable count in the quest-config popup.
+var QCOUNT_BY_LEVEL = { A1:5, A2:6, B1:8, B2:10, C1:12, C2:15 };
 
 // Demo passage + 5 MCQs for no-signup landing demo. B1 level, ~260 words.
 var DEMO_QUIZ = {
@@ -1274,6 +1277,7 @@ export default function App(){
   // Quest config popup (opens after a level is picked) + user-set time limit (minutes, 1–10).
   var [showQuestConfig,setShowQuestConfig]=useState(false);
   var [quizTimeMin,setQuizTimeMin]=useState(3);
+  var [quizQuestionCount,setQuizQuestionCount]=useState(8);
   var [appTheme,setAppTheme]=useState(function(){try{return JSON.parse(localStorage.getItem("rq-theme")||"null")||null;}catch{return null;}});
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
@@ -2395,7 +2399,7 @@ export default function App(){
           activeV.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
           vocabWords=activeV.slice(0,5).map(function(w){return w.word;});
         }
-        var reqBody={level:level,topic:safeTopic,types:types,language:passageLang};
+        var reqBody={level:level,topic:safeTopic,types:types,language:passageLang,num_questions:quizQuestionCount};
         if(topicInLang)reqBody.topic_in_language=topicInLang;
         if(vocabWords.length>0)reqBody.vocab_words=vocabWords;
         var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
@@ -5905,7 +5909,7 @@ export default function App(){
                   {LEVELS.map(function(l){
                     var active=level===l.key;
                     var badgeId=l.key.toLowerCase();
-                    return(<button key={l.key} type="button" onClick={function(){setLevel(l.key);setError("");setQuizTimeMin(Math.max(1,Math.min(10,Math.round(l.timeLimit/60))));setShowQuestConfig(true);}} className={"lq-level"+(active?" is-active":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
+                    return(<button key={l.key} type="button" onClick={function(){setLevel(l.key);setError("");setQuizTimeMin(Math.max(1,Math.min(10,Math.round(l.timeLimit/60))));setQuizQuestionCount(QCOUNT_BY_LEVEL[l.key]||8);setShowQuestConfig(true);}} className={"lq-level"+(active?" is-active":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
                       <div className="lq-level-badge">
                         <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48}} onError={function(e){e.target.style.display="none";}}/>
                       </div>
@@ -5953,6 +5957,20 @@ export default function App(){
                           <button type="button" onClick={function(){setQuizTimeMin(function(v){return Math.min(10,v+1);});}} aria-label="More time" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>+</button>
                         </div>
                         <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"rgba(227,224,244,0.35)",marginTop:5,padding:"0 50px"}}><span>1 min</span><span>10 min</span></div>
+                      </div>
+
+                      {/* Number of questions (3–15) */}
+                      <div style={{marginBottom:20}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                          <p className="lq-details-sub" style={{margin:0}}>❓ Number of questions</p>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontWeight:800,fontSize:16,color:cfgLv.color}}>{quizQuestionCount}</span>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:12}}>
+                          <button type="button" onClick={function(){setQuizQuestionCount(function(v){return Math.max(3,v-1);});}} aria-label="Fewer questions" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>−</button>
+                          <input type="range" min={3} max={15} step={1} value={quizQuestionCount} onChange={function(e){setQuizQuestionCount(Number(e.target.value));}} style={{flex:1,accentColor:cfgLv.color,height:6,cursor:"pointer"}}/>
+                          <button type="button" onClick={function(){setQuizQuestionCount(function(v){return Math.min(15,v+1);});}} aria-label="More questions" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>+</button>
+                        </div>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"rgba(227,224,244,0.35)",marginTop:5,padding:"0 50px"}}><span>3</span><span>15</span></div>
                       </div>
 
                       {/* Question types */}
