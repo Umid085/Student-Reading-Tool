@@ -9091,6 +9091,7 @@ export default function App(){
                   <div className="sl-card" key={sliderIdx}>
                     {current.topic&&<div className="sl-topic">{current.topic}</div>}
                     <p className="sl-passage">{current.passage}</p>
+                    {current.question.type&&<div style={{fontFamily:"'Inter',sans-serif",fontSize:9,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:"#5af0b3",marginBottom:6}}>{qLabel(current.question.type)}</div>}
                     <p className="sl-question">{current.question.q}</p>
                     <div className="sl-opts">
                       {current.question.options.map(function(opt,i){
