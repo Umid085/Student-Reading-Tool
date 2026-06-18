@@ -6309,11 +6309,6 @@ export default function App(){
                   </div>
                 </details>
 
-                <button type="button" onClick={function(){setStage("settings");}} className="lq-details" style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",border:"1px solid rgba(255,255,255,0.08)",borderRadius:18,background:"rgba(30,30,44,0.4)",color:"#e3e0f4",fontFamily:"'Outfit',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",marginBottom:14,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
-                  <span>⚙️ Settings</span>
-                  <span style={{color:"rgba(227,224,244,0.4)",fontSize:18,fontWeight:600}}>›</span>
-                </button>
-
                 {myClassBanner?(
                   <div className="lq-card-glass" style={{display:"flex",alignItems:"center",gap:12}}>
                     <div style={{fontSize:28}}>🏫</div>
