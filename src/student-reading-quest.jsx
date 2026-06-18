@@ -6111,22 +6111,30 @@ export default function App(){
                   </button>
                 )}
 
-                {/* Discover row — surfaces the social features that were
-                    previously buried in the "More" grid at the very bottom
-                    of the home scroll. Horizontal scroll-snap so it stays
-                    a single row even with future additions. */}
-                <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,margin:"4px -4px 14px",scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch"}}>
+                {/* Explore — every feature as an icon grid (icon on top, title
+                    underneath), surfaced up here under the Slider banner. This
+                    replaces both the old 4-item horizontal Discover row AND the
+                    text-only "More" list that was buried at the bottom. */}
+                <div className="lq-section-h">
+                  <div className="h-lbl"><span className="h-ico">⊞</span>Explore</div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,margin:"0 0 18px"}}>
                   {[
                     {key:"friends",ico:"👥",label:t("friends"),accent:"#a78bfa",bg:"rgba(167,139,250,0.10)",bd:"rgba(167,139,250,0.32)",onClick:function(){setStage("friends");}},
-                    {key:"leaderboard",ico:"🏆",label:t("leaderboard"),accent:"#fbbf24",bg:"rgba(251,191,36,0.10)",bd:"rgba(251,191,36,0.32)",onClick:function(){setLbLevel("A1");setStage("leaderboard");}},
-                    {key:"room",ico:"🏫",label:t("home_discover_room")||"Group Room",accent:"#34d399",bg:"rgba(52,211,153,0.10)",bd:"rgba(52,211,153,0.32)",onClick:function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}},
                     {key:"teachers",ico:"🔍",label:t("tch_findTeachers").replace(/^🔍\s*/,""),accent:"#f472b6",bg:"rgba(244,114,182,0.10)",bd:"rgba(244,114,182,0.32)",onClick:function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}},
-                  ].map(function(item){return(
-                    <button key={item.key} type="button" onClick={item.onClick} style={{flex:"0 0 116px",scrollSnapAlign:"start",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,padding:"12px 8px",borderRadius:16,border:"1px solid "+item.bd,background:item.bg,color:"#e3e0f4",cursor:"pointer",fontFamily:"'Inter',sans-serif",transition:"transform 0.12s, border-color 0.12s"}}
-                      onMouseEnter={function(e){e.currentTarget.style.borderColor=item.accent;}}
-                      onMouseLeave={function(e){e.currentTarget.style.borderColor=item.bd;}}>
+                    {key:"room",ico:"🏫",label:t("home_discover_room")||"Group Room",accent:"#34d399",bg:"rgba(52,211,153,0.10)",bd:"rgba(52,211,153,0.32)",onClick:function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}},
+                    {key:"vocab",ico:"📒",label:t("vocab"),accent:"#06b6d4",bg:"rgba(6,182,212,0.10)",bd:"rgba(6,182,212,0.32)",onClick:function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}},
+                    {key:"history",ico:"📜",label:t("history"),accent:"#c084fc",bg:"rgba(168,85,247,0.10)",bd:"rgba(168,85,247,0.32)",onClick:function(){setHistoryLevel("");setStage("history");}},
+                    {key:"goals",ico:"🎯",label:t("goals"),accent:"#5af0b3",bg:"rgba(90,240,179,0.10)",bd:"rgba(90,240,179,0.32)",onClick:function(){setStage("goals");}},
+                    {key:"weekly",ico:"📅",label:t("weekly"),accent:"#60a5fa",bg:"rgba(96,165,250,0.10)",bd:"rgba(96,165,250,0.32)",onClick:function(){setStage("weekly");}},
+                    {key:"leaderboard",ico:"🏆",label:t("leaderboard"),accent:"#fbbf24",bg:"rgba(251,191,36,0.10)",bd:"rgba(251,191,36,0.32)",onClick:function(){setLbLevel("A1");setStage("leaderboard");}},
+                    {key:"portfolio",ico:"📁",label:t("portfolio"),accent:"#f59e0b",bg:"rgba(245,158,11,0.10)",bd:"rgba(245,158,11,0.32)",onClick:function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}}
+                  ].concat(quotes.length>0?[{key:"quotes",ico:"🔖",label:t("quotes"),accent:"#ec4899",bg:"rgba(236,72,153,0.10)",bd:"rgba(236,72,153,0.32)",onClick:function(){setStage("quotes");}}]:[]).map(function(item){return(
+                    <button key={item.key} type="button" onClick={item.onClick} style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",gap:6,padding:"12px 4px",borderRadius:16,border:"1px solid "+item.bd,background:item.bg,color:"#e3e0f4",cursor:"pointer",fontFamily:"'Inter',sans-serif",transition:"transform 0.12s, border-color 0.12s",minHeight:80}}
+                      onMouseEnter={function(e){e.currentTarget.style.borderColor=item.accent;e.currentTarget.style.transform="translateY(-2px)";}}
+                      onMouseLeave={function(e){e.currentTarget.style.borderColor=item.bd;e.currentTarget.style.transform="translateY(0)";}}>
                       <span style={{fontSize:24,lineHeight:1}}>{item.ico}</span>
-                      <span style={{fontSize:11,fontWeight:700,color:item.accent,letterSpacing:"0.02em",textAlign:"center",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{item.label}</span>
+                      <span style={{fontSize:10,fontWeight:700,color:item.accent,letterSpacing:"0.01em",textAlign:"center",lineHeight:1.2}}>{item.label}</span>
                     </button>
                   );})}
                 </div>
@@ -6293,21 +6301,6 @@ export default function App(){
                   </div>
                 )}
 
-                <div className="lq-section-h">
-                  <div className="h-lbl"><span className="h-ico">⊞</span>More</div>
-                </div>
-                <div className="lq-nav-grid">
-                  <button type="button" onClick={function(){setStage("friends");}} className="lq-ghost-btn">{t("friends")}</button>
-                  <button type="button" onClick={function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}} className="lq-ghost-btn">{t("tch_findTeachers")}</button>
-                  <button type="button" onClick={function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}} className="lq-ghost-btn">🏫 Group Room</button>
-                  <button type="button" onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} className="lq-ghost-btn">{t("vocab")}</button>
-                  <button type="button" onClick={function(){setHistoryLevel("");setStage("history");}} className="lq-ghost-btn">{t("history")}</button>
-                  <button type="button" onClick={function(){setStage("goals");}} className="lq-ghost-btn">{t("goals")}</button>
-                  <button type="button" onClick={function(){setStage("weekly");}} className="lq-ghost-btn">{t("weekly")}</button>
-                  <button type="button" onClick={function(){setLbLevel("A1");setStage("leaderboard");}} className="lq-ghost-btn">{t("leaderboard")}</button>
-                  <button type="button" onClick={function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}} className="lq-ghost-btn">{t("portfolio")}</button>
-                  {quotes.length>0&&<button type="button" onClick={function(){setStage("quotes");}} className="lq-ghost-btn">{t("quotes")}</button>}
-                </div>
               </div>
 
               <nav className="lq-bottom-nav">
