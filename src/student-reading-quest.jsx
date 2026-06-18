@@ -488,6 +488,31 @@ function getUnlockedStories(games){
   return unlocked;
 }
 
+// ── Level-leaderboard gating (B2/C1/C2 locked until the level below is mastered) ──
+// Total pre-made (library) readings per CEFR level.
+var LIB_TOTAL_BY_LEVEL=(function(){var c={};STORY_LIBRARY.forEach(function(s){c[s.level]=(c[s.level]||0)+1;});return c;})();
+// Distinct library stories the user has PASSED (pct >= PASS_PCT), grouped by level.
+function passedLibraryByLevel(games){
+  var by={};
+  (games||[]).forEach(function(g){
+    if(g.storyId&&(g.pct||0)>=PASS_PCT){if(!by[g.level])by[g.level]={};by[g.level][g.storyId]=true;}
+  });
+  return by;
+}
+// A1/A2/B1 are always open. B2/C1/C2 unlock only once EVERY pre-made reading of
+// the level directly below has been passed. Returns the gate state for messaging.
+function levelGate(levelKey,games){
+  var order=["A1","A2","B1","B2","C1","C2"];
+  var idx=order.indexOf(levelKey);
+  if(idx<=2)return{unlocked:true,prev:null,passed:0,total:0};
+  var prev=order[idx-1];
+  var passedMap=passedLibraryByLevel(games)[prev]||{};
+  var passed=Object.keys(passedMap).length;
+  var total=LIB_TOTAL_BY_LEVEL[prev]||10;
+  return{unlocked:passed>=total,prev:prev,passed:passed,total:total};
+}
+function isLevelUnlocked(levelKey,games){return levelGate(levelKey,games).unlocked;}
+
 function getRecommendations(games,n){
   if(!games)games=[];
   var lvOrder=["A1","A2","B1","B2","C1","C2"];
@@ -2612,7 +2637,15 @@ export default function App(){
       // Streak bonus uses maxStreak so it's awarded once-per-run when the
       // streak ever reached 3, not only when the last answer was correct.
       var streakBonus=(qualifies&&Math.max(streak,maxStreak)>=3)?50:0;
-      var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+streakBonus;
+      // Background speedrun/farm guard: a run that skipped the passage AND blitzed
+      // the quiz (< ~2s/question) at chance-level accuracy is fast random-guessing
+      // to farm XP — cut its base XP to 10% (bonuses/board already withheld by
+      // !qualifies). Genuine slow-but-wrong readers keep full base XP.
+      var fastAnswers=timeSecs<Math.max(8,questions.length*2);
+      var farmFlag=!readEnough&&pct<PASS_PCT&&fastAnswers;
+      var baseXp=Math.round(totalEarned*lvObj.mult*100);
+      if(farmFlag)baseXp=Math.round(baseXp*0.1);
+      var finalXp=baseXp+tb+streakBonus;
       var wasChallenge=challengeMode&&!timeExpired;
       if(wasChallenge)finalXp=Math.round(finalXp*1.5);
       var today=todayKey();
@@ -2632,7 +2665,7 @@ export default function App(){
       // screen to make the measurement meaningful (otherwise we'd save
       // garbage like 12000 WPM from a 1-second skim).
       var wpm=readingTimerSecs>5?getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs):0;
-      var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
+      var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm,flagged:farmFlag||false};
       var priorXp=Math.max(Number(currentUser.totalXp)||0,userGames.reduce(function(s,g){return s+(g.xp||0);},0));
       var newTotalXp=priorXp+finalXp;
       var prevAppLevel=getUserLevel(priorXp);
@@ -2656,7 +2689,7 @@ export default function App(){
       // Leaderboard entry only for runs that pass the anti-cheat gate; random
       // guessers and passage-skippers still keep their personal XP/history but
       // never appear on the per-level or weekly boards.
-      if(qualifies){
+      if(qualifies&&isLevelUnlocked(lvObj.key,currentUser.games||[])){
         var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
         var nb=Object.assign({},boards);
         var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,100);
@@ -5788,6 +5821,7 @@ export default function App(){
               .lq-level{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;padding:14px 8px;background:rgba(30,30,44,0.5);border:2px solid rgba(255,255,255,0.08);border-radius:18px;cursor:pointer;text-align:center;font-family:inherit;transition:all 0.2s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);min-height:118px}
               .lq-level:hover{background:rgba(30,30,44,0.7);border-color:rgba(255,255,255,0.15)}
               .lq-level.is-active{background:rgba(255,255,255,0.07);transform:translateY(-1px)}
+              .lq-level.is-locked{opacity:0.6}
               .lq-level-badge{width:46px;height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:14px}
               .lq-level-meta{width:100%;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px}
               .lq-level-top{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:0}
@@ -5909,8 +5943,14 @@ export default function App(){
                   {LEVELS.map(function(l){
                     var active=level===l.key;
                     var badgeId=l.key.toLowerCase();
-                    return(<button key={l.key} type="button" onClick={function(){setLevel(l.key);setError("");setQuizTimeMin(Math.max(1,Math.min(10,Math.round(l.timeLimit/60))));setQuizQuestionCount(QCOUNT_BY_LEVEL[l.key]||8);setShowQuestConfig(true);}} className={"lq-level"+(active?" is-active":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
-                      <div className="lq-level-badge">
+                    var gate=levelGate(l.key,currentUser.games||[]);
+                    var locked=!gate.unlocked;
+                    return(<button key={l.key} type="button" onClick={function(){
+                        if(locked){setError("🔒 Finish all "+gate.total+" "+gate.prev+" pre-made readings to unlock "+l.key+" ("+gate.passed+"/"+gate.total+" passed). Practise them in the Library.");return;}
+                        setLevel(l.key);setError("");setQuizTimeMin(Math.max(1,Math.min(10,Math.round(l.timeLimit/60))));setQuizQuestionCount(QCOUNT_BY_LEVEL[l.key]||8);setShowQuestConfig(true);
+                      }} className={"lq-level"+(active?" is-active":"")+(locked?" is-locked":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
+                      {locked&&<span style={{position:"absolute",top:8,right:8,fontSize:14}}>🔒</span>}
+                      <div className="lq-level-badge" style={locked?{filter:"grayscale(1)",opacity:0.6}:{}}>
                         <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48}} onError={function(e){e.target.style.display="none";}}/>
                       </div>
                       <div className="lq-level-meta">
@@ -5918,8 +5958,8 @@ export default function App(){
                           <span className="lq-level-key" style={{color:active?l.color:"#e3e0f4"}}>{l.key}</span>
                           <span className="lq-level-mult" style={active?{background:l.color,color:"#0d0d1a"}:{}}>x{l.mult}</span>
                         </div>
-                        <div className="lq-level-desc">{l.desc}</div>
-                        <div className="lq-level-time">⚙️ Tap to set up &amp; start</div>
+                        <div className="lq-level-desc">{locked?(gate.passed+"/"+gate.total+" "+gate.prev+" done"):l.desc}</div>
+                        <div className="lq-level-time">{locked?"🔒 Locked":"⚙️ Tap to set up & start"}</div>
                       </div>
                       <span className="lq-level-arrow">→</span>
                     </button>);
@@ -7579,7 +7619,9 @@ export default function App(){
 
         {/* ── LEADERBOARD ───────────────────────────────────── */}
         {stage==="leaderboard"&&(function(){
-          var bd=asArray(boards[lbLevel]);
+          var lbGateInfo=currentUser?levelGate(lbLevel,currentUser.games||[]):{unlocked:true};
+          var lbLocked=!lbGateInfo.unlocked;
+          var bd=lbLocked?[]:asArray(boards[lbLevel]);
           var lvd=getLv(lbLevel);
           var lbColor=lvd?lvd.color:"#5af0b3";
           var top3=bd.slice(0,3);
@@ -7678,11 +7720,20 @@ export default function App(){
                 <header className="lq-lb-hero">
                   <h2 className="lq-lb-hero-h">Hall of Fame</h2>
                   <div className="lq-lb-tabs">
-                    {LEVELS.map(function(l){return(
-                      <button key={l.key} type="button" onClick={function(){setLbLevel(l.key);}} className={"lq-lb-tab"+(lbLevel===l.key?" on":"")} style={lbLevel===l.key?{background:l.color,color:"#0d0d1a",boxShadow:"0 0 14px "+(l.glow||"rgba(52,211,153,0.3)")}:{}}>{l.key}</button>
+                    {LEVELS.map(function(l){var tg=currentUser?levelGate(l.key,currentUser.games||[]):{unlocked:true};return(
+                      <button key={l.key} type="button" onClick={function(){setLbLevel(l.key);}} className={"lq-lb-tab"+(lbLevel===l.key?" on":"")} style={lbLevel===l.key?{background:l.color,color:"#0d0d1a",boxShadow:"0 0 14px "+(l.glow||"rgba(52,211,153,0.3)")}:{}}>{l.key}{!tg.unlocked?" 🔒":""}</button>
                     );})}
                   </div>
                 </header>
+
+                {lbLocked&&(
+                  <div style={{textAlign:"center",padding:"36px 20px"}}>
+                    <div style={{fontSize:48,marginBottom:12}}>🔒</div>
+                    <div style={{fontSize:16,fontWeight:800,fontFamily:"'Outfit',sans-serif",color:"#e3e0f4",marginBottom:6}}>{lbLevel} leaderboard locked</div>
+                    <p style={{fontSize:13,color:"rgba(227,224,244,0.6)",maxWidth:300,margin:"0 auto 16px",lineHeight:1.5}}>Pass all {lbGateInfo.total} {lbGateInfo.prev} pre-made readings to compete here.<br/>({lbGateInfo.passed}/{lbGateInfo.total} passed so far)</p>
+                    <button type="button" onClick={function(){setStage("library");}} style={{background:"rgba(52,211,153,0.14)",border:"1px solid rgba(52,211,153,0.4)",color:"#5af0b3",borderRadius:14,padding:"11px 22px",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>📚 Practise in the Library</button>
+                  </div>
+                )}
 
                 {bd.length>0&&(
                   <section className="lq-lb-podium">
@@ -9242,7 +9293,7 @@ export default function App(){
                     <h2 className="lq-section-h"><span className="ico">✦</span>{t("storyLibrary")}</h2>
                     <div className="lq-grid">
                       {filtered.filter(function(s){if(!librarySearch)return true;var q=librarySearch.toLowerCase();return s.title.toLowerCase().indexOf(q)!==-1||s.topic.toLowerCase().indexOf(q)!==-1;}).map(function(story){
-                        var isUnlocked=!!unlockedMap[story.id];
+                        var isUnlocked=!!unlockedMap[story.id]&&isLevelUnlocked(story.level,currentUser.games||[]);
                         var lo=getLv(story.level);
                         var isAssigned=myClassLib?assignments.some(function(a){return a.classId===myClassLib.id&&a.storyId===story.id&&(!a.completions||!a.completions[currentUser.name]);}):false;
                         var subjKey=getSubjectKey(story);
