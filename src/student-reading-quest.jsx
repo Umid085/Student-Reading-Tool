@@ -1271,6 +1271,9 @@ export default function App(){
   // game
   var [level,setLevel]=useState("");
   var [selectedTypes,setSelectedTypes]=useState(["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"]);
+  // Quest config popup (opens after a level is picked) + user-set time limit (minutes, 1–10).
+  var [showQuestConfig,setShowQuestConfig]=useState(false);
+  var [quizTimeMin,setQuizTimeMin]=useState(3);
   var [appTheme,setAppTheme]=useState(function(){try{return JSON.parse(localStorage.getItem("rq-theme")||"null")||null;}catch{return null;}});
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
@@ -2478,6 +2481,7 @@ export default function App(){
 
   function startStoryFromLibrary(story){
     setLevel(story.level);
+    setQuizTimeMin(Math.max(1,Math.min(10,Math.round((getLv(story.level).timeLimit||180)/60))));
     // Same type filter as the auto-picked library path — respect the user's
     // question-type selection. Fall back to all questions if none match.
     var filteredLibQs=story.questions.filter(function(q){return selectedTypes.indexOf(q.type)!==-1;});
@@ -3227,7 +3231,7 @@ export default function App(){
     var dc=dailyChallenge;
     if(dc&&dc.date===today){
       var mq2=null;for(var j2=0;j2<dc.questions.length;j2++){if(dc.questions[j2].type==="matching"){mq2=dc.questions[j2];break;}}
-      setLevel(dc.level||"B1");setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
+      setLevel(dc.level||"B1");setQuizTimeMin(Math.max(1,Math.min(10,Math.round((getLv(dc.level||"B1").timeLimit||180)/60))));setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
       setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights.map(function(v,i){return{idx:i,val:v};})):[]);
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
       setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
@@ -3240,7 +3244,7 @@ export default function App(){
     var newDc={date:today,level:dStory.level,passage:dStory.passage,topic:dStory.title,questions:dStory.questions,storyId:dStory.id};
     saveDaily(newDc);setDailyChallenge(newDc);
     var mq3=null;for(var j3=0;j3<dStory.questions.length;j3++){if(dStory.questions[j3].type==="matching"){mq3=dStory.questions[j3];break;}}
-    setLevel(dStory.level);setPassage(dStory.passage);setTopic(dStory.title);setQuestions(dStory.questions);
+    setLevel(dStory.level);setQuizTimeMin(Math.max(1,Math.min(10,Math.round((getLv(dStory.level).timeLimit||180)/60))));setPassage(dStory.passage);setTopic(dStory.title);setQuestions(dStory.questions);
     setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights.map(function(v,i){return{idx:i,val:v};})):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
@@ -5894,6 +5898,110 @@ export default function App(){
                   })()}
                 </div>
 
+                {/* ── Level picker (moved to the top): tap a level → quest config popup ── */}
+                <div className="lq-section-h" id="rq-level-picker" style={{marginTop:2}}>
+                  <div className="h-lbl"><span className="h-ico">✦</span>{t("chooseLevel")}</div>
+                </div>
+                <div className="lq-levels">
+                  {LEVELS.map(function(l){
+                    var active=level===l.key;
+                    var badgeId=l.key.toLowerCase();
+                    return(<button key={l.key} type="button" onClick={function(){setLevel(l.key);setError("");setQuizTimeMin(Math.max(1,Math.min(10,Math.round(l.timeLimit/60))));setShowQuestConfig(true);}} className={"lq-level"+(active?" is-active":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
+                      <div className="lq-level-badge">
+                        <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48}} onError={function(e){e.target.style.display="none";}}/>
+                      </div>
+                      <div className="lq-level-meta">
+                        <div className="lq-level-top">
+                          <span className="lq-level-key" style={{color:active?l.color:"#e3e0f4"}}>{l.key}</span>
+                          <span className="lq-level-mult" style={active?{background:l.color,color:"#0d0d1a"}:{}}>x{l.mult}</span>
+                        </div>
+                        <div className="lq-level-desc">{l.desc}</div>
+                        <div className="lq-level-time">⚙️ Tap to set up &amp; start</div>
+                      </div>
+                      <span className="lq-level-arrow">→</span>
+                    </button>);
+                  })}
+                </div>
+                {error&&<ErrorBanner message={error}/>}
+                {error&&error.includes("Daily AI quota")&&<button type="button" onClick={function(){setStage("library");}} className="lq-ghost-btn" style={{width:"100%",marginBottom:10}}>📚 Browse Library Stories</button>}
+
+                {/* ── Quest config popup — opens after a level is selected ── */}
+                {showQuestConfig&&level&&(function(){
+                  var cfgLv=getLv(level);
+                  return(
+                  <div onClick={function(){setShowQuestConfig(false);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.72)",backdropFilter:"blur(5px)",WebkitBackdropFilter:"blur(5px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+                    <div onClick={function(e){e.stopPropagation();}} style={{background:"#14141f",borderTop:"1px solid rgba(255,255,255,0.1)",borderRadius:"24px 24px 0 0",padding:"20px 18px calc(20px + env(safe-area-inset-bottom,0px))",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 -16px 50px rgba(0,0,0,0.6)"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:36,height:36,borderRadius:11,background:cfgLv.color,color:"#0d0d1a",fontFamily:"'Outfit',sans-serif",fontWeight:900,fontSize:15}}>{level}</span>
+                          <div>
+                            <div style={{fontFamily:"'Outfit',sans-serif",fontSize:16,fontWeight:800,color:"#e3e0f4"}}>Customize your quest</div>
+                            <div style={{fontSize:11,color:"rgba(227,224,244,0.55)"}}>{cfgLv.desc}</div>
+                          </div>
+                        </div>
+                        <button type="button" onClick={function(){setShowQuestConfig(false);}} style={{background:"rgba(255,255,255,0.06)",border:"none",color:"rgba(227,224,244,0.7)",width:32,height:32,borderRadius:10,cursor:"pointer",fontSize:18,lineHeight:1,flexShrink:0}}>×</button>
+                      </div>
+
+                      {/* Time limit (1–10 min) */}
+                      <div style={{marginBottom:20}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                          <p className="lq-details-sub" style={{margin:0}}>⏱ Time limit</p>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontWeight:800,fontSize:16,color:cfgLv.color}}>{quizTimeMin}:00</span>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:12}}>
+                          <button type="button" onClick={function(){setQuizTimeMin(function(v){return Math.max(1,v-1);});}} aria-label="Less time" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>−</button>
+                          <input type="range" min={1} max={10} step={1} value={quizTimeMin} onChange={function(e){setQuizTimeMin(Number(e.target.value));}} style={{flex:1,accentColor:cfgLv.color,height:6,cursor:"pointer"}}/>
+                          <button type="button" onClick={function(){setQuizTimeMin(function(v){return Math.min(10,v+1);});}} aria-label="More time" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>+</button>
+                        </div>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"rgba(227,224,244,0.35)",marginTop:5,padding:"0 50px"}}><span>1 min</span><span>10 min</span></div>
+                      </div>
+
+                      {/* Question types */}
+                      <div style={{marginBottom:20}}>
+                        <p className="lq-details-sub">{t("questionTypes")} ({selectedTypes.length} selected)</p>
+                        <div className="lq-chips">
+                          {Object.keys(Q_LABELS).map(function(qt){
+                            var active=selectedTypes.indexOf(qt)!==-1;
+                            function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(qt)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==qt;});return prev.concat([qt]);});}
+                            return(<button key={qt} type="button" onClick={toggle} className={"lq-mini-chip"+(active?" active":"")}>{active?"✓ ":""}{qLabel(qt)}</button>);
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Topic (optional) */}
+                      <div style={{marginBottom:20}}>
+                        <p className="lq-details-sub">{t("topic")} <span style={{textTransform:"none",letterSpacing:0,fontWeight:400,opacity:0.7}}>(optional)</span></p>
+                        <div style={{display:"flex",gap:8}}>
+                          <input className="lq-text-input" style={{flex:1,borderColor:customTopic.trim()?"#5af0b3":undefined}} placeholder={t("topicPlaceholder")} value={customTopic} onChange={function(e){setCustomTopic(e.target.value);}} maxLength={80}/>
+                          {customTopic.trim()&&<button type="button" onClick={function(){setCustomTopic("");}} className="lq-ghost-btn" style={{padding:"9px 12px"}}>✕</button>}
+                        </div>
+                        {(function(){
+                          var activeVocab=vocab.filter(function(w){return w.status!=="known";});
+                          return(<div style={{marginTop:10}}>
+                            <button type="button" onClick={function(){setUseWeakVocab(function(v){return !v;});}} className={"lq-mini-chip"+(useWeakVocab?" active":"")} style={{fontSize:12,padding:"6px 14px"}}>{useWeakVocab?"✓ Vocab-Personalised":"📚 Personalise with my vocab"}</button>
+                            {activeVocab.length===0&&<span style={{fontSize:10,color:"rgba(227,224,244,0.4)",marginLeft:8}}>(add vocab first)</span>}
+                          </div>);
+                        })()}
+                      </div>
+
+                      {/* Passage language */}
+                      <div style={{marginBottom:22}}>
+                        <p className="lq-details-sub">{t("passageLanguage")}</p>
+                        <div style={{display:"flex",overflowX:"auto",gap:6,paddingBottom:4}}>
+                          {[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}].map(function(pl){
+                            var active=passageLang===pl.name;
+                            return(<button key={pl.name} type="button" onClick={function(){setPassageLang(pl.name);}} className={"lq-mini-chip"+(active?" active":"")} style={{whiteSpace:"nowrap",flexShrink:0}}>{pl.flag} {pl.name}</button>);
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Start */}
+                      <button type="button" onClick={function(){setShowQuestConfig(false);generate();}} disabled={genLoading} className="lq-cta" style={{background:cfgLv.color,color:"#0d0d1a",boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px "+cfgLv.glow,marginBottom:0}}>{genLoading?t("writingPassage"):t("startQuest")+" "+level+" · "+quizTimeMin+":00"}</button>
+                    </div>
+                  </div>
+                  );
+                })()}
+
                 {milestoneToShow&&(
                   <div className="lq-banner" style={{borderColor:"rgba(251,191,36,0.5)",background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.04))"}}>
                     <div className="ico">🎉</div>
@@ -6139,35 +6247,6 @@ export default function App(){
                   );})}
                 </div>
 
-                <div className="lq-section-h" id="rq-level-picker">
-                  <div className="h-lbl"><span className="h-ico">✦</span>{t("chooseLevel")}</div>
-                </div>
-                <div className="lq-levels">
-                  {LEVELS.map(function(l){
-                    var active=level===l.key;
-                    var badgeId=l.key.toLowerCase();
-                    return(<button key={l.key} type="button" onClick={function(){setLevel(l.key);setError("");}} className={"lq-level"+(active?" is-active":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
-                      <div className="lq-level-badge">
-                        <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48}} onError={function(e){e.target.style.display="none";}}/>
-                      </div>
-                      <div className="lq-level-meta">
-                        <div className="lq-level-top">
-                          <span className="lq-level-key" style={{color:active?l.color:"#e3e0f4"}}>{l.key}</span>
-                          <span className="lq-level-mult" style={active?{background:l.color,color:"#0d0d1a"}:{}}>x{l.mult}</span>
-                        </div>
-                        <div className="lq-level-desc">{l.desc}</div>
-                        <div className="lq-level-time">⏱ {formatTime(l.timeLimit)} limit</div>
-                      </div>
-                      <span className="lq-level-arrow">→</span>
-                    </button>);
-                  })}
-                </div>
-                {error&&<ErrorBanner message={error}/>}
-                {error&&error.includes("Daily AI quota")&&<button type="button" onClick={function(){setStage("library");}} className="lq-ghost-btn" style={{width:"100%",marginBottom:10}}>📚 Browse Library Stories</button>}
-                <button type="button" onClick={generate} disabled={!level||genLoading} className="lq-cta" style={{background:level&&!genLoading?(lv&&lv.color)||"#5af0b3":"rgba(255,255,255,0.08)",color:level&&!genLoading?"#0d0d1a":"rgba(227,224,244,0.4)",boxShadow:level&&!genLoading?"0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px "+((lv&&lv.glow)||"rgba(52,211,153,0.3)"):"0 4px 0 0 rgba(0,0,0,0.3)"}}>
-                  {genLoading?t("writingPassage"):level?t("startQuest")+" "+level:t("selectLevel")}
-                </button>
-
                 {dailyQuests.length>0&&(
                   <div className="lq-card-glass" style={{borderColor:allDoneHome?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.10)",background:allDoneHome?"rgba(52,211,153,0.04)":"rgba(255,255,255,0.02)"}}>
                     <div className="lq-card-h">
@@ -6215,53 +6294,6 @@ export default function App(){
                   </div>
                   <p className="lq-wotd-def">{wotd.def}</p>
                   <p className="lq-wotd-ex">"{wotd.ex}"</p>
-                </div>
-
-                <div className="lq-details" style={{padding:"16px"}}>
-                  <div className="lq-details-body" style={{padding:0}}>
-                    <div>
-                      <p className="lq-details-sub">{t("questionTypes")} ({selectedTypes.length} selected)</p>
-                      <div className="lq-chips">
-                        {Object.keys(Q_LABELS).map(function(qt){
-                          var active=selectedTypes.indexOf(qt)!==-1;
-                          function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(qt)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==qt;});return prev.concat([qt]);});}
-                          return(<button key={qt} type="button" onClick={toggle} className={"lq-mini-chip"+(active?" active":"")}>{active?"✓ ":""}{qLabel(qt)}</button>);
-                        })}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="lq-details-sub">{t("topic")} <span style={{textTransform:"none",letterSpacing:0,fontWeight:400,opacity:0.7}}>(optional)</span></p>
-                      <div style={{display:"flex",gap:8}}>
-                        <input className="lq-text-input" style={{flex:1,borderColor:customTopic.trim()?"#5af0b3":undefined}} placeholder={t("topicPlaceholder")} value={customTopic} onChange={function(e){setCustomTopic(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&level)generate();}} maxLength={80}/>
-                        {customTopic.trim()&&<button type="button" onClick={function(){setCustomTopic("");}} className="lq-ghost-btn" style={{padding:"9px 12px"}}>✕</button>}
-                      </div>
-                      {customTopic.trim()&&<p style={{fontSize:11,color:"#5af0b3",margin:"6px 0 0"}}>{t("topicHint")} <strong>{customTopic.trim()}</strong></p>}
-                      {(function(){
-                        var activeVocab=vocab.filter(function(w){return w.status!=="known";});
-                        activeVocab.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
-                        var previewWords=activeVocab.slice(0,5).map(function(w){return w.word;});
-                        return(<div style={{marginTop:10}}>
-                          <button type="button" onClick={function(){setUseWeakVocab(function(v){return !v;});}} className={"lq-mini-chip"+(useWeakVocab?" active":"")} style={{fontSize:12,padding:"6px 14px"}}>
-                            {useWeakVocab?"✓ Vocab-Personalised":"📚 Personalise with my vocab"}
-                          </button>
-                          {activeVocab.length===0&&<span style={{fontSize:10,color:"rgba(227,224,244,0.4)",marginLeft:8}}>(add vocab first)</span>}
-                          {useWeakVocab&&previewWords.length>0&&<p style={{fontSize:11,color:"#5af0b3",margin:"6px 0 0",lineHeight:1.5}}>Will include: {previewWords.map(function(w){return<span key={w} style={{background:"rgba(52,211,153,0.15)",borderRadius:6,padding:"1px 6px",marginRight:4,display:"inline-block"}}>{w}</span>;})}</p>}
-                        </div>);
-                      })()}
-                    </div>
-                    {(function(){
-                      var PASS_LANGS=[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}];
-                      return(<div>
-                        <p className="lq-details-sub">{t("passageLanguage")}</p>
-                        <div style={{display:"flex",overflowX:"auto",gap:6,paddingBottom:4}}>
-                          {PASS_LANGS.map(function(l){
-                            var active=passageLang===l.name;
-                            return(<button key={l.name} type="button" onClick={function(){setPassageLang(l.name);}} className={"lq-mini-chip"+(active?" active":"")} style={{whiteSpace:"nowrap",flexShrink:0}}>{l.flag} {l.name}</button>);
-                          })}
-                        </div>
-                      </div>);
-                    })()}
-                  </div>
                 </div>
 
                 <details className="lq-details">
@@ -6808,7 +6840,7 @@ export default function App(){
 
                   <div className={"lq-quiz-timer-card"+(challengeMode?" challenge":"")}>
                     {challengeMode&&<p className="lq-quiz-timer-h">⚡ {t("challengeModeLabel")}</p>}
-                    <Timer limit={challengeMode?Math.floor((lv?lv.timeLimit:180)/2):(lv?lv.timeLimit:180)} running={timerRunning} onExpire={handleExpire}/>
+                    <Timer limit={challengeMode?Math.floor((quizTimeMin*60)/2):(quizTimeMin*60)} running={timerRunning} onExpire={handleExpire}/>
                   </div>
 
                   {qHint(q.type)&&!dismissedHints.has(q.type)&&(
