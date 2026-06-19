@@ -248,6 +248,42 @@ Rules:
     const rawTopic = (typeof body.topic === "string" && body.topic.trim())
       ? body.topic.trim().replace(/[\r\n"]+/g, " ").slice(0, 80)
       : MICRO_THEMES[Math.floor(Math.random() * MICRO_THEMES.length)];
+    // Vary the question type so the slider isn't always MCQ. All four render as
+    // tap-to-pick option buttons in the client (options + answer index).
+    const MICRO_QSPECS = {
+      mcq: {
+        instr: `Then write ONE multiple-choice comprehension question:
+  - 4 options, exactly one correct.
+  - Tests the payoff or a load-bearing detail (not trivia outside the passage).
+  - Distractors plausible but clearly wrong on a careful re-read.`,
+        shape: `{"type":"mcq","q":"<question>","options":["A","B","C","D"],"answer":<0|1|2|3>,"explanation":"<one sentence>"}`,
+      },
+      tfnm: {
+        instr: `Then write ONE True / False / Not Mentioned item:
+  - "q" is a single statement to judge against the passage.
+  - "options" MUST be exactly ["True","False","Not Mentioned"].
+  - "answer" is the index (0,1,2). Use "Not Mentioned" ONLY when the passage gives no information either way.`,
+        shape: `{"type":"tfnm","q":"<statement>","options":["True","False","Not Mentioned"],"answer":<0|1|2>,"explanation":"<one sentence>"}`,
+      },
+      ynng: {
+        instr: `Then write ONE Yes / No / Not Given item:
+  - "q" is a single claim about a fact or the writer's view.
+  - "options" MUST be exactly ["Yes","No","Not Given"].
+  - "answer" is the index (0,1,2). Use "Not Given" ONLY when the passage doesn't address it.`,
+        shape: `{"type":"ynng","q":"<claim>","options":["Yes","No","Not Given"],"answer":<0|1|2>,"explanation":"<one sentence>"}`,
+      },
+      gap_word: {
+        instr: `Then write ONE gap-fill item:
+  - Take a short sentence FROM the passage and replace ONE important content word with "_____".
+  - "q" is that sentence with the blank.
+  - "options" are 4 single words: the removed word plus 3 plausible distractors of the same part of speech.
+  - "answer" is the index of the word that fills the blank.`,
+        shape: `{"type":"gap_word","q":"<sentence with _____>","options":["w1","w2","w3","w4"],"answer":<0|1|2|3>,"explanation":"<one sentence>"}`,
+      },
+    };
+    const MICRO_TYPE_KEYS = Object.keys(MICRO_QSPECS);
+    const sType = MICRO_TYPE_KEYS[Math.floor(Math.random() * MICRO_TYPE_KEYS.length)];
+    const sSpec = MICRO_QSPECS[sType];
     const sPrompt = `Write ONE self-contained slider micro-passage at CEFR level ${sLevel} about: ${rawTopic}.
 
 Hard constraints:
@@ -256,28 +292,27 @@ Hard constraints:
   - End with a small payoff (a twist, a vivid image, or a surprising fact) so the reader feels rewarded.
   - No headings, no preamble, no "Did you know" framing — drop the reader straight into the scene/fact.
 
-Then write ONE multiple-choice comprehension question:
-  - 4 options, exactly one correct.
-  - Tests understanding of the payoff or a load-bearing detail (not trivia outside the passage).
-  - Distractors should be plausible but clearly wrong on a careful re-read.
+${sSpec.instr}
 
 Reply with ONLY a JSON object, no prose around it:
-{"passage":"<one paragraph>","question":{"type":"mcq","q":"<question>","options":["A","B","C","D"],"answer":<0|1|2|3>,"explanation":"<one sentence>"}}`;
+{"passage":"<one paragraph>","question":${sSpec.shape}}`;
 
     try {
       const msg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 700,
-        system: `You are a CEFR-aligned slider micro-passage writer. You write tight, engaging one-paragraph passages exactly at level ${sLevel} (both vocab and grammar) followed by one MCQ. Never explain your reasoning, never apologise, never wrap output in code fences.`,
+        system: `You are a CEFR-aligned slider micro-passage writer. You write tight, engaging one-paragraph passages exactly at level ${sLevel} (both vocab and grammar) followed by one short comprehension question in the exact JSON shape requested. Never explain your reasoning, never apologise, never wrap output in code fences.`,
         messages: [{ role: "user", content: sPrompt }],
       });
       const raw = msg.content?.[0]?.text?.trim() || "";
       const m = raw.match(/\{[\s\S]*\}/);
       if (!m) return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Empty or malformed micro response" }) };
       const parsed = JSON.parse(m[0]);
-      if (!parsed.passage || !parsed.question || parsed.question.type !== "mcq" ||
-          !Array.isArray(parsed.question.options) || parsed.question.options.length !== 4 ||
-          typeof parsed.question.answer !== "number") {
+      const mq = parsed.question || {};
+      const microOk = parsed.passage && MICRO_QSPECS[mq.type] &&
+        Array.isArray(mq.options) && mq.options.length >= 2 && mq.options.length <= 4 &&
+        typeof mq.answer === "number" && mq.answer >= 0 && mq.answer < mq.options.length;
+      if (!microOk) {
         return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Invalid micro response shape" }) };
       }
       let poolId = null;
@@ -331,7 +366,11 @@ Reply with ONLY a JSON object, no prose around it:
   // Expand the requested types to the level-appropriate question count by
   // cycling through them in order. e.g. C2 + [mcq, gap_word, qa, tfnm] → 15
   // items, with each type appearing 3–4 times.
-  const targetCount = QUESTIONS_PER_LEVEL[level] || 6;
+  // Caller can override the question count (quest-config popup); clamp to 3–20.
+  const reqCount = Number(body.num_questions);
+  const targetCount = Number.isFinite(reqCount)
+    ? Math.max(3, Math.min(20, Math.round(reqCount)))
+    : (QUESTIONS_PER_LEVEL[level] || 6);
   const validTypes = [];
   for (let i = 0; i < targetCount; i++) {
     validTypes.push(baseTypes[i % baseTypes.length]);

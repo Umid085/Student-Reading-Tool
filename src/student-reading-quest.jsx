@@ -36,6 +36,9 @@ var LEVELS = [
   {key:"C1",color:"#6366f1",glow:"rgba(99,102,241,0.25)", mult:3,  timeLimit:210,timeBonus:400,desc:"Advanced"},
   {key:"C2",color:"#ec4899",glow:"rgba(236,72,153,0.25)", mult:4,  timeLimit:210,timeBonus:400,desc:"Mastery"}
 ];
+// Default question count per CEFR level (mirrors QUESTIONS_PER_LEVEL in the
+// generate backend). Used to seed the editable count in the quest-config popup.
+var QCOUNT_BY_LEVEL = { A1:5, A2:6, B1:8, B2:10, C1:12, C2:15 };
 
 // Demo passage + 5 MCQs for no-signup landing demo. B1 level, ~260 words.
 var DEMO_QUIZ = {
@@ -484,6 +487,31 @@ function getUnlockedStories(games){
   });
   return unlocked;
 }
+
+// ── Level-leaderboard gating (B2/C1/C2 locked until the level below is mastered) ──
+// Total pre-made (library) readings per CEFR level.
+var LIB_TOTAL_BY_LEVEL=(function(){var c={};STORY_LIBRARY.forEach(function(s){c[s.level]=(c[s.level]||0)+1;});return c;})();
+// Distinct library stories the user has PASSED (pct >= PASS_PCT), grouped by level.
+function passedLibraryByLevel(games){
+  var by={};
+  (games||[]).forEach(function(g){
+    if(g.storyId&&(g.pct||0)>=PASS_PCT){if(!by[g.level])by[g.level]={};by[g.level][g.storyId]=true;}
+  });
+  return by;
+}
+// A1/A2/B1 are always open. B2/C1/C2 unlock only once EVERY pre-made reading of
+// the level directly below has been passed. Returns the gate state for messaging.
+function levelGate(levelKey,games){
+  var order=["A1","A2","B1","B2","C1","C2"];
+  var idx=order.indexOf(levelKey);
+  if(idx<=2)return{unlocked:true,prev:null,passed:0,total:0};
+  var prev=order[idx-1];
+  var passedMap=passedLibraryByLevel(games)[prev]||{};
+  var passed=Object.keys(passedMap).length;
+  var total=LIB_TOTAL_BY_LEVEL[prev]||10;
+  return{unlocked:passed>=total,prev:prev,passed:passed,total:total};
+}
+function isLevelUnlocked(levelKey,games){return levelGate(levelKey,games).unlocked;}
 
 function getRecommendations(games,n){
   if(!games)games=[];
@@ -1271,6 +1299,10 @@ export default function App(){
   // game
   var [level,setLevel]=useState("");
   var [selectedTypes,setSelectedTypes]=useState(["mcq","gap_word","gap_sentence","matching","heading","qa","tfnm","ynng"]);
+  // Quest config popup (opens after a level is picked) + user-set time limit (minutes, 1–10).
+  var [showQuestConfig,setShowQuestConfig]=useState(false);
+  var [quizTimeMin,setQuizTimeMin]=useState(3);
+  var [quizQuestionCount,setQuizQuestionCount]=useState(8);
   var [appTheme,setAppTheme]=useState(function(){try{return JSON.parse(localStorage.getItem("rq-theme")||"null")||null;}catch{return null;}});
   var [passage,setPassage]=useState("");
   var [topic,setTopic]=useState("");
@@ -2392,7 +2424,7 @@ export default function App(){
           activeV.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
           vocabWords=activeV.slice(0,5).map(function(w){return w.word;});
         }
-        var reqBody={level:level,topic:safeTopic,types:types,language:passageLang};
+        var reqBody={level:level,topic:safeTopic,types:types,language:passageLang,num_questions:quizQuestionCount};
         if(topicInLang)reqBody.topic_in_language=topicInLang;
         if(vocabWords.length>0)reqBody.vocab_words=vocabWords;
         var r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
@@ -2478,6 +2510,7 @@ export default function App(){
 
   function startStoryFromLibrary(story){
     setLevel(story.level);
+    setQuizTimeMin(Math.max(1,Math.min(10,Math.round((getLv(story.level).timeLimit||180)/60))));
     // Same type filter as the auto-picked library path — respect the user's
     // question-type selection. Fall back to all questions if none match.
     var filteredLibQs=story.questions.filter(function(q){return selectedTypes.indexOf(q.type)!==-1;});
@@ -2604,7 +2637,15 @@ export default function App(){
       // Streak bonus uses maxStreak so it's awarded once-per-run when the
       // streak ever reached 3, not only when the last answer was correct.
       var streakBonus=(qualifies&&Math.max(streak,maxStreak)>=3)?50:0;
-      var finalXp=Math.round(totalEarned*lvObj.mult*100)+tb+streakBonus;
+      // Background speedrun/farm guard: a run that skipped the passage AND blitzed
+      // the quiz (< ~2s/question) at chance-level accuracy is fast random-guessing
+      // to farm XP — cut its base XP to 10% (bonuses/board already withheld by
+      // !qualifies). Genuine slow-but-wrong readers keep full base XP.
+      var fastAnswers=timeSecs<Math.max(8,questions.length*2);
+      var farmFlag=!readEnough&&pct<PASS_PCT&&fastAnswers;
+      var baseXp=Math.round(totalEarned*lvObj.mult*100);
+      if(farmFlag)baseXp=Math.round(baseXp*0.1);
+      var finalXp=baseXp+tb+streakBonus;
       var wasChallenge=challengeMode&&!timeExpired;
       if(wasChallenge)finalXp=Math.round(finalXp*1.5);
       var today=todayKey();
@@ -2624,7 +2665,7 @@ export default function App(){
       // screen to make the measurement meaningful (otherwise we'd save
       // garbage like 12000 WPM from a 1-second skim).
       var wpm=readingTimerSecs>5?getWpmFromSecs(passage.split(/\s+/).length,readingTimerSecs):0;
-      var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm};
+      var gameEntry={level:lvObj.key,score:totalEarned,total:totalMax,xp:finalXp,pct:pct,timeSecs:timeSecs,timeBonus:tb,topic:topic,date:today,typeStats:typeStats,isDaily:isDailyGame||false,storyId:currentStoryId||null,wpm:wpm,flagged:farmFlag||false};
       var priorXp=Math.max(Number(currentUser.totalXp)||0,userGames.reduce(function(s,g){return s+(g.xp||0);},0));
       var newTotalXp=priorXp+finalXp;
       var prevAppLevel=getUserLevel(priorXp);
@@ -2648,7 +2689,7 @@ export default function App(){
       // Leaderboard entry only for runs that pass the anti-cheat gate; random
       // guessers and passage-skippers still keep their personal XP/history but
       // never appear on the per-level or weekly boards.
-      if(qualifies){
+      if(qualifies&&isLevelUnlocked(lvObj.key,currentUser.games||[])){
         var lbEntry={name:currentUser.name,xp:finalXp,score:totalEarned,total:totalMax,pct:pct,timeSecs:timeSecs,topic:topic,date:today};
         var nb=Object.assign({},boards);
         var cur=nb[lvObj.key]||[];var filtered=cur.filter(function(e){return e.name!==currentUser.name;});var merged=filtered.concat([lbEntry]);merged.sort(function(a,b){return b.xp-a.xp;});nb[lvObj.key]=merged.slice(0,100);
@@ -3227,7 +3268,7 @@ export default function App(){
     var dc=dailyChallenge;
     if(dc&&dc.date===today){
       var mq2=null;for(var j2=0;j2<dc.questions.length;j2++){if(dc.questions[j2].type==="matching"){mq2=dc.questions[j2];break;}}
-      setLevel(dc.level||"B1");setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
+      setLevel(dc.level||"B1");setQuizTimeMin(Math.max(1,Math.min(10,Math.round((getLv(dc.level||"B1").timeLimit||180)/60))));setPassage(dc.passage);setTopic(dc.topic);setQuestions(dc.questions);
       setShuffledRights(mq2&&mq2.rights?shuffleArr(mq2.rights.map(function(v,i){return{idx:i,val:v};})):[]);
       setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
       setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
@@ -3240,7 +3281,7 @@ export default function App(){
     var newDc={date:today,level:dStory.level,passage:dStory.passage,topic:dStory.title,questions:dStory.questions,storyId:dStory.id};
     saveDaily(newDc);setDailyChallenge(newDc);
     var mq3=null;for(var j3=0;j3<dStory.questions.length;j3++){if(dStory.questions[j3].type==="matching"){mq3=dStory.questions[j3];break;}}
-    setLevel(dStory.level);setPassage(dStory.passage);setTopic(dStory.title);setQuestions(dStory.questions);
+    setLevel(dStory.level);setQuizTimeMin(Math.max(1,Math.min(10,Math.round((getLv(dStory.level).timeLimit||180)/60))));setPassage(dStory.passage);setTopic(dStory.title);setQuestions(dStory.questions);
     setShuffledRights(mq3&&mq3.rights?shuffleArr(mq3.rights.map(function(v,i){return{idx:i,val:v};})):[]);
     setCurrent(0);setUserAnswers({});setMatchState({});setHeadingState({});
     setConfirmed(false);setStreak(0);setMaxStreak(0);setTotalXpSoFar(0);setShowPassage(false);setTimeExpired(false);startTimeRef.current=null;setSavedWords(new Set());setHlMode(false);setHlWords(new Set());
@@ -5776,19 +5817,19 @@ export default function App(){
               .lq-section-h .h-ico{color:#5af0b3;font-size:18px;line-height:1}
               .lq-section-h .h-link{background:none;border:none;color:#5af0b3;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.04em;cursor:pointer;padding:4px 8px;border-radius:8px}
               .lq-section-h .h-link:hover{background:rgba(52,211,153,0.08)}
-              .lq-levels{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
-              .lq-level{position:relative;display:flex;align-items:center;gap:14px;padding:14px;background:rgba(30,30,44,0.5);border:2px solid rgba(255,255,255,0.08);border-radius:18px;cursor:pointer;text-align:left;font-family:inherit;transition:all 0.2s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+              .lq-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+              .lq-level{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;padding:14px 8px;background:rgba(30,30,44,0.5);border:2px solid rgba(255,255,255,0.08);border-radius:18px;cursor:pointer;text-align:center;font-family:inherit;transition:all 0.2s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);min-height:118px}
               .lq-level:hover{background:rgba(30,30,44,0.7);border-color:rgba(255,255,255,0.15)}
               .lq-level.is-active{background:rgba(255,255,255,0.07);transform:translateY(-1px)}
-              .lq-level-badge{width:52px;height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:14px}
-              .lq-level-meta{flex:1;min-width:0}
-              .lq-level-top{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+              .lq-level.is-locked{opacity:0.6}
+              .lq-level-badge{width:46px;height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:14px}
+              .lq-level-meta{width:100%;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px}
+              .lq-level-top{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:0}
               .lq-level-key{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.01em}
-              .lq-level-mult{padding:2px 8px;border-radius:999px;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;background:rgba(255,255,255,0.10);color:#d1d5db}
-              .lq-level-desc{font-family:'Inter',sans-serif;font-size:12px;color:rgba(227,224,244,0.55);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-              .lq-level-time{font-family:'Inter',sans-serif;font-size:10px;color:rgba(227,224,244,0.4);letter-spacing:0.04em}
-              .lq-level-arrow{font-size:18px;color:rgba(227,224,244,0.4);flex-shrink:0;transition:transform 0.2s,color 0.2s}
-              .lq-level.is-active .lq-level-arrow{color:#5af0b3;transform:translateX(2px)}
+              .lq-level-mult{padding:1px 8px;border-radius:999px;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;background:rgba(255,255,255,0.10);color:#d1d5db}
+              .lq-level-desc{font-family:'Inter',sans-serif;font-size:10px;color:rgba(227,224,244,0.5);line-height:1.25;text-align:center;white-space:normal}
+              .lq-level-time{display:none}
+              .lq-level-arrow{display:none}
               .lq-cta{width:100%;padding:16px 20px;margin-bottom:14px;border:none;border-radius:18px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px rgba(52,211,153,0.28)}
               .lq-cta:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,0.4),0 4px 12px rgba(52,211,153,0.3)}
               .lq-cta:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:0 4px 0 0 rgba(0,0,0,0.3)}
@@ -5893,6 +5934,130 @@ export default function App(){
                       : <span className="lq-pill" title={tip} style={common}>🪙 {aiUsed} / {aiMax}{trailing}</span>;
                   })()}
                 </div>
+
+                {/* ── Level picker (moved to the top): tap a level → quest config popup ── */}
+                <div className="lq-section-h" id="rq-level-picker" style={{marginTop:2}}>
+                  <div className="h-lbl"><span className="h-ico">✦</span>{t("chooseLevel")}</div>
+                </div>
+                <div className="lq-levels">
+                  {LEVELS.map(function(l){
+                    var active=level===l.key;
+                    var badgeId=l.key.toLowerCase();
+                    var gate=levelGate(l.key,currentUser.games||[]);
+                    var locked=!gate.unlocked;
+                    return(<button key={l.key} type="button" onClick={function(){
+                        if(locked){setError("🔒 Finish all "+gate.total+" "+gate.prev+" pre-made readings to unlock "+l.key+" ("+gate.passed+"/"+gate.total+" passed). Practise them in the Library.");return;}
+                        setLevel(l.key);setError("");setQuizTimeMin(Math.max(1,Math.min(10,Math.round(l.timeLimit/60))));setQuizQuestionCount(QCOUNT_BY_LEVEL[l.key]||8);setShowQuestConfig(true);
+                      }} className={"lq-level"+(active?" is-active":"")+(locked?" is-locked":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
+                      {locked&&<span style={{position:"absolute",top:8,right:8,fontSize:14}}>🔒</span>}
+                      <div className="lq-level-badge" style={locked?{filter:"grayscale(1)",opacity:0.6}:{}}>
+                        <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48}} onError={function(e){e.target.style.display="none";}}/>
+                      </div>
+                      <div className="lq-level-meta">
+                        <div className="lq-level-top">
+                          <span className="lq-level-key" style={{color:active?l.color:"#e3e0f4"}}>{l.key}</span>
+                          <span className="lq-level-mult" style={active?{background:l.color,color:"#0d0d1a"}:{}}>x{l.mult}</span>
+                        </div>
+                        <div className="lq-level-desc">{locked?(gate.passed+"/"+gate.total+" "+gate.prev+" done"):l.desc}</div>
+                        <div className="lq-level-time">{locked?"🔒 Locked":"⚙️ Tap to set up & start"}</div>
+                      </div>
+                      <span className="lq-level-arrow">→</span>
+                    </button>);
+                  })}
+                </div>
+                {error&&<ErrorBanner message={error}/>}
+                {error&&error.includes("Daily AI quota")&&<button type="button" onClick={function(){setStage("library");}} className="lq-ghost-btn" style={{width:"100%",marginBottom:10}}>📚 Browse Library Stories</button>}
+
+                {/* ── Quest config popup — opens after a level is selected ── */}
+                {showQuestConfig&&level&&(function(){
+                  var cfgLv=getLv(level);
+                  return(
+                  <div onClick={function(){setShowQuestConfig(false);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.72)",backdropFilter:"blur(5px)",WebkitBackdropFilter:"blur(5px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+                    <div onClick={function(e){e.stopPropagation();}} style={{background:"#14141f",borderTop:"1px solid rgba(255,255,255,0.1)",borderRadius:"24px 24px 0 0",padding:"20px 18px calc(20px + env(safe-area-inset-bottom,0px))",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 -16px 50px rgba(0,0,0,0.6)"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:36,height:36,borderRadius:11,background:cfgLv.color,color:"#0d0d1a",fontFamily:"'Outfit',sans-serif",fontWeight:900,fontSize:15}}>{level}</span>
+                          <div>
+                            <div style={{fontFamily:"'Outfit',sans-serif",fontSize:16,fontWeight:800,color:"#e3e0f4"}}>Customize your quest</div>
+                            <div style={{fontSize:11,color:"rgba(227,224,244,0.55)"}}>{cfgLv.desc}</div>
+                          </div>
+                        </div>
+                        <button type="button" onClick={function(){setShowQuestConfig(false);}} style={{background:"rgba(255,255,255,0.06)",border:"none",color:"rgba(227,224,244,0.7)",width:32,height:32,borderRadius:10,cursor:"pointer",fontSize:18,lineHeight:1,flexShrink:0}}>×</button>
+                      </div>
+
+                      {/* Time limit (1–10 min) */}
+                      <div style={{marginBottom:20}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                          <p className="lq-details-sub" style={{margin:0}}>⏱ Time limit</p>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontWeight:800,fontSize:16,color:cfgLv.color}}>{quizTimeMin}:00</span>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:12}}>
+                          <button type="button" onClick={function(){setQuizTimeMin(function(v){return Math.max(1,v-1);});}} aria-label="Less time" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>−</button>
+                          <input type="range" min={1} max={10} step={1} value={quizTimeMin} onChange={function(e){setQuizTimeMin(Number(e.target.value));}} style={{flex:1,accentColor:cfgLv.color,height:6,cursor:"pointer"}}/>
+                          <button type="button" onClick={function(){setQuizTimeMin(function(v){return Math.min(10,v+1);});}} aria-label="More time" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>+</button>
+                        </div>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"rgba(227,224,244,0.35)",marginTop:5,padding:"0 50px"}}><span>1 min</span><span>10 min</span></div>
+                      </div>
+
+                      {/* Number of questions (3–15) */}
+                      <div style={{marginBottom:20}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                          <p className="lq-details-sub" style={{margin:0}}>❓ Number of questions</p>
+                          <span style={{fontFamily:"'JetBrains Mono',monospace",fontWeight:800,fontSize:16,color:cfgLv.color}}>{quizQuestionCount}</span>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:12}}>
+                          <button type="button" onClick={function(){setQuizQuestionCount(function(v){return Math.max(3,v-1);});}} aria-label="Fewer questions" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>−</button>
+                          <input type="range" min={3} max={15} step={1} value={quizQuestionCount} onChange={function(e){setQuizQuestionCount(Number(e.target.value));}} style={{flex:1,accentColor:cfgLv.color,height:6,cursor:"pointer"}}/>
+                          <button type="button" onClick={function(){setQuizQuestionCount(function(v){return Math.min(15,v+1);});}} aria-label="More questions" style={{flexShrink:0,width:38,height:38,borderRadius:11,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.05)",color:"#e3e0f4",fontSize:22,cursor:"pointer",lineHeight:1}}>+</button>
+                        </div>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"rgba(227,224,244,0.35)",marginTop:5,padding:"0 50px"}}><span>3</span><span>15</span></div>
+                      </div>
+
+                      {/* Question types */}
+                      <div style={{marginBottom:20}}>
+                        <p className="lq-details-sub">{t("questionTypes")} ({selectedTypes.length} selected)</p>
+                        <div className="lq-chips">
+                          {Object.keys(Q_LABELS).map(function(qt){
+                            var active=selectedTypes.indexOf(qt)!==-1;
+                            function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(qt)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==qt;});return prev.concat([qt]);});}
+                            return(<button key={qt} type="button" onClick={toggle} className={"lq-mini-chip"+(active?" active":"")}>{active?"✓ ":""}{qLabel(qt)}</button>);
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Topic (optional) */}
+                      <div style={{marginBottom:20}}>
+                        <p className="lq-details-sub">{t("topic")} <span style={{textTransform:"none",letterSpacing:0,fontWeight:400,opacity:0.7}}>(optional)</span></p>
+                        <div style={{display:"flex",gap:8}}>
+                          <input className="lq-text-input" style={{flex:1,borderColor:customTopic.trim()?"#5af0b3":undefined}} placeholder={t("topicPlaceholder")} value={customTopic} onChange={function(e){setCustomTopic(e.target.value);}} maxLength={80}/>
+                          {customTopic.trim()&&<button type="button" onClick={function(){setCustomTopic("");}} className="lq-ghost-btn" style={{padding:"9px 12px"}}>✕</button>}
+                        </div>
+                        {(function(){
+                          var activeVocab=vocab.filter(function(w){return w.status!=="known";});
+                          return(<div style={{marginTop:10}}>
+                            <button type="button" onClick={function(){setUseWeakVocab(function(v){return !v;});}} className={"lq-mini-chip"+(useWeakVocab?" active":"")} style={{fontSize:12,padding:"6px 14px"}}>{useWeakVocab?"✓ Vocab-Personalised":"📚 Personalise with my vocab"}</button>
+                            {activeVocab.length===0&&<span style={{fontSize:10,color:"rgba(227,224,244,0.4)",marginLeft:8}}>(add vocab first)</span>}
+                          </div>);
+                        })()}
+                      </div>
+
+                      {/* Passage language */}
+                      <div style={{marginBottom:22}}>
+                        <p className="lq-details-sub">{t("passageLanguage")}</p>
+                        <div style={{display:"flex",overflowX:"auto",gap:6,paddingBottom:4}}>
+                          {[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}].map(function(pl){
+                            var active=passageLang===pl.name;
+                            return(<button key={pl.name} type="button" onClick={function(){setPassageLang(pl.name);}} className={"lq-mini-chip"+(active?" active":"")} style={{whiteSpace:"nowrap",flexShrink:0}}>{pl.flag} {pl.name}</button>);
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Start */}
+                      <button type="button" onClick={function(){setShowQuestConfig(false);generate();}} disabled={genLoading} className="lq-cta" style={{background:cfgLv.color,color:"#0d0d1a",boxShadow:"0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px "+cfgLv.glow,marginBottom:0}}>{genLoading?t("writingPassage"):t("startQuest")+" "+level+" · "+quizTimeMin+":00"}</button>
+                    </div>
+                  </div>
+                  );
+                })()}
 
                 {milestoneToShow&&(
                   <div className="lq-banner" style={{borderColor:"rgba(251,191,36,0.5)",background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.04))"}}>
@@ -6111,54 +6276,33 @@ export default function App(){
                   </button>
                 )}
 
-                {/* Discover row — surfaces the social features that were
-                    previously buried in the "More" grid at the very bottom
-                    of the home scroll. Horizontal scroll-snap so it stays
-                    a single row even with future additions. */}
-                <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,margin:"4px -4px 14px",scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch"}}>
+                {/* Explore — every feature as an icon grid (icon on top, title
+                    underneath), surfaced up here under the Slider banner. This
+                    replaces both the old 4-item horizontal Discover row AND the
+                    text-only "More" list that was buried at the bottom. */}
+                <div className="lq-section-h">
+                  <div className="h-lbl"><span className="h-ico">⊞</span>Explore</div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,margin:"0 0 18px"}}>
                   {[
                     {key:"friends",ico:"👥",label:t("friends"),accent:"#a78bfa",bg:"rgba(167,139,250,0.10)",bd:"rgba(167,139,250,0.32)",onClick:function(){setStage("friends");}},
-                    {key:"leaderboard",ico:"🏆",label:t("leaderboard"),accent:"#fbbf24",bg:"rgba(251,191,36,0.10)",bd:"rgba(251,191,36,0.32)",onClick:function(){setLbLevel("A1");setStage("leaderboard");}},
-                    {key:"room",ico:"🏫",label:t("home_discover_room")||"Group Room",accent:"#34d399",bg:"rgba(52,211,153,0.10)",bd:"rgba(52,211,153,0.32)",onClick:function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}},
                     {key:"teachers",ico:"🔍",label:t("tch_findTeachers").replace(/^🔍\s*/,""),accent:"#f472b6",bg:"rgba(244,114,182,0.10)",bd:"rgba(244,114,182,0.32)",onClick:function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}},
-                  ].map(function(item){return(
-                    <button key={item.key} type="button" onClick={item.onClick} style={{flex:"0 0 116px",scrollSnapAlign:"start",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,padding:"12px 8px",borderRadius:16,border:"1px solid "+item.bd,background:item.bg,color:"#e3e0f4",cursor:"pointer",fontFamily:"'Inter',sans-serif",transition:"transform 0.12s, border-color 0.12s"}}
-                      onMouseEnter={function(e){e.currentTarget.style.borderColor=item.accent;}}
-                      onMouseLeave={function(e){e.currentTarget.style.borderColor=item.bd;}}>
+                    {key:"room",ico:"🏫",label:t("home_discover_room")||"Group Room",accent:"#34d399",bg:"rgba(52,211,153,0.10)",bd:"rgba(52,211,153,0.32)",onClick:function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}},
+                    {key:"vocab",ico:"📒",label:t("vocab"),accent:"#06b6d4",bg:"rgba(6,182,212,0.10)",bd:"rgba(6,182,212,0.32)",onClick:function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}},
+                    {key:"history",ico:"📜",label:t("history"),accent:"#c084fc",bg:"rgba(168,85,247,0.10)",bd:"rgba(168,85,247,0.32)",onClick:function(){setHistoryLevel("");setStage("history");}},
+                    {key:"goals",ico:"🎯",label:t("goals"),accent:"#5af0b3",bg:"rgba(90,240,179,0.10)",bd:"rgba(90,240,179,0.32)",onClick:function(){setStage("goals");}},
+                    {key:"weekly",ico:"📅",label:t("weekly"),accent:"#60a5fa",bg:"rgba(96,165,250,0.10)",bd:"rgba(96,165,250,0.32)",onClick:function(){setStage("weekly");}},
+                    {key:"leaderboard",ico:"🏆",label:t("leaderboard"),accent:"#fbbf24",bg:"rgba(251,191,36,0.10)",bd:"rgba(251,191,36,0.32)",onClick:function(){setLbLevel("A1");setStage("leaderboard");}},
+                    {key:"portfolio",ico:"📁",label:t("portfolio"),accent:"#f59e0b",bg:"rgba(245,158,11,0.10)",bd:"rgba(245,158,11,0.32)",onClick:function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}}
+                  ].concat(quotes.length>0?[{key:"quotes",ico:"🔖",label:t("quotes"),accent:"#ec4899",bg:"rgba(236,72,153,0.10)",bd:"rgba(236,72,153,0.32)",onClick:function(){setStage("quotes");}}]:[]).map(function(item){return(
+                    <button key={item.key} type="button" onClick={item.onClick} style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",gap:6,padding:"12px 4px",borderRadius:16,border:"1px solid "+item.bd,background:item.bg,color:"#e3e0f4",cursor:"pointer",fontFamily:"'Inter',sans-serif",transition:"transform 0.12s, border-color 0.12s",minHeight:80}}
+                      onMouseEnter={function(e){e.currentTarget.style.borderColor=item.accent;e.currentTarget.style.transform="translateY(-2px)";}}
+                      onMouseLeave={function(e){e.currentTarget.style.borderColor=item.bd;e.currentTarget.style.transform="translateY(0)";}}>
                       <span style={{fontSize:24,lineHeight:1}}>{item.ico}</span>
-                      <span style={{fontSize:11,fontWeight:700,color:item.accent,letterSpacing:"0.02em",textAlign:"center",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{item.label}</span>
+                      <span style={{fontSize:10,fontWeight:700,color:item.accent,letterSpacing:"0.01em",textAlign:"center",lineHeight:1.2}}>{item.label}</span>
                     </button>
                   );})}
                 </div>
-
-                <div className="lq-section-h" id="rq-level-picker">
-                  <div className="h-lbl"><span className="h-ico">✦</span>{t("chooseLevel")}</div>
-                </div>
-                <div className="lq-levels">
-                  {LEVELS.map(function(l){
-                    var active=level===l.key;
-                    var badgeId=l.key.toLowerCase();
-                    return(<button key={l.key} type="button" onClick={function(){setLevel(l.key);setError("");}} className={"lq-level"+(active?" is-active":"")} style={active?{borderColor:l.color,boxShadow:"0 0 24px "+l.glow+",inset 0 1px 0 rgba(255,255,255,0.05)"}:{}}>
-                      <div className="lq-level-badge">
-                        <img src={"/assets/badges/badge-"+badgeId+".svg"} alt={l.key} style={{width:48,height:48}} onError={function(e){e.target.style.display="none";}}/>
-                      </div>
-                      <div className="lq-level-meta">
-                        <div className="lq-level-top">
-                          <span className="lq-level-key" style={{color:active?l.color:"#e3e0f4"}}>{l.key}</span>
-                          <span className="lq-level-mult" style={active?{background:l.color,color:"#0d0d1a"}:{}}>x{l.mult}</span>
-                        </div>
-                        <div className="lq-level-desc">{l.desc}</div>
-                        <div className="lq-level-time">⏱ {formatTime(l.timeLimit)} limit</div>
-                      </div>
-                      <span className="lq-level-arrow">→</span>
-                    </button>);
-                  })}
-                </div>
-                {error&&<ErrorBanner message={error}/>}
-                {error&&error.includes("Daily AI quota")&&<button type="button" onClick={function(){setStage("library");}} className="lq-ghost-btn" style={{width:"100%",marginBottom:10}}>📚 Browse Library Stories</button>}
-                <button type="button" onClick={generate} disabled={!level||genLoading} className="lq-cta" style={{background:level&&!genLoading?(lv&&lv.color)||"#5af0b3":"rgba(255,255,255,0.08)",color:level&&!genLoading?"#0d0d1a":"rgba(227,224,244,0.4)",boxShadow:level&&!genLoading?"0 4px 0 0 rgba(0,0,0,0.4),0 10px 24px "+((lv&&lv.glow)||"rgba(52,211,153,0.3)"):"0 4px 0 0 rgba(0,0,0,0.3)"}}>
-                  {genLoading?t("writingPassage"):level?t("startQuest")+" "+level:t("selectLevel")}
-                </button>
 
                 {dailyQuests.length>0&&(
                   <div className="lq-card-glass" style={{borderColor:allDoneHome?"rgba(52,211,153,0.3)":"rgba(255,255,255,0.10)",background:allDoneHome?"rgba(52,211,153,0.04)":"rgba(255,255,255,0.02)"}}>
@@ -6209,53 +6353,6 @@ export default function App(){
                   <p className="lq-wotd-ex">"{wotd.ex}"</p>
                 </div>
 
-                <div className="lq-details" style={{padding:"16px"}}>
-                  <div className="lq-details-body" style={{padding:0}}>
-                    <div>
-                      <p className="lq-details-sub">{t("questionTypes")} ({selectedTypes.length} selected)</p>
-                      <div className="lq-chips">
-                        {Object.keys(Q_LABELS).map(function(qt){
-                          var active=selectedTypes.indexOf(qt)!==-1;
-                          function toggle(){setSelectedTypes(function(prev){var isAct=prev.indexOf(qt)!==-1;if(isAct&&prev.length===1)return prev;if(isAct)return prev.filter(function(x){return x!==qt;});return prev.concat([qt]);});}
-                          return(<button key={qt} type="button" onClick={toggle} className={"lq-mini-chip"+(active?" active":"")}>{active?"✓ ":""}{qLabel(qt)}</button>);
-                        })}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="lq-details-sub">{t("topic")} <span style={{textTransform:"none",letterSpacing:0,fontWeight:400,opacity:0.7}}>(optional)</span></p>
-                      <div style={{display:"flex",gap:8}}>
-                        <input className="lq-text-input" style={{flex:1,borderColor:customTopic.trim()?"#5af0b3":undefined}} placeholder={t("topicPlaceholder")} value={customTopic} onChange={function(e){setCustomTopic(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter"&&level)generate();}} maxLength={80}/>
-                        {customTopic.trim()&&<button type="button" onClick={function(){setCustomTopic("");}} className="lq-ghost-btn" style={{padding:"9px 12px"}}>✕</button>}
-                      </div>
-                      {customTopic.trim()&&<p style={{fontSize:11,color:"#5af0b3",margin:"6px 0 0"}}>{t("topicHint")} <strong>{customTopic.trim()}</strong></p>}
-                      {(function(){
-                        var activeVocab=vocab.filter(function(w){return w.status!=="known";});
-                        activeVocab.sort(function(a,b){return (a.srInterval||0)-(b.srInterval||0);});
-                        var previewWords=activeVocab.slice(0,5).map(function(w){return w.word;});
-                        return(<div style={{marginTop:10}}>
-                          <button type="button" onClick={function(){setUseWeakVocab(function(v){return !v;});}} className={"lq-mini-chip"+(useWeakVocab?" active":"")} style={{fontSize:12,padding:"6px 14px"}}>
-                            {useWeakVocab?"✓ Vocab-Personalised":"📚 Personalise with my vocab"}
-                          </button>
-                          {activeVocab.length===0&&<span style={{fontSize:10,color:"rgba(227,224,244,0.4)",marginLeft:8}}>(add vocab first)</span>}
-                          {useWeakVocab&&previewWords.length>0&&<p style={{fontSize:11,color:"#5af0b3",margin:"6px 0 0",lineHeight:1.5}}>Will include: {previewWords.map(function(w){return<span key={w} style={{background:"rgba(52,211,153,0.15)",borderRadius:6,padding:"1px 6px",marginRight:4,display:"inline-block"}}>{w}</span>;})}</p>}
-                        </div>);
-                      })()}
-                    </div>
-                    {(function(){
-                      var PASS_LANGS=[{flag:"🇬🇧",name:"English"},{flag:"🇪🇸",name:"Spanish"},{flag:"🇫🇷",name:"French"},{flag:"🇩🇪",name:"German"},{flag:"🇮🇹",name:"Italian"},{flag:"🇵🇹",name:"Portuguese"},{flag:"🇷🇺",name:"Russian"},{flag:"🇹🇷",name:"Turkish"},{flag:"🇦🇪",name:"Arabic"},{flag:"🇺🇿",name:"Uzbek"}];
-                      return(<div>
-                        <p className="lq-details-sub">{t("passageLanguage")}</p>
-                        <div style={{display:"flex",overflowX:"auto",gap:6,paddingBottom:4}}>
-                          {PASS_LANGS.map(function(l){
-                            var active=passageLang===l.name;
-                            return(<button key={l.name} type="button" onClick={function(){setPassageLang(l.name);}} className={"lq-mini-chip"+(active?" active":"")} style={{whiteSpace:"nowrap",flexShrink:0}}>{l.flag} {l.name}</button>);
-                          })}
-                        </div>
-                      </div>);
-                    })()}
-                  </div>
-                </div>
-
                 <details className="lq-details">
                   <summary>✍️ Custom text quiz</summary>
                   <div className="lq-details-body">
@@ -6268,11 +6365,6 @@ export default function App(){
                     {customTextError&&<p style={{color:"#f87171",fontSize:12,margin:0}}>{customTextError}</p>}
                   </div>
                 </details>
-
-                <button type="button" onClick={function(){setStage("settings");}} className="lq-details" style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",border:"1px solid rgba(255,255,255,0.08)",borderRadius:18,background:"rgba(30,30,44,0.4)",color:"#e3e0f4",fontFamily:"'Outfit',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",marginBottom:14,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
-                  <span>⚙️ Settings</span>
-                  <span style={{color:"rgba(227,224,244,0.4)",fontSize:18,fontWeight:600}}>›</span>
-                </button>
 
                 {myClassBanner?(
                   <div className="lq-card-glass" style={{display:"flex",alignItems:"center",gap:12}}>
@@ -6293,21 +6385,6 @@ export default function App(){
                   </div>
                 )}
 
-                <div className="lq-section-h">
-                  <div className="h-lbl"><span className="h-ico">⊞</span>More</div>
-                </div>
-                <div className="lq-nav-grid">
-                  <button type="button" onClick={function(){setStage("friends");}} className="lq-ghost-btn">{t("friends")}</button>
-                  <button type="button" onClick={function(){setTeacherSearchQuery("");setTeacherSearchResults([]);setTeacherSearchTotal(0);runTeacherSearch("");setStage("teacherSearch");}} className="lq-ghost-btn">{t("tch_findTeachers")}</button>
-                  <button type="button" onClick={function(){setRoomEntryCode("");setRoomCreateTopic("");setRoomMsg("");setStage("roomEntry");}} className="lq-ghost-btn">🏫 Group Room</button>
-                  <button type="button" onClick={function(){setVocabCard(0);setVocabFlipped(false);setVocabFilter("all");setStage("vocab");}} className="lq-ghost-btn">{t("vocab")}</button>
-                  <button type="button" onClick={function(){setHistoryLevel("");setStage("history");}} className="lq-ghost-btn">{t("history")}</button>
-                  <button type="button" onClick={function(){setStage("goals");}} className="lq-ghost-btn">{t("goals")}</button>
-                  <button type="button" onClick={function(){setStage("weekly");}} className="lq-ghost-btn">{t("weekly")}</button>
-                  <button type="button" onClick={function(){setLbLevel("A1");setStage("leaderboard");}} className="lq-ghost-btn">{t("leaderboard")}</button>
-                  <button type="button" onClick={function(){setPortfolioLink("");setPortfolioLinkCopied(false);setStage("portfolio");}} className="lq-ghost-btn">{t("portfolio")}</button>
-                  {quotes.length>0&&<button type="button" onClick={function(){setStage("quotes");}} className="lq-ghost-btn">{t("quotes")}</button>}
-                </div>
               </div>
 
               <nav className="lq-bottom-nav">
@@ -6815,7 +6892,7 @@ export default function App(){
 
                   <div className={"lq-quiz-timer-card"+(challengeMode?" challenge":"")}>
                     {challengeMode&&<p className="lq-quiz-timer-h">⚡ {t("challengeModeLabel")}</p>}
-                    <Timer limit={challengeMode?Math.floor((lv?lv.timeLimit:180)/2):(lv?lv.timeLimit:180)} running={timerRunning} onExpire={handleExpire}/>
+                    <Timer limit={challengeMode?Math.floor((quizTimeMin*60)/2):(quizTimeMin*60)} running={timerRunning} onExpire={handleExpire}/>
                   </div>
 
                   {qHint(q.type)&&!dismissedHints.has(q.type)&&(
@@ -7542,7 +7619,9 @@ export default function App(){
 
         {/* ── LEADERBOARD ───────────────────────────────────── */}
         {stage==="leaderboard"&&(function(){
-          var bd=asArray(boards[lbLevel]);
+          var lbGateInfo=currentUser?levelGate(lbLevel,currentUser.games||[]):{unlocked:true};
+          var lbLocked=!lbGateInfo.unlocked;
+          var bd=lbLocked?[]:asArray(boards[lbLevel]);
           var lvd=getLv(lbLevel);
           var lbColor=lvd?lvd.color:"#5af0b3";
           var top3=bd.slice(0,3);
@@ -7641,11 +7720,20 @@ export default function App(){
                 <header className="lq-lb-hero">
                   <h2 className="lq-lb-hero-h">Hall of Fame</h2>
                   <div className="lq-lb-tabs">
-                    {LEVELS.map(function(l){return(
-                      <button key={l.key} type="button" onClick={function(){setLbLevel(l.key);}} className={"lq-lb-tab"+(lbLevel===l.key?" on":"")} style={lbLevel===l.key?{background:l.color,color:"#0d0d1a",boxShadow:"0 0 14px "+(l.glow||"rgba(52,211,153,0.3)")}:{}}>{l.key}</button>
+                    {LEVELS.map(function(l){var tg=currentUser?levelGate(l.key,currentUser.games||[]):{unlocked:true};return(
+                      <button key={l.key} type="button" onClick={function(){setLbLevel(l.key);}} className={"lq-lb-tab"+(lbLevel===l.key?" on":"")} style={lbLevel===l.key?{background:l.color,color:"#0d0d1a",boxShadow:"0 0 14px "+(l.glow||"rgba(52,211,153,0.3)")}:{}}>{l.key}{!tg.unlocked?" 🔒":""}</button>
                     );})}
                   </div>
                 </header>
+
+                {lbLocked&&(
+                  <div style={{textAlign:"center",padding:"36px 20px"}}>
+                    <div style={{fontSize:48,marginBottom:12}}>🔒</div>
+                    <div style={{fontSize:16,fontWeight:800,fontFamily:"'Outfit',sans-serif",color:"#e3e0f4",marginBottom:6}}>{lbLevel} leaderboard locked</div>
+                    <p style={{fontSize:13,color:"rgba(227,224,244,0.6)",maxWidth:300,margin:"0 auto 16px",lineHeight:1.5}}>Pass all {lbGateInfo.total} {lbGateInfo.prev} pre-made readings to compete here.<br/>({lbGateInfo.passed}/{lbGateInfo.total} passed so far)</p>
+                    <button type="button" onClick={function(){setStage("library");}} style={{background:"rgba(52,211,153,0.14)",border:"1px solid rgba(52,211,153,0.4)",color:"#5af0b3",borderRadius:14,padding:"11px 22px",fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>📚 Practise in the Library</button>
+                  </div>
+                )}
 
                 {bd.length>0&&(
                   <section className="lq-lb-podium">
@@ -9003,6 +9091,7 @@ export default function App(){
                   <div className="sl-card" key={sliderIdx}>
                     {current.topic&&<div className="sl-topic">{current.topic}</div>}
                     <p className="sl-passage">{current.passage}</p>
+                    {current.question.type&&<div style={{fontFamily:"'Inter',sans-serif",fontSize:9,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:"#5af0b3",marginBottom:6}}>{qLabel(current.question.type)}</div>}
                     <p className="sl-question">{current.question.q}</p>
                     <div className="sl-opts">
                       {current.question.options.map(function(opt,i){
@@ -9205,7 +9294,7 @@ export default function App(){
                     <h2 className="lq-section-h"><span className="ico">✦</span>{t("storyLibrary")}</h2>
                     <div className="lq-grid">
                       {filtered.filter(function(s){if(!librarySearch)return true;var q=librarySearch.toLowerCase();return s.title.toLowerCase().indexOf(q)!==-1||s.topic.toLowerCase().indexOf(q)!==-1;}).map(function(story){
-                        var isUnlocked=!!unlockedMap[story.id];
+                        var isUnlocked=!!unlockedMap[story.id]&&isLevelUnlocked(story.level,currentUser.games||[]);
                         var lo=getLv(story.level);
                         var isAssigned=myClassLib?assignments.some(function(a){return a.classId===myClassLib.id&&a.storyId===story.id&&(!a.completions||!a.completions[currentUser.name]);}):false;
                         var subjKey=getSubjectKey(story);
