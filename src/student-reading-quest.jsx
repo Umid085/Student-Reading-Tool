@@ -416,7 +416,7 @@ function scoreQuestion(q,ans){
   if(q.type==="mcq"||q.type==="gap_word"||q.type==="gap_sentence"||q.type==="tfnm"||q.type==="ynng")return Number(ans)===Number(q.answer)?Q_XP[q.type]:0;
   if(q.type==="matching"){var cp=q.correctPairs||[];var s=0;for(var i=0;i<cp.length;i++){if(ans&&Number(ans[i])===Number(cp[i]))s++;}return s;}
   if(q.type==="heading"){var cm=q.correctMap;if(!cm||!cm.length)return 0;var h=0;for(var j=0;j<cm.length;j++){if(ans&&Number(ans[j])===Number(cm[j]))h++;}return h;}
-  if(q.type==="qa"){var kws=q.keywords||[];if(!ans||ans.trim().length<3||!kws.length)return 0;var lo=ans.toLowerCase(),hits=0;for(var k=0;k<kws.length;k++){if(lo.includes(String(kws[k]).toLowerCase()))hits++;} var threshold=Math.ceil(kws.length/2);return hits>=threshold?Q_XP.qa:0;}
+  if(q.type==="qa"){var kws=q.keywords||[];if(!ans||ans.trim().length<3||!kws.length)return 0;var lo=ans.toLowerCase(),hits=0;for(var k=0;k<kws.length;k++){if(lo.includes(String(kws[k]).toLowerCase()))hits++;} return Q_XP.qa*(hits/kws.length);}
   return 0;
 }
 function maxPoints(q){if(q.type==="matching")return q.lefts?q.lefts.length:3;if(q.type==="heading")return q.correctMap?q.correctMap.length:2;return Q_XP[q.type]||1;}
@@ -1089,7 +1089,9 @@ function McqQ(props){
 
 function GapWordQ(props){
   var q=props.q,sel=props.sel,conf=props.conf,onSel=props.onSel;
-  var parts=q.sentence?q.sentence.split("___"):["",""];
+  // Robust to either field name and any blank length (main quiz emits
+  // `sentence` + "___"; be tolerant of a `q` + "_____" shape too).
+  var gwText=q.sentence||q.q;var parts=gwText?gwText.split(/_{3,}/):["",""];
   return(<div>
     <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:14,color:"#e5e7eb",lineHeight:1.7}}>
       {parts[0]}<span style={{display:"inline-block",minWidth:70,borderBottom:"2px solid #a78bfa",textAlign:"center",padding:"0 4px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa",fontWeight:700}}>{sel!==null?q.options[sel]:"_____"}</span>{parts[1]}
@@ -1108,7 +1110,7 @@ function GapWordQ(props){
 
 function GapSentQ(props){
   var q=props.q,sel=props.sel,conf=props.conf,onSel=props.onSel;
-  var parts=q.paragraph?q.paragraph.split("___"):["",""];
+  var gsText=q.sentence||q.paragraph||q.q;var parts=gsText?gsText.split(/_{3,}/):["",""];
   return(<div>
     <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:13,color:"#e5e7eb",lineHeight:1.8}}>
       {parts[0]}<span style={{display:"inline-block",background:conf?(sel===q.answer?"rgba(52,211,153,0.2)":"rgba(239,68,68,0.2)"):"rgba(99,102,241,0.15)",border:"1px dashed "+(conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa"),borderRadius:6,padding:"1px 6px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa",fontWeight:700,margin:"0 4px"}}>{sel!==null?q.options[sel]:"[ select ]"}</span>{parts[1]}
@@ -1193,11 +1195,13 @@ function HeadingQ(props){
 
 function QAQ(props){
   var q=props.q,val=props.val,conf=props.conf,onChange=props.onChange;
-  var scored=conf?scoreQuestion(q,val):null;
+  // qa now scores proportionally; treat "half the keywords or more" as a pass
+  // for the visual feedback so a 1-of-3 answer doesn't read as "Good!".
+  var qaGood=conf?scoreQuestion(q,val)>=Q_XP.qa/2:false;
   return(<div>
     <textarea disabled={conf} value={val||""} onChange={function(e){if(!conf)onChange(e.target.value);}} placeholder="Write your answer here..." style={{width:"100%",minHeight:80,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#f3f4f6",fontSize:13,padding:"9px 11px",outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
-    {conf&&(<div style={{marginTop:6,padding:"8px 10px",borderRadius:8,background:scored?"rgba(52,211,153,0.1)":"rgba(239,68,68,0.1)",border:"1px solid "+(scored?"#34d399":"#ef4444"),fontSize:12,color:"#d1fae5"}}>
-      {scored?"Good! ":"Improve: "}{q.explanation}<div style={{marginTop:3,color:"#9ca3af",fontSize:11}}>Key: {q.keywords.join(", ")}</div>
+    {conf&&(<div style={{marginTop:6,padding:"8px 10px",borderRadius:8,background:qaGood?"rgba(52,211,153,0.1)":"rgba(239,68,68,0.1)",border:"1px solid "+(qaGood?"#34d399":"#ef4444"),fontSize:12,color:"#d1fae5"}}>
+      {qaGood?"Good! ":"Improve: "}{q.explanation}<div style={{marginTop:3,color:"#9ca3af",fontSize:11}}>Key: {q.keywords.join(", ")}</div>
     </div>)}
   </div>);
 }
@@ -1331,6 +1335,10 @@ export default function App(){
   var [showPassage,setShowPassage]=useState(false);
   var [timerRunning,setTimerRunning]=useState(false);
   var startTimeRef=useRef(null);
+  // Re-entrancy guard for doFinish: a double-tap on the final "Next" (or a
+  // timer-expiry racing a manual finish) must not commit the same quiz twice
+  // — each run appends a game, awards XP, and writes the leaderboard/SRS.
+  var finishingRef=useRef(false);
   // Tracks the library story whose quiz we're trying to upgrade with AI
   // questions in the background. Cleared once the user starts the quiz so a
   // late-arriving response can't swap questions out from under them mid-run.
@@ -2569,7 +2577,7 @@ export default function App(){
     // Feature 1: extract auto-vocab from passage
     var extracted=extractAutoVocab(passage);
     if(extracted.length>0){setAutoVocabWords(extracted);setAutoVocabDismissed(false);}
-    startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");
+    finishingRef.current=false;startTimeRef.current=Date.now();setTimerRunning(true);setStage("quiz");
   }
   function handleExpire(){setTimerRunning(false);setTimeExpired(true);doFinish();}
 
@@ -2602,6 +2610,8 @@ export default function App(){
 
   async function doFinish(){
     if(!currentUser){setStage("home");return;}
+    if(finishingRef.current)return;   // already committing this quiz — ignore the extra tap
+    finishingRef.current=true;        // reset in startQuiz() when the next quiz begins
     try{
       var currentMatchState=Object.assign({},matchState);
       var currentHeadingState=Object.assign({},headingState);
