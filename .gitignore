@@ -18,6 +18,9 @@ dist/
 .vite/
 .vercel
 
+# graphify code index (local artifact)
+graphify-out/
+
 # Design mockups (not source)
 mockups/
 stitch_github_design_assistant.zip

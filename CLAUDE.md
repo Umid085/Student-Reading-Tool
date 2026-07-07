@@ -125,14 +125,16 @@ Locale-formatted dates were removed in favour of ISO so a user crossing timezone
 
 All writes go to localStorage first (sync), then fire-and-forget to Firebase via `/api/storage` (async). Reads pull from Firebase if available, fall back to localStorage on error.
 
-### Known limitations (storage security debt)
+### Storage authorization (resolved)
 
-Two structural issues were identified in the May 2026 backend review and **left unfixed by decision** (tracked, not yet scheduled):
+The May 2026 backend review flagged two structural issues — `/api/storage` enforcing authentication but not authorization, and whole-array lost-update races. Both are now **fixed**. Every shared/owned key is `WRITE_BLOCKED` in both `storage.js` shapes and mutated only through a dedicated authenticated router that derives the actor from `extractUsername(req)` (never the request body) and does per-child ETag compare-and-swap writes:
 
-1. **`/api/storage` enforces authentication, not authorization.** The POST path verifies the Bearer token is a valid, unexpired token for *some* user, but never binds that user to the key being written. Any logged-in user can PUT to any key that passes `ALLOWED_KEYS` and isn't in `WRITE_BLOCKED` (i.e. everything except `rq-auth-v6`) — including `rq-classes-v1`, `rq-assignments-v1`, `rq-boards-v6`, `rq-social-v6`. Teacher/class ownership is enforced only by browser UI gates (`isTeacherOf`), which a direct API call bypasses.
-2. **Whole-array lost-update races.** `doCompleteAssignment` and `doJoinClass`/`doPostAnnouncement` read a stale in-memory snapshot, mutate it, and PUT the *entire* `rq-assignments-v1` / `rq-classes-v1` array. Concurrent writers clobber each other (a completion or class-join is silently dropped). Same class as the quota-counter and room-participant races that were fixed via ETag CAS / per-child writes.
+- `/api/classroom` — `rq-classes-v1`, `rq-assignments-v1` (ownership-checked; per-child completion writes).
+- `/api/community` — `rq-boards-v6`, `rq-weekly-v1`, `rq-social-v6` (leaderboards + social graph), plus `rq-vocab-v1` / `rq-favs-v1` (per-user children), `rq-daily-lb-v1` (daily leaderboard), and `rq-discuss-v1` (posts authored from the token, 1/day server-side).
 
-Recommended fix for both: dedicated authenticated mutation endpoints (one per class/assignment/score action) that derive the actor from `extractUsername(req)` and do per-child Firebase writes server-side, instead of routing through the generic whole-array `/api/storage` proxy.
+Reads stay on the open `/api/storage` GET (these lists aren't secret). `rq-daily-v1` (the daily-challenge config) is intentionally left writable through the proxy: it's deterministic-by-date, so a forged write is at most low-impact griefing, not impersonation.
+
+**Remaining residual (out of scope):** the leaderboard routers force the actor and clamp XP to the level's theoretical max, but there's no server-side quiz state to validate against, so a direct caller can still self-report an inflated *own* score. Closing this requires server-issued/graded quizzes — a separate, larger project.
 
 ### Authentication (current state)
 
