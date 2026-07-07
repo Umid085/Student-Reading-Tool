@@ -1089,7 +1089,9 @@ function McqQ(props){
 
 function GapWordQ(props){
   var q=props.q,sel=props.sel,conf=props.conf,onSel=props.onSel;
-  var parts=q.sentence?q.sentence.split("___"):["",""];
+  // Robust to either field name and any blank length (main quiz emits
+  // `sentence` + "___"; be tolerant of a `q` + "_____" shape too).
+  var gwText=q.sentence||q.q;var parts=gwText?gwText.split(/_{3,}/):["",""];
   return(<div>
     <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:14,color:"#e5e7eb",lineHeight:1.7}}>
       {parts[0]}<span style={{display:"inline-block",minWidth:70,borderBottom:"2px solid #a78bfa",textAlign:"center",padding:"0 4px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa",fontWeight:700}}>{sel!==null?q.options[sel]:"_____"}</span>{parts[1]}
@@ -1108,7 +1110,7 @@ function GapWordQ(props){
 
 function GapSentQ(props){
   var q=props.q,sel=props.sel,conf=props.conf,onSel=props.onSel;
-  var gsText=q.sentence||q.paragraph;var parts=gsText?gsText.split("___"):["",""];
+  var gsText=q.sentence||q.paragraph||q.q;var parts=gsText?gsText.split(/_{3,}/):["",""];
   return(<div>
     <div style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:13,color:"#e5e7eb",lineHeight:1.8}}>
       {parts[0]}<span style={{display:"inline-block",background:conf?(sel===q.answer?"rgba(52,211,153,0.2)":"rgba(239,68,68,0.2)"):"rgba(99,102,241,0.15)",border:"1px dashed "+(conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa"),borderRadius:6,padding:"1px 6px",color:conf?(sel===q.answer?"#34d399":"#ef4444"):"#a78bfa",fontWeight:700,margin:"0 4px"}}>{sel!==null?q.options[sel]:"[ select ]"}</span>{parts[1]}
